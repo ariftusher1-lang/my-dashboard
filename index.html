@@ -3,429 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>শেয়ার্ড প্রোডাকশন ড্যাশবোর্ড</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>অটো ক্যালকুলেশন সহ ডেটা এন্ট্রি</title>
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, sans-serif; }
-        body { background:#f1f5f9; padding:20px; display:flex; justify-content:center; }
-        .container { max-width:1600px; width:100%; background:white; padding:30px; border-radius:28px; box-shadow:0 20px 40px rgba(0,0,0,0.08); }
-        h2 { color:#0f172a; border-left:6px solid #2563eb; padding-left:15px; margin-bottom:25px; }
-        .form-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px 25px; }
-        .form-group { display:flex; flex-direction:column; gap:4px; }
-        .form-group label { font-weight:600; font-size:13px; color:#334155; }
-        .form-group input, .form-group select { padding:8px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:14px; background:#fafcff; width:100%; }
-        .form-group input:focus, .form-group select:focus { border-color:#2563eb; outline:none; box-shadow:0 0 0 4px rgba(37,99,235,0.1); }
-        .form-group input[readonly] { background:#f1f5f9; font-weight:700; cursor:not-allowed; border-color:#d1d5db; }
-        .calc-highlight { background:#f0fdf4 !important; border-color:#86efac !important; }
-        .section-title { grid-column:1/-1; font-weight:700; font-size:18px; color:#0f172a; padding-top:10px; border-bottom:2px solid #e2e8f0; margin-bottom:5px; display:flex; align-items:center; gap:10px; }
-        .section-title span { background:#2563eb; color:white; font-size:14px; padding:2px 12px; border-radius:30px; }
-        .btn-group { grid-column:1/-1; display:flex; gap:15px; margin-top:15px; flex-wrap:wrap; }
-        .btn { padding:12px 30px; border:none; border-radius:40px; font-weight:700; font-size:16px; cursor:pointer; transition:0.2s; display:inline-flex; align-items:center; gap:8px; }
-        .btn-primary { background:#2563eb; color:white; }
-        .btn-primary:hover { background:#1d4ed8; transform:translateY(-2px); box-shadow:0 8px 20px rgba(37,99,235,0.3); }
-        .btn-success { background:#16a34a; color:white; }
-        .btn-success:hover { background:#15803d; transform:translateY(-2px); }
-        .btn-danger { background:#dc2626; color:white; }
-        .btn-danger:hover { background:#b91c1c; }
-        .report-section { margin-top:40px; border-top:2px solid #e2e8f0; padding-top:25px; overflow-x:auto; }
-        .report-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; }
-        table { width:100%; border-collapse:collapse; font-size:12px; min-width:1800px; }
-        th { background:#0f172a; color:white; padding:10px 5px; border:1px solid #1e293b; text-align:center; white-space:nowrap; font-size:11px; }
-        td { padding:8px 5px; border:1px solid #e2e8f0; text-align:center; white-space:nowrap; }
-        .badge { padding:2px 10px; border-radius:30px; font-weight:700; font-size:12px; }
-        .bg-green { background:#dcfce7; color:#166534; }
-        .bg-red { background:#fee2e2; color:#991b1b; }
-        .bg-yellow { background:#fef9c3; color:#854d0e; }
-        .loading { text-align:center; padding:30px; color:#2563eb; font-weight:600; }
-        @media (max-width:768px) { .form-grid { grid-template-columns:1fr 1fr; } .container { padding:15px; } }
-        @media (max-width:480px) { .form-grid { grid-template-columns:1fr; } }
+        body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 20px; }
+        .container { max-width: 950px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #1a3a5c; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #007bff; }
+        .section h3 { margin-top: 0; color: #333; }
+        .row { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; }
+        .row > div { flex: 1; min-width: 150px; }
+        label { font-weight: bold; display: block; font-size: 13px; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        input:disabled { background: #e9ecef; color: #495057; }
+        button { background: #28a745; color: white; border: none; padding: 14px; font-size: 18px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 25px; font-weight: bold; }
+        button:hover { background: #218838; }
+        #status { margin-top: 15px; padding: 10px; border-radius: 6px; text-align: center; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .flex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+        .highlight { background: #fff3cd; border-left: 3px solid #ffc107; }
+        .new-feature { background: #d1ecf1; border-left: 4px solid #17a2b8; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>🏭 শেয়ার্ড প্রোডাকশন মনিটর (সবাই একসাথে এন্ট্রি দিন)</h2>
+    <h2>📋 অটো ক্যালকুলেশন সহ এন্ট্রি ফর্ম (Saifuddin Report অনুযায়ী)</h2>
+    <form id="entryForm">
 
-    <form id="entryForm" class="form-grid">
-        <!-- বেসিক ইনফো -->
-        <div class="section-title"><span>📅</span> বেসিক ইনফো</div>
-        <div class="form-group"><label>তারিখ (Date) <span style="color:red;">*</span></label><input type="date" id="entryDate" required></div>
-        <div class="form-group"><label>শিফট (Shift) <span style="color:red;">*</span></label>
-            <select id="shift" required><option value="">-- সিলেক্ট --</option><option value="Day">ডে (Day)</option><option value="Night">নাইট (Night)</option><option value="General">জেনারেল</option></select>
+        <!-- মৌলিক তথ্য -->
+        <div class="section">
+            <h3>📅 মৌলিক তথ্য</h3>
+            <div class="row">
+                <div><label>তারিখ (Date)</label><input type="date" id="entryDate" required></div>
+                <div><label>শিফট (Shift)</label>
+                    <select id="shift"><option value="Day">Day</option><option value="Night">Night</option></select>
+                </div>
+                <div><label>ডিপার্টমেন্ট</label>
+                    <select id="department" required>
+                        <option value="">-- সিলেক্ট করুন --</option>
+                        <option value="Plastic Prod-3.1">Plastic Prod-3.1</option>
+                        <option value="Plastic Prod-7.1">Plastic Prod-7.1</option>
+                        <option value="Plastic Prod-7.2">Plastic Prod-7.2</option>
+                        <option value="Plastic Prod-7.3">Plastic Prod-7.3</option>
+                        <option value="Plastic Prod-7.4">Plastic Prod-7.4</option>
+                        <option value="Corporate sales Production">Corporate sales Production</option>
+                        <option value="DPL-QA">DPL-QA</option>
+                        <option value="Plastic Inventory & Delivery">Plastic Inventory & Delivery</option>
+                    </select>
+                </div>
+                <div><label>আইসি নাম</label><input type="text" id="icName" placeholder="Mr. Manir" required></div>
+            </div>
         </div>
-        <div class="form-group"><label> </label></div>
 
-        <!-- ডিপার্টমেন্ট -->
-        <div class="section-title"><span>🏢</span> ডিপার্টমেন্ট (ফিক্সড)</div>
-        <div class="form-group"><label>Department <span style="color:red;">*</span></label>
-            <select id="department" required><option value="">-- সিলেক্ট করুন --</option></select>
+        <!-- মেশিনের ডেটা (লেবেল পরিবর্তন করা হয়েছে) -->
+        <div class="section highlight">
+            <h3>⚙️ মেশিনের ডেটা (অটো ক্যালকুলেশন)</h3>
+            <div class="row">
+                <div><label>Total MC</label>
+                    <input type="number" id="totalMC" required placeholder="সংখ্যা দিন">
+                </div>
+                <div><label>Target MC Run (Running)</label>
+                    <input type="number" id="mcRunning" required placeholder="সংখ্যা দিন" oninput="autoCalculate()">
+                </div>
+                <div><label>MC Will off (Stopped)</label>
+                    <input type="number" id="mcStopped" required placeholder="সংখ্যা দিন" oninput="autoCalculate()">
+                </div>
+            </div>
+            <div class="row">
+                <div><label>MC Run %</label>
+                    <input type="text" id="pctRunning" readonly style="background:#e9ecef;">
+                </div>
+                <div><label>MC Will off %</label>
+                    <input type="text" id="pctStopped" readonly style="background:#e9ecef;">
+                </div>
+            </div>
         </div>
-        <div class="form-group"><label>Prod IC (Auto)</label><input type="text" id="icName" readonly placeholder="অটো আসবে"></div>
-        <div class="form-group"><label>Total MC (Fixed)</label><input type="number" id="totalMC" readonly class="calc-highlight"></div>
 
-        <!-- অটো ক্যালকুলেশন -->
-        <div class="section-title"><span>⚙️</span> মেশিন রান/স্টপ অটো</div>
-        <div class="form-group"><label>MC Running (ম্যানুয়াল) <span style="color:red;">*</span></label><input type="number" id="mcRunning" placeholder="e.g. 10" step="1" min="0" required></div>
-        <div class="form-group"><label>MC Stopped (অটো)</label><input type="number" id="mcStopped" readonly class="calc-highlight"></div>
-        <div class="form-group"><label>% Running (অটো)</label><input type="text" id="pctRunning" readonly class="calc-highlight"></div>
-        <div class="form-group"><label>% Stopped (অটো)</label><input type="text" id="pctStopped" readonly class="calc-highlight"></div>
-
-        <!-- প্রোডাকশন -->
-        <div class="section-title"><span>📊</span> প্রোডাকশন & এক্সপোর্ট/ডমেস্টিক</div>
-        <div class="form-group"><label>Total HR</label><input type="number" id="totalHR" placeholder="e.g. 82"></div>
-        <div class="form-group"><label>Export MC</label><input type="number" id="exportMC" placeholder="0"></div>
-        <div class="form-group"><label>Domestic MC</label><input type="number" id="domesticMC" placeholder="0"></div>
-
-        <!-- ম্যানপাওয়ার (২৮টি) -->
-        <div class="section-title"><span>👷</span> ম্যানপাওয়ার (সব ম্যানুয়াল)</div>
-        <div class="form-group"><label>Single MC</label><input type="number" id="singleMC" placeholder="0"></div>
-        <div class="form-group"><label>Double MC</label><input type="number" id="doubleMC" placeholder="0"></div>
-        <div class="form-group"><label>No Demand</label><input type="number" id="noDemand" placeholder="0"></div>
-        <div class="form-group"><label>Prod IC</label><input type="number" id="prodIC" placeholder="0"></div>
-        <div class="form-group"><label>SIC (M, TE, Shift IC)</label><input type="number" id="sic" placeholder="0"></div>
-        <div class="form-group"><label>MC Operator</label><input type="number" id="mcOperator" placeholder="0"></div>
-        <div class="form-group"><label>Packaging Operator</label><input type="number" id="packagingOperator" placeholder="0"></div>
-        <div class="form-group"><label>Foreman</label><input type="number" id="foreman" placeholder="0"></div>
-        <div class="form-group"><label>Senior Operator</label><input type="number" id="seniorOperator" placeholder="0"></div>
-        <div class="form-group"><label>Shrink-wrap Op</label><input type="number" id="shrinkOperator" placeholder="0"></div>
-        <div class="form-group"><label>Printing Op</label><input type="number" id="printingOperator" placeholder="0"></div>
-        <div class="form-group"><label>Mold Change Op</label><input type="number" id="moldChangeOperator" placeholder="0"></div>
-        <div class="form-group"><label>Mix/Recycle/Crush</label><input type="number" id="mixRecycle" placeholder="0"></div>
-        <div class="form-group"><label>Sub Store</label><input type="number" id="subStore" placeholder="0"></div>
-        <div class="form-group"><label>Inventory Op</label><input type="number" id="inventoryOperator" placeholder="0"></div>
-        <div class="form-group"><label>FG Delivery</label><input type="number" id="fgDelivery" placeholder="0"></div>
-        <div class="form-group"><label>Sharp Tools</label><input type="number" id="sharpTools" placeholder="0"></div>
-        <div class="form-group"><label>PSI</label><input type="number" id="psi" placeholder="0"></div>
-        <div class="form-group"><label>ERP</label><input type="number" id="erp" placeholder="0"></div>
-        <div class="form-group"><label>Floor Housekeeping</label><input type="number" id="floorHousekeeping" placeholder="0"></div>
-        <div class="form-group"><label>Rework</label><input type="number" id="rework" placeholder="0"></div>
-        <div class="form-group"><label>Welding</label><input type="number" id="welding" placeholder="0"></div>
-        <div class="form-group"><label>HR Transfer</label><input type="number" id="hrTransfer" placeholder="0"></div>
-        <div class="form-group"><label> </label></div>
-
-        <div class="btn-group">
-            <button type="button" class="btn btn-primary" id="addBtn">➕ এন্ট্রি যোগ করুন (শেয়ার)</button>
-            <button type="reset" class="btn btn-danger" id="resetBtn">🗑️ ফর্ম রিসেট</button>
+        <!-- উৎপাদন বিশ্লেষণ (টার্গেট CTN) -->
+        <div class="section new-feature">
+            <h3>📦 উৎপাদন বিশ্লেষণ (টার্গেট vs অ্যাচিভমেন্ট) - প্রতি HR টার্গেট ৪৫ CTN</h3>
+            <div class="row">
+                <div><label>শিফটের শ্রমিক সংখ্যা (Prod HR)</label>
+                    <input type="number" id="prodHR" value="0" oninput="calcProduction()">
+                </div>
+                <div><label>টার্গেট CTN</label>
+                    <input type="number" id="targetCTN" readonly style="background:#e9ecef; font-weight:bold; color:#004085;">
+                </div>
+            </div>
+            <div class="row">
+                <div><label>অর্জিত CTN</label>
+                    <input type="number" id="achievedCTN" value="0" oninput="calcProduction()">
+                </div>
+                <div><label>Per HR CTN</label>
+                    <input type="text" id="perHrCTN" readonly style="background:#e9ecef;">
+                </div>
+            </div>
+            <div class="row">
+                <div><label>ইউটিলাইজেশন (%)</label>
+                    <input type="text" id="utilizationPct" readonly style="background:#e9ecef; font-weight:bold; color:#28a745;">
+                </div>
+            </div>
         </div>
+
+        <!-- স্টপের কারণ - লেবেল পরিবর্তন করা হয়েছে -->
+        <div class="section">
+            <h3>⛔ স্টপের কারণ (Cause of Stop - QTY)</h3>
+            <div class="flex-grid">
+                <div><label>MP Short</label><input type="number" id="mpShort" value="0"></div>
+                <div><label>Mold Prob</label><input type="number" id="moldProblem" value="0"></div>
+                <div><label>Mold Change</label><input type="number" id="moldChange" value="0"></div>
+                <div><label>Sample</label><input type="number" id="underSample" value="0"></div>
+                <div><label>MC prob</label><input type="number" id="mcProblem" value="0"></div>
+                <div><label>Preventive</label><input type="number" id="preventiveMaintenance" value="0"></div>
+                <div><label>No demand</label><input type="number" id="noDemandQty" value="0"></div>
+                <div><label>Material short & MB</label><input type="number" id="materialMBShortage" value="0"></div>
+                <div><label>Over Stock</label><input type="number" id="overStockWIP" value="0"></div>
+                <div><label>Acc short</label><input type="number" id="accessoriesShort" value="0"></div>
+            </div>
+        </div>
+
+        <!-- এইচআর ও ম্যানপাওয়ার (লেবেল পরিবর্তন) -->
+        <div class="section">
+            <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
+            <div class="row">
+                <div><label>Total MP</label><input type="number" id="totalHR" required></div>
+                <div><label>Leave</label><input type="number" id="leaveEmployee" value="0"></div>
+                <div><label>Absent</label><input type="number" id="absentEmployee" value="0"></div>
+            </div>
+        </div>
+
+        <!-- মেশিন টাইপ -->
+        <div class="section">
+            <h3>🏭 মেশিন টাইপ (Machine Type)</h3>
+            <div class="row">
+                <div><label>Export MC</label><input type="number" id="exportMC" value="0"></div>
+                <div><label>Domestic MC</label><input type="number" id="domesticMC" value="0"></div>
+                <div><label>Single MC</label><input type="number" id="singleMC" value="0"></div>
+                <div><label>Double MC</label><input type="number" id="doubleMC" value="0"></div>
+                <div><label>No Demand (Manpower)</label><input type="number" id="noDemand" value="0"></div>
+            </div>
+        </div>
+
+        <!-- অপারেটর ও স্টাফ -->
+        <div class="section">
+            <h3>👨‍🔧 অপারেটর ও স্টাফ</h3>
+            <div class="flex-grid">
+                <div><label>Prod IC</label><input type="number" id="prodIC" value="0"></div>
+                <div><label>SIC</label><input type="number" id="sic" value="0"></div>
+                <div><label>MC Operator</label><input type="number" id="mcOperator" value="0"></div>
+                <div><label>Packaging Op</label><input type="number" id="packagingOperator" value="0"></div>
+                <div><label>Foreman</label><input type="number" id="foreman" value="0"></div>
+                <div><label>Senior Operator</label><input type="number" id="seniorOperator" value="0"></div>
+                <div><label>Shrink-wrap Op</label><input type="number" id="shrinkOperator" value="0"></div>
+                <div><label>Printing Op</label><input type="number" id="printingOperator" value="0"></div>
+                <div><label>Mold Change Op</label><input type="number" id="moldChangeOperator" value="0"></div>
+                <div><label>Mix/Recycle/Crush</label><input type="number" id="mixRecycle" value="0"></div>
+                <div><label>Sub Store</label><input type="number" id="subStore" value="0"></div>
+                <div><label>Inventory Op</label><input type="number" id="inventoryOperator" value="0"></div>
+                <div><label>FG Delivery</label><input type="number" id="fgDelivery" value="0"></div>
+                <div><label>Sharp Tools</label><input type="number" id="sharpTools" value="0"></div>
+                <div><label>PSI</label><input type="number" id="psi" value="0"></div>
+                <div><label>ERP</label><input type="number" id="erp" value="0"></div>
+                <div><label>Floor Housekeeping</label><input type="number" id="floorHousekeeping" value="0"></div>
+                <div><label>Rework</label><input type="number" id="rework" value="0"></div>
+                <div><label>Welding</label><input type="number" id="welding" value="0"></div>
+                <div><label>HR Transfer</label><input type="number" id="hrTransfer" value="0"></div>
+            </div>
+        </div>
+
+        <button type="submit">💾 ডেটা সেভ করুন</button>
     </form>
-
-    <div class="report-section">
-        <div class="report-header">
-            <h3>📋 সবার এন্ট্রির রিপোর্ট (লাইভ)</h3>
-            <button class="btn btn-success" id="exportExcelBtn">⬇️ Excel ডাউনলোড করুন</button>
-        </div>
-        <div id="loadingMessage" class="loading">⏳ ডেটা লোড হচ্ছে...</div>
-        <div style="overflow-x: auto; max-height: 500px; overflow-y: auto;">
-            <table id="reportTable">
-                <thead id="reportHead"></thead>
-                <tbody id="reportBody"></tbody>
-            </table>
-        </div>
-        <p style="text-align:right; color:#64748b; font-size:13px; margin-top:8px;">মোট এন্ট্রি: <span id="entryCount">0</span></p>
-    </div>
+    <div id="status"></div>
 </div>
 
 <script>
-    // ============================================================
-    // 🔴 IMPORTANT: আপডেটেড Apps Script Web App URL
-    // ============================================================
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxAV6ZZuC035aPLOtMzLMlTnT7vrd8Hf6dZcE2UUnh4B_EQiTMWWWFtfRXXwHs71cBnWA/exec';
+    // =============================================
+    // ডিপার্টমেন্ট ফিক্সড MC (আগের মতোই)
+    // =============================================
+    (function populateDepartments() {
+        const select = document.getElementById('department');
+        for (let i = 1; i <= 360; i++) {
+            const opt = document.createElement('option');
+            const num = String(i).padStart(2, '0');
+            opt.value = `Plastic Prof-${num}`;
+            opt.textContent = `Plastic Prof-${num}`;
+            select.appendChild(opt);
+        }
+    })();
 
-    // ============================================================
-    // ফিক্সড ডিপার্টমেন্ট ম্যাপ (আপনার দেওয়া তালিকা)
-    // ============================================================
-    const deptMap = {
-        'Plastic Prod-01': { ic: 'Mr. Atikur', totalMC: 38 },
-        'Plastic Prod-3.1': { ic: 'Mr.Shawan', totalMC: 61 },
-        'Plastic Prod-6.1': { ic: 'Mr. Hazrat', totalMC: 39 },
-        'Plastic Prod-6.2': { ic: 'Mr. Polash', totalMC: 59 },
-        'Plastic Prod-7.1': { ic: 'Mr. Manir', totalMC: 36 },
-        'Plastic Prod-7.2': { ic: 'Mr. Sayem', totalMC: 76 },
-        'Plastic Prod-7.3': { ic: 'Mr. Saddam', totalMC: 77 },
-        'Plastic Prod-7.4': { ic: 'Mr. Saddam', totalMC: 35 },
-        'Silicon Project': { ic: 'Mr. Mamun', totalMC: 9 },
-        'Packaging -01': { ic: 'Mr. Mahbub', totalMC: 0 },
-        // ✅ Packaging -02 তে বসের নাম বসিয়ে দেওয়া হলো
-        'Packaging -02': { ic: 'Mr. Rakib', totalMC: 0 },
-        'Packaging -03': { ic: 'Mr. Mahbub', totalMC: 0 },
-        'Plastic-Maintenance.': { ic: 'Mr. Maruf', totalMC: 0 },
-        'Tool Room Maintenance': { ic: 'Mr. Jabed', totalMC: 0 },
-        'Plastic Inventory & Delivery': { ic: 'Mr. Faysal', totalMC: 0 },
-        'Corporate sales Production.': { ic: 'Mr. Atikur', totalMC: 0 },
-        'Plastics-Recycle & Silo': { ic: 'Mr. Asim', totalMC: 0 },
-        'Product Development & Mold Change': { ic: 'Mr. Dibakor', totalMC: 0 },
-        'RIP-DPL-Factory Support': { ic: 'Mr. Zahid', totalMC: 0 },
-        'DPL-QA': { ic: 'Mr. Jabed', totalMC: 0 },
-        'RIP RFL Store': { ic: 'Mr. Mithun', totalMC: 0 }
+    const DEPARTMENT_MC = {
+        'Plastic Prod-3.1': 61, 'Plastic Prod-7.1': 36, 'Plastic Prod-7.2': 76,
+        'Plastic Prod-7.3': 77, 'Plastic Prod-7.4': 35,
+        'Corporate sales Production': 0, 'DPL-QA': 0, 'Plastic Inventory & Delivery': 0
     };
 
-    // ড্রপডাউনে ডিপার্টমেন্ট লোড
-    const deptSelect = document.getElementById('department');
-    Object.keys(deptMap).forEach(dept => {
-        const opt = document.createElement('option');
-        opt.value = dept;
-        opt.textContent = dept;
-        deptSelect.appendChild(opt);
+    document.getElementById('department').addEventListener('change', function() {
+        const dept = this.value;
+        const totalInput = document.getElementById('totalMC');
+        if (dept in DEPARTMENT_MC) {
+            totalInput.value = DEPARTMENT_MC[dept];
+            totalInput.readOnly = true;
+            totalInput.style.background = '#e9ecef';
+            totalInput.style.color = '#004085';
+        } else {
+            totalInput.value = '';
+            totalInput.readOnly = false;
+            totalInput.style.background = '#ffffff';
+            totalInput.style.color = '#000000';
+            totalInput.placeholder = 'সংখ্যা দিন';
+        }
+        document.getElementById('mcRunning').value = '';
+        document.getElementById('mcStopped').value = '';
+        document.getElementById('pctRunning').value = '';
+        document.getElementById('pctStopped').value = '';
     });
 
-    // এলিমেন্ট রেফারেন্স
-    const icInput = document.getElementById('icName');
-    const totalMCInput = document.getElementById('totalMC');
-    const mcRunning = document.getElementById('mcRunning');
-    const mcStopped = document.getElementById('mcStopped');
-    const pctRunning = document.getElementById('pctRunning');
-    const pctStopped = document.getElementById('pctStopped');
-
-    // ডিপার্টমেন্ট পরিবর্তনে IC ও Total MC সেট
-    deptSelect.addEventListener('change', function() {
-        const val = this.value;
-        if (val && deptMap[val]) {
-            icInput.value = deptMap[val].ic;
-            totalMCInput.value = deptMap[val].totalMC;
-        } else {
-            icInput.value = '';
-            totalMCInput.value = '';
-        }
-        calculateMachineStats();
-    });
-
-    // অটো ক্যালকুলেশন (Total MC 0 হলে 0% দেখাবে)
-    function calculateMachineStats() {
-        const total = parseFloat(totalMCInput.value) || 0;
-        const running = parseFloat(mcRunning.value) || 0;
-        let stopped = total - running;
-        if (stopped < 0) stopped = 0;
-        mcStopped.value = stopped;
-        
-        if (total > 0) {
-            pctRunning.value = ((running / total) * 100).toFixed(1) + '%';
-            pctStopped.value = ((stopped / total) * 100).toFixed(1) + '%';
-        } else {
-            // Total MC 0 হলে শতাংশ 0% দেখাবে
-            pctRunning.value = '0%';
-            pctStopped.value = '0%';
-        }
-    }
-    totalMCInput.addEventListener('change', calculateMachineStats);
-    mcRunning.addEventListener('input', calculateMachineStats);
-
-    // ============================================================
-    //  ডেটা লোড করা (GET)
-    // ============================================================
-    async function loadAllData() {
-        const tbody = document.getElementById('reportBody');
-        const thead = document.getElementById('reportHead');
-        const loading = document.getElementById('loadingMessage');
-        loading.style.display = 'block';
-
-        try {
-            const response = await fetch(SCRIPT_URL);
-            const result = await response.json();
-            loading.style.display = 'none';
-
-            if (result.error) {
-                alert('ডেটা লোডে সমস্যা: ' + result.error);
-                return;
-            }
-
-            const data = result.data || [];
-            document.getElementById('entryCount').innerText = data.length;
-
-            // হেডার তৈরি
-            if (data.length > 0 && thead.children.length === 0) {
-                const headers = ['SL', 'Date', 'Shift', 'Dept', 'IC', 'Total MC', 'Run', 'Stop', '% Run', '% Stop',
-                    'Total HR', 'Exp MC', 'Dom MC', 'Single', 'Double', 'No Demand', 'Prod IC', 'SIC',
-                    'MC Op', 'Pack Op', 'Foreman', 'Senior Op', 'Shrink', 'Print', 'Mold Change',
-                    'Mix/Rec', 'Sub Store', 'Inv Op', 'FG Del', 'Sharp', 'PSI', 'ERP',
-                    'Floor HK', 'Rework', 'Welding', 'HR Trans'
-                ];
-                let hhtml = '<tr>';
-                headers.forEach(h => hhtml += `<th>${h}</th>`);
-                hhtml += '</tr>';
-                thead.innerHTML = hhtml;
-            }
-
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="36" style="text-align:center; padding:30px; color:#94a3b8;">📭 এখনো কোনো ডেটা নেই।</td></tr>`;
-                return;
-            }
-
-            let html = '';
-            data.forEach((row, idx) => {
-                let runPct = parseFloat(row.pctRunning);
-                let badge = '';
-                if (runPct >= 80) badge = `<span class="badge bg-green">${row.pctRunning}</span>`;
-                else if (runPct >= 50) badge = `<span class="badge bg-yellow">${row.pctRunning}</span>`;
-                else badge = `<span class="badge bg-red">${row.pctRunning}</span>`;
-
-                html += `<tr>
-                    <td>${idx + 1}</td>
-                    <td>${row.entryDate || ''}</td>
-                    <td>${row.shift || ''}</td>
-                    <td>${row.department || ''}</td>
-                    <td>${row.icName || ''}</td>
-                    <td>${row.totalMC || 0}</td>
-                    <td>${row.mcRunning || 0}</td>
-                    <td>${row.mcStopped || 0}</td>
-                    <td>${badge}</td>
-                    <td>${row.pctStopped || '0%'}</td>
-                    <td>${row.totalHR || 0}</td>
-                    <td>${row.exportMC || 0}</td>
-                    <td>${row.domesticMC || 0}</td>
-                    <td>${row.singleMC || 0}</td>
-                    <td>${row.doubleMC || 0}</td>
-                    <td>${row.noDemand || 0}</td>
-                    <td>${row.prodIC || 0}</td>
-                    <td>${row.sic || 0}</td>
-                    <td>${row.mcOperator || 0}</td>
-                    <td>${row.packagingOperator || 0}</td>
-                    <td>${row.foreman || 0}</td>
-                    <td>${row.seniorOperator || 0}</td>
-                    <td>${row.shrinkOperator || 0}</td>
-                    <td>${row.printingOperator || 0}</td>
-                    <td>${row.moldChangeOperator || 0}</td>
-                    <td>${row.mixRecycle || 0}</td>
-                    <td>${row.subStore || 0}</td>
-                    <td>${row.inventoryOperator || 0}</td>
-                    <td>${row.fgDelivery || 0}</td>
-                    <td>${row.sharpTools || 0}</td>
-                    <td>${row.psi || 0}</td>
-                    <td>${row.erp || 0}</td>
-                    <td>${row.floorHousekeeping || 0}</td>
-                    <td>${row.rework || 0}</td>
-                    <td>${row.welding || 0}</td>
-                    <td>${row.hrTransfer || 0}</td>
-                </tr>`;
-            });
-            tbody.innerHTML = html;
-
-        } catch (err) {
-            loading.style.display = 'none';
-            alert('সার্ভারে কানেক্ট করতে পারেনি। ইন্টারনেট চেক করুন বা URL ঠিক আছে কিনা দেখুন।');
-            console.error(err);
-        }
-    }
-
-    // ============================================================
-    //  নতুন ডেটা জমা দেওয়া (POST) - Total MC 0 হলেও চলবে
-    // ============================================================
-    async function addEntry() {
-        const data = {
-            entryDate: document.getElementById('entryDate').value,
-            shift: document.getElementById('shift').value,
-            department: deptSelect.value,
-            icName: icInput.value,
-            totalMC: parseFloat(totalMCInput.value) || 0,
-            mcRunning: parseFloat(mcRunning.value) || 0,
-            mcStopped: parseFloat(mcStopped.value) || 0,
-            pctRunning: pctRunning.value || '0%',
-            pctStopped: pctStopped.value || '0%',
-            totalHR: parseFloat(document.getElementById('totalHR').value) || 0,
-            exportMC: parseFloat(document.getElementById('exportMC').value) || 0,
-            domesticMC: parseFloat(document.getElementById('domesticMC').value) || 0,
-            singleMC: parseFloat(document.getElementById('singleMC').value) || 0,
-            doubleMC: parseFloat(document.getElementById('doubleMC').value) || 0,
-            noDemand: parseFloat(document.getElementById('noDemand').value) || 0,
-            prodIC: parseFloat(document.getElementById('prodIC').value) || 0,
-            sic: parseFloat(document.getElementById('sic').value) || 0,
-            mcOperator: parseFloat(document.getElementById('mcOperator').value) || 0,
-            packagingOperator: parseFloat(document.getElementById('packagingOperator').value) || 0,
-            foreman: parseFloat(document.getElementById('foreman').value) || 0,
-            seniorOperator: parseFloat(document.getElementById('seniorOperator').value) || 0,
-            shrinkOperator: parseFloat(document.getElementById('shrinkOperator').value) || 0,
-            printingOperator: parseFloat(document.getElementById('printingOperator').value) || 0,
-            moldChangeOperator: parseFloat(document.getElementById('moldChangeOperator').value) || 0,
-            mixRecycle: parseFloat(document.getElementById('mixRecycle').value) || 0,
-            subStore: parseFloat(document.getElementById('subStore').value) || 0,
-            inventoryOperator: parseFloat(document.getElementById('inventoryOperator').value) || 0,
-            fgDelivery: parseFloat(document.getElementById('fgDelivery').value) || 0,
-            sharpTools: parseFloat(document.getElementById('sharpTools').value) || 0,
-            psi: parseFloat(document.getElementById('psi').value) || 0,
-            erp: parseFloat(document.getElementById('erp').value) || 0,
-            floorHousekeeping: parseFloat(document.getElementById('floorHousekeeping').value) || 0,
-            rework: parseFloat(document.getElementById('rework').value) || 0,
-            welding: parseFloat(document.getElementById('welding').value) || 0,
-            hrTransfer: parseFloat(document.getElementById('hrTransfer').value) || 0
-        };
-
-        // ভ্যালিডেশন (শুধু Date, Shift, Department চেক করা হচ্ছে, Total MC 0 হলেও চলবে)
-        if (!data.entryDate) { alert('দয়া করে তারিখ (Date) সিলেক্ট করুন!'); return; }
-        if (!data.shift) { alert('দয়া করে শিফট (Shift) সিলেক্ট করুন!'); return; }
-        if (!data.department) { alert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!'); return; }
-
-        const btn = document.getElementById('addBtn');
-        btn.disabled = true;
-        btn.textContent = '⏳ জমা হচ্ছে...';
-
-        try {
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            alert('✅ ডেটা সফলভাবে জমা হয়েছে! রিপোর্ট রিফ্রেশ হচ্ছে...');
-            clearForm();
-            await loadAllData();
-
-        } catch (err) {
-            alert('❌ জমা দিতে সমস্যা হয়েছে। ইন্টারনেট কানেকশন চেক করুন।');
-            console.error(err);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '➕ এন্ট্রি যোগ করুন (শেয়ার)';
-        }
-    }
-
-    function clearForm() {
-        document.getElementById('entryForm').reset();
-        mcStopped.value = '';
-        pctRunning.value = '0%';
-        pctStopped.value = '0%';
-        icInput.value = '';
-        totalMCInput.value = '';
-        document.querySelectorAll('#entryForm input[type="number"]').forEach(inp => {
-            if (inp.id !== 'totalMC' && inp.id !== 'mcRunning' && inp.id !== 'mcStopped') {
-                inp.value = '';
-            }
-        });
-        deptSelect.dispatchEvent(new Event('change'));
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('entryDate').value = today;
-    }
-
-    // ============================================================
-    //  এক্সেল ডাউনলোড (টেবিল থেকে)
-    // ============================================================
-    function exportToExcel() {
-        const table = document.getElementById('reportTable');
-        if (table.rows.length <= 1) {
-            alert('রিপোর্ট খালি! প্রথমে কিছু ডেটা যোগ করুন।');
+    function autoCalculate() {
+        const total = parseInt(document.getElementById('totalMC').value) || 0;
+        let running = parseInt(document.getElementById('mcRunning').value) || 0;
+        let stopped = parseInt(document.getElementById('mcStopped').value) || 0;
+        if (total === 0) {
+            document.getElementById('pctRunning').value = '0%';
+            document.getElementById('pctStopped').value = '0%';
             return;
         }
-        const wb = XLSX.utils.table_to_book(table, { sheet: "Report" });
-        XLSX.writeFile(wb, `Shared_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+        const active = document.activeElement;
+        const rInput = document.getElementById('mcRunning');
+        const sInput = document.getElementById('mcStopped');
+        if (active === rInput) {
+            if (running > total) running = total;
+            document.getElementById('mcRunning').value = running;
+            stopped = total - running;
+            document.getElementById('mcStopped').value = stopped;
+        } else if (active === sInput) {
+            if (stopped > total) stopped = total;
+            document.getElementById('mcStopped').value = stopped;
+            running = total - stopped;
+            document.getElementById('mcRunning').value = running;
+        } else {
+            if (running + stopped !== total && (running > 0 || stopped > 0)) {
+                if (running > 0 && running <= total) {
+                    stopped = total - running;
+                    document.getElementById('mcStopped').value = stopped;
+                } else if (stopped > 0 && stopped <= total) {
+                    running = total - stopped;
+                    document.getElementById('mcRunning').value = running;
+                }
+            }
+        }
+        let pctR = 0, pctS = 0;
+        if (total > 0) {
+            pctR = (running / total) * 100;
+            pctS = (stopped / total) * 100;
+        }
+        document.getElementById('pctRunning').value = pctR.toFixed(2) + '%';
+        document.getElementById('pctStopped').value = pctS.toFixed(2) + '%';
     }
 
-    // ============================================================
-    //  ইভেন্ট লিসেনার
-    // ============================================================
-    document.getElementById('addBtn').addEventListener('click', addEntry);
-    document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
-    document.getElementById('resetBtn').addEventListener('click', function(e) {
+    // =============================================
+    // উৎপাদন বিশ্লেষণ (টার্গেট CTN)
+    // =============================================
+    function calcProduction() {
+        const hr = parseInt(document.getElementById('prodHR').value) || 0;
+        const achieved = parseInt(document.getElementById('achievedCTN').value) || 0;
+        const targetPerHr = 45;
+        const target = hr * targetPerHr;
+        document.getElementById('targetCTN').value = target;
+
+        let perHr = 0;
+        let util = 0;
+        if (hr > 0) {
+            perHr = achieved / hr;
+            if (target > 0) {
+                util = (achieved / target) * 100;
+            }
+        }
+        document.getElementById('perHrCTN').value = perHr.toFixed(2);
+        document.getElementById('utilizationPct').value = util.toFixed(2) + '%';
+    }
+
+    // =============================================
+    // ফর্ম সাবমিট
+    // =============================================
+    document.getElementById('entryDate').valueAsDate = new Date();
+
+    document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        if (confirm('ফর্ম রিসেট করবেন? (রিপোর্ট ডেটা থাকবে)')) {
-            clearForm();
+        const status = document.getElementById('status');
+        status.className = '';
+        status.innerText = '⏳ সেভ হচ্ছে...';
+        const getVal = (id) => document.getElementById(id).value;
+        
+        const payload = {
+            entryDate: getVal('entryDate'),
+            shift: getVal('shift'),
+            department: getVal('department'),
+            icName: getVal('icName'),
+            totalMC: getVal('totalMC'),
+            mcRunning: getVal('mcRunning'),
+            mcStopped: getVal('mcStopped'),
+            pctRunning: getVal('pctRunning'),
+            pctStopped: getVal('pctStopped'),
+            // CTN
+            prodHR: getVal('prodHR'),
+            targetCTN: getVal('targetCTN'),
+            achievedCTN: getVal('achievedCTN'),
+            perHrCTN: getVal('perHrCTN'),
+            utilizationPct: getVal('utilizationPct'),
+            // Cause of Stop (১০টি)
+            mpShort: getVal('mpShort'),
+            moldProblem: getVal('moldProblem'),
+            moldChange: getVal('moldChange'),
+            underSample: getVal('underSample'),
+            mcProblem: getVal('mcProblem'),
+            preventiveMaintenance: getVal('preventiveMaintenance'),
+            noDemandQty: getVal('noDemandQty'),
+            materialMBShortage: getVal('materialMBShortage'),
+            overStockWIP: getVal('overStockWIP'),
+            accessoriesShort: getVal('accessoriesShort'),
+            // HR
+            totalHR: getVal('totalHR'),
+            leaveEmployee: getVal('leaveEmployee'),
+            absentEmployee: getVal('absentEmployee'),
+            // Machine Type
+            exportMC: getVal('exportMC'),
+            domesticMC: getVal('domesticMC'),
+            singleMC: getVal('singleMC'),
+            doubleMC: getVal('doubleMC'),
+            noDemand: getVal('noDemand'),
+            // Operators
+            prodIC: getVal('prodIC'),
+            sic: getVal('sic'),
+            mcOperator: getVal('mcOperator'),
+            packagingOperator: getVal('packagingOperator'),
+            foreman: getVal('foreman'),
+            seniorOperator: getVal('seniorOperator'),
+            shrinkOperator: getVal('shrinkOperator'),
+            printingOperator: getVal('printingOperator'),
+            moldChangeOperator: getVal('moldChangeOperator'),
+            mixRecycle: getVal('mixRecycle'),
+            subStore: getVal('subStore'),
+            inventoryOperator: getVal('inventoryOperator'),
+            fgDelivery: getVal('fgDelivery'),
+            sharpTools: getVal('sharpTools'),
+            psi: getVal('psi'),
+            erp: getVal('erp'),
+            floorHousekeeping: getVal('floorHousekeeping'),
+            rework: getVal('rework'),
+            welding: getVal('welding'),
+            hrTransfer: getVal('hrTransfer')
+        };
+
+        try {
+            // 👇 আপনার Apps Script Web App URL বসান (এটা আগের মতোই থাকবে)
+            const response = await fetch('YOUR_APPS_SCRIPT_URL', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                status.className = 'success';
+                status.innerText = '✅ ডেটা সফলভাবে সেভ হয়েছে!';
+                document.getElementById('mcRunning').value = '';
+                document.getElementById('mcStopped').value = '';
+                document.getElementById('pctRunning').value = '';
+                document.getElementById('pctStopped').value = '';
+            } else {
+                throw new Error(result.error || 'Unknown error');
+            }
+        } catch (error) {
+            status.className = 'error';
+            status.innerText = '❌ সেভ করতে ব্যর্থ! URL বা CORS সেটিং চেক করুন।';
+            console.error(error);
         }
     });
-
-    // পেজ লোড হলে আজকের তারিখ সেট ও ডেটা লোড
-    window.onload = function() {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('entryDate').value = today;
-        loadAllData();
-        calculateMachineStats();
-    };
 </script>
 </body>
 </html>
