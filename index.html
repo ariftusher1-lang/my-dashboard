@@ -40,17 +40,11 @@
                 <div><label>ডিপার্টমেন্ট</label>
                     <select id="department" required>
                         <option value="">-- সিলেক্ট করুন --</option>
-                        <option value="Plastic Prod-3.1">Plastic Prod-3.1</option>
-                        <option value="Plastic Prod-7.1">Plastic Prod-7.1</option>
-                        <option value="Plastic Prod-7.2">Plastic Prod-7.2</option>
-                        <option value="Plastic Prod-7.3">Plastic Prod-7.3</option>
-                        <option value="Plastic Prod-7.4">Plastic Prod-7.4</option>
-                        <option value="Corporate sales Production">Corporate sales Production</option>
-                        <option value="DPL-QA">DPL-QA</option>
-                        <option value="Plastic Inventory & Delivery">Plastic Inventory & Delivery</option>
                     </select>
                 </div>
-                <div><label>আইসি নাম</label><input type="text" id="icName" placeholder="Mr. Manir" required></div>
+                <div><label>আইসি নাম</label>
+                    <input type="text" id="icName" placeholder="ডিপার্টমেন্ট সিলেক্ট করলে অটো আসবে" required>
+                </div>
             </div>
         </div>
 
@@ -150,32 +144,74 @@
 </div>
 
 <script>
-    // =============================================
-    // ডিপার্টমেন্ট লিস্ট (Plastic Prof-01 থেকে 360)
-    // =============================================
+    // ============================================================
+    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং (আপনার দেওয়া লিস্ট)
+    // ============================================================
+    const DEPARTMENT_IC_MAP = {
+        'RIP> DPL> Plastic-3': 'Mr. Shawon',
+        'RIP> DPL> Plastic-6.1': 'Mr. Hazrat',
+        'RIP> DPL> Plastic-6.2': 'Mr. Polash',
+        'RIP> DPL> Plastic-7.1': 'Mr. Monir',
+        'RIP> DPL> Plastic-7.2': 'Mr. Sayem',
+        'RIP> DPL> Plastic-7.3': 'Mr. Saddam',
+        'RIP> DPL> Plastic-7.4': 'Mr. Saddam',
+        'RIP> DPL> Plastic-1': 'Mr. Aqtiqur Rahman',
+        'Plastic Packaging-01': 'Mr, Mahbub',
+        'Plastic Packaging-02': 'Mr, Rakib',
+        'Plastic Packaging-03': 'Mr, Mahbub'
+    };
+
+    // ============================================================
+    // ২. সব ডিপার্টমেন্ট ড্রপডাউনে যোগ করা (IC ম্যাপ + Prof 01-360)
+    // ============================================================
     (function populateDepartments() {
         const select = document.getElementById('department');
+        // ক. ইউজারের দেওয়া ডিপার্টমেন্ট
+        Object.keys(DEPARTMENT_IC_MAP).forEach(key => {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = key;
+            select.appendChild(opt);
+        });
+        // খ. Plastic Prof-01 to 360
         for (let i = 1; i <= 360; i++) {
             const opt = document.createElement('option');
-            const num = String(i).padStart(2, '0');
-            opt.value = `Plastic Prof-${num}`;
-            opt.textContent = `Plastic Prof-${num}`;
+            opt.value = `Plastic Prof-${String(i).padStart(2, '0')}`;
+            opt.textContent = `Plastic Prof-${String(i).padStart(2, '0')}`;
             select.appendChild(opt);
         }
     })();
 
-    // =============================================
-    // পরিচিত ডিপার্টমেন্টের ফিক্সড MC
-    // =============================================
+    // ============================================================
+    // ৩. পরিচিত ডিপার্টমেন্টের ফিক্সড MC
+    // ============================================================
     const DEPARTMENT_MC = {
-        'Plastic Prod-3.1': 61, 'Plastic Prod-7.1': 36, 'Plastic Prod-7.2': 76,
-        'Plastic Prod-7.3': 77, 'Plastic Prod-7.4': 35,
-        'Corporate sales Production': 0, 'DPL-QA': 0, 'Plastic Inventory & Delivery': 0
+        'Plastic Prod-3.1': 61,
+        'Plastic Prod-7.1': 36,
+        'Plastic Prod-7.2': 76,
+        'Plastic Prod-7.3': 77,
+        'Plastic Prod-7.4': 35,
+        'Corporate sales Production': 0,
+        'DPL-QA': 0,
+        'Plastic Inventory & Delivery': 0
     };
 
+    // ============================================================
+    // ৪. ডিপার্টমেন্ট চেইঞ্জ হলে IC Name + MC সেট করা
+    // ============================================================
     document.getElementById('department').addEventListener('change', function() {
         const dept = this.value;
+        const icInput = document.getElementById('icName');
         const totalInput = document.getElementById('totalMC');
+
+        // আইসি নাম অটো
+        if (DEPARTMENT_IC_MAP[dept]) {
+            icInput.value = DEPARTMENT_IC_MAP[dept];
+        } else {
+            icInput.value = ''; // ইউজার নিজে লিখবে
+        }
+
+        // Total MC সেট
         if (dept in DEPARTMENT_MC) {
             totalInput.value = DEPARTMENT_MC[dept];
             totalInput.readOnly = true;
@@ -188,15 +224,17 @@
             totalInput.style.color = '#000000';
             totalInput.placeholder = 'সংখ্যা দিন';
         }
+
+        // রানিং/স্টপড রিসেট
         document.getElementById('mcRunning').value = '';
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
         document.getElementById('pctStopped').value = '';
     });
 
-    // =============================================
-    // অটো ক্যালকুলেশন (Running/Stopped & %)
-    // =============================================
+    // ============================================================
+    // ৫. মেশিন রান/স্টপ অটো ক্যালকুলেশন
+    // ============================================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
         let running = parseInt(document.getElementById('mcRunning').value) || 0;
@@ -239,9 +277,9 @@
         document.getElementById('pctStopped').value = pctS.toFixed(2) + '%';
     }
 
-    // =============================================
-    // ফর্ম সাবমিট (ডেটা পাঠানোর কোড)
-    // =============================================
+    // ============================================================
+    // ৬. ফর্ম সাবমিট
+    // ============================================================
     document.getElementById('entryDate').valueAsDate = new Date();
 
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
@@ -312,8 +350,10 @@
         };
 
         try {
-            // 👇 আপনার Apps Script Web App URL বসান
-            const response = await fetch('YOUR_APPS_SCRIPT_URL', {
+            // ======================================================
+            // 🔥 গুরুত্বপূর্ণ: নিচের URL-টি আপনার Apps Script Web App URL দিয়ে পরিবর্তন করুন
+            // ======================================================
+            const response = await fetch('https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
