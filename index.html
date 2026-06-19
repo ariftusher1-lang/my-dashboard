@@ -15,6 +15,13 @@
         label { font-weight: bold; display: block; font-size: 13px; margin-bottom: 4px; }
         input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
         input:disabled { background: #e9ecef; color: #495057; }
+        /* প্লেসহোল্ডার লাল ও ছোট */
+        input:not([readonly])::placeholder {
+            color: red;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 1; /* Firefox এর জন্য */
+        }
         button { background: #28a745; color: white; border: none; padding: 14px; font-size: 18px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 25px; font-weight: bold; }
         button:hover { background: #218838; }
         #status { margin-top: 15px; padding: 10px; border-radius: 6px; text-align: center; }
@@ -22,6 +29,8 @@
         .error { background: #f8d7da; color: #721c24; }
         .flex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
         .highlight { background: #fff3cd; border-left: 3px solid #ffc107; }
+        .qty-placeholder { display: flex; align-items: center; justify-content: center; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 8px; min-width: 150px; height: 70px; }
+        .qty-placeholder span { color: #d32f2f; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -53,13 +62,14 @@
             <h3>⚙️ মেশিনের ডেটা (অটো ক্যালকুলেশন)</h3>
             <div class="row">
                 <div><label>Total MC</label>
-                    <input type="number" id="totalMC" required placeholder="সংখ্যা দিন">
+                    <!-- Total MC: কোনো ডিফল্ট 0 নেই, প্লেসহোল্ডার "Typ QTY" -->
+                    <input type="number" id="totalMC" required placeholder="Typ QTY">
                 </div>
                 <div><label>Target MC Run (Running)</label>
-                    <input type="number" id="mcRunning" required placeholder="সংখ্যা দিন" oninput="autoCalculate()">
+                    <input type="number" id="mcRunning" required placeholder="Typ QTY" oninput="autoCalculate()">
                 </div>
                 <div><label>MC Will off (Stopped)</label>
-                    <input type="number" id="mcStopped" required placeholder="সংখ্যা দিন" oninput="autoCalculate()">
+                    <input type="number" id="mcStopped" required placeholder="Typ QTY" oninput="autoCalculate()">
                 </div>
             </div>
             <div class="row">
@@ -72,69 +82,72 @@
             </div>
         </div>
 
-        <!-- কারণ (Cause of Stop) -->
+        <!-- কারণ (Cause of Stop) – সব ফিল্ডে ডিফল্ট ০ বাদ, প্লেসহোল্ডার "Typ QTY" -->
         <div class="section">
             <h3>⛔ স্টপের কারণ (Cause of Stop - QTY)</h3>
             <div class="flex-grid">
-                <div><label>MP Short</label><input type="number" id="mpShort" value="0"></div>
-                <div><label>Mold Prob</label><input type="number" id="moldProblem" value="0"></div>
-                <div><label>Mold Change</label><input type="number" id="moldChange" value="0"></div>
-                <div><label>Sample</label><input type="number" id="underSample" value="0"></div>
-                <div><label>MC prob</label><input type="number" id="mcProblem" value="0"></div>
-                <div><label>Preventive</label><input type="number" id="preventiveMaintenance" value="0"></div>
-                <div><label>No demand</label><input type="number" id="noDemandQty" value="0"></div>
-                <div><label>Material short & MB</label><input type="number" id="materialMBShortage" value="0"></div>
-                <div><label>Over Stock</label><input type="number" id="overStockWIP" value="0"></div>
-                <div><label>Acc short</label><input type="number" id="accessoriesShort" value="0"></div>
+                <div><label>MP Short</label><input type="number" id="mpShort" placeholder="Typ QTY"></div>
+                <div><label>Mold Prob</label><input type="number" id="moldProblem" placeholder="Typ QTY"></div>
+                <div><label>Mold Change</label><input type="number" id="moldChange" placeholder="Typ QTY"></div>
+                <div><label>Sample</label><input type="number" id="underSample" placeholder="Typ QTY"></div>
+                <div><label>MC prob</label><input type="number" id="mcProblem" placeholder="Typ QTY"></div>
+                <div><label>Preventive</label><input type="number" id="preventiveMaintenance" placeholder="Typ QTY"></div>
+                <div><label>No demand</label><input type="number" id="noDemandQty" placeholder="Typ QTY"></div>
+                <div><label>Material short & MB</label><input type="number" id="materialMBShortage" placeholder="Typ QTY"></div>
+                <div><label>Over Stock</label><input type="number" id="overStockWIP" placeholder="Typ QTY"></div>
+                <div><label>Acc short</label><input type="number" id="accessoriesShort" placeholder="Typ QTY"></div>
             </div>
         </div>
 
-        <!-- এইচআর ও ম্যানপাওয়ার -->
+        <!-- এইচআর ও ম্যানপাওয়ার – ডিফল্ট ০ বাদ, প্লেসহোল্ডার -->
         <div class="section">
             <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
             <div class="row">
-                <div><label>Total MP</label><input type="number" id="totalHR" required></div>
-                <div><label>Leave</label><input type="number" id="leaveEmployee" value="0"></div>
-                <div><label>Absent</label><input type="number" id="absentEmployee" value="0"></div>
+                <div><label>Total MP</label><input type="number" id="totalHR" required placeholder="Typ QTY"></div>
+                <div><label>Leave</label><input type="number" id="leaveEmployee" placeholder="Typ QTY"></div>
+                <div><label>Absent</label><input type="number" id="absentEmployee" placeholder="Typ QTY"></div>
             </div>
         </div>
 
-        <!-- মেশিন টাইপ -->
+        <!-- মেশিন টাইপ – No Demand বাদ, বাকিগুলোতে প্লেসহোল্ডার -->
         <div class="section">
             <h3>🏭 মেশিন টাইপ (Machine Type)</h3>
             <div class="row">
-                <div><label>Export MC</label><input type="number" id="exportMC" value="0"></div>
-                <div><label>Domestic MC</label><input type="number" id="domesticMC" value="0"></div>
-                <div><label>Single MC</label><input type="number" id="singleMC" value="0"></div>
-                <div><label>Double MC</label><input type="number" id="doubleMC" value="0"></div>
-                <div><label>No Demand (Manpower)</label><input type="number" id="noDemand" value="0"></div>
+                <div><label>Export MC</label><input type="number" id="exportMC" placeholder="Typ QTY"></div>
+                <div><label>Domestic MC</label><input type="number" id="domesticMC" placeholder="Typ QTY"></div>
+                <div><label>Single MC</label><input type="number" id="singleMC" placeholder="Typ QTY"></div>
+                <div><label>Double MC</label><input type="number" id="doubleMC" placeholder="Typ QTY"></div>
+                <!-- No Demand (Manpower) সরিয়ে লাল টেক্সট -->
+                <div class="qty-placeholder">
+                    <span>Typ QTY</span>
+                </div>
             </div>
         </div>
 
-        <!-- অপারেটর ও স্টাফ -->
+        <!-- অপারেটর ও স্টাফ – সব ফিল্ডে ডিফল্ট ০ বাদ, প্লেসহোল্ডার -->
         <div class="section">
             <h3>👨‍🔧 অপারেটর ও স্টাফ</h3>
             <div class="flex-grid">
-                <div><label>Prod IC</label><input type="number" id="prodIC" value="0"></div>
-                <div><label>SIC</label><input type="number" id="sic" value="0"></div>
-                <div><label>MC Operator</label><input type="number" id="mcOperator" value="0"></div>
-                <div><label>Packaging Op</label><input type="number" id="packagingOperator" value="0"></div>
-                <div><label>Foreman</label><input type="number" id="foreman" value="0"></div>
-                <div><label>Senior Operator</label><input type="number" id="seniorOperator" value="0"></div>
-                <div><label>Shrink-wrap Op</label><input type="number" id="shrinkOperator" value="0"></div>
-                <div><label>Printing Op</label><input type="number" id="printingOperator" value="0"></div>
-                <div><label>Mold Change Op</label><input type="number" id="moldChangeOperator" value="0"></div>
-                <div><label>Mix/Recycle/Crush</label><input type="number" id="mixRecycle" value="0"></div>
-                <div><label>Sub Store</label><input type="number" id="subStore" value="0"></div>
-                <div><label>Inventory Op</label><input type="number" id="inventoryOperator" value="0"></div>
-                <div><label>FG Delivery</label><input type="number" id="fgDelivery" value="0"></div>
-                <div><label>Sharp Tools</label><input type="number" id="sharpTools" value="0"></div>
-                <div><label>PSI</label><input type="number" id="psi" value="0"></div>
-                <div><label>ERP</label><input type="number" id="erp" value="0"></div>
-                <div><label>Floor Housekeeping</label><input type="number" id="floorHousekeeping" value="0"></div>
-                <div><label>Rework</label><input type="number" id="rework" value="0"></div>
-                <div><label>Welding</label><input type="number" id="welding" value="0"></div>
-                <div><label>HR Transfer</label><input type="number" id="hrTransfer" value="0"></div>
+                <div><label>Prod IC</label><input type="number" id="prodIC" placeholder="Typ QTY"></div>
+                <div><label>SIC</label><input type="number" id="sic" placeholder="Typ QTY"></div>
+                <div><label>MC Operator</label><input type="number" id="mcOperator" placeholder="Typ QTY"></div>
+                <div><label>Packaging Op</label><input type="number" id="packagingOperator" placeholder="Typ QTY"></div>
+                <div><label>Foreman</label><input type="number" id="foreman" placeholder="Typ QTY"></div>
+                <div><label>Senior Operator</label><input type="number" id="seniorOperator" placeholder="Typ QTY"></div>
+                <div><label>Shrink-wrap Op</label><input type="number" id="shrinkOperator" placeholder="Typ QTY"></div>
+                <div><label>Printing Op</label><input type="number" id="printingOperator" placeholder="Typ QTY"></div>
+                <div><label>Mold Change Op</label><input type="number" id="moldChangeOperator" placeholder="Typ QTY"></div>
+                <div><label>Mix/Recycle/Crush</label><input type="number" id="mixRecycle" placeholder="Typ QTY"></div>
+                <div><label>Sub Store</label><input type="number" id="subStore" placeholder="Typ QTY"></div>
+                <div><label>Inventory Op</label><input type="number" id="inventoryOperator" placeholder="Typ QTY"></div>
+                <div><label>FG Delivery</label><input type="number" id="fgDelivery" placeholder="Typ QTY"></div>
+                <div><label>Sharp Tools</label><input type="number" id="sharpTools" placeholder="Typ QTY"></div>
+                <div><label>PSI</label><input type="number" id="psi" placeholder="Typ QTY"></div>
+                <div><label>ERP</label><input type="number" id="erp" placeholder="Typ QTY"></div>
+                <div><label>Floor Housekeeping</label><input type="number" id="floorHousekeeping" placeholder="Typ QTY"></div>
+                <div><label>Rework</label><input type="number" id="rework" placeholder="Typ QTY"></div>
+                <div><label>Welding</label><input type="number" id="welding" placeholder="Typ QTY"></div>
+                <div><label>HR Transfer</label><input type="number" id="hrTransfer" placeholder="Typ QTY"></div>
             </div>
         </div>
 
@@ -167,12 +180,11 @@
     };
 
     // ============================================================
-    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC ম্যাপিং (RIP> DPL>)
-    //    👇 এখন প্রতিটি ডিপার্টমেন্টের MC সেট করা আছে
+    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC ম্যাপিং
     // ============================================================
     const DEPARTMENT_MC = {
         'RIP> DPL> Plastic-3': 61,
-        'RIP> DPL> Plastic-6.1': 0,   // 0 মানে ইউজার নিজে টাইপ করবে
+        'RIP> DPL> Plastic-6.1': 0,
         'RIP> DPL> Plastic-6.2': 0,
         'RIP> DPL> Plastic-7.1': 36,
         'RIP> DPL> Plastic-7.2': 76,
@@ -182,7 +194,6 @@
         'Plastic Packaging-01': 0,
         'Plastic Packaging-02': 0,
         'Plastic Packaging-03': 0,
-        // পুরোনো নামগুলোও রেখেছি (যদি ব্যবহার হয়)
         'Plastic Prod-3.1': 61,
         'Plastic Prod-7.1': 36,
         'Plastic Prod-7.2': 76,
@@ -220,14 +231,12 @@
         const icInput = document.getElementById('icName');
         const totalInput = document.getElementById('totalMC');
 
-        // আইসি নাম অটো
         if (DEPARTMENT_IC_MAP[dept]) {
             icInput.value = DEPARTMENT_IC_MAP[dept];
         } else {
             icInput.value = '';
         }
 
-        // Total MC অটো
         if (dept in DEPARTMENT_MC) {
             const mcVal = DEPARTMENT_MC[dept];
             if (mcVal > 0) {
@@ -240,17 +249,16 @@
                 totalInput.readOnly = false;
                 totalInput.style.background = '#ffffff';
                 totalInput.style.color = '#000000';
-                totalInput.placeholder = 'সংখ্যা দিন';
+                totalInput.placeholder = 'Typ QTY'; // প্লেসহোল্ডার থাকবে
             }
         } else {
             totalInput.value = '';
             totalInput.readOnly = false;
             totalInput.style.background = '#ffffff';
             totalInput.style.color = '#000000';
-            totalInput.placeholder = 'সংখ্যা দিন';
+            totalInput.placeholder = 'Typ QTY';
         }
 
-        // রানিং/স্টপড রিসেট
         document.getElementById('mcRunning').value = '';
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
@@ -303,7 +311,7 @@
     }
 
     // ============================================================
-    // ৬. ফর্ম সাবমিট (CORS সমাধান)
+    // ৬. ফর্ম সাবমিট – খালি ফিল্ডের জন্য ০ পাঠানো হচ্ছে
     // ============================================================
     document.getElementById('entryDate').valueAsDate = new Date();
 
@@ -313,60 +321,62 @@
         status.className = '';
         status.innerText = '⏳ সেভ হচ্ছে...';
         const getVal = (id) => document.getElementById(id).value;
+        // সংখ্যার জন্য ডিফল্ট ০
+        const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
         
         const payload = {
             entryDate: getVal('entryDate'),
             shift: getVal('shift'),
             department: getVal('department'),
             icName: getVal('icName'),
-            totalMC: getVal('totalMC'),
-            mcRunning: getVal('mcRunning'),
-            mcStopped: getVal('mcStopped'),
-            pctRunning: getVal('pctRunning'),
-            pctStopped: getVal('pctStopped'),
+            totalMC: getNum('totalMC'),
+            mcRunning: getNum('mcRunning'),
+            mcStopped: getNum('mcStopped'),
+            pctRunning: getVal('pctRunning') || '0%',
+            pctStopped: getVal('pctStopped') || '0%',
             prodHR: '0',
             targetCTN: '0',
             achievedCTN: '0',
             perHrCTN: '0',
             utilizationPct: '0%',
-            mpShort: getVal('mpShort'),
-            moldProblem: getVal('moldProblem'),
-            moldChange: getVal('moldChange'),
-            underSample: getVal('underSample'),
-            mcProblem: getVal('mcProblem'),
-            preventiveMaintenance: getVal('preventiveMaintenance'),
-            noDemandQty: getVal('noDemandQty'),
-            materialMBShortage: getVal('materialMBShortage'),
-            overStockWIP: getVal('overStockWIP'),
-            accessoriesShort: getVal('accessoriesShort'),
-            totalHR: getVal('totalHR'),
-            leaveEmployee: getVal('leaveEmployee'),
-            absentEmployee: getVal('absentEmployee'),
-            exportMC: getVal('exportMC'),
-            domesticMC: getVal('domesticMC'),
-            singleMC: getVal('singleMC'),
-            doubleMC: getVal('doubleMC'),
-            noDemand: getVal('noDemand'),
-            prodIC: getVal('prodIC'),
-            sic: getVal('sic'),
-            mcOperator: getVal('mcOperator'),
-            packagingOperator: getVal('packagingOperator'),
-            foreman: getVal('foreman'),
-            seniorOperator: getVal('seniorOperator'),
-            shrinkOperator: getVal('shrinkOperator'),
-            printingOperator: getVal('printingOperator'),
-            moldChangeOperator: getVal('moldChangeOperator'),
-            mixRecycle: getVal('mixRecycle'),
-            subStore: getVal('subStore'),
-            inventoryOperator: getVal('inventoryOperator'),
-            fgDelivery: getVal('fgDelivery'),
-            sharpTools: getVal('sharpTools'),
-            psi: getVal('psi'),
-            erp: getVal('erp'),
-            floorHousekeeping: getVal('floorHousekeeping'),
-            rework: getVal('rework'),
-            welding: getVal('welding'),
-            hrTransfer: getVal('hrTransfer')
+            mpShort: getNum('mpShort'),
+            moldProblem: getNum('moldProblem'),
+            moldChange: getNum('moldChange'),
+            underSample: getNum('underSample'),
+            mcProblem: getNum('mcProblem'),
+            preventiveMaintenance: getNum('preventiveMaintenance'),
+            noDemandQty: getNum('noDemandQty'),
+            materialMBShortage: getNum('materialMBShortage'),
+            overStockWIP: getNum('overStockWIP'),
+            accessoriesShort: getNum('accessoriesShort'),
+            totalHR: getNum('totalHR'),
+            leaveEmployee: getNum('leaveEmployee'),
+            absentEmployee: getNum('absentEmployee'),
+            exportMC: getNum('exportMC'),
+            domesticMC: getNum('domesticMC'),
+            singleMC: getNum('singleMC'),
+            doubleMC: getNum('doubleMC'),
+            noDemand: '0', // UI থেকে সরানো হয়েছে, 0 পাঠাচ্ছি
+            prodIC: getNum('prodIC'),
+            sic: getNum('sic'),
+            mcOperator: getNum('mcOperator'),
+            packagingOperator: getNum('packagingOperator'),
+            foreman: getNum('foreman'),
+            seniorOperator: getNum('seniorOperator'),
+            shrinkOperator: getNum('shrinkOperator'),
+            printingOperator: getNum('printingOperator'),
+            moldChangeOperator: getNum('moldChangeOperator'),
+            mixRecycle: getNum('mixRecycle'),
+            subStore: getNum('subStore'),
+            inventoryOperator: getNum('inventoryOperator'),
+            fgDelivery: getNum('fgDelivery'),
+            sharpTools: getNum('sharpTools'),
+            psi: getNum('psi'),
+            erp: getNum('erp'),
+            floorHousekeeping: getNum('floorHousekeeping'),
+            rework: getNum('rework'),
+            welding: getNum('welding'),
+            hrTransfer: getNum('hrTransfer')
         };
 
         try {
@@ -380,6 +390,7 @@
             status.className = 'success';
             status.innerText = '✅ ডেটা পাঠানো হয়েছে! Google Sheet চেক করুন।';
             
+            // ফর্ম রিসেট (কিন্তু প্লেসহোল্ডার থাকবে)
             document.getElementById('mcRunning').value = '';
             document.getElementById('mcStopped').value = '';
             document.getElementById('pctRunning').value = '';
