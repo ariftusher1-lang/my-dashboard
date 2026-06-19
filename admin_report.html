@@ -84,7 +84,7 @@
 
     <div id="summaryHeader" class="summary-header">📌 বর্তমান তারিখ: -- | শিফট: --</div>
 
-    <!-- ======== Saifuddin Table (আপডেটেড) ======== -->
+    <!-- ======== Saifuddin Table ======== -->
     <div class="section-title clearfix">
         <span class="saifuddin-title">📊 Summery Table For Mr. Saifuddin</span>
         <button class="excel-btn" onclick="downloadSaifuddinExcel()" style="float:right;">⬇️ Excel ডাউনলোড করুন</button>
@@ -140,7 +140,7 @@
         { sn: 2, name: 'RIP> DPL> Plastic-6.1' },
         { sn: 3, name: 'RIP> DPL> Plastic-6.2' },
         { sn: 4, name: 'RIP> DPL> Plastic-7.1' },
-        { sn: 5, name: 'RIP> DPL> Plastic-7.2' },   // 👈 নতুন যোগ
+        { sn: 5, name: 'RIP> DPL> Plastic-7.2' },
         { sn: 6, name: 'RIP> DPL> Plastic-7.3' },
         { sn: 7, name: 'RIP> DPL> Plastic-7.4' },
         { sn: 8, name: 'RIP> DPL> Plastic-1' },
@@ -158,13 +158,12 @@
         { sn: 22, name: 'RIP RFL Store' }
     ];
 
-    // ডিপার্টমেন্ট ম্যাপিং (এখন "RIP> DPL>" ফরম্যাটে)
     const DEPT_MAP = {
         'RIP> DPL> Plastic-3': ['RIP> DPL> Plastic-3', 'Plastic Prod-3.1'],
         'RIP> DPL> Plastic-6.1': ['RIP> DPL> Plastic-6.1'],
         'RIP> DPL> Plastic-6.2': ['RIP> DPL> Plastic-6.2'],
         'RIP> DPL> Plastic-7.1': ['RIP> DPL> Plastic-7.1', 'Plastic Prod-7.1'],
-        'RIP> DPL> Plastic-7.2': ['RIP> DPL> Plastic-7.2', 'Plastic Prod-7.2'],  // 👈 নতুন যোগ
+        'RIP> DPL> Plastic-7.2': ['RIP> DPL> Plastic-7.2', 'Plastic Prod-7.2'],
         'RIP> DPL> Plastic-7.3': ['RIP> DPL> Plastic-7.3', 'Plastic Prod-7.3'],
         'RIP> DPL> Plastic-7.4': ['RIP> DPL> Plastic-7.4', 'Plastic Prod-7.4'],
         'RIP> DPL> Plastic-1': ['RIP> DPL> Plastic-1'],
@@ -182,7 +181,6 @@
         'RIP RFL Store': ['RIP RFL Store']
     };
 
-    // বাকি কনফিগারেশন (MC_DEPARTMENTS, MASTER_DEPARTMENTS, SUPPORT_DEPTS) আগের মতো থাকবে
     const MC_DEPARTMENTS = [
         'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1', 'RIP> DPL> Plastic-6.2',
         'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2', 'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4',
@@ -209,9 +207,6 @@
     let allData = [];
     let filteredData = [];
 
-    // ================================================================
-    //  হেল্পার ফাংশন (আগের মতো)
-    // ================================================================
     function formatDate(dateStr) {
         if (!dateStr) return '-';
         const d = new Date(dateStr);
@@ -247,7 +242,7 @@
     }
 
     // ================================================================
-    //  ডেটা লোড ও ফিল্টার (তারিখ ফরম্যাট ফিক্স)
+    //  ডেটা লোড ও ফিল্টার (🔧 টাইমজোন ফিক্স করা হয়েছে)
     // ================================================================
     async function loadData() {
         document.getElementById('currentTime').innerText = '⏳ লোড হচ্ছে...';
@@ -282,7 +277,7 @@
     }
 
     // ================================================================
-    //  ফিল্টার প্রয়োগ (তারিখ ফরম্যাট ফিক্স)
+    //  ফিল্টার প্রয়োগ (🔧 তারিখ ফরম্যাট টাইমজোন অনুযায়ী ঠিক করা)
     // ================================================================
     function applyFilters() {
         const date = document.getElementById('filterDate').value;
@@ -290,8 +285,12 @@
         const dept = document.getElementById('filterDept').value;
 
         filteredData = allData.filter(row => {
-            // Date ফিক্স: entryDate থেকে শুধু তারিখ অংশ
-            let rowDate = row.Date || (row.entryDate ? row.entryDate.split('T')[0] : '') || '';
+            // 🔥 টাইমজোন ফিক্স: UTC তারিখকে স্থানীয় (বাংলাদেশ) তারিখে রূপান্তর
+            let rowDate = row.Date || '';
+            if (!rowDate && row.entryDate) {
+                const d = new Date(row.entryDate);
+                rowDate = d.toLocaleDateString('en-CA'); // 'en-CA' ফরম্যাটে YYYY-MM-DD দেয়
+            }
             let d = true;
             if (date) d = (rowDate === date);
 
@@ -347,7 +346,7 @@
     }
 
     // ================================================================
-    //  Saifuddin Table (আপডেটেড ডিপার্টমেন্ট ম্যাপিং)
+    //  Saifuddin Table (আপডেটেড ম্যাপিং)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -406,7 +405,6 @@
             totalPresent = totalMP - leave - absent;
             let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
-            // Production (SN 1-8)
             if (item.sn >= 1 && item.sn <= 8) {
                 prodTotal.totalMP += totalMP;
                 prodTotal.totalPresent += totalPresent;
@@ -426,7 +424,6 @@
                 prodTotal.overStock += overStock;
                 prodTotal.accShort += accShort;
             } 
-            // Packaging (SN 10-12) + Common/Logistic (SN 14-22)
             else if (item.sn >= 10 && item.sn <= 12) {
                 packCommonTotal.totalMP += totalMP;
                 packCommonTotal.totalPresent += totalPresent;
@@ -508,7 +505,6 @@
             });
         });
 
-        // ১. Production Team Total (SN 9)
         let prodRunPct = prodTotal.totalMC > 0 ? ((prodTotal.targetRun / prodTotal.totalMC) * 100) : 0;
         rows.push({
             sn: 9,
@@ -534,7 +530,6 @@
             isTotal: true
         });
 
-        // ২. Packaging + Common Team Total (SN 23)
         let packCommonRunPct = packCommonTotal.totalMC > 0 ? ((packCommonTotal.targetRun / packCommonTotal.totalMC) * 100) : 0;
         rows.push({
             sn: 23,
@@ -560,7 +555,6 @@
             isTotal: true
         });
 
-        // ৩. Grand Total (SN 24)
         let grandRunPct = grandTotal.totalMC > 0 ? ((grandTotal.targetRun / grandTotal.totalMC) * 100) : 0;
         rows.push({
             sn: 24,
@@ -687,7 +681,7 @@
     }
 
     // ================================================================
-    //  বাকি ফাংশন (আগের মতোই – Group A, B, Overall, Missing, Raw Data)
+    //  বাকি ফাংশন (আগের মতোই)
     // ================================================================
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
