@@ -150,7 +150,7 @@
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
     // ============================================================
-    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং (RIP> DPL> ফরম্যাট)
+    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং
     // ============================================================
     const DEPARTMENT_IC_MAP = {
         'RIP> DPL> Plastic-3': 'Mr. Shawon',
@@ -167,24 +167,22 @@
     };
 
     // ============================================================
-    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC ম্যাপিং (RIP> DPL> ফরম্যাট)
-    //    👇 এখন ড্রপডাউনের সাথে পুরোপুরি মিলে গেছে
+    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC ম্যাপিং (RIP> DPL>)
+    //    👇 এখন প্রতিটি ডিপার্টমেন্টের MC সেট করা আছে
     // ============================================================
     const DEPARTMENT_MC = {
-        // Production Depts (RIP> DPL> ভিত্তিক)
         'RIP> DPL> Plastic-3': 61,
-        'RIP> DPL> Plastic-6.1': 0,   // যদি জানা না থাকে, 0 রাখা হয়েছে (ইউজার টাইপ করবে)
+        'RIP> DPL> Plastic-6.1': 0,   // 0 মানে ইউজার নিজে টাইপ করবে
         'RIP> DPL> Plastic-6.2': 0,
         'RIP> DPL> Plastic-7.1': 36,
         'RIP> DPL> Plastic-7.2': 76,
         'RIP> DPL> Plastic-7.3': 77,
         'RIP> DPL> Plastic-7.4': 35,
         'RIP> DPL> Plastic-1': 0,
-        // Packaging
         'Plastic Packaging-01': 0,
         'Plastic Packaging-02': 0,
         'Plastic Packaging-03': 0,
-        // পুরোনো নামগুলোও রেখেছি (যদি কোনো কারণে ব্যবহার হয়)
+        // পুরোনো নামগুলোও রেখেছি (যদি ব্যবহার হয়)
         'Plastic Prod-3.1': 61,
         'Plastic Prod-7.1': 36,
         'Plastic Prod-7.2': 76,
@@ -196,18 +194,16 @@
     };
 
     // ============================================================
-    // ৩. সব ডিপার্টমেন্ট ড্রপডাউনে যোগ করা (IC ম্যাপ + Prof 01-360)
+    // ৩. সব ডিপার্টমেন্ট ড্রপডাউনে যোগ করা
     // ============================================================
     (function populateDepartments() {
         const select = document.getElementById('department');
-        // ক. ইউজারের দেওয়া ডিপার্টমেন্ট (RIP> DPL> ও Packaging)
         Object.keys(DEPARTMENT_IC_MAP).forEach(key => {
             const opt = document.createElement('option');
             opt.value = key;
             opt.textContent = key;
             select.appendChild(opt);
         });
-        // খ. Plastic Prof-01 to 360 (এদের MC ও IC খালি থাকবে, ইউজার টাইপ করবে)
         for (let i = 1; i <= 360; i++) {
             const opt = document.createElement('option');
             opt.value = `Plastic Prof-${String(i).padStart(2, '0')}`;
@@ -224,24 +220,22 @@
         const icInput = document.getElementById('icName');
         const totalInput = document.getElementById('totalMC');
 
-        // আইসি নাম অটো (ম্যাপে থাকলে)
+        // আইসি নাম অটো
         if (DEPARTMENT_IC_MAP[dept]) {
             icInput.value = DEPARTMENT_IC_MAP[dept];
         } else {
-            icInput.value = ''; // ইউজার নিজে লিখবে
+            icInput.value = '';
         }
 
-        // Total MC অটো (ম্যাপে থাকলে)
+        // Total MC অটো
         if (dept in DEPARTMENT_MC) {
             const mcVal = DEPARTMENT_MC[dept];
-            totalInput.value = mcVal;
             if (mcVal > 0) {
-                // যদি MC জানা থাকে, readonly করে দিই
+                totalInput.value = mcVal;
                 totalInput.readOnly = true;
                 totalInput.style.background = '#e9ecef';
                 totalInput.style.color = '#004085';
             } else {
-                // যদি MC 0 হয়, তাহলে ইউজার টাইপ করবে
                 totalInput.value = '';
                 totalInput.readOnly = false;
                 totalInput.style.background = '#ffffff';
@@ -249,7 +243,6 @@
                 totalInput.placeholder = 'সংখ্যা দিন';
             }
         } else {
-            // যদি ডিপার্টমেন্ট ম্যাপে না থাকে (যেমন Plastic Prof-01)
             totalInput.value = '';
             totalInput.readOnly = false;
             totalInput.style.background = '#ffffff';
@@ -265,7 +258,7 @@
     });
 
     // ============================================================
-    // ৫. মেশিন রান/স্টপ অটো ক্যালকুলেশন
+    // ৫. অটো ক্যালকুলেশন
     // ============================================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
@@ -310,7 +303,7 @@
     }
 
     // ============================================================
-    // ৬. ফর্ম সাবমিট (CORS সমাধান: no-cors)
+    // ৬. ফর্ম সাবমিট (CORS সমাধান)
     // ============================================================
     document.getElementById('entryDate').valueAsDate = new Date();
 
@@ -331,13 +324,11 @@
             mcStopped: getVal('mcStopped'),
             pctRunning: getVal('pctRunning'),
             pctStopped: getVal('pctStopped'),
-            // CTN ডেটা (আপনি চান না, তাই 0 দিচ্ছি)
             prodHR: '0',
             targetCTN: '0',
             achievedCTN: '0',
             perHrCTN: '0',
             utilizationPct: '0%',
-            // Cause of Stop
             mpShort: getVal('mpShort'),
             moldProblem: getVal('moldProblem'),
             moldChange: getVal('moldChange'),
@@ -348,17 +339,14 @@
             materialMBShortage: getVal('materialMBShortage'),
             overStockWIP: getVal('overStockWIP'),
             accessoriesShort: getVal('accessoriesShort'),
-            // HR
             totalHR: getVal('totalHR'),
             leaveEmployee: getVal('leaveEmployee'),
             absentEmployee: getVal('absentEmployee'),
-            // Machine Type
             exportMC: getVal('exportMC'),
             domesticMC: getVal('domesticMC'),
             singleMC: getVal('singleMC'),
             doubleMC: getVal('doubleMC'),
             noDemand: getVal('noDemand'),
-            // Operators
             prodIC: getVal('prodIC'),
             sic: getVal('sic'),
             mcOperator: getVal('mcOperator'),
@@ -382,9 +370,6 @@
         };
 
         try {
-            // ==========================================================
-            // 🚀 CORS সমস্যা সমাধানের জন্য 'mode: no-cors' ব্যবহার করা হয়েছে
-            // ==========================================================
             await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -395,7 +380,6 @@
             status.className = 'success';
             status.innerText = '✅ ডেটা পাঠানো হয়েছে! Google Sheet চেক করুন।';
             
-            // ফর্ম রিসেট
             document.getElementById('mcRunning').value = '';
             document.getElementById('mcStopped').value = '';
             document.getElementById('pctRunning').value = '';
