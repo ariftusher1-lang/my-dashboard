@@ -22,7 +22,6 @@
         .error { background: #f8d7da; color: #721c24; }
         .flex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
         .highlight { background: #fff3cd; border-left: 3px solid #ffc107; }
-        .new-feature { background: #d1ecf1; border-left: 4px solid #17a2b8; }
     </style>
 </head>
 <body>
@@ -30,6 +29,7 @@
     <h2>📋 অটো ক্যালকুলেশন সহ এন্ট্রি ফর্ম</h2>
     <form id="entryForm">
 
+        <!-- মৌলিক তথ্য -->
         <div class="section">
             <h3>📅 মৌলিক তথ্য</h3>
             <div class="row">
@@ -54,6 +54,7 @@
             </div>
         </div>
 
+        <!-- মেশিনের ডেটা -->
         <div class="section highlight">
             <h3>⚙️ মেশিনের ডেটা (অটো ক্যালকুলেশন)</h3>
             <div class="row">
@@ -77,31 +78,7 @@
             </div>
         </div>
 
-        <div class="section new-feature">
-            <h3>📦 উৎপাদন বিশ্লেষণ (টার্গেট vs অ্যাচিভমেন্ট) - প্রতি HR টার্গেট ৪৫ CTN</h3>
-            <div class="row">
-                <div><label>শিফটের শ্রমিক সংখ্যা (Prod HR)</label>
-                    <input type="number" id="prodHR" value="0" oninput="calcProduction()">
-                </div>
-                <div><label>টার্গেট CTN</label>
-                    <input type="number" id="targetCTN" readonly style="background:#e9ecef; font-weight:bold; color:#004085;">
-                </div>
-            </div>
-            <div class="row">
-                <div><label>অর্জিত CTN</label>
-                    <input type="number" id="achievedCTN" value="0" oninput="calcProduction()">
-                </div>
-                <div><label>Per HR CTN</label>
-                    <input type="text" id="perHrCTN" readonly style="background:#e9ecef;">
-                </div>
-            </div>
-            <div class="row">
-                <div><label>ইউটিলাইজেশন (%)</label>
-                    <input type="text" id="utilizationPct" readonly style="background:#e9ecef; font-weight:bold; color:#28a745;">
-                </div>
-            </div>
-        </div>
-
+        <!-- কারণ (Cause of Stop) -->
         <div class="section">
             <h3>⛔ স্টপের কারণ (Cause of Stop - QTY)</h3>
             <div class="flex-grid">
@@ -118,6 +95,7 @@
             </div>
         </div>
 
+        <!-- এইচআর ও ম্যানপাওয়ার -->
         <div class="section">
             <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
             <div class="row">
@@ -127,6 +105,7 @@
             </div>
         </div>
 
+        <!-- মেশিন টাইপ -->
         <div class="section">
             <h3>🏭 মেশিন টাইপ (Machine Type)</h3>
             <div class="row">
@@ -138,6 +117,7 @@
             </div>
         </div>
 
+        <!-- অপারেটর ও স্টাফ -->
         <div class="section">
             <h3>👨‍🔧 অপারেটর ও স্টাফ</h3>
             <div class="flex-grid">
@@ -171,7 +151,7 @@
 
 <script>
     // =============================================
-    // ডিপার্টমেন্ট লিস্ট ও MC সেট করা
+    // ডিপার্টমেন্ট লিস্ট (Plastic Prof-01 থেকে 360)
     // =============================================
     (function populateDepartments() {
         const select = document.getElementById('department');
@@ -184,6 +164,9 @@
         }
     })();
 
+    // =============================================
+    // পরিচিত ডিপার্টমেন্টের ফিক্সড MC
+    // =============================================
     const DEPARTMENT_MC = {
         'Plastic Prod-3.1': 61, 'Plastic Prod-7.1': 36, 'Plastic Prod-7.2': 76,
         'Plastic Prod-7.3': 77, 'Plastic Prod-7.4': 35,
@@ -211,6 +194,9 @@
         document.getElementById('pctStopped').value = '';
     });
 
+    // =============================================
+    // অটো ক্যালকুলেশন (Running/Stopped & %)
+    // =============================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
         let running = parseInt(document.getElementById('mcRunning').value) || 0;
@@ -253,25 +239,9 @@
         document.getElementById('pctStopped').value = pctS.toFixed(2) + '%';
     }
 
-    function calcProduction() {
-        const hr = parseInt(document.getElementById('prodHR').value) || 0;
-        const achieved = parseInt(document.getElementById('achievedCTN').value) || 0;
-        const targetPerHr = 45;
-        const target = hr * targetPerHr;
-        document.getElementById('targetCTN').value = target;
-
-        let perHr = 0;
-        let util = 0;
-        if (hr > 0) {
-            perHr = achieved / hr;
-            if (target > 0) {
-                util = (achieved / target) * 100;
-            }
-        }
-        document.getElementById('perHrCTN').value = perHr.toFixed(2);
-        document.getElementById('utilizationPct').value = util.toFixed(2) + '%';
-    }
-
+    // =============================================
+    // ফর্ম সাবমিট (ডেটা পাঠানোর কোড)
+    // =============================================
     document.getElementById('entryDate').valueAsDate = new Date();
 
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
@@ -291,11 +261,13 @@
             mcStopped: getVal('mcStopped'),
             pctRunning: getVal('pctRunning'),
             pctStopped: getVal('pctStopped'),
-            prodHR: getVal('prodHR'),
-            targetCTN: getVal('targetCTN'),
-            achievedCTN: getVal('achievedCTN'),
-            perHrCTN: getVal('perHrCTN'),
-            utilizationPct: getVal('utilizationPct'),
+            // CTN ডেটা বাদ (কারণ আপনি চান না)
+            prodHR: '0',
+            targetCTN: '0',
+            achievedCTN: '0',
+            perHrCTN: '0',
+            utilizationPct: '0%',
+            // Cause of Stop
             mpShort: getVal('mpShort'),
             moldProblem: getVal('moldProblem'),
             moldChange: getVal('moldChange'),
@@ -306,14 +278,17 @@
             materialMBShortage: getVal('materialMBShortage'),
             overStockWIP: getVal('overStockWIP'),
             accessoriesShort: getVal('accessoriesShort'),
+            // HR
             totalHR: getVal('totalHR'),
             leaveEmployee: getVal('leaveEmployee'),
             absentEmployee: getVal('absentEmployee'),
+            // Machine Type
             exportMC: getVal('exportMC'),
             domesticMC: getVal('domesticMC'),
             singleMC: getVal('singleMC'),
             doubleMC: getVal('doubleMC'),
             noDemand: getVal('noDemand'),
+            // Operators
             prodIC: getVal('prodIC'),
             sic: getVal('sic'),
             mcOperator: getVal('mcOperator'),
@@ -337,7 +312,7 @@
         };
 
         try {
-            // 👇 আপনার Apps Script Web App URL বসান (এটা কিন্তু আপনার আগেরটাই থাকবে)
+            // 👇 আপনার Apps Script Web App URL বসান
             const response = await fetch('YOUR_APPS_SCRIPT_URL', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
