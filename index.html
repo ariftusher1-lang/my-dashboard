@@ -145,7 +145,7 @@
 
 <script>
     // =============================================================
-    // 🔥 গুরুত্বপূর্ণ: নিচের জায়গায় আপনার Google Apps Script URL বসান
+    // 🔥 আপনার Google Apps Script URL এখানে বসান
     // =============================================================
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
@@ -278,7 +278,7 @@
     }
 
     // ============================================================
-    // ৬. ফর্ম সাবমিট (CORS ঠিক করে দেওয়া)
+    // ৬. ফর্ম সাবমিট (CORS সমাধান: no-cors)
     // ============================================================
     document.getElementById('entryDate').valueAsDate = new Date();
 
@@ -299,11 +299,13 @@
             mcStopped: getVal('mcStopped'),
             pctRunning: getVal('pctRunning'),
             pctStopped: getVal('pctStopped'),
+            // CTN ডেটা (আপনি চান না, তাই 0 দিচ্ছি)
             prodHR: '0',
             targetCTN: '0',
             achievedCTN: '0',
             perHrCTN: '0',
             utilizationPct: '0%',
+            // Cause of Stop
             mpShort: getVal('mpShort'),
             moldProblem: getVal('moldProblem'),
             moldChange: getVal('moldChange'),
@@ -314,14 +316,17 @@
             materialMBShortage: getVal('materialMBShortage'),
             overStockWIP: getVal('overStockWIP'),
             accessoriesShort: getVal('accessoriesShort'),
+            // HR
             totalHR: getVal('totalHR'),
             leaveEmployee: getVal('leaveEmployee'),
             absentEmployee: getVal('absentEmployee'),
+            // Machine Type
             exportMC: getVal('exportMC'),
             domesticMC: getVal('domesticMC'),
             singleMC: getVal('singleMC'),
             doubleMC: getVal('doubleMC'),
             noDemand: getVal('noDemand'),
+            // Operators
             prodIC: getVal('prodIC'),
             sic: getVal('sic'),
             mcOperator: getVal('mcOperator'),
@@ -345,31 +350,29 @@
         };
 
         try {
-            const response = await fetch(APP_SCRIPT_URL, {
+            // ==========================================================
+            // 🚀 CORS সমস্যা সমাধানের জন্য 'mode: no-cors' ব্যবহার করা হয়েছে
+            // ==========================================================
+            await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
+                mode: 'no-cors', // এই লাইনটি CORS Error দূর করে
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            
-            // রেসপন্স চেক (যদি 200 OK না হয়)
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
 
-            const result = await response.json();
-            if (result.success) {
-                status.className = 'success';
-                status.innerText = '✅ ডেটা সফলভাবে সেভ হয়েছে!';
-                document.getElementById('mcRunning').value = '';
-                document.getElementById('mcStopped').value = '';
-                document.getElementById('pctRunning').value = '';
-                document.getElementById('pctStopped').value = '';
-            } else {
-                throw new Error(result.error || 'সার্ভার থেকে Error এসেছে');
-            }
+            // no-cors মোডে রেসপন্স পড়া যায় না, তাই আমরা ধরে নিচ্ছি সফল হয়েছে
+            status.className = 'success';
+            status.innerText = '✅ ডেটা পাঠানো হয়েছে! Google Sheet চেক করুন।';
+            
+            // ফর্ম রিসেট
+            document.getElementById('mcRunning').value = '';
+            document.getElementById('mcStopped').value = '';
+            document.getElementById('pctRunning').value = '';
+            document.getElementById('pctStopped').value = '';
+
         } catch (error) {
             status.className = 'error';
-            status.innerText = '❌ সেভ করতে ব্যর্থ! ' + error.message;
+            status.innerText = '❌ সেভ করতে ব্যর্থ! নেটওয়ার্ক চেক করুন।';
             console.error('Error details:', error);
         }
     });
