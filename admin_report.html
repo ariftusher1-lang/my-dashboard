@@ -53,7 +53,6 @@
         .filter-status { background: #e3f2fd; padding: 10px 15px; border-radius: 6px; margin: 10px 0; font-size: 14px; color: #0d47a1; }
         .summary-header { background: #fff3e0; padding: 12px 20px; border-radius: 8px; margin: 15px 0; font-size: 16px; font-weight: 600; color: #e65100; border-left: 4px solid #ff9800; }
         .mc-badge { background: #0d47a1; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
-        .logistic-badge { background: #2e7d32; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
         .saifuddin-title { background: #1a237e; color: white; padding: 8px 20px; border-radius: 6px; display: inline-block; font-weight: 600; }
 
         /* ===== Saifuddin Table এর আধুনিক ডিজাইন ===== */
@@ -310,9 +309,7 @@
     </div>
     <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
-    <!-- অন্যান্য সারাংশ টেবিল -->
-    <div class="sub-title"><span class="logistic-badge">🟩 লজিস্টিক ডিপার্টমেন্ট (Logistic Department)</span></div>
-    <div class="table-wrap" id="logisticSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
+    <!-- 🟩 লজিস্টিক ডিপার্টমেন্ট (Logistic Department) সেকশন সম্পূর্ণ বাদ দেওয়া হয়েছে -->
 
     <div class="stats" id="statsContainer">
         <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
@@ -534,7 +531,7 @@
         renderStats(data);
         renderSaifuddinTable(data);
         renderMcSummaryTable(data); // Cause of Stop >0 সহ
-        renderLogisticSummaryTable(data);
+        // 🟩 লজিস্টিক ডিপার্টমেন্ট রেন্ডার কল সম্পূর্ণ বাদ দেওয়া হয়েছে
         renderGroupTable(data, 'groupATable', 'A');
         renderGroupTable(data, 'groupBTable', 'B');
         renderOverall(data);
@@ -557,7 +554,7 @@
     }
 
     // ================================================================
-    //  Saifuddin Table (আগের মতো)
+    //  Saifuddin Table (SN 23 এখন SN 12 এর ঠিক নিচে)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -675,7 +672,9 @@
             isGrand: true
         });
 
-        rows.sort((a, b) => a.sn - b.sn);
+        // ✅ কাস্টম সর্টিং অর্ডার: SN 23 (Total Packaging) কে SN 12 (Packaging 3) এর ঠিক নিচে আনা হয়েছে
+        const order = [1,2,3,4,5,6,7,8,9,10,11,12,23,14,15,16,17,18,19,20,21,22,24,25];
+        rows.sort((a, b) => order.indexOf(a.sn) - order.indexOf(b.sn));
 
         if (rows.length === 0) {
             container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
@@ -1112,53 +1111,8 @@
     }
 
     // ================================================================
-    //  বাকি ফাংশন (Logistic, Group, Overall, Missing, Raw Data)
+    //  বাকি ফাংশন (Group, Overall, Missing, Raw Data)
     // ================================================================
-    function renderLogisticSummaryTable(data) {
-        const container = document.getElementById('logisticSummaryTable');
-        const logisticData = data.filter(row => {
-            const dept = getVal(row, ['Department', 'department']);
-            return dept && !MC_DEPARTMENTS.includes(dept);
-        });
-        if (logisticData.length === 0) {
-            container.innerHTML = `<div class="no-data">কোনো লজিস্টিক ডিপার্টমেন্টের ডেটা নেই</div>`;
-            return;
-        }
-        const deptMap = {};
-        logisticData.forEach(row => {
-            const dept = getVal(row, ['Department', 'department']);
-            if (!dept) return;
-            if (!deptMap[dept]) {
-                deptMap[dept] = { totalHR: 0, leave: 0, absent: 0, present: 0, count: 0 };
-            }
-            const d = deptMap[dept];
-            d.totalHR += getNum(row, ['Total HR', 'totalHR']);
-            d.leave += getNum(row, ['Leave Employee', 'leaveEmployee']);
-            d.absent += getNum(row, ['Absent Employee', 'absentEmployee']);
-            d.count += 1;
-        });
-        let html = `<table><thead><tr>
-            <th>ডিপার্টমেন্ট</th><th>Date</th><th>Shift</th>
-            <th>Total HR</th><th>Leave</th><th>Absent</th><th>Present</th>
-        </tr></thead><tbody>`;
-        let grandTotalHR = 0, grandLeave = 0, grandAbsent = 0;
-        for (const [dept, d] of Object.entries(deptMap)) {
-            const present = d.totalHR - d.leave - d.absent;
-            const firstRow = logisticData.find(r => getVal(r, ['Department', 'department']) === dept);
-            const date = firstRow ? formatDate(getVal(firstRow, ['entryDate', 'Date'])) : '-';
-            const shift = firstRow ? getVal(firstRow, ['Shift', 'shift']) : '-';
-            html += `<tr><td><strong>${dept}</strong></td><td>${date}</td><td>${shift}</td>
-                <td>${d.totalHR}</td><td>${d.leave}</td><td>${d.absent}</td><td>${present}</td></tr>`;
-            grandTotalHR += d.totalHR; grandLeave += d.leave; grandAbsent += d.absent;
-        }
-        const grandPresent = grandTotalHR - grandLeave - grandAbsent;
-        html += `<tr class="total-row"><td><strong>📌 মোট</strong></td><td>-</td><td>-</td>
-            <td><strong>${grandTotalHR}</strong></td><td><strong>${grandLeave}</strong></td>
-            <td><strong>${grandAbsent}</strong></td><td><strong>${grandPresent}</strong></td></tr>`;
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-    }
-
     function renderGroupTable(data, containerId, groupType) {
         const container = document.getElementById(containerId);
         const isGroupA = (groupType === 'A');
@@ -1357,7 +1311,6 @@
     function showError(msg) {
         document.getElementById('saifuddinTableContainer').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('mcSummaryTable').innerHTML = `<div class="no-data">${msg}</div>`;
-        document.getElementById('logisticSummaryTable').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('groupATable').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('groupBTable').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('overallTable').innerHTML = `<div class="no-data">${msg}</div>`;
