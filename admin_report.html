@@ -309,7 +309,7 @@
     </div>
     <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
-    <!-- 🟩 লজিস্টিক ডিপার্টমেন্ট (Logistic Department) সেকশন সম্পূর্ণ বাদ দেওয়া হয়েছে -->
+    <!-- 🟩 লজিস্টিক ডিপার্টমেন্ট বাদ দেওয়া হয়েছে -->
 
     <div class="stats" id="statsContainer">
         <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
@@ -530,8 +530,7 @@
     function renderDashboard(data) {
         renderStats(data);
         renderSaifuddinTable(data);
-        renderMcSummaryTable(data); // Cause of Stop >0 সহ
-        // 🟩 লজিস্টিক ডিপার্টমেন্ট রেন্ডার কল সম্পূর্ণ বাদ দেওয়া হয়েছে
+        renderMcSummaryTable(data);
         renderGroupTable(data, 'groupATable', 'A');
         renderGroupTable(data, 'groupBTable', 'B');
         renderOverall(data);
@@ -554,7 +553,7 @@
     }
 
     // ================================================================
-    //  Saifuddin Table (SN 23 এখন SN 12 এর ঠিক নিচে)
+    //  Saifuddin Table (SN 23, 24 - এ MC কলামে ড্যাশ দেখাবে)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -672,7 +671,7 @@
             isGrand: true
         });
 
-        // ✅ কাস্টম সর্টিং অর্ডার: SN 23 (Total Packaging) কে SN 12 (Packaging 3) এর ঠিক নিচে আনা হয়েছে
+        // কাস্টম সর্টিং অর্ডার
         const order = [1,2,3,4,5,6,7,8,9,10,11,12,23,14,15,16,17,18,19,20,21,22,24,25];
         rows.sort((a, b) => order.indexOf(a.sn) - order.indexOf(b.sn));
 
@@ -719,7 +718,10 @@
             html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
             html += `<td>${totalMPBadge}</td><td>${presentBadge}</td><td>${absentBadge}</td><td>${leaveBadge}</td>`;
 
-            if (row.sn === 25) {
+            // ===== MC কলামগুলিতে ড্যাশ দেখানো হবে যদি SN 23, 24, 25 হয় =====
+            const isNoMC = (row.sn === 23 || row.sn === 24 || row.sn === 25);
+
+            if (isNoMC) {
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
@@ -742,7 +744,7 @@
     }
 
     // ================================================================
-    //  MC Department Table (Cause of Stop >0 সহ)
+    //  MC Department Table (Cause of Stop >0 সহ) - আগের মতোই
     // ================================================================
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
@@ -756,7 +758,6 @@
             return;
         }
 
-        // Cause of Stop-এর কলামের নাম
         const causeKeys = [
             { key: 'mpShort', label: 'MP Short' },
             { key: 'moldProblem', label: 'Mold Problem' },
@@ -801,7 +802,6 @@
             });
         });
 
-        // শুধু >0 আছে এমন Cause গুলো চিহ্নিত
         let activeCauseKeys = causeKeys.filter(c => {
             let hasData = false;
             Object.values(deptMap).forEach(d => {
@@ -810,7 +810,6 @@
             return hasData;
         });
 
-        // হেডার তৈরি
         let html = `<table class="mc-table"><thead><tr>
             <th>ডিপার্টমেন্ট</th>
             <th>Prod IC</th>
@@ -822,9 +821,7 @@
             <th>MC Stopped</th>
             <th>MC Running %</th>
             <th>MC Stopped %</th>`;
-        activeCauseKeys.forEach(c => {
-            html += `<th>${c.label}</th>`;
-        });
+        activeCauseKeys.forEach(c => { html += `<th>${c.label}</th>`; });
         html += `</tr></thead><tbody>`;
 
         let grandTotalMC = 0, grandTotalHR = 0, grandMCOp = 0, grandPackOp = 0, grandRunning = 0, grandStopped = 0;
@@ -888,7 +885,6 @@
             grandStopped += d.stopped;
         }
 
-        // টোটাল সারি
         const grandRunPct = grandTotalMC > 0 ? ((grandRunning / grandTotalMC) * 100) : 0;
         const grandStopPct = grandTotalMC > 0 ? ((grandStopped / grandTotalMC) * 100) : 0;
 
@@ -911,7 +907,6 @@
         html += `</tr></tbody></table>`;
         container.innerHTML = html;
 
-        // ডাউনলোডের জন্য ডেটা সংরক্ষণ
         window._mcTableData = {
             rows: deptMap,
             activeCauseKeys: activeCauseKeys,
@@ -921,8 +916,9 @@
     }
 
     // ================================================================
-    //  MC Table: Image Download
+    //  ডাউনলোড ফাংশন (এক্সেল, ইমেজ, পিডিএফ) - পরিবর্তনের প্রয়োজন নেই
     // ================================================================
+    // (এই ফাংশনগুলো ঠিক আগের মতোই থাকবে, স্থান বাঁচাতে সংক্ষিপ্ত করা হলো)
     function downloadMCImage() {
         const container = document.getElementById('mcSummaryTable');
         if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
@@ -949,9 +945,6 @@
             });
     }
 
-    // ================================================================
-    //  MC Table: Excel Download (Cause of Stop সহ)
-    // ================================================================
     function downloadMCExcel() {
         const data = window._mcTableData;
         if (!data) { alert('ডেটা নেই!'); return; }
@@ -989,9 +982,6 @@
         XLSX.writeFile(wb, `MC_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
 
-    // ================================================================
-    //  MC Table: PDF Download
-    // ================================================================
     function downloadMCPDF() {
         const container = document.getElementById('mcSummaryTable');
         if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
@@ -1021,9 +1011,6 @@
             });
     }
 
-    // ================================================================
-    //  Saifuddin Table: Image, Excel, PDF
-    // ================================================================
     function downloadSaifuddinImage() {
         const container = document.getElementById('saifuddinTableContainer');
         if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
@@ -1057,23 +1044,26 @@
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
             'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
             'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'];
-        const csvRows = rows.map(row => [
-            row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
-            row.sn === 25 ? '' : row.totalMC,
-            row.sn === 25 ? '' : row.targetRun,
-            row.sn === 25 ? '' : row.runPct.toFixed(1) + '%',
-            row.sn === 25 ? '' : row.mcWillOff,
-            row.sn === 25 ? '' : row.mpShort,
-            row.sn === 25 ? '' : row.moldProb,
-            row.sn === 25 ? '' : row.moldChange,
-            row.sn === 25 ? '' : row.sample,
-            row.sn === 25 ? '' : row.mcProb,
-            row.sn === 25 ? '' : row.preventive,
-            row.sn === 25 ? '' : row.noDemand,
-            row.sn === 25 ? '' : row.materialShort,
-            row.sn === 25 ? '' : row.overStock,
-            row.sn === 25 ? '' : row.accShort
-        ]);
+        const csvRows = rows.map(row => {
+            const isNoMC = (row.sn === 23 || row.sn === 24 || row.sn === 25);
+            return [
+                row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
+                isNoMC ? '' : row.totalMC,
+                isNoMC ? '' : row.targetRun,
+                isNoMC ? '' : row.runPct.toFixed(1) + '%',
+                isNoMC ? '' : row.mcWillOff,
+                isNoMC ? '' : row.mpShort,
+                isNoMC ? '' : row.moldProb,
+                isNoMC ? '' : row.moldChange,
+                isNoMC ? '' : row.sample,
+                isNoMC ? '' : row.mcProb,
+                isNoMC ? '' : row.preventive,
+                isNoMC ? '' : row.noDemand,
+                isNoMC ? '' : row.materialShort,
+                isNoMC ? '' : row.overStock,
+                isNoMC ? '' : row.accShort
+            ];
+        });
         const wbData = [headers, ...csvRows];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(wbData);
@@ -1111,7 +1101,7 @@
     }
 
     // ================================================================
-    //  বাকি ফাংশন (Group, Overall, Missing, Raw Data)
+    //  বাকি ফাংশন (Group, Overall, Missing, Raw Data, Excel)
     // ================================================================
     function renderGroupTable(data, containerId, groupType) {
         const container = document.getElementById(containerId);
@@ -1142,30 +1132,29 @@
             container.innerHTML = `<div class="no-data">এই গ্রুপে কোনো ডেটা নেই</div>`;
             return;
         }
-        let html = `<table><thead><tr>
-            <th>ডিপার্টমেন্ট</th><th>Date</th><th>Shift</th>
-            <th>Total HR</th><th>Leave</th><th>Absent</th><th>Present</th>
-            <th>Total MC</th><th>Running</th><th>Stopped</th><th>Run %</th><th>Stop %</th>
-        </tr></thead><tbody>`;
+        let html = `<table><thead><tr>`;
+        html += `<th>ডিপার্টমেন্ট</th><th>Date</th><th>Shift</th>`;
+        html += `<th>Total HR</th><th>Leave</th><th>Absent</th><th>Present</th>`;
+        html += `<th>Total MC</th><th>Running</th><th>Stopped</th><th>Run %</th><th>Stop %</th></tr></thead><tbody>`;
         let sumHR = 0, sumLeave = 0, sumAbsent = 0, sumMC = 0, sumRunning = 0, sumStopped = 0;
         rows.forEach(row => {
             let rawDate = getVal(row.items[0], ['entryDate', 'Date']) || '-';
             const date = formatDate(rawDate);
             const shift = getVal(row.items[0], ['Shift', 'shift']) || '-';
-            html += `<tr><td><strong>${row.dept}</strong></td><td>${date}</td><td>${shift}</td>
-                <td>${row.totalHR}</td><td>${row.leave}</td><td>${row.absent}</td><td>${row.present}</td>
-                <td>${row.totalMC}</td><td>${row.running}</td><td>${row.stopped}</td>
-                <td>${row.runPct.toFixed(1)}%</td><td>${row.stopPct.toFixed(1)}%</td></tr>`;
+            html += `<tr><td><strong>${row.dept}</strong></td><td>${date}</td><td>${shift}</td>`;
+            html += `<td>${row.totalHR}</td><td>${row.leave}</td><td>${row.absent}</td><td>${row.present}</td>`;
+            html += `<td>${row.totalMC}</td><td>${row.running}</td><td>${row.stopped}</td>`;
+            html += `<td>${row.runPct.toFixed(1)}%</td><td>${row.stopPct.toFixed(1)}%</td></tr>`;
             sumHR += row.totalHR; sumLeave += row.leave; sumAbsent += row.absent;
             sumMC += row.totalMC; sumRunning += row.running; sumStopped += row.stopped;
         });
         const totalPresent = sumHR - sumLeave - sumAbsent;
         const totalRunPct = sumMC > 0 ? ((sumRunning / sumMC) * 100) : 0;
         const totalStopPct = sumMC > 0 ? ((sumStopped / sumMC) * 100) : 0;
-        html += `<tr class="total-row"><td><strong>📌 মোট (Group ${groupType})</strong></td><td>-</td><td>-</td>
-            <td><strong>${sumHR}</strong></td><td>${sumLeave}</td><td>${sumAbsent}</td><td><strong>${totalPresent}</strong></td>
-            <td><strong>${sumMC}</strong></td><td><strong>${sumRunning}</strong></td><td><strong>${sumStopped}</strong></td>
-            <td><strong>${totalRunPct.toFixed(1)}%</strong></td><td><strong>${totalStopPct.toFixed(1)}%</strong></td></tr>`;
+        html += `<tr class="total-row"><td><strong>📌 মোট (Group ${groupType})</strong></td><td>-</td><td>-</td>`;
+        html += `<td><strong>${sumHR}</strong></td><td>${sumLeave}</td><td>${sumAbsent}</td><td><strong>${totalPresent}</strong></td>`;
+        html += `<td><strong>${sumMC}</strong></td><td><strong>${sumRunning}</strong></td><td><strong>${sumStopped}</strong></td>`;
+        html += `<td><strong>${totalRunPct.toFixed(1)}%</strong></td><td><strong>${totalStopPct.toFixed(1)}%</strong></td></tr>`;
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
