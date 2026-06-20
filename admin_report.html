@@ -40,7 +40,6 @@
         td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #eee; }
         tr:hover { background: #f5f9ff; }
         .total-row { background: #d4e4f7 !important; font-weight: 700; }
-        .grand-total-row { background: #ffd54f !important; font-weight: 700; color: #1a237e; }
         .no-data { text-align: center; color: #888; padding: 20px; font-style: italic; }
         .missing-list { display: flex; flex-wrap: wrap; gap: 10px; background: #fff5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #e53935; }
         .missing-item { background: #e53935; color: white; padding: 4px 14px; border-radius: 20px; font-size: 13px; }
@@ -86,20 +85,6 @@
             background: #e3edfb !important;
             transition: 0.2s;
         }
-        .saifuddin-table .total-row td {
-            background: #dbeafe !important;
-            font-weight: 700;
-            border-top: 2px solid #1976d2;
-            border-bottom: 2px solid #1976d2;
-        }
-        .saifuddin-table .grand-total-row td {
-            background: #ffecb3 !important;
-            font-weight: 800;
-            color: #1a237e;
-            border-top: 3px solid #f57f17;
-            border-bottom: 3px solid #f57f17;
-            font-size: 14px;
-        }
         .saifuddin-table .dept-name {
             font-weight: 600;
             color: #1a3a5c;
@@ -109,9 +94,6 @@
         .saifuddin-table .highlight-number {
             font-weight: 700;
             color: #0d47a1;
-        }
-        .saifuddin-table .grand-total-row .highlight-number {
-            color: #1a237e;
         }
         .run-pct-wrapper {
             display: flex;
@@ -154,6 +136,48 @@
         .badge-absent { background: #ffebee; color: #b71c1c; }
         .badge-leave { background: #fff3e0; color: #e65100; }
         .badge-total { background: #e3f2fd; color: #0d47a1; }
+
+        /* ===== ৪টি আলাদা রঙের হেডিং ===== */
+        /* ১. Production Team (সবুজ) */
+        .row-production td {
+            background: #d4edda !important;
+            border-top: 2px solid #28a745 !important;
+            border-bottom: 2px solid #28a745 !important;
+            font-weight: 700 !important;
+            color: #155724 !important;
+        }
+        /* ২. Packaging Team (হলুদ) */
+        .row-packaging td {
+            background: #fff3cd !important;
+            border-top: 2px solid #ffc107 !important;
+            border-bottom: 2px solid #ffc107 !important;
+            font-weight: 700 !important;
+            color: #856404 !important;
+        }
+        /* ৩. Common Team (হলুদ - একই রঙ, ভিন্ন সারি) */
+        .row-common td {
+            background: #fff3cd !important;
+            border-top: 2px solid #ffc107 !important;
+            border-bottom: 2px solid #ffc107 !important;
+            font-weight: 700 !important;
+            color: #856404 !important;
+        }
+        /* ৪. Total Manpower (গাঢ় নীল) */
+        .row-manpower td {
+            background: #1a237e !important;
+            border-top: 3px solid #0d47a1 !important;
+            border-bottom: 3px solid #0d47a1 !important;
+            font-weight: 800 !important;
+            color: #ffffff !important;
+            font-size: 14px;
+        }
+        .row-manpower td .badge-count {
+            color: #1a237e;
+        }
+        .row-manpower td .badge-total { background: #ffffff; color: #1a237e; }
+        .row-manpower td .badge-present { background: #a5d6a7; color: #1b5e20; }
+        .row-manpower td .badge-absent { background: #ef9a9a; color: #b71c1c; }
+        .row-manpower td .badge-leave { background: #ffcc80; color: #e65100; }
     </style>
 </head>
 <body>
@@ -254,9 +278,11 @@
         { sn: 6, name: 'RIP> DPL> Plastic-7.3' },
         { sn: 7, name: 'RIP> DPL> Plastic-7.4' },
         { sn: 8, name: 'RIP> DPL> Plastic-1' },
+        // Packaging
         { sn: 10, name: 'Plastic Packaging-01' },
         { sn: 11, name: 'Plastic Packaging-02' },
         { sn: 12, name: 'Plastic Packaging-03' },
+        // Common / Support
         { sn: 14, name: 'Plastic-Maintenance.' },
         { sn: 15, name: 'Tool Room Maintenance' },
         { sn: 16, name: 'Plastic Inventory & Delivery' },
@@ -452,20 +478,28 @@
     }
 
     // ================================================================
-    //  Saifuddin Table (আপডেটেড: Total Manpower সারি পরিবর্তন)
+    //  Saifuddin Table (প্যাকেজিং ও কমন আলাদা করা হয়েছে)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
 
         let rows = [];
+        // ১. প্রোডাকশন টিম (SN 1-8)
         let prodTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
             mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
             preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
         
-        let packCommonTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
+        // ২. প্যাকেজিং টিম (SN 10-12)
+        let packagingTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
             mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
             preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
 
+        // ৩. কমন টিম (SN 14-22)
+        let commonTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
+            mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
+            preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
+
+        // ৪. গ্র্যান্ড টোটাল (সব)
         let grandTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
             mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
             preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
@@ -511,6 +545,7 @@
             totalPresent = totalMP - leave - absent;
             let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
+            // গ্রুপ অনুযায়ী যোগ করা
             if (item.sn >= 1 && item.sn <= 8) {
                 prodTotal.totalMP += totalMP;
                 prodTotal.totalPresent += totalPresent;
@@ -531,43 +566,44 @@
                 prodTotal.accShort += accShort;
             } 
             else if (item.sn >= 10 && item.sn <= 12) {
-                packCommonTotal.totalMP += totalMP;
-                packCommonTotal.totalPresent += totalPresent;
-                packCommonTotal.absent += absent;
-                packCommonTotal.leave += leave;
-                packCommonTotal.totalMC += totalMC;
-                packCommonTotal.targetRun += targetRun;
-                packCommonTotal.mcWillOff += mcWillOff;
-                packCommonTotal.mpShort += mpShort;
-                packCommonTotal.moldProb += moldProb;
-                packCommonTotal.moldChange += moldChange;
-                packCommonTotal.sample += sample;
-                packCommonTotal.mcProb += mcProb;
-                packCommonTotal.preventive += preventive;
-                packCommonTotal.noDemand += noDemand;
-                packCommonTotal.materialShort += materialShort;
-                packCommonTotal.overStock += overStock;
-                packCommonTotal.accShort += accShort;
+                packagingTotal.totalMP += totalMP;
+                packagingTotal.totalPresent += totalPresent;
+                packagingTotal.absent += absent;
+                packagingTotal.leave += leave;
+                packagingTotal.totalMC += totalMC;
+                packagingTotal.targetRun += targetRun;
+                packagingTotal.mcWillOff += mcWillOff;
+                packagingTotal.mpShort += mpShort;
+                packagingTotal.moldProb += moldProb;
+                packagingTotal.moldChange += moldChange;
+                packagingTotal.sample += sample;
+                packagingTotal.mcProb += mcProb;
+                packagingTotal.preventive += preventive;
+                packagingTotal.noDemand += noDemand;
+                packagingTotal.materialShort += materialShort;
+                packagingTotal.overStock += overStock;
+                packagingTotal.accShort += accShort;
             } else if (item.sn >= 14 && item.sn <= 22) {
-                packCommonTotal.totalMP += totalMP;
-                packCommonTotal.totalPresent += totalPresent;
-                packCommonTotal.absent += absent;
-                packCommonTotal.leave += leave;
-                packCommonTotal.totalMC += totalMC;
-                packCommonTotal.targetRun += targetRun;
-                packCommonTotal.mcWillOff += mcWillOff;
-                packCommonTotal.mpShort += mpShort;
-                packCommonTotal.moldProb += moldProb;
-                packCommonTotal.moldChange += moldChange;
-                packCommonTotal.sample += sample;
-                packCommonTotal.mcProb += mcProb;
-                packCommonTotal.preventive += preventive;
-                packCommonTotal.noDemand += noDemand;
-                packCommonTotal.materialShort += materialShort;
-                packCommonTotal.overStock += overStock;
-                packCommonTotal.accShort += accShort;
+                commonTotal.totalMP += totalMP;
+                commonTotal.totalPresent += totalPresent;
+                commonTotal.absent += absent;
+                commonTotal.leave += leave;
+                commonTotal.totalMC += totalMC;
+                commonTotal.targetRun += targetRun;
+                commonTotal.mcWillOff += mcWillOff;
+                commonTotal.mpShort += mpShort;
+                commonTotal.moldProb += moldProb;
+                commonTotal.moldChange += moldChange;
+                commonTotal.sample += sample;
+                commonTotal.mcProb += mcProb;
+                commonTotal.preventive += preventive;
+                commonTotal.noDemand += noDemand;
+                commonTotal.materialShort += materialShort;
+                commonTotal.overStock += overStock;
+                commonTotal.accShort += accShort;
             }
 
+            // গ্র্যান্ড টোটালে যোগ
             grandTotal.totalMP += totalMP;
             grandTotal.totalPresent += totalPresent;
             grandTotal.absent += absent;
@@ -586,6 +622,7 @@
             grandTotal.overStock += overStock;
             grandTotal.accShort += accShort;
 
+            // ইনডিভিজুয়াল ডিপার্টমেন্ট সারি (বিস্তারিত)
             rows.push({
                 sn: item.sn,
                 dept: deptName,
@@ -611,6 +648,7 @@
             });
         });
 
+        // --- Total Production Team (SN 9) ---
         let prodRunPct = prodTotal.totalMC > 0 ? ((prodTotal.targetRun / prodTotal.totalMC) * 100) : 0;
         rows.push({
             sn: 9,
@@ -636,40 +674,66 @@
             isTotal: true
         });
 
-        let packCommonRunPct = packCommonTotal.totalMC > 0 ? ((packCommonTotal.targetRun / packCommonTotal.totalMC) * 100) : 0;
+        // --- Total Packaging Team (SN 23) ---
+        let packRunPct = packagingTotal.totalMC > 0 ? ((packagingTotal.targetRun / packagingTotal.totalMC) * 100) : 0;
         rows.push({
             sn: 23,
-            dept: 'Total Packaging & Common Team',
-            totalMP: packCommonTotal.totalMP,
-            totalPresent: packCommonTotal.totalPresent,
-            absent: packCommonTotal.absent,
-            leave: packCommonTotal.leave,
-            totalMC: packCommonTotal.totalMC,
-            targetRun: packCommonTotal.targetRun,
-            runPct: packCommonRunPct,
-            mcWillOff: packCommonTotal.mcWillOff,
-            mpShort: packCommonTotal.mpShort,
-            moldProb: packCommonTotal.moldProb,
-            moldChange: packCommonTotal.moldChange,
-            sample: packCommonTotal.sample,
-            mcProb: packCommonTotal.mcProb,
-            preventive: packCommonTotal.preventive,
-            noDemand: packCommonTotal.noDemand,
-            materialShort: packCommonTotal.materialShort,
-            overStock: packCommonTotal.overStock,
-            accShort: packCommonTotal.accShort,
+            dept: 'Total Packaging Team',
+            totalMP: packagingTotal.totalMP,
+            totalPresent: packagingTotal.totalPresent,
+            absent: packagingTotal.absent,
+            leave: packagingTotal.leave,
+            totalMC: packagingTotal.totalMC,
+            targetRun: packagingTotal.targetRun,
+            runPct: packRunPct,
+            mcWillOff: packagingTotal.mcWillOff,
+            mpShort: packagingTotal.mpShort,
+            moldProb: packagingTotal.moldProb,
+            moldChange: packagingTotal.moldChange,
+            sample: packagingTotal.sample,
+            mcProb: packagingTotal.mcProb,
+            preventive: packagingTotal.preventive,
+            noDemand: packagingTotal.noDemand,
+            materialShort: packagingTotal.materialShort,
+            overStock: packagingTotal.overStock,
+            accShort: packagingTotal.accShort,
             isTotal: true
         });
 
-        // ===== ✅ 'Total Manpower' সারি (শুধু ম্যানপাওয়ার সংক্রান্ত কলামে মান) =====
+        // --- Total Common Team (SN 24) ---
+        let commonRunPct = commonTotal.totalMC > 0 ? ((commonTotal.targetRun / commonTotal.totalMC) * 100) : 0;
         rows.push({
             sn: 24,
+            dept: 'Total Common Team',
+            totalMP: commonTotal.totalMP,
+            totalPresent: commonTotal.totalPresent,
+            absent: commonTotal.absent,
+            leave: commonTotal.leave,
+            totalMC: commonTotal.totalMC,
+            targetRun: commonTotal.targetRun,
+            runPct: commonRunPct,
+            mcWillOff: commonTotal.mcWillOff,
+            mpShort: commonTotal.mpShort,
+            moldProb: commonTotal.moldProb,
+            moldChange: commonTotal.moldChange,
+            sample: commonTotal.sample,
+            mcProb: commonTotal.mcProb,
+            preventive: commonTotal.preventive,
+            noDemand: commonTotal.noDemand,
+            materialShort: commonTotal.materialShort,
+            overStock: commonTotal.overStock,
+            accShort: commonTotal.accShort,
+            isTotal: true
+        });
+
+        // --- Total Manpower (SN 25) ---
+        rows.push({
+            sn: 25,
             dept: 'Total Manpower (Leave + Absent + Present)',
             totalMP: grandTotal.totalMP,
             totalPresent: grandTotal.totalPresent,
             absent: grandTotal.absent,
             leave: grandTotal.leave,
-            // মেশিন ও কারণ সংক্রান্ত সব কলাম ০
             totalMC: 0,
             targetRun: 0,
             runPct: 0,
@@ -695,7 +759,7 @@
             return;
         }
 
-        // ========== HTML তৈরি ==========
+        // ========== HTML তৈরি (৪টি আলাদা রঙের ক্লাস) ==========
         let html = `<table class="saifuddin-table"><thead><tr>`;
         const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
@@ -706,15 +770,23 @@
 
         rows.forEach(row => {
             let rowClass = '';
-            if (row.isGrand) rowClass = 'grand-total-row';
-            else if (row.isTotal) rowClass = 'total-row';
-            
-            // Conditional Formatting for Run %
+            if (row.sn === 9) {
+                rowClass = 'row-production'; // সবুজ
+            } else if (row.sn === 23) {
+                rowClass = 'row-packaging'; // হলুদ (প্যাকেজিং)
+            } else if (row.sn === 24) {
+                rowClass = 'row-common'; // হলুদ (কমন)
+            } else if (row.sn === 25) {
+                rowClass = 'row-manpower'; // গাঢ় নীল
+            } else if (row.isTotal) {
+                rowClass = 'total-row';
+            }
+
+            // Progress Bar (শুধু মেশিন থাকলে)
             let pctClass = 'green';
             if (row.runPct < 60) pctClass = 'red';
             else if (row.runPct < 80) pctClass = 'yellow';
 
-            // Progress Bar
             const barWidth = Math.min(row.runPct, 100);
             const progressBar = `
                 <div class="run-pct-wrapper">
@@ -733,27 +805,18 @@
             html += `<tr class="${rowClass}">`;
             html += `<td><strong>${row.sn}</strong></td>`;
             html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
-            
-            // Total MP
-            if (row.isGrand) {
-                html += `<td>${totalMPBadge}</td>`;
-            } else {
-                html += `<td>${totalMPBadge}</td>`;
-            }
-
-            // Present, Absent, Leave (সব সারিতেই দেখাবে)
+            html += `<td>${totalMPBadge}</td>`;
             html += `<td>${presentBadge}</td>`;
             html += `<td>${absentBadge}</td>`;
             html += `<td>${leaveBadge}</td>`;
 
             // ===== Total Manpower সারির জন্য বাকি কলাম খালি =====
-            if (row.isGrand) {
+            if (row.sn === 25) {
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td>`;
             } else {
-                // সাধারণ সারি
                 html += `<td><span class="highlight-number">${row.totalMC}</span></td>`;
                 html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
                 html += `<td>${progressBar}</td>`;
@@ -795,6 +858,7 @@
 
         let csv = headers.join(',') + '\n';
         rows.forEach(row => {
+            const isManpower = (row.sn === 25);
             const line = [
                 row.sn,
                 row.dept,
@@ -802,21 +866,20 @@
                 row.totalPresent,
                 row.absent,
                 row.leave,
-                // Total Manpower সারির জন্য মেশিন/কারণ কলাম খালি
-                row.isGrand ? '' : row.totalMC,
-                row.isGrand ? '' : row.targetRun,
-                row.isGrand ? '' : row.runPct.toFixed(1) + '%',
-                row.isGrand ? '' : row.mcWillOff,
-                row.isGrand ? '' : row.mpShort,
-                row.isGrand ? '' : row.moldProb,
-                row.isGrand ? '' : row.moldChange,
-                row.isGrand ? '' : row.sample,
-                row.isGrand ? '' : row.mcProb,
-                row.isGrand ? '' : row.preventive,
-                row.isGrand ? '' : row.noDemand,
-                row.isGrand ? '' : row.materialShort,
-                row.isGrand ? '' : row.overStock,
-                row.isGrand ? '' : row.accShort
+                isManpower ? '' : row.totalMC,
+                isManpower ? '' : row.targetRun,
+                isManpower ? '' : row.runPct.toFixed(1) + '%',
+                isManpower ? '' : row.mcWillOff,
+                isManpower ? '' : row.mpShort,
+                isManpower ? '' : row.moldProb,
+                isManpower ? '' : row.moldChange,
+                isManpower ? '' : row.sample,
+                isManpower ? '' : row.mcProb,
+                isManpower ? '' : row.preventive,
+                isManpower ? '' : row.noDemand,
+                isManpower ? '' : row.materialShort,
+                isManpower ? '' : row.overStock,
+                isManpower ? '' : row.accShort
             ].join(',');
             csv += line + '\n';
         });
