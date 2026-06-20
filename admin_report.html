@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</title>
-    <!-- ✅ ইমেজ ক্যাপচারের জন্য html2canvas CDN যোগ করা হয়েছে -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* আপনার আগের সব স্টাইল ঠিক থাকবে, শুধু এক্সেল ও ইমেজ বাটনের জন্য একটু স্পেস যোগ করলাম */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
         .container { max-width: 1600px; margin: 0 auto; }
@@ -47,12 +45,137 @@
         .missing-list { display: flex; flex-wrap: wrap; gap: 10px; background: #fff5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #e53935; }
         .missing-item { background: #e53935; color: white; padding: 4px 14px; border-radius: 20px; font-size: 13px; }
         .clearfix::after { content: ""; clear: both; display: table; }
-        .badge { background: #1976d2; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
         .filter-status { background: #e3f2fd; padding: 10px 15px; border-radius: 6px; margin: 10px 0; font-size: 14px; color: #0d47a1; }
         .summary-header { background: #fff3e0; padding: 12px 20px; border-radius: 8px; margin: 15px 0; font-size: 16px; font-weight: 600; color: #e65100; border-left: 4px solid #ff9800; }
         .mc-badge { background: #0d47a1; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
         .logistic-badge { background: #2e7d32; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
         .saifuddin-title { background: #1a237e; color: white; padding: 8px 20px; border-radius: 6px; display: inline-block; font-weight: 600; }
+
+        /* ===== Saifuddin Table এর নতুন আধুনিক ডিজাইন ===== */
+        .saifuddin-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        .saifuddin-table thead th {
+            background: #0d47a1;
+            color: white;
+            padding: 12px 8px;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+            border-bottom: 3px solid #1565c0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+        .saifuddin-table tbody td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e8ecf1;
+            vertical-align: middle;
+        }
+        /* Zebra Striping */
+        .saifuddin-table tbody tr:nth-child(even) {
+            background: #f8faff;
+        }
+        .saifuddin-table tbody tr:hover {
+            background: #e3edfb !important;
+            transition: 0.2s;
+        }
+        /* Total Rows */
+        .saifuddin-table .total-row td {
+            background: #dbeafe !important;
+            font-weight: 700;
+            border-top: 2px solid #1976d2;
+            border-bottom: 2px solid #1976d2;
+        }
+        .saifuddin-table .grand-total-row td {
+            background: #ffecb3 !important;
+            font-weight: 800;
+            color: #1a237e;
+            border-top: 3px solid #f57f17;
+            border-bottom: 3px solid #f57f17;
+            font-size: 14px;
+        }
+        /* Department Name Cell */
+        .saifuddin-table .dept-name {
+            font-weight: 600;
+            color: #1a3a5c;
+            text-align: left;
+            padding-left: 15px;
+        }
+        /* সংখ্যা হাইলাইট */
+        .saifuddin-table .highlight-number {
+            font-weight: 700;
+            color: #0d47a1;
+        }
+        .saifuddin-table .grand-total-row .highlight-number {
+            color: #1a237e;
+        }
+
+        /* --- Progress Bar + % (MC Run %) --- */
+        .run-pct-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+        .run-pct-text {
+            font-weight: 700;
+            font-size: 14px;
+            min-width: 50px;
+        }
+        .run-pct-text.green { color: #1b5e20; }
+        .run-pct-text.yellow { color: #e65100; }
+        .run-pct-text.red { color: #b71c1c; }
+
+        .bar-container {
+            width: 70px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .bar-fill.green { background: linear-gradient(90deg, #66bb6a, #43a047); }
+        .bar-fill.yellow { background: linear-gradient(90deg, #ffa726, #fb8c00); }
+        .bar-fill.red { background: linear-gradient(90deg, #ef5350, #c62828); }
+
+        /* --- Total MP, Present, Absent এর ব্যাজ --- */
+        .badge-count {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .badge-present { background: #e8f5e9; color: #1b5e20; }
+        .badge-absent { background: #ffebee; color: #b71c1c; }
+        .badge-leave { background: #fff3e0; color: #e65100; }
+        .badge-total { background: #e3f2fd; color: #0d47a1; }
+        
+        /* কারণের (Cause) ট্যাগ */
+        .cause-tag {
+            display: inline-block;
+            background: #f5f5f5;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #424242;
+        }
+        .cause-tag.high { background: #ffcdd2; color: #b71c1c; }
+        .cause-tag.medium { background: #fff9c4; color: #f57f17; }
     </style>
 </head>
 <body>
@@ -351,7 +474,7 @@
     }
 
     // ================================================================
-    //  Saifuddin Table
+    //  Saifuddin Table (আপডেটেড ভিজুয়াল + প্রোগ্রেস বার)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -593,7 +716,8 @@
             return;
         }
 
-        let html = `<table><thead><tr>`;
+        // ========== HTML তৈরি (আপডেটেড ভিজুয়াল) ==========
+        let html = `<table class="saifuddin-table"><thead><tr>`;
         const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
             'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
@@ -606,16 +730,38 @@
             if (row.isGrand) rowClass = 'grand-total-row';
             else if (row.isTotal) rowClass = 'total-row';
             
+            // Conditional Formatting for Run %
+            let pctClass = 'green';
+            if (row.runPct < 60) pctClass = 'red';
+            else if (row.runPct < 80) pctClass = 'yellow';
+
+            // Progress Bar HTML
+            const barWidth = Math.min(row.runPct, 100);
+            const progressBar = `
+                <div class="run-pct-wrapper">
+                    <span class="run-pct-text ${pctClass}">${row.runPct.toFixed(1)}%</span>
+                    <div class="bar-container">
+                        <div class="bar-fill ${pctClass}" style="width: ${barWidth}%;"></div>
+                    </div>
+                </div>
+            `;
+
+            // Total Present ব্যাজ
+            const presentBadge = `<span class="badge-count badge-present">${row.totalPresent}</span>`;
+            const absentBadge = `<span class="badge-count badge-absent">${row.absent}</span>`;
+            const leaveBadge = `<span class="badge-count badge-leave">${row.leave}</span>`;
+            const totalMPBadge = `<span class="badge-count badge-total">${row.totalMP}</span>`;
+
             html += `<tr class="${rowClass}">
-                <td>${row.sn}</td>
-                <td><strong>${row.dept}</strong></td>
-                <td>${row.totalMP}</td>
-                <td>${row.totalPresent}</td>
-                <td>${row.absent}</td>
-                <td>${row.leave}</td>
-                <td>${row.totalMC}</td>
-                <td>${row.targetRun}</td>
-                <td>${row.runPct.toFixed(1)}%</td>
+                <td><strong>${row.sn}</strong></td>
+                <td class="dept-name"><strong>${row.dept}</strong></td>
+                <td>${totalMPBadge}</td>
+                <td>${presentBadge}</td>
+                <td>${absentBadge}</td>
+                <td>${leaveBadge}</td>
+                <td><span class="highlight-number">${row.totalMC}</span></td>
+                <td><span class="highlight-number">${row.targetRun}</span></td>
+                <td>${progressBar}</td>
                 <td>${row.mcWillOff}</td>
                 <td>${row.mpShort}</td>
                 <td>${row.moldProb}</td>
@@ -633,47 +779,6 @@
         html += `</tbody></table>`;
         container.innerHTML = html;
         window._saifuddinRows = rows;
-    }
-
-    // ================================================================
-    // ✅ নতুন ফাংশন: Saifuddin টেবিলের ইমেজ ডাউনলোড
-    // ================================================================
-    function downloadSaifuddinImage() {
-        const container = document.getElementById('saifuddinTableContainer');
-        // চেক করা হচ্ছে টেবিলে কোনো ডেটা আছে কিনা
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই! প্রথমে ফিল্টার করে ডেটা আনুন।');
-            return;
-        }
-
-        // ইউজারকে জানানো হচ্ছে যে কাজ চলছে
-        const btn = document.querySelector('.btn-image');
-        btn.innerText = '⏳ জেনারেট হচ্ছে...';
-        btn.disabled = true;
-
-        // html2canvas দিয়ে পুরো টেবিলের ছবি তোলা
-        html2canvas(container, {
-            scale: 2, // উচ্চ রেজোলিউশনের জন্য
-            backgroundColor: '#ffffff',
-            allowTaint: false,
-            useCORS: true,
-            logging: false
-        }).then(canvas => {
-            // ক্যানভাস থেকে ইমেজ ডাউনলোড লিংক তৈরি
-            const link = document.createElement('a');
-            link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            
-            // বাটন আবার আগের অবস্থায় ফিরিয়ে আনা
-            btn.innerText = '📷 ইমেজ ডাউনলোড';
-            btn.disabled = false;
-        }).catch(err => {
-            console.error('❌ ইমেজ তৈরি ব্যর্থ:', err);
-            alert('❌ ইমেজ তৈরি করতে সমস্যা হয়েছে! কনসোল চেক করুন।');
-            btn.innerText = '📷 ইমেজ ডাউনলোড';
-            btn.disabled = false;
-        });
     }
 
     // ================================================================
@@ -727,7 +832,45 @@
     }
 
     // ================================================================
-    //  বাকি ফাংশন (আগের মতোই)
+    // ✅ ইমেজ ডাউনলোড (আপডেটেড ভিজুয়াল ক্যাপচার করবে)
+    // ================================================================
+    function downloadSaifuddinImage() {
+        const container = document.getElementById('saifuddinTableContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই! প্রথমে ফিল্টার করে ডেটা আনুন।');
+            return;
+        }
+
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳ জেনারেট হচ্ছে...';
+        btn.disabled = true;
+
+        // html2canvas দিয়ে পুরো টেবিলের ছবি তোলা
+        html2canvas(container, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            allowTaint: false,
+            useCORS: true,
+            logging: false,
+            scrollY: 0,
+            scrollX: 0
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        }).catch(err => {
+            console.error('❌ ইমেজ তৈরি ব্যর্থ:', err);
+            alert('❌ ইমেজ তৈরি করতে সমস্যা হয়েছে! কনসোল চেক করুন।');
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        });
+    }
+
+    // ================================================================
+    //  বাকি ফাংশন (MC, Logistic, Group, Raw Data ইত্যাদি - আগের মতো)
     // ================================================================
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
