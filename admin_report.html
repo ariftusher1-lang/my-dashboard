@@ -51,7 +51,7 @@
         .logistic-badge { background: #2e7d32; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
         .saifuddin-title { background: #1a237e; color: white; padding: 8px 20px; border-radius: 6px; display: inline-block; font-weight: 600; }
 
-        /* ===== Saifuddin Table এর নতুন আধুনিক ডিজাইন ===== */
+        /* ===== Saifuddin Table এর আধুনিক ডিজাইন ===== */
         .saifuddin-table {
             width: 100%;
             border-collapse: separate;
@@ -79,7 +79,6 @@
             border-bottom: 1px solid #e8ecf1;
             vertical-align: middle;
         }
-        /* Zebra Striping */
         .saifuddin-table tbody tr:nth-child(even) {
             background: #f8faff;
         }
@@ -87,7 +86,6 @@
             background: #e3edfb !important;
             transition: 0.2s;
         }
-        /* Total Rows */
         .saifuddin-table .total-row td {
             background: #dbeafe !important;
             font-weight: 700;
@@ -102,14 +100,12 @@
             border-bottom: 3px solid #f57f17;
             font-size: 14px;
         }
-        /* Department Name Cell */
         .saifuddin-table .dept-name {
             font-weight: 600;
             color: #1a3a5c;
             text-align: left;
             padding-left: 15px;
         }
-        /* সংখ্যা হাইলাইট */
         .saifuddin-table .highlight-number {
             font-weight: 700;
             color: #0d47a1;
@@ -117,8 +113,6 @@
         .saifuddin-table .grand-total-row .highlight-number {
             color: #1a237e;
         }
-
-        /* --- Progress Bar + % (MC Run %) --- */
         .run-pct-wrapper {
             display: flex;
             align-items: center;
@@ -133,7 +127,6 @@
         .run-pct-text.green { color: #1b5e20; }
         .run-pct-text.yellow { color: #e65100; }
         .run-pct-text.red { color: #b71c1c; }
-
         .bar-container {
             width: 70px;
             height: 8px;
@@ -150,8 +143,6 @@
         .bar-fill.green { background: linear-gradient(90deg, #66bb6a, #43a047); }
         .bar-fill.yellow { background: linear-gradient(90deg, #ffa726, #fb8c00); }
         .bar-fill.red { background: linear-gradient(90deg, #ef5350, #c62828); }
-
-        /* --- Total MP, Present, Absent এর ব্যাজ --- */
         .badge-count {
             display: inline-block;
             padding: 2px 12px;
@@ -163,19 +154,6 @@
         .badge-absent { background: #ffebee; color: #b71c1c; }
         .badge-leave { background: #fff3e0; color: #e65100; }
         .badge-total { background: #e3f2fd; color: #0d47a1; }
-        
-        /* কারণের (Cause) ট্যাগ */
-        .cause-tag {
-            display: inline-block;
-            background: #f5f5f5;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #424242;
-        }
-        .cause-tag.high { background: #ffcdd2; color: #b71c1c; }
-        .cause-tag.medium { background: #fff9c4; color: #f57f17; }
     </style>
 </head>
 <body>
@@ -474,7 +452,7 @@
     }
 
     // ================================================================
-    //  Saifuddin Table (আপডেটেড ভিজুয়াল + প্রোগ্রেস বার)
+    //  Saifuddin Table (আপডেটেড: Total Manpower সারি পরিবর্তন)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -683,28 +661,29 @@
             isTotal: true
         });
 
-        let grandRunPct = grandTotal.totalMC > 0 ? ((grandTotal.targetRun / grandTotal.totalMC) * 100) : 0;
+        // ===== ✅ 'Total Manpower' সারি (শুধু ম্যানপাওয়ার সংক্রান্ত কলামে মান) =====
         rows.push({
             sn: 24,
-            dept: 'Total Manpower & Present (Current Shift)',
+            dept: 'Total Manpower (Leave + Absent + Present)',
             totalMP: grandTotal.totalMP,
             totalPresent: grandTotal.totalPresent,
             absent: grandTotal.absent,
             leave: grandTotal.leave,
-            totalMC: grandTotal.totalMC,
-            targetRun: grandTotal.targetRun,
-            runPct: grandRunPct,
-            mcWillOff: grandTotal.mcWillOff,
-            mpShort: grandTotal.mpShort,
-            moldProb: grandTotal.moldProb,
-            moldChange: grandTotal.moldChange,
-            sample: grandTotal.sample,
-            mcProb: grandTotal.mcProb,
-            preventive: grandTotal.preventive,
-            noDemand: grandTotal.noDemand,
-            materialShort: grandTotal.materialShort,
-            overStock: grandTotal.overStock,
-            accShort: grandTotal.accShort,
+            // মেশিন ও কারণ সংক্রান্ত সব কলাম ০
+            totalMC: 0,
+            targetRun: 0,
+            runPct: 0,
+            mcWillOff: 0,
+            mpShort: 0,
+            moldProb: 0,
+            moldChange: 0,
+            sample: 0,
+            mcProb: 0,
+            preventive: 0,
+            noDemand: 0,
+            materialShort: 0,
+            overStock: 0,
+            accShort: 0,
             isTotal: true,
             isGrand: true
         });
@@ -716,7 +695,7 @@
             return;
         }
 
-        // ========== HTML তৈরি (আপডেটেড ভিজুয়াল) ==========
+        // ========== HTML তৈরি ==========
         let html = `<table class="saifuddin-table"><thead><tr>`;
         const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
@@ -735,7 +714,7 @@
             if (row.runPct < 60) pctClass = 'red';
             else if (row.runPct < 80) pctClass = 'yellow';
 
-            // Progress Bar HTML
+            // Progress Bar
             const barWidth = Math.min(row.runPct, 100);
             const progressBar = `
                 <div class="run-pct-wrapper">
@@ -746,34 +725,52 @@
                 </div>
             `;
 
-            // Total Present ব্যাজ
             const presentBadge = `<span class="badge-count badge-present">${row.totalPresent}</span>`;
             const absentBadge = `<span class="badge-count badge-absent">${row.absent}</span>`;
             const leaveBadge = `<span class="badge-count badge-leave">${row.leave}</span>`;
             const totalMPBadge = `<span class="badge-count badge-total">${row.totalMP}</span>`;
 
-            html += `<tr class="${rowClass}">
-                <td><strong>${row.sn}</strong></td>
-                <td class="dept-name"><strong>${row.dept}</strong></td>
-                <td>${totalMPBadge}</td>
-                <td>${presentBadge}</td>
-                <td>${absentBadge}</td>
-                <td>${leaveBadge}</td>
-                <td><span class="highlight-number">${row.totalMC}</span></td>
-                <td><span class="highlight-number">${row.targetRun}</span></td>
-                <td>${progressBar}</td>
-                <td>${row.mcWillOff}</td>
-                <td>${row.mpShort}</td>
-                <td>${row.moldProb}</td>
-                <td>${row.moldChange}</td>
-                <td>${row.sample}</td>
-                <td>${row.mcProb}</td>
-                <td>${row.preventive}</td>
-                <td>${row.noDemand}</td>
-                <td>${row.materialShort}</td>
-                <td>${row.overStock}</td>
-                <td>${row.accShort}</td>
-            </tr>`;
+            html += `<tr class="${rowClass}">`;
+            html += `<td><strong>${row.sn}</strong></td>`;
+            html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
+            
+            // Total MP
+            if (row.isGrand) {
+                html += `<td>${totalMPBadge}</td>`;
+            } else {
+                html += `<td>${totalMPBadge}</td>`;
+            }
+
+            // Present, Absent, Leave (সব সারিতেই দেখাবে)
+            html += `<td>${presentBadge}</td>`;
+            html += `<td>${absentBadge}</td>`;
+            html += `<td>${leaveBadge}</td>`;
+
+            // ===== Total Manpower সারির জন্য বাকি কলাম খালি =====
+            if (row.isGrand) {
+                html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
+                html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
+                html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
+                html += `<td>-</td>`;
+            } else {
+                // সাধারণ সারি
+                html += `<td><span class="highlight-number">${row.totalMC}</span></td>`;
+                html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
+                html += `<td>${progressBar}</td>`;
+                html += `<td>${row.mcWillOff}</td>`;
+                html += `<td>${row.mpShort}</td>`;
+                html += `<td>${row.moldProb}</td>`;
+                html += `<td>${row.moldChange}</td>`;
+                html += `<td>${row.sample}</td>`;
+                html += `<td>${row.mcProb}</td>`;
+                html += `<td>${row.preventive}</td>`;
+                html += `<td>${row.noDemand}</td>`;
+                html += `<td>${row.materialShort}</td>`;
+                html += `<td>${row.overStock}</td>`;
+                html += `<td>${row.accShort}</td>`;
+            }
+
+            html += `</tr>`;
         });
 
         html += `</tbody></table>`;
@@ -782,7 +779,7 @@
     }
 
     // ================================================================
-    //  Saifuddin Excel ডাউনলোড
+    //  Saifuddin Excel ডাউনলোড (আপডেটেড)
     // ================================================================
     function downloadSaifuddinExcel() {
         const rows = window._saifuddinRows || [];
@@ -805,20 +802,21 @@
                 row.totalPresent,
                 row.absent,
                 row.leave,
-                row.totalMC,
-                row.targetRun,
-                row.runPct.toFixed(1) + '%',
-                row.mcWillOff,
-                row.mpShort,
-                row.moldProb,
-                row.moldChange,
-                row.sample,
-                row.mcProb,
-                row.preventive,
-                row.noDemand,
-                row.materialShort,
-                row.overStock,
-                row.accShort
+                // Total Manpower সারির জন্য মেশিন/কারণ কলাম খালি
+                row.isGrand ? '' : row.totalMC,
+                row.isGrand ? '' : row.targetRun,
+                row.isGrand ? '' : row.runPct.toFixed(1) + '%',
+                row.isGrand ? '' : row.mcWillOff,
+                row.isGrand ? '' : row.mpShort,
+                row.isGrand ? '' : row.moldProb,
+                row.isGrand ? '' : row.moldChange,
+                row.isGrand ? '' : row.sample,
+                row.isGrand ? '' : row.mcProb,
+                row.isGrand ? '' : row.preventive,
+                row.isGrand ? '' : row.noDemand,
+                row.isGrand ? '' : row.materialShort,
+                row.isGrand ? '' : row.overStock,
+                row.isGrand ? '' : row.accShort
             ].join(',');
             csv += line + '\n';
         });
@@ -832,7 +830,7 @@
     }
 
     // ================================================================
-    // ✅ ইমেজ ডাউনলোড (আপডেটেড ভিজুয়াল ক্যাপচার করবে)
+    // ✅ ইমেজ ডাউনলোড
     // ================================================================
     function downloadSaifuddinImage() {
         const container = document.getElementById('saifuddinTableContainer');
@@ -845,7 +843,6 @@
         btn.innerText = '⏳ জেনারেট হচ্ছে...';
         btn.disabled = true;
 
-        // html2canvas দিয়ে পুরো টেবিলের ছবি তোলা
         html2canvas(container, {
             scale: 2,
             backgroundColor: '#ffffff',
