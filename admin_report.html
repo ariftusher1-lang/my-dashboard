@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</title>
+    <!-- html2canvas (ইমেজ ডাউনলোড) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- XLSX (Excel ডাউনলোড) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- jsPDF (PDF ডাউনলোড) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
@@ -28,11 +32,13 @@
         .stats .card .label { font-size: 13px; color: #666; }
         .stats .card .value { font-size: 26px; font-weight: 700; color: #0d47a1; }
         .section-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #1976d2; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .btn-group { display: flex; gap: 10px; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
         .btn-excel { background: #1e7e34; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
         .btn-excel:hover { background: #136b2a; }
         .btn-image { background: #6c757d; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
         .btn-image:hover { background: #5a6268; }
+        .btn-pdf { background: #d32f2f; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-pdf:hover { background: #b71c1c; }
         .sub-title { font-size: 16px; font-weight: 600; color: #333; margin: 15px 0 10px 0; }
         .table-wrap { overflow-x: auto; background: white; border-radius: 10px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -137,8 +143,78 @@
         .badge-leave { background: #fff3e0; color: #e65100; }
         .badge-total { background: #e3f2fd; color: #0d47a1; }
 
-        /* ===== ৪টি আলাদা রঙের হেডিং ===== */
-        /* ১. Production Team (সবুজ) */
+        /* ===== MC Department Table এর ভিজুয়াল এনহ্যান্সমেন্ট ===== */
+        .mc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .mc-table thead th {
+            background: #0d47a1;
+            color: white;
+            padding: 12px 8px;
+            font-weight: 700;
+            font-size: 12px;
+            border-bottom: 3px solid #1565c0;
+            white-space: nowrap;
+        }
+        .mc-table tbody td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e8ecf1;
+            vertical-align: middle;
+        }
+        .mc-table tbody tr:nth-child(even) {
+            background: #f8faff;
+        }
+        .mc-table tbody tr:hover {
+            background: #e3edfb !important;
+            transition: 0.2s;
+        }
+        .mc-table .total-row td {
+            background: #d4e4f7 !important;
+            font-weight: 700;
+            border-top: 2px solid #1976d2;
+            border-bottom: 2px solid #1976d2;
+        }
+        .mc-table .dept-name {
+            font-weight: 600;
+            color: #1a3a5c;
+            text-align: left;
+            padding-left: 15px;
+        }
+        /* কন্ডিশনাল কালারিং */
+        .mc-run-pct-high { background: #e8f5e9 !important; color: #1b5e20; font-weight: 700; }
+        .mc-run-pct-mid { background: #fff8e1 !important; color: #e65100; font-weight: 700; }
+        .mc-run-pct-low { background: #ffebee !important; color: #b71c1c; font-weight: 700; }
+        /* প্রগ্রেস বার (MC Table এর জন্য) */
+        .mc-bar-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        .mc-bar-wrap .bar-bg {
+            width: 60px;
+            height: 7px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .mc-bar-wrap .bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .mc-bar-wrap .bar-fill.green { background: #43a047; }
+        .mc-bar-wrap .bar-fill.yellow { background: #fb8c00; }
+        .mc-bar-wrap .bar-fill.red { background: #c62828; }
+        .mc-bar-wrap .pct-text {
+            font-weight: 700;
+            font-size: 13px;
+            min-width: 40px;
+        }
+
+        /* ===== ৪টি আলাদা রঙের হেডিং (Saifuddin) ===== */
         .row-production td {
             background: #d4edda !important;
             border-top: 2px solid #28a745 !important;
@@ -146,7 +222,6 @@
             font-weight: 700 !important;
             color: #155724 !important;
         }
-        /* ২. Packaging Team (হলুদ) */
         .row-packaging td {
             background: #fff3cd !important;
             border-top: 2px solid #ffc107 !important;
@@ -154,7 +229,6 @@
             font-weight: 700 !important;
             color: #856404 !important;
         }
-        /* ৩. Common Team (হলুদ - একই রঙ, ভিন্ন সারি) */
         .row-common td {
             background: #fff3cd !important;
             border-top: 2px solid #ffc107 !important;
@@ -162,7 +236,6 @@
             font-weight: 700 !important;
             color: #856404 !important;
         }
-        /* ৪. Total Manpower (গাঢ় নীল) */
         .row-manpower td {
             background: #1a237e !important;
             border-top: 3px solid #0d47a1 !important;
@@ -221,15 +294,23 @@
         <div class="btn-group">
             <button class="btn-image" onclick="downloadSaifuddinImage()">📷 ইমেজ ডাউনলোড</button>
             <button class="btn-excel" onclick="downloadSaifuddinExcel()">⬇️ Excel ডাউনলোড</button>
+            <button class="btn-pdf" onclick="downloadSaifuddinPDF()">📄 PDF ডাউনলোড</button>
         </div>
     </div>
     <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
-    <!-- অন্যান্য সারাংশ টেবিল -->
-    <div class="section-title">📊 ডিপার্টমেন্ট ভিত্তিক সারাংশ (Summary Table)</div>
-    <div class="sub-title"><span class="mc-badge">🟦 মেশিন ডিপার্টমেন্ট (MC Department)</span></div>
+    <!-- ======== MC Department Summary ======== -->
+    <div class="section-title clearfix">
+        <span class="mc-badge" style="font-size:18px;">🟦 মেশিন ডিপার্টমেন্ট (MC Department) - ভিজুয়াল রিপোর্ট</span>
+        <div class="btn-group">
+            <button class="btn-image" onclick="downloadMCImage()">📷 ইমেজ ডাউনলোড</button>
+            <button class="btn-excel" onclick="downloadMCExcel()">⬇️ Excel ডাউনলোড</button>
+            <button class="btn-pdf" onclick="downloadMCPDF()">📄 PDF ডাউনলোড</button>
+        </div>
+    </div>
     <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
+    <!-- অন্যান্য সারাংশ টেবিল -->
     <div class="sub-title"><span class="logistic-badge">🟩 লজিস্টিক ডিপার্টমেন্ট (Logistic Department)</span></div>
     <div class="table-wrap" id="logisticSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
@@ -278,11 +359,9 @@
         { sn: 6, name: 'RIP> DPL> Plastic-7.3' },
         { sn: 7, name: 'RIP> DPL> Plastic-7.4' },
         { sn: 8, name: 'RIP> DPL> Plastic-1' },
-        // Packaging
         { sn: 10, name: 'Plastic Packaging-01' },
         { sn: 11, name: 'Plastic Packaging-02' },
         { sn: 12, name: 'Plastic Packaging-03' },
-        // Common / Support
         { sn: 14, name: 'Plastic-Maintenance.' },
         { sn: 15, name: 'Tool Room Maintenance' },
         { sn: 16, name: 'Plastic Inventory & Delivery' },
@@ -454,7 +533,7 @@
     function renderDashboard(data) {
         renderStats(data);
         renderSaifuddinTable(data);
-        renderMcSummaryTable(data);
+        renderMcSummaryTable(data); // ভিজুয়াল এনহ্যান্সমেন্ট সহ
         renderLogisticSummaryTable(data);
         renderGroupTable(data, 'groupATable', 'A');
         renderGroupTable(data, 'groupBTable', 'B');
@@ -478,28 +557,21 @@
     }
 
     // ================================================================
-    //  Saifuddin Table (প্যাকেজিং ও কমন আলাদা করা হয়েছে)
+    //  Saifuddin Table (আগের মতো)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
 
         let rows = [];
-        // ১. প্রোডাকশন টিম (SN 1-8)
         let prodTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
             mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
             preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
-        
-        // ২. প্যাকেজিং টিম (SN 10-12)
         let packagingTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
             mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
             preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
-
-        // ৩. কমন টিম (SN 14-22)
         let commonTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
             mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
             preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
-
-        // ৪. গ্র্যান্ড টোটাল (সব)
         let grandTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
             mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
             preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
@@ -545,188 +617,50 @@
             totalPresent = totalMP - leave - absent;
             let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
-            // গ্রুপ অনুযায়ী যোগ করা
             if (item.sn >= 1 && item.sn <= 8) {
-                prodTotal.totalMP += totalMP;
-                prodTotal.totalPresent += totalPresent;
-                prodTotal.absent += absent;
-                prodTotal.leave += leave;
-                prodTotal.totalMC += totalMC;
-                prodTotal.targetRun += targetRun;
-                prodTotal.mcWillOff += mcWillOff;
-                prodTotal.mpShort += mpShort;
-                prodTotal.moldProb += moldProb;
-                prodTotal.moldChange += moldChange;
-                prodTotal.sample += sample;
-                prodTotal.mcProb += mcProb;
-                prodTotal.preventive += preventive;
-                prodTotal.noDemand += noDemand;
-                prodTotal.materialShort += materialShort;
-                prodTotal.overStock += overStock;
-                prodTotal.accShort += accShort;
-            } 
-            else if (item.sn >= 10 && item.sn <= 12) {
-                packagingTotal.totalMP += totalMP;
-                packagingTotal.totalPresent += totalPresent;
-                packagingTotal.absent += absent;
-                packagingTotal.leave += leave;
-                packagingTotal.totalMC += totalMC;
-                packagingTotal.targetRun += targetRun;
-                packagingTotal.mcWillOff += mcWillOff;
-                packagingTotal.mpShort += mpShort;
-                packagingTotal.moldProb += moldProb;
-                packagingTotal.moldChange += moldChange;
-                packagingTotal.sample += sample;
-                packagingTotal.mcProb += mcProb;
-                packagingTotal.preventive += preventive;
-                packagingTotal.noDemand += noDemand;
-                packagingTotal.materialShort += materialShort;
-                packagingTotal.overStock += overStock;
-                packagingTotal.accShort += accShort;
+                prodTotal.totalMP += totalMP; prodTotal.totalPresent += totalPresent; prodTotal.absent += absent; prodTotal.leave += leave;
+                prodTotal.totalMC += totalMC; prodTotal.targetRun += targetRun; prodTotal.mcWillOff += mcWillOff;
+                prodTotal.mpShort += mpShort; prodTotal.moldProb += moldProb; prodTotal.moldChange += moldChange;
+                prodTotal.sample += sample; prodTotal.mcProb += mcProb; prodTotal.preventive += preventive;
+                prodTotal.noDemand += noDemand; prodTotal.materialShort += materialShort; prodTotal.overStock += overStock; prodTotal.accShort += accShort;
+            } else if (item.sn >= 10 && item.sn <= 12) {
+                packagingTotal.totalMP += totalMP; packagingTotal.totalPresent += totalPresent; packagingTotal.absent += absent; packagingTotal.leave += leave;
+                packagingTotal.totalMC += totalMC; packagingTotal.targetRun += targetRun; packagingTotal.mcWillOff += mcWillOff;
+                packagingTotal.mpShort += mpShort; packagingTotal.moldProb += moldProb; packagingTotal.moldChange += moldChange;
+                packagingTotal.sample += sample; packagingTotal.mcProb += mcProb; packagingTotal.preventive += preventive;
+                packagingTotal.noDemand += noDemand; packagingTotal.materialShort += materialShort; packagingTotal.overStock += overStock; packagingTotal.accShort += accShort;
             } else if (item.sn >= 14 && item.sn <= 22) {
-                commonTotal.totalMP += totalMP;
-                commonTotal.totalPresent += totalPresent;
-                commonTotal.absent += absent;
-                commonTotal.leave += leave;
-                commonTotal.totalMC += totalMC;
-                commonTotal.targetRun += targetRun;
-                commonTotal.mcWillOff += mcWillOff;
-                commonTotal.mpShort += mpShort;
-                commonTotal.moldProb += moldProb;
-                commonTotal.moldChange += moldChange;
-                commonTotal.sample += sample;
-                commonTotal.mcProb += mcProb;
-                commonTotal.preventive += preventive;
-                commonTotal.noDemand += noDemand;
-                commonTotal.materialShort += materialShort;
-                commonTotal.overStock += overStock;
-                commonTotal.accShort += accShort;
+                commonTotal.totalMP += totalMP; commonTotal.totalPresent += totalPresent; commonTotal.absent += absent; commonTotal.leave += leave;
+                commonTotal.totalMC += totalMC; commonTotal.targetRun += targetRun; commonTotal.mcWillOff += mcWillOff;
+                commonTotal.mpShort += mpShort; commonTotal.moldProb += moldProb; commonTotal.moldChange += moldChange;
+                commonTotal.sample += sample; commonTotal.mcProb += mcProb; commonTotal.preventive += preventive;
+                commonTotal.noDemand += noDemand; commonTotal.materialShort += materialShort; commonTotal.overStock += overStock; commonTotal.accShort += accShort;
             }
 
-            // গ্র্যান্ড টোটালে যোগ
-            grandTotal.totalMP += totalMP;
-            grandTotal.totalPresent += totalPresent;
-            grandTotal.absent += absent;
-            grandTotal.leave += leave;
-            grandTotal.totalMC += totalMC;
-            grandTotal.targetRun += targetRun;
-            grandTotal.mcWillOff += mcWillOff;
-            grandTotal.mpShort += mpShort;
-            grandTotal.moldProb += moldProb;
-            grandTotal.moldChange += moldChange;
-            grandTotal.sample += sample;
-            grandTotal.mcProb += mcProb;
-            grandTotal.preventive += preventive;
-            grandTotal.noDemand += noDemand;
-            grandTotal.materialShort += materialShort;
-            grandTotal.overStock += overStock;
-            grandTotal.accShort += accShort;
+            grandTotal.totalMP += totalMP; grandTotal.totalPresent += totalPresent; grandTotal.absent += absent; grandTotal.leave += leave;
+            grandTotal.totalMC += totalMC; grandTotal.targetRun += targetRun; grandTotal.mcWillOff += mcWillOff;
+            grandTotal.mpShort += mpShort; grandTotal.moldProb += moldProb; grandTotal.moldChange += moldChange;
+            grandTotal.sample += sample; grandTotal.mcProb += mcProb; grandTotal.preventive += preventive;
+            grandTotal.noDemand += noDemand; grandTotal.materialShort += materialShort; grandTotal.overStock += overStock; grandTotal.accShort += accShort;
 
-            // ইনডিভিজুয়াল ডিপার্টমেন্ট সারি (বিস্তারিত)
             rows.push({
                 sn: item.sn,
                 dept: deptName,
-                totalMP: totalMP,
-                totalPresent: totalPresent,
-                absent: absent,
-                leave: leave,
-                totalMC: totalMC,
-                targetRun: targetRun,
-                runPct: runPct,
-                mcWillOff: mcWillOff,
-                mpShort: mpShort,
-                moldProb: moldProb,
-                moldChange: moldChange,
-                sample: sample,
-                mcProb: mcProb,
-                preventive: preventive,
-                noDemand: noDemand,
-                materialShort: materialShort,
-                overStock: overStock,
-                accShort: accShort,
+                totalMP, totalPresent, absent, leave, totalMC, targetRun, runPct, mcWillOff,
+                mpShort, moldProb, moldChange, sample, mcProb, preventive, noDemand, materialShort, overStock, accShort,
                 isTotal: false
             });
         });
 
-        // --- Total Production Team (SN 9) ---
         let prodRunPct = prodTotal.totalMC > 0 ? ((prodTotal.targetRun / prodTotal.totalMC) * 100) : 0;
-        rows.push({
-            sn: 9,
-            dept: 'Total Production Team',
-            totalMP: prodTotal.totalMP,
-            totalPresent: prodTotal.totalPresent,
-            absent: prodTotal.absent,
-            leave: prodTotal.leave,
-            totalMC: prodTotal.totalMC,
-            targetRun: prodTotal.targetRun,
-            runPct: prodRunPct,
-            mcWillOff: prodTotal.mcWillOff,
-            mpShort: prodTotal.mpShort,
-            moldProb: prodTotal.moldProb,
-            moldChange: prodTotal.moldChange,
-            sample: prodTotal.sample,
-            mcProb: prodTotal.mcProb,
-            preventive: prodTotal.preventive,
-            noDemand: prodTotal.noDemand,
-            materialShort: prodTotal.materialShort,
-            overStock: prodTotal.overStock,
-            accShort: prodTotal.accShort,
-            isTotal: true
-        });
+        rows.push({ sn: 9, dept: 'Total Production Team', ...prodTotal, runPct: prodRunPct, isTotal: true });
 
-        // --- Total Packaging Team (SN 23) ---
         let packRunPct = packagingTotal.totalMC > 0 ? ((packagingTotal.targetRun / packagingTotal.totalMC) * 100) : 0;
-        rows.push({
-            sn: 23,
-            dept: 'Total Packaging Team',
-            totalMP: packagingTotal.totalMP,
-            totalPresent: packagingTotal.totalPresent,
-            absent: packagingTotal.absent,
-            leave: packagingTotal.leave,
-            totalMC: packagingTotal.totalMC,
-            targetRun: packagingTotal.targetRun,
-            runPct: packRunPct,
-            mcWillOff: packagingTotal.mcWillOff,
-            mpShort: packagingTotal.mpShort,
-            moldProb: packagingTotal.moldProb,
-            moldChange: packagingTotal.moldChange,
-            sample: packagingTotal.sample,
-            mcProb: packagingTotal.mcProb,
-            preventive: packagingTotal.preventive,
-            noDemand: packagingTotal.noDemand,
-            materialShort: packagingTotal.materialShort,
-            overStock: packagingTotal.overStock,
-            accShort: packagingTotal.accShort,
-            isTotal: true
-        });
+        rows.push({ sn: 23, dept: 'Total Packaging Team', ...packagingTotal, runPct: packRunPct, isTotal: true });
 
-        // --- Total Common Team (SN 24) ---
         let commonRunPct = commonTotal.totalMC > 0 ? ((commonTotal.targetRun / commonTotal.totalMC) * 100) : 0;
-        rows.push({
-            sn: 24,
-            dept: 'Total Common Team',
-            totalMP: commonTotal.totalMP,
-            totalPresent: commonTotal.totalPresent,
-            absent: commonTotal.absent,
-            leave: commonTotal.leave,
-            totalMC: commonTotal.totalMC,
-            targetRun: commonTotal.targetRun,
-            runPct: commonRunPct,
-            mcWillOff: commonTotal.mcWillOff,
-            mpShort: commonTotal.mpShort,
-            moldProb: commonTotal.moldProb,
-            moldChange: commonTotal.moldChange,
-            sample: commonTotal.sample,
-            mcProb: commonTotal.mcProb,
-            preventive: commonTotal.preventive,
-            noDemand: commonTotal.noDemand,
-            materialShort: commonTotal.materialShort,
-            overStock: commonTotal.overStock,
-            accShort: commonTotal.accShort,
-            isTotal: true
-        });
+        rows.push({ sn: 24, dept: 'Total Common Team', ...commonTotal, runPct: commonRunPct, isTotal: true });
 
-        // --- Total Manpower (SN 25) ---
         rows.push({
             sn: 25,
             dept: 'Total Manpower (Leave + Absent + Present)',
@@ -734,20 +668,9 @@
             totalPresent: grandTotal.totalPresent,
             absent: grandTotal.absent,
             leave: grandTotal.leave,
-            totalMC: 0,
-            targetRun: 0,
-            runPct: 0,
-            mcWillOff: 0,
-            mpShort: 0,
-            moldProb: 0,
-            moldChange: 0,
-            sample: 0,
-            mcProb: 0,
-            preventive: 0,
-            noDemand: 0,
-            materialShort: 0,
-            overStock: 0,
-            accShort: 0,
+            totalMC: 0, targetRun: 0, runPct: 0, mcWillOff: 0,
+            mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
+            preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0,
             isTotal: true,
             isGrand: true
         });
@@ -759,7 +682,6 @@
             return;
         }
 
-        // ========== HTML তৈরি (৪টি আলাদা রঙের ক্লাস) ==========
         let html = `<table class="saifuddin-table"><thead><tr>`;
         const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
@@ -770,19 +692,10 @@
 
         rows.forEach(row => {
             let rowClass = '';
-            if (row.sn === 9) {
-                rowClass = 'row-production'; // সবুজ
-            } else if (row.sn === 23) {
-                rowClass = 'row-packaging'; // হলুদ (প্যাকেজিং)
-            } else if (row.sn === 24) {
-                rowClass = 'row-common'; // হলুদ (কমন)
-            } else if (row.sn === 25) {
-                rowClass = 'row-manpower'; // গাঢ় নীল
-            } else if (row.isTotal) {
-                rowClass = 'total-row';
-            }
+            if (row.sn === 9) rowClass = 'row-production';
+            else if (row.sn === 23 || row.sn === 24) rowClass = 'row-packaging';
+            else if (row.sn === 25) rowClass = 'row-manpower';
 
-            // Progress Bar (শুধু মেশিন থাকলে)
             let pctClass = 'green';
             if (row.runPct < 60) pctClass = 'red';
             else if (row.runPct < 80) pctClass = 'yellow';
@@ -805,12 +718,8 @@
             html += `<tr class="${rowClass}">`;
             html += `<td><strong>${row.sn}</strong></td>`;
             html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
-            html += `<td>${totalMPBadge}</td>`;
-            html += `<td>${presentBadge}</td>`;
-            html += `<td>${absentBadge}</td>`;
-            html += `<td>${leaveBadge}</td>`;
+            html += `<td>${totalMPBadge}</td><td>${presentBadge}</td><td>${absentBadge}</td><td>${leaveBadge}</td>`;
 
-            // ===== Total Manpower সারির জন্য বাকি কলাম খালি =====
             if (row.sn === 25) {
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
@@ -821,18 +730,10 @@
                 html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
                 html += `<td>${progressBar}</td>`;
                 html += `<td>${row.mcWillOff}</td>`;
-                html += `<td>${row.mpShort}</td>`;
-                html += `<td>${row.moldProb}</td>`;
-                html += `<td>${row.moldChange}</td>`;
-                html += `<td>${row.sample}</td>`;
-                html += `<td>${row.mcProb}</td>`;
-                html += `<td>${row.preventive}</td>`;
-                html += `<td>${row.noDemand}</td>`;
-                html += `<td>${row.materialShort}</td>`;
-                html += `<td>${row.overStock}</td>`;
-                html += `<td>${row.accShort}</td>`;
+                html += `<td>${row.mpShort}</td><td>${row.moldProb}</td><td>${row.moldChange}</td>`;
+                html += `<td>${row.sample}</td><td>${row.mcProb}</td><td>${row.preventive}</td>`;
+                html += `<td>${row.noDemand}</td><td>${row.materialShort}</td><td>${row.overStock}</td><td>${row.accShort}</td>`;
             }
-
             html += `</tr>`;
         });
 
@@ -842,95 +743,7 @@
     }
 
     // ================================================================
-    //  Saifuddin Excel ডাউনলোড (আপডেটেড)
-    // ================================================================
-    function downloadSaifuddinExcel() {
-        const rows = window._saifuddinRows || [];
-        if (rows.length === 0) {
-            alert('ডাউনলোড করার জন্য কোনো ডেটা নেই!');
-            return;
-        }
-
-        const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
-            'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
-            'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
-            'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'];
-
-        let csv = headers.join(',') + '\n';
-        rows.forEach(row => {
-            const isManpower = (row.sn === 25);
-            const line = [
-                row.sn,
-                row.dept,
-                row.totalMP,
-                row.totalPresent,
-                row.absent,
-                row.leave,
-                isManpower ? '' : row.totalMC,
-                isManpower ? '' : row.targetRun,
-                isManpower ? '' : row.runPct.toFixed(1) + '%',
-                isManpower ? '' : row.mcWillOff,
-                isManpower ? '' : row.mpShort,
-                isManpower ? '' : row.moldProb,
-                isManpower ? '' : row.moldChange,
-                isManpower ? '' : row.sample,
-                isManpower ? '' : row.mcProb,
-                isManpower ? '' : row.preventive,
-                isManpower ? '' : row.noDemand,
-                isManpower ? '' : row.materialShort,
-                isManpower ? '' : row.overStock,
-                isManpower ? '' : row.accShort
-            ].join(',');
-            csv += line + '\n';
-        });
-
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `Saifuddin_Summary_${new Date().toISOString().slice(0,10)}.csv`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-    }
-
-    // ================================================================
-    // ✅ ইমেজ ডাউনলোড
-    // ================================================================
-    function downloadSaifuddinImage() {
-        const container = document.getElementById('saifuddinTableContainer');
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই! প্রথমে ফিল্টার করে ডেটা আনুন।');
-            return;
-        }
-
-        const btn = document.querySelector('.btn-image');
-        btn.innerText = '⏳ জেনারেট হচ্ছে...';
-        btn.disabled = true;
-
-        html2canvas(container, {
-            scale: 2,
-            backgroundColor: '#ffffff',
-            allowTaint: false,
-            useCORS: true,
-            logging: false,
-            scrollY: 0,
-            scrollX: 0
-        }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            btn.innerText = '📷 ইমেজ ডাউনলোড';
-            btn.disabled = false;
-        }).catch(err => {
-            console.error('❌ ইমেজ তৈরি ব্যর্থ:', err);
-            alert('❌ ইমেজ তৈরি করতে সমস্যা হয়েছে! কনসোল চেক করুন।');
-            btn.innerText = '📷 ইমেজ ডাউনলোড';
-            btn.disabled = false;
-        });
-    }
-
-    // ================================================================
-    //  বাকি ফাংশন (MC, Logistic, Group, Raw Data ইত্যাদি - আগের মতো)
+    //  MC Department Table (ভিজুয়াল এনহ্যান্সমেন্ট সহ)
     // ================================================================
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
@@ -970,8 +783,17 @@
             d.count += 1;
         });
 
-        let html = `<table><thead><tr>
-            <th>ডিপার্টমেন্ট</th><th>Prod IC (Auto)</th><th>Total MC (Fixed)</th><th>Total HR</th><th>MC Operator</th><th>Packaging Operator</th><th>MC Running QTY</th><th>Stopped QTY (Auto)</th><th>MC Running % (Auto)</th><th>MC Stopped % (Auto)</th>
+        let html = `<table class="mc-table"><thead><tr>
+            <th>ডিপার্টমেন্ট</th>
+            <th>Prod IC (Auto)</th>
+            <th>Total MC (Fixed)</th>
+            <th>Total HR</th>
+            <th>MC Operator</th>
+            <th>Packaging Operator</th>
+            <th>MC Running QTY</th>
+            <th>Stopped QTY (Auto)</th>
+            <th>MC Running % (Auto)</th>
+            <th>MC Stopped % (Auto)</th>
         </tr></thead><tbody>`;
 
         let grandTotalMC = 0, grandTotalHR = 0, grandMCOp = 0, grandPackOp = 0, grandRunning = 0, grandStopped = 0;
@@ -980,8 +802,21 @@
             const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100) : 0;
             const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100) : 0;
 
+            // কন্ডিশনাল কালারিং ক্লাস
+            let runClass = 'mc-run-pct-mid';
+            if (runPct >= 80) runClass = 'mc-run-pct-high';
+            else if (runPct < 50) runClass = 'mc-run-pct-low';
+
+            let stopClass = 'mc-run-pct-mid';
+            if (stopPct <= 20) stopClass = 'mc-run-pct-high';
+            else if (stopPct > 50) stopClass = 'mc-run-pct-low';
+
+            // প্রগ্রেস বার (Running %)
+            const runBarColor = runPct >= 80 ? 'green' : (runPct >= 50 ? 'yellow' : 'red');
+            const stopBarColor = stopPct <= 20 ? 'green' : (stopPct <= 50 ? 'yellow' : 'red');
+
             html += `<tr>
-                <td><strong>${dept}</strong></td>
+                <td class="dept-name"><strong>${dept}</strong></td>
                 <td>${d.icName || '-'}</td>
                 <td>${d.totalMC}</td>
                 <td>${d.totalHR}</td>
@@ -989,8 +824,22 @@
                 <td>${d.packagingOperator}</td>
                 <td>${d.running}</td>
                 <td>${d.stopped}</td>
-                <td>${runPct.toFixed(1)}%</td>
-                <td>${stopPct.toFixed(1)}%</td>
+                <td class="${runClass}">
+                    <div class="mc-bar-wrap">
+                        <span class="pct-text">${runPct.toFixed(1)}%</span>
+                        <div class="bar-bg">
+                            <div class="bar-fill ${runBarColor}" style="width: ${Math.min(runPct, 100)}%;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td class="${stopClass}">
+                    <div class="mc-bar-wrap">
+                        <span class="pct-text">${stopPct.toFixed(1)}%</span>
+                        <div class="bar-bg">
+                            <div class="bar-fill ${stopBarColor}" style="width: ${Math.min(stopPct, 100)}%;"></div>
+                        </div>
+                    </div>
+                </td>
             </tr>`;
 
             grandTotalMC += d.totalMC;
@@ -1019,32 +868,203 @@
 
         html += `</tbody></table>`;
         container.innerHTML = html;
+
+        // MC টেবিলের ডেটা সংরক্ষণ (ডাউনলোডের জন্য)
+        window._mcTableData = { rows: deptMap, grandTotalMC, grandTotalHR, grandMCOp, grandPackOp, grandRunning, grandStopped, grandRunPct, grandStopPct };
     }
 
+    // ================================================================
+    //  MC Table: Image Download
+    // ================================================================
+    function downloadMCImage() {
+        const container = document.getElementById('mcSummaryTable');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `MC_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    // ================================================================
+    //  MC Table: Excel Download
+    // ================================================================
+    function downloadMCExcel() {
+        const data = window._mcTableData;
+        if (!data) { alert('ডেটা নেই!'); return; }
+        const headers = ['Department', 'Prod IC (Auto)', 'Total MC', 'Total HR', 'MC Operator', 'Packaging Operator', 'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'];
+        const rows = [];
+        Object.entries(data.rows).forEach(([dept, d]) => {
+            const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
+            const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
+            rows.push([dept, d.icName || '-', d.totalMC, d.totalHR, d.mcOperator, d.packagingOperator, d.running, d.stopped, runPct + '%', stopPct + '%']);
+        });
+        rows.push(['📌 মোট', '-', data.grandTotalMC, data.grandTotalHR, data.grandMCOp, data.grandPackOp, data.grandRunning, data.grandStopped, data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%']);
+
+        const wbData = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wbData);
+        XLSX.utils.book_append_sheet(wb, ws, "MC Summary");
+        XLSX.writeFile(wb, `MC_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    // ================================================================
+    //  MC Table: PDF Download (jsPDF)
+    // ================================================================
+    function downloadMCPDF() {
+        const container = document.getElementById('mcSummaryTable');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-pdf');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`MC_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ PDF তৈরি ব্যর্থ!');
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    // ================================================================
+    //  Saifuddin Table: Image, Excel, PDF (আগের মতো)
+    // ================================================================
+    function downloadSaifuddinImage() {
+        const container = document.getElementById('saifuddinTableContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadSaifuddinExcel() {
+        const rows = window._saifuddinRows || [];
+        if (rows.length === 0) { alert('ডেটা নেই!'); return; }
+        const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
+            'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
+            'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
+            'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'];
+        const csvRows = rows.map(row => [
+            row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
+            row.sn === 25 ? '' : row.totalMC,
+            row.sn === 25 ? '' : row.targetRun,
+            row.sn === 25 ? '' : row.runPct.toFixed(1) + '%',
+            row.sn === 25 ? '' : row.mcWillOff,
+            row.sn === 25 ? '' : row.mpShort,
+            row.sn === 25 ? '' : row.moldProb,
+            row.sn === 25 ? '' : row.moldChange,
+            row.sn === 25 ? '' : row.sample,
+            row.sn === 25 ? '' : row.mcProb,
+            row.sn === 25 ? '' : row.preventive,
+            row.sn === 25 ? '' : row.noDemand,
+            row.sn === 25 ? '' : row.materialShort,
+            row.sn === 25 ? '' : row.overStock,
+            row.sn === 25 ? '' : row.accShort
+        ]);
+        const wbData = [headers, ...csvRows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wbData);
+        XLSX.utils.book_append_sheet(wb, ws, "Saifuddin Summary");
+        XLSX.writeFile(wb, `Saifuddin_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadSaifuddinPDF() {
+        const container = document.getElementById('saifuddinTableContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-pdf');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Saifuddin_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ PDF তৈরি ব্যর্থ!');
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    // ================================================================
+    //  বাকি ফাংশন (Logistic, Group, Overall, Missing, Raw Data)
+    // ================================================================
     function renderLogisticSummaryTable(data) {
         const container = document.getElementById('logisticSummaryTable');
         const logisticData = data.filter(row => {
             const dept = getVal(row, ['Department', 'department']);
             return dept && !MC_DEPARTMENTS.includes(dept);
         });
-
         if (logisticData.length === 0) {
             container.innerHTML = `<div class="no-data">কোনো লজিস্টিক ডিপার্টমেন্টের ডেটা নেই</div>`;
             return;
         }
-
         const deptMap = {};
         logisticData.forEach(row => {
             const dept = getVal(row, ['Department', 'department']);
             if (!dept) return;
             if (!deptMap[dept]) {
-                deptMap[dept] = {
-                    totalHR: 0,
-                    leave: 0,
-                    absent: 0,
-                    present: 0,
-                    count: 0
-                };
+                deptMap[dept] = { totalHR: 0, leave: 0, absent: 0, present: 0, count: 0 };
             }
             const d = deptMap[dept];
             d.totalHR += getNum(row, ['Total HR', 'totalHR']);
@@ -1052,45 +1072,24 @@
             d.absent += getNum(row, ['Absent Employee', 'absentEmployee']);
             d.count += 1;
         });
-
         let html = `<table><thead><tr>
-            <th>ডিপার্টমেন্ট</th><th>Date</th><th>Shift</th><th>Total HR</th><th>Leave</th><th>Absent</th><th>Present</th>
+            <th>ডিপার্টমেন্ট</th><th>Date</th><th>Shift</th>
+            <th>Total HR</th><th>Leave</th><th>Absent</th><th>Present</th>
         </tr></thead><tbody>`;
-
         let grandTotalHR = 0, grandLeave = 0, grandAbsent = 0;
-
         for (const [dept, d] of Object.entries(deptMap)) {
             const present = d.totalHR - d.leave - d.absent;
             const firstRow = logisticData.find(r => getVal(r, ['Department', 'department']) === dept);
             const date = firstRow ? formatDate(getVal(firstRow, ['entryDate', 'Date'])) : '-';
             const shift = firstRow ? getVal(firstRow, ['Shift', 'shift']) : '-';
-
-            html += `<tr>
-                <td><strong>${dept}</strong></td>
-                <td>${date}</td>
-                <td>${shift}</td>
-                <td>${d.totalHR}</td>
-                <td>${d.leave}</td>
-                <td>${d.absent}</td>
-                <td>${present}</td>
-            </tr>`;
-
-            grandTotalHR += d.totalHR;
-            grandLeave += d.leave;
-            grandAbsent += d.absent;
+            html += `<tr><td><strong>${dept}</strong></td><td>${date}</td><td>${shift}</td>
+                <td>${d.totalHR}</td><td>${d.leave}</td><td>${d.absent}</td><td>${present}</td></tr>`;
+            grandTotalHR += d.totalHR; grandLeave += d.leave; grandAbsent += d.absent;
         }
-
         const grandPresent = grandTotalHR - grandLeave - grandAbsent;
-        html += `<tr class="total-row">
-            <td><strong>📌 মোট</strong></td>
-            <td>-</td>
-            <td>-</td>
-            <td><strong>${grandTotalHR}</strong></td>
-            <td><strong>${grandLeave}</strong></td>
-            <td><strong>${grandAbsent}</strong></td>
-            <td><strong>${grandPresent}</strong></td>
-        </tr>`;
-
+        html += `<tr class="total-row"><td><strong>📌 মোট</strong></td><td>-</td><td>-</td>
+            <td><strong>${grandTotalHR}</strong></td><td><strong>${grandLeave}</strong></td>
+            <td><strong>${grandAbsent}</strong></td><td><strong>${grandPresent}</strong></td></tr>`;
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
@@ -1099,7 +1098,6 @@
         const container = document.getElementById(containerId);
         const isGroupA = (groupType === 'A');
         let depts = isGroupA ? MASTER_DEPARTMENTS.filter(d => !SUPPORT_DEPTS.includes(d)) : SUPPORT_DEPTS;
-
         let rows = [];
         depts.forEach(dept => {
             const items = data.filter(r => {
@@ -1121,52 +1119,34 @@
             const stopPct = totalMC > 0 ? ((stopped / totalMC) * 100) : 0;
             rows.push({ dept, items, totalHR, leave, absent, present, totalMC, running, stopped, runPct, stopPct });
         });
-
         if (rows.length === 0) {
             container.innerHTML = `<div class="no-data">এই গ্রুপে কোনো ডেটা নেই</div>`;
             return;
         }
-
         let html = `<table><thead><tr>
             <th>ডিপার্টমেন্ট</th><th>Date</th><th>Shift</th>
             <th>Total HR</th><th>Leave</th><th>Absent</th><th>Present</th>
             <th>Total MC</th><th>Running</th><th>Stopped</th><th>Run %</th><th>Stop %</th>
         </tr></thead><tbody>`;
-
         let sumHR = 0, sumLeave = 0, sumAbsent = 0, sumMC = 0, sumRunning = 0, sumStopped = 0;
         rows.forEach(row => {
             let rawDate = getVal(row.items[0], ['entryDate', 'Date']) || '-';
             const date = formatDate(rawDate);
             const shift = getVal(row.items[0], ['Shift', 'shift']) || '-';
-            html += `<tr>
-                <td><strong>${row.dept}</strong></td>
-                <td>${date}</td><td>${shift}</td>
-                <td>${row.totalHR}</td><td>${row.leave}</td><td>${row.absent}</td>
-                <td>${row.present}</td>
+            html += `<tr><td><strong>${row.dept}</strong></td><td>${date}</td><td>${shift}</td>
+                <td>${row.totalHR}</td><td>${row.leave}</td><td>${row.absent}</td><td>${row.present}</td>
                 <td>${row.totalMC}</td><td>${row.running}</td><td>${row.stopped}</td>
-                <td>${row.runPct.toFixed(1)}%</td><td>${row.stopPct.toFixed(1)}%</td>
-            </tr>`;
+                <td>${row.runPct.toFixed(1)}%</td><td>${row.stopPct.toFixed(1)}%</td></tr>`;
             sumHR += row.totalHR; sumLeave += row.leave; sumAbsent += row.absent;
             sumMC += row.totalMC; sumRunning += row.running; sumStopped += row.stopped;
         });
-
         const totalPresent = sumHR - sumLeave - sumAbsent;
         const totalRunPct = sumMC > 0 ? ((sumRunning / sumMC) * 100) : 0;
         const totalStopPct = sumMC > 0 ? ((sumStopped / sumMC) * 100) : 0;
-        html += `<tr class="total-row">
-            <td><strong>📌 মোট (Group ${groupType})</strong></td>
-            <td>-</td><td>-</td>
-            <td><strong>${sumHR}</strong></td>
-            <td>${sumLeave}</td>
-            <td>${sumAbsent}</td>
-            <td><strong>${totalPresent}</strong></td>
-            <td><strong>${sumMC}</strong></td>
-            <td><strong>${sumRunning}</strong></td>
-            <td><strong>${sumStopped}</strong></td>
-            <td><strong>${totalRunPct.toFixed(1)}%</strong></td>
-            <td><strong>${totalStopPct.toFixed(1)}%</strong></td>
-        </tr>`;
-
+        html += `<tr class="total-row"><td><strong>📌 মোট (Group ${groupType})</strong></td><td>-</td><td>-</td>
+            <td><strong>${sumHR}</strong></td><td>${sumLeave}</td><td>${sumAbsent}</td><td><strong>${totalPresent}</strong></td>
+            <td><strong>${sumMC}</strong></td><td><strong>${sumRunning}</strong></td><td><strong>${sumStopped}</strong></td>
+            <td><strong>${totalRunPct.toFixed(1)}%</strong></td><td><strong>${totalStopPct.toFixed(1)}%</strong></td></tr>`;
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
@@ -1185,22 +1165,14 @@
         let rawDate = data.length > 0 ? getVal(data[0], ['entryDate', 'Date']) : '-';
         const date = formatDate(rawDate);
         const shift = data.length > 0 ? getVal(data[0], ['Shift', 'shift']) : '-';
-
         if (data.length === 0) {
             container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
             return;
         }
-
         container.innerHTML = `<table>
             <thead><tr><th>Date</th><th>Shift</th><th>Total HR</th><th>Total Present</th><th>Total Absent</th><th>% Present</th><th>% Absent</th></tr></thead>
-            <tbody><tr>
-                <td>${date}</td><td>${shift}</td>
-                <td><strong>${totalHR}</strong></td>
-                <td><strong>${present}</strong></td>
-                <td>${absent}</td>
-                <td>${pctPresent.toFixed(1)}%</td>
-                <td>${pctAbsent.toFixed(1)}%</td>
-            </tr></tbody>
+            <tbody><tr><td>${date}</td><td>${shift}</td><td><strong>${totalHR}</strong></td><td><strong>${present}</strong></td><td>${absent}</td>
+                <td>${pctPresent.toFixed(1)}%</td><td>${pctAbsent.toFixed(1)}%</td></tr></tbody>
         </table>`;
     }
 
@@ -1208,12 +1180,10 @@
         const container = document.getElementById('missingContainer');
         const presentDepts = new Set(data.map(r => getVal(r, ['Department', 'department'])).filter(Boolean));
         const missing = MASTER_DEPARTMENTS.filter(d => !presentDepts.has(d));
-
         if (missing.length === 0) {
             container.innerHTML = `<div class="no-data" style="color:green;">✅ সব ডিপার্টমেন্টেই এন্ট্রি আছে!</div>`;
             return;
         }
-
         let html = `<div><strong>🔴 ${missing.length} টি ডিপার্টমেন্টে ফিল্টার অনুযায়ী কোনো এন্ট্রি নেই (মোট ${MASTER_DEPARTMENTS.length} টির মধ্যে)</strong></div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">`;
         missing.forEach(d => html += `<span class="missing-item">❌ ${d}</span>`);
         html += `</div>`;
@@ -1226,9 +1196,8 @@
             container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
             return;
         }
-
         const headers = [
-            '#', 'Time', 'Date', 'Shift', 'Department', 'IC Name', 
+            '#', 'Time', 'Date', 'Shift', 'Department', 'IC Name',
             'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped',
             'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem',
             'Preventive Maintenance', 'No Demand (QTY)', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short',
@@ -1239,7 +1208,6 @@
             'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP',
             'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'
         ];
-
         const keys = [
             'timestamp', 'entryDate', 'shift', 'department', 'icName',
             'totalMC', 'mcRunning', 'mcStopped', 'pctRunning', 'pctStopped',
@@ -1252,14 +1220,11 @@
             'subStore', 'inventoryOperator', 'fgDelivery', 'sharpTools', 'psi', 'erp',
             'floorHousekeeping', 'rework', 'welding', 'hrTransfer'
         ];
-
         let html = `<table><thead><tr>`;
         headers.forEach(h => html += `<th>${h}</th>`);
         html += `</tr></thead><tbody>`;
-
         data.forEach((row, idx) => {
-            html += `<tr>`;
-            html += `<td>${idx + 1}</td>`;
+            html += `<tr><td>${idx + 1}</td>`;
             const rawTimestamp = row.timestamp || '';
             html += `<td>${formatTime(rawTimestamp)}</td>`;
             const rawDate = row.entryDate || '';
@@ -1271,19 +1236,14 @@
             }
             html += `</tr>`;
         });
-
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
 
     function downloadExcel() {
-        if (filteredData.length === 0) {
-            alert('ডাউনলোড করার জন্য কোনো ডেটা নেই!');
-            return;
-        }
-
+        if (filteredData.length === 0) { alert('ডেটা নেই!'); return; }
         const headers = [
-            '#', 'Time', 'Date', 'Shift', 'Department', 'IC Name', 
+            '#', 'Time', 'Date', 'Shift', 'Department', 'IC Name',
             'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped',
             'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem',
             'Preventive Maintenance', 'No Demand (QTY)', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short',
@@ -1294,7 +1254,6 @@
             'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP',
             'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'
         ];
-
         const keys = [
             'timestamp', 'entryDate', 'shift', 'department', 'icName',
             'totalMC', 'mcRunning', 'mcStopped', 'pctRunning', 'pctStopped',
@@ -1307,11 +1266,9 @@
             'subStore', 'inventoryOperator', 'fgDelivery', 'sharpTools', 'psi', 'erp',
             'floorHousekeeping', 'rework', 'welding', 'hrTransfer'
         ];
-
         let csv = headers.join(',') + '\n';
         filteredData.forEach((row, idx) => {
-            const line = [];
-            line.push(idx + 1);
+            const line = [idx + 1];
             const rawTimestamp = row.timestamp || '';
             line.push(formatTime(rawTimestamp));
             const rawDate = row.entryDate || '';
@@ -1324,7 +1281,6 @@
             }
             csv += line.join(',') + '\n';
         });
-
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
