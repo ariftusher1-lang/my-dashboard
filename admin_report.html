@@ -299,7 +299,7 @@
     </div>
     <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
-    <!-- ======== MC Department Summary ======== -->
+    <!-- ======== MC Department Summary (Cause of Stop >0 সহ) ======== -->
     <div class="section-title clearfix">
         <span class="mc-badge" style="font-size:18px;">🟦 মেশিন ডিপার্টমেন্ট (MC Department) - ভিজুয়াল রিপোর্ট</span>
         <div class="btn-group">
@@ -533,7 +533,7 @@
     function renderDashboard(data) {
         renderStats(data);
         renderSaifuddinTable(data);
-        renderMcSummaryTable(data); // ভিজুয়াল এনহ্যান্সমেন্ট সহ
+        renderMcSummaryTable(data); // Cause of Stop >0 সহ
         renderLogisticSummaryTable(data);
         renderGroupTable(data, 'groupATable', 'A');
         renderGroupTable(data, 'groupBTable', 'B');
@@ -743,7 +743,7 @@
     }
 
     // ================================================================
-    //  MC Department Table (ভিজুয়াল এনহ্যান্সমেন্ট সহ)
+    //  MC Department Table (Cause of Stop >0 সহ)
     // ================================================================
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
@@ -756,6 +756,20 @@
             container.innerHTML = `<div class="no-data">কোনো মেশিন ডিপার্টমেন্টের ডেটা নেই</div>`;
             return;
         }
+
+        // Cause of Stop-এর কলামের নাম
+        const causeKeys = [
+            { key: 'mpShort', label: 'MP Short' },
+            { key: 'moldProblem', label: 'Mold Problem' },
+            { key: 'moldChange', label: 'Mold Change' },
+            { key: 'underSample', label: 'Sample' },
+            { key: 'mcProblem', label: 'MC Problem' },
+            { key: 'preventiveMaintenance', label: 'Preventive' },
+            { key: 'noDemandQty', label: 'No Demand' },
+            { key: 'materialMBShortage', label: 'Material & MB Shortage' },
+            { key: 'overStockWIP', label: 'Over Stock (WIP)' },
+            { key: 'accessoriesShort', label: 'Acc Short' }
+        ];
 
         const deptMap = {};
         mcData.forEach(row => {
@@ -770,8 +784,10 @@
                     packagingOperator: 0,
                     running: 0,
                     stopped: 0,
-                    count: 0
+                    count: 0,
+                    causes: {}
                 };
+                causeKeys.forEach(c => { deptMap[dept].causes[c.key] = 0; });
             }
             const d = deptMap[dept];
             d.totalMC += getNum(row, ['Total MC', 'totalMC']);
@@ -781,28 +797,45 @@
             d.running += getNum(row, ['MC Running', 'mcRunning']);
             d.stopped += getNum(row, ['MC Stopped', 'mcStopped']);
             d.count += 1;
+            causeKeys.forEach(c => {
+                d.causes[c.key] += getNum(row, [c.key]);
+            });
         });
 
+        // শুধু >0 আছে এমন Cause গুলো চিহ্নিত
+        let activeCauseKeys = causeKeys.filter(c => {
+            let hasData = false;
+            Object.values(deptMap).forEach(d => {
+                if (d.causes[c.key] > 0) hasData = true;
+            });
+            return hasData;
+        });
+
+        // হেডার তৈরি
         let html = `<table class="mc-table"><thead><tr>
             <th>ডিপার্টমেন্ট</th>
-            <th>Prod IC (Auto)</th>
-            <th>Total MC (Fixed)</th>
+            <th>Prod IC</th>
+            <th>Total MC</th>
             <th>Total HR</th>
             <th>MC Operator</th>
             <th>Packaging Operator</th>
-            <th>MC Running QTY</th>
-            <th>Stopped QTY (Auto)</th>
-            <th>MC Running % (Auto)</th>
-            <th>MC Stopped % (Auto)</th>
-        </tr></thead><tbody>`;
+            <th>MC Running</th>
+            <th>MC Stopped</th>
+            <th>MC Running %</th>
+            <th>MC Stopped %</th>`;
+        activeCauseKeys.forEach(c => {
+            html += `<th>${c.label}</th>`;
+        });
+        html += `</tr></thead><tbody>`;
 
         let grandTotalMC = 0, grandTotalHR = 0, grandMCOp = 0, grandPackOp = 0, grandRunning = 0, grandStopped = 0;
+        let grandCauses = {};
+        activeCauseKeys.forEach(c => { grandCauses[c.key] = 0; });
 
         for (const [dept, d] of Object.entries(deptMap)) {
             const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100) : 0;
             const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100) : 0;
 
-            // কন্ডিশনাল কালারিং ক্লাস
             let runClass = 'mc-run-pct-mid';
             if (runPct >= 80) runClass = 'mc-run-pct-high';
             else if (runPct < 50) runClass = 'mc-run-pct-low';
@@ -811,7 +844,6 @@
             if (stopPct <= 20) stopClass = 'mc-run-pct-high';
             else if (stopPct > 50) stopClass = 'mc-run-pct-low';
 
-            // প্রগ্রেস বার (Running %)
             const runBarColor = runPct >= 80 ? 'green' : (runPct >= 50 ? 'yellow' : 'red');
             const stopBarColor = stopPct <= 20 ? 'green' : (stopPct <= 50 ? 'yellow' : 'red');
 
@@ -839,8 +871,15 @@
                             <div class="bar-fill ${stopBarColor}" style="width: ${Math.min(stopPct, 100)}%;"></div>
                         </div>
                     </div>
-                </td>
-            </tr>`;
+                </td>`;
+
+            activeCauseKeys.forEach(c => {
+                const val = d.causes[c.key];
+                html += `<td>${val > 0 ? val : ''}</td>`;
+                grandCauses[c.key] += val;
+            });
+
+            html += `</tr>`;
 
             grandTotalMC += d.totalMC;
             grandTotalHR += d.totalHR;
@@ -850,6 +889,7 @@
             grandStopped += d.stopped;
         }
 
+        // টোটাল সারি
         const grandRunPct = grandTotalMC > 0 ? ((grandRunning / grandTotalMC) * 100) : 0;
         const grandStopPct = grandTotalMC > 0 ? ((grandStopped / grandTotalMC) * 100) : 0;
 
@@ -863,14 +903,22 @@
             <td><strong>${grandRunning}</strong></td>
             <td><strong>${grandStopped}</strong></td>
             <td><strong>${grandRunPct.toFixed(1)}%</strong></td>
-            <td><strong>${grandStopPct.toFixed(1)}%</strong></td>
-        </tr>`;
+            <td><strong>${grandStopPct.toFixed(1)}%</strong></td>`;
 
-        html += `</tbody></table>`;
+        activeCauseKeys.forEach(c => {
+            html += `<td><strong>${grandCauses[c.key]}</strong></td>`;
+        });
+
+        html += `</tr></tbody></table>`;
         container.innerHTML = html;
 
-        // MC টেবিলের ডেটা সংরক্ষণ (ডাউনলোডের জন্য)
-        window._mcTableData = { rows: deptMap, grandTotalMC, grandTotalHR, grandMCOp, grandPackOp, grandRunning, grandStopped, grandRunPct, grandStopPct };
+        // ডাউনলোডের জন্য ডেটা সংরক্ষণ
+        window._mcTableData = {
+            rows: deptMap,
+            activeCauseKeys: activeCauseKeys,
+            grandTotalMC, grandTotalHR, grandMCOp, grandPackOp, grandRunning, grandStopped,
+            grandRunPct, grandStopPct, grandCauses
+        };
     }
 
     // ================================================================
@@ -903,19 +951,37 @@
     }
 
     // ================================================================
-    //  MC Table: Excel Download
+    //  MC Table: Excel Download (Cause of Stop সহ)
     // ================================================================
     function downloadMCExcel() {
         const data = window._mcTableData;
         if (!data) { alert('ডেটা নেই!'); return; }
-        const headers = ['Department', 'Prod IC (Auto)', 'Total MC', 'Total HR', 'MC Operator', 'Packaging Operator', 'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'];
+        const headers = ['Department', 'Prod IC', 'Total MC', 'Total HR', 'MC Operator', 'Packaging Operator',
+            'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'
+        ];
+        data.activeCauseKeys.forEach(c => { headers.push(c.label); });
+
         const rows = [];
         Object.entries(data.rows).forEach(([dept, d]) => {
             const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
             const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
-            rows.push([dept, d.icName || '-', d.totalMC, d.totalHR, d.mcOperator, d.packagingOperator, d.running, d.stopped, runPct + '%', stopPct + '%']);
+            const rowData = [dept, d.icName || '-', d.totalMC, d.totalHR, d.mcOperator, d.packagingOperator,
+                d.running, d.stopped, runPct + '%', stopPct + '%'
+            ];
+            data.activeCauseKeys.forEach(c => {
+                rowData.push(d.causes[c.key] || 0);
+            });
+            rows.push(rowData);
         });
-        rows.push(['📌 মোট', '-', data.grandTotalMC, data.grandTotalHR, data.grandMCOp, data.grandPackOp, data.grandRunning, data.grandStopped, data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%']);
+
+        const totalRow = ['📌 মোট', '-', data.grandTotalMC, data.grandTotalHR, data.grandMCOp, data.grandPackOp,
+            data.grandRunning, data.grandStopped,
+            data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%'
+        ];
+        data.activeCauseKeys.forEach(c => {
+            totalRow.push(data.grandCauses[c.key] || 0);
+        });
+        rows.push(totalRow);
 
         const wbData = [headers, ...rows];
         const wb = XLSX.utils.book_new();
@@ -925,7 +991,7 @@
     }
 
     // ================================================================
-    //  MC Table: PDF Download (jsPDF)
+    //  MC Table: PDF Download
     // ================================================================
     function downloadMCPDF() {
         const container = document.getElementById('mcSummaryTable');
@@ -936,7 +1002,6 @@
         const btn = document.querySelector('.btn-pdf');
         btn.innerText = '⏳...';
         btn.disabled = true;
-
         html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
             .then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
@@ -958,7 +1023,7 @@
     }
 
     // ================================================================
-    //  Saifuddin Table: Image, Excel, PDF (আগের মতো)
+    //  Saifuddin Table: Image, Excel, PDF
     // ================================================================
     function downloadSaifuddinImage() {
         const container = document.getElementById('saifuddinTableContainer');
