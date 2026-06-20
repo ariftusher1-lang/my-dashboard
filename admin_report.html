@@ -532,7 +532,7 @@
     }
 
     // ================================================================
-    // Saifuddin Table - এখানে ড্যাশ দেখানোর লজিক সঠিকভাবে দেওয়া হয়েছে
+    // Saifuddin Table 
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -618,6 +618,7 @@
             grandTotal.sample += sample; grandTotal.mcProb += mcProb; grandTotal.preventive += preventive;
             grandTotal.noDemand += noDemand; grandTotal.materialShort += materialShort; grandTotal.overStock += overStock; grandTotal.accShort += accShort;
 
+            // Individually push each department row
             rows.push({
                 sn: item.sn,
                 dept: deptName,
@@ -697,9 +698,13 @@
             html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
             html += `<td>${totalMPBadge}</td><td>${presentBadge}</td><td>${absentBadge}</td><td>${leaveBadge}</td>`;
 
-            // 🔥 এখানে ড্যাশ দেওয়ার লজিক (শুধু SN 23, 24, 25) — স্ট্রিং হিসেবে তুলনা
+            // ===== 🔥 এখানে ড্যাশ দেওয়ার লজিক (শুধু SN 23, 24, 25) =====
             const snStr = String(row.sn);
-            if (snStr === '23' || snStr === '24' || snStr === '25') {
+            // "23" = Total Packaging, "24" = Total Common, "25" = Total Manpower
+            // এছাড়াও 14-22 (Support Depts) - তাদেরও ড্যাশ দিতে হবে
+            const isNonMC = (snStr === '23' || snStr === '24' || snStr === '25' || (row.sn >= 14 && row.sn <= 22));
+
+            if (isNonMC) {
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
@@ -1022,7 +1027,7 @@
             'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
             'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'];
         const csvRows = rows.map(row => {
-            const isNoMC = (row.sn === 23 || row.sn === 24 || row.sn === 25);
+            const isNoMC = (row.sn === 23 || row.sn === 24 || row.sn === 25 || (row.sn >= 14 && row.sn <= 22));
             return [
                 row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
                 isNoMC ? '' : row.totalMC,
