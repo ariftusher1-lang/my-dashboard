@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</title>
+    <!-- ✅ ইমেজ ক্যাপচারের জন্য html2canvas CDN যোগ করা হয়েছে -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* আপনার আগের সব স্টাইল ঠিক থাকবে, শুধু এক্সেল ও ইমেজ বাটনের জন্য একটু স্পেস যোগ করলাম */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
         .container { max-width: 1600px; margin: 0 auto; }
@@ -25,7 +29,12 @@
         .stats .card { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-left: 4px solid #1976d2; }
         .stats .card .label { font-size: 13px; color: #666; }
         .stats .card .value { font-size: 26px; font-weight: 700; color: #0d47a1; }
-        .section-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #1976d2; }
+        .section-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #1976d2; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .btn-group { display: flex; gap: 10px; }
+        .btn-excel { background: #1e7e34; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-excel:hover { background: #136b2a; }
+        .btn-image { background: #6c757d; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-image:hover { background: #5a6268; }
         .sub-title { font-size: 16px; font-weight: 600; color: #333; margin: 15px 0 10px 0; }
         .table-wrap { overflow-x: auto; background: white; border-radius: 10px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -37,8 +46,6 @@
         .no-data { text-align: center; color: #888; padding: 20px; font-style: italic; }
         .missing-list { display: flex; flex-wrap: wrap; gap: 10px; background: #fff5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #e53935; }
         .missing-item { background: #e53935; color: white; padding: 4px 14px; border-radius: 20px; font-size: 13px; }
-        .excel-btn { background: #1e7e34; color: white; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; float: right; margin-bottom: 10px; }
-        .excel-btn:hover { background: #136b2a; }
         .clearfix::after { content: ""; clear: both; display: table; }
         .badge { background: #1976d2; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
         .filter-status { background: #e3f2fd; padding: 10px 15px; border-radius: 6px; margin: 10px 0; font-size: 14px; color: #0d47a1; }
@@ -81,13 +88,15 @@
     </div>
 
     <div id="filterStatus" class="filter-status">⏳ ডেটা লোড হচ্ছে...</div>
-
     <div id="summaryHeader" class="summary-header">📌 বর্তমান তারিখ: -- | শিফট: --</div>
 
     <!-- ======== Saifuddin Table ======== -->
     <div class="section-title clearfix">
         <span class="saifuddin-title">📊 Summery Table For Mr. Saifuddin</span>
-        <button class="excel-btn" onclick="downloadSaifuddinExcel()" style="float:right;">⬇️ Excel ডাউনলোড করুন</button>
+        <div class="btn-group">
+            <button class="btn-image" onclick="downloadSaifuddinImage()">📷 ইমেজ ডাউনলোড</button>
+            <button class="btn-excel" onclick="downloadSaifuddinExcel()">⬇️ Excel ডাউনলোড</button>
+        </div>
     </div>
     <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
@@ -121,7 +130,7 @@
 
     <div class="section-title clearfix">
         📋 র-ডেটা (Raw Data) - প্রতিটি এন্ট্রি আলাদা
-        <button class="excel-btn" onclick="downloadExcel()">⬇️ Excel ডাউনলোড করুন</button>
+        <button class="btn-excel" onclick="downloadExcel()">⬇️ Excel ডাউনলোড করুন</button>
     </div>
     <div class="table-wrap" id="rawDataTable"><div class="no-data">লোড হচ্ছে...</div></div>
 </div>
@@ -133,7 +142,7 @@
     const API_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
     // ================================================================
-    //  Saifuddin Report-এর ডিপার্টমেন্ট লিস্ট (আপডেটেড)
+    //  Saifuddin Report-এর ডিপার্টমেন্ট লিস্ট
     // ================================================================
     const SAIFUDDIN_DEPTS = [
         { sn: 1, name: 'RIP> DPL> Plastic-3' },
@@ -242,7 +251,7 @@
     }
 
     // ================================================================
-    //  ডেটা লোড ও ফিল্টার (🔧 টাইমজোন ফিক্স করা হয়েছে)
+    //  ডেটা লোড ও ফিল্টার
     // ================================================================
     async function loadData() {
         document.getElementById('currentTime').innerText = '⏳ লোড হচ্ছে...';
@@ -276,20 +285,16 @@
         });
     }
 
-    // ================================================================
-    //  ফিল্টার প্রয়োগ (🔧 তারিখ ফরম্যাট টাইমজোন অনুযায়ী ঠিক করা)
-    // ================================================================
     function applyFilters() {
         const date = document.getElementById('filterDate').value;
         const shift = document.getElementById('filterShift').value;
         const dept = document.getElementById('filterDept').value;
 
         filteredData = allData.filter(row => {
-            // 🔥 টাইমজোন ফিক্স: UTC তারিখকে স্থানীয় (বাংলাদেশ) তারিখে রূপান্তর
             let rowDate = row.Date || '';
             if (!rowDate && row.entryDate) {
                 const d = new Date(row.entryDate);
-                rowDate = d.toLocaleDateString('en-CA'); // 'en-CA' ফরম্যাটে YYYY-MM-DD দেয়
+                rowDate = d.toLocaleDateString('en-CA');
             }
             let d = true;
             if (date) d = (rowDate === date);
@@ -346,7 +351,7 @@
     }
 
     // ================================================================
-    //  Saifuddin Table (আপডেটেড ম্যাপিং)
+    //  Saifuddin Table
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -628,6 +633,47 @@
         html += `</tbody></table>`;
         container.innerHTML = html;
         window._saifuddinRows = rows;
+    }
+
+    // ================================================================
+    // ✅ নতুন ফাংশন: Saifuddin টেবিলের ইমেজ ডাউনলোড
+    // ================================================================
+    function downloadSaifuddinImage() {
+        const container = document.getElementById('saifuddinTableContainer');
+        // চেক করা হচ্ছে টেবিলে কোনো ডেটা আছে কিনা
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই! প্রথমে ফিল্টার করে ডেটা আনুন।');
+            return;
+        }
+
+        // ইউজারকে জানানো হচ্ছে যে কাজ চলছে
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳ জেনারেট হচ্ছে...';
+        btn.disabled = true;
+
+        // html2canvas দিয়ে পুরো টেবিলের ছবি তোলা
+        html2canvas(container, {
+            scale: 2, // উচ্চ রেজোলিউশনের জন্য
+            backgroundColor: '#ffffff',
+            allowTaint: false,
+            useCORS: true,
+            logging: false
+        }).then(canvas => {
+            // ক্যানভাস থেকে ইমেজ ডাউনলোড লিংক তৈরি
+            const link = document.createElement('a');
+            link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            // বাটন আবার আগের অবস্থায় ফিরিয়ে আনা
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        }).catch(err => {
+            console.error('❌ ইমেজ তৈরি ব্যর্থ:', err);
+            alert('❌ ইমেজ তৈরি করতে সমস্যা হয়েছে! কনসোল চেক করুন।');
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        });
     }
 
     // ================================================================
