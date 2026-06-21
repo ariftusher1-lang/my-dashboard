@@ -348,7 +348,7 @@
     // ডিপার্টমেন্ট নাম ম্যাপিং (ফিক্সড নাম → ডেটাতে থাকা নাম)
     // ================================================================
     const DEPT_MAP_MC = {
-        'RIP> DPL> Plastic-01': ['RIP> DPL> Plastic-1'],   // ডেটাতে 'Plastic-1' আছে
+        'RIP> DPL> Plastic-01': ['RIP> DPL> Plastic-1'],
         'RIP> DPL> Plastic-3': ['RIP> DPL> Plastic-3'],
         'RIP> DPL> Plastic-6.1': ['RIP> DPL> Plastic-6.1'],
         'RIP> DPL> Plastic-6.2': ['RIP> DPL> Plastic-6.2'],
@@ -570,13 +570,6 @@
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
 
-        // কলামের ক্রম
-        const colKeys = [
-            'totalHR', 'mcOperator', 'packagingOperator', 'running', 'stopped',
-            'runPct', 'stopPct', 'mpShort', 'moldProblem', 'moldChange',
-            'underSample', 'mcProblem', 'noDemandQty', 'materialMBShortage',
-            'overStockWIP', 'accessoriesShort'
-        ];
         const colLabels = [
             'Total HR', 'MC Operator', 'Packaging Operator', 'MC Running', 'MC Stopped',
             'MC Running %', 'MC Stopped %', 'MP Short', 'Mold Problem', 'Mold Change',
@@ -726,8 +719,10 @@
             </tr>`;
         });
 
+        // ====================== FIXED মোট সারি ======================
         html += `<tr class="total-row">
-            <td colspan="4" style="text-align:right;"><strong>📌 মোট</strong></td>
+            <td colspan="3" style="text-align:right;"><strong>📌 মোট</strong></td>
+            <td><strong>${totalFixedMC}</strong></td>
             <td><strong>${grandTotal.totalHR}</strong></td>
             <td><strong>${grandTotal.mcOperator}</strong></td>
             <td><strong>${grandTotal.packagingOperator}</strong></td>
@@ -755,12 +750,13 @@
             grandRunPct: grandRunPct,
             grandStopPct: grandStopPct,
             colLabels: colLabels,
-            fixedMCList: FIXED_MC_DEPTS
+            fixedMCList: FIXED_MC_DEPTS,
+            totalFixedMC: totalFixedMC
         };
     }
 
     // ================================================================
-    // Saifuddin Table (আগের মতো)
+    // Saifuddin Table (এখন ০-কে Dash দেখাবে)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -886,6 +882,9 @@
             return;
         }
 
+        // ========== ০-কে Dash-এ রূপান্তর করার হেলপার ফাংশন ==========
+        const show = (v) => (v === 0 || v === '0' || v === null || v === undefined) ? '-' : v;
+
         let html = `<table class="saifuddin-table"><thead><tr>`;
         const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
@@ -900,34 +899,60 @@
             else if (row.sn === 23 || row.sn === 24) rowClass = 'row-packaging';
             else if (row.sn === 25) rowClass = 'row-manpower';
 
-            let pctClass = 'green';
-            if (row.runPct < 60) pctClass = 'red';
-            else if (row.runPct < 80) pctClass = 'yellow';
+            const isNonMC = (row.sn === 23 || row.sn === 24 || row.sn === 25 || 
+                             (row.sn >= 14 && row.sn <= 22) || 
+                             (row.sn >= 10 && row.sn <= 12));
 
-            const barWidth = Math.min(row.runPct, 100);
-            const progressBar = `
-                <div class="run-pct-wrapper">
-                    <span class="run-pct-text ${pctClass}">${row.runPct.toFixed(1)}%</span>
-                    <div class="bar-container">
-                        <div class="bar-fill ${pctClass}" style="width: ${barWidth}%;"></div>
+            // ড্যাশ দেখানোর জন্য ভ্যালু প্রস্তুত
+            const totalMPText = show(row.totalMP);
+            const presentText = show(row.totalPresent);
+            const absentText = show(row.absent);
+            const leaveText = show(row.leave);
+            const totalMCText = show(row.totalMC);
+            const targetRunText = show(row.targetRun);
+            const mcWillOffText = show(row.mcWillOff);
+            const mpShortText = show(row.mpShort);
+            const moldProbText = show(row.moldProb);
+            const moldChangeText = show(row.moldChange);
+            const sampleText = show(row.sample);
+            const mcProbText = show(row.mcProb);
+            const preventiveText = show(row.preventive);
+            const noDemandText = show(row.noDemand);
+            const materialShortText = show(row.materialShort);
+            const overStockText = show(row.overStock);
+            const accShortText = show(row.accShort);
+
+            let pctDisplay = '-';
+            let progressBar = '-';
+            if (!isNonMC && row.totalMC > 0) {
+                let pctClass = 'green';
+                if (row.runPct < 60) pctClass = 'red';
+                else if (row.runPct < 80) pctClass = 'yellow';
+                const barWidth = Math.min(row.runPct, 100);
+                pctDisplay = row.runPct.toFixed(1) + '%';
+                progressBar = `
+                    <div class="run-pct-wrapper">
+                        <span class="run-pct-text ${pctClass}">${pctDisplay}</span>
+                        <div class="bar-container">
+                            <div class="bar-fill ${pctClass}" style="width: ${barWidth}%;"></div>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else if (isNonMC) {
+                pctDisplay = '-';
+                progressBar = '-';
+            }
 
-            const presentBadge = `<span class="badge-count badge-present">${row.totalPresent}</span>`;
-            const absentBadge = `<span class="badge-count badge-absent">${row.absent}</span>`;
-            const leaveBadge = `<span class="badge-count badge-leave">${row.leave}</span>`;
-            const totalMPBadge = `<span class="badge-count badge-total">${row.totalMP}</span>`;
+            // Badge বা সরাসরি টেক্সট
+            const totalMPBadge = (row.totalMP === 0) ? '-' : `<span class="badge-count badge-total">${row.totalMP}</span>`;
+            const presentBadge = (row.totalPresent === 0) ? '-' : `<span class="badge-count badge-present">${row.totalPresent}</span>`;
+            const absentBadge = (row.absent === 0) ? '-' : `<span class="badge-count badge-absent">${row.absent}</span>`;
+            const leaveBadge = (row.leave === 0) ? '-' : `<span class="badge-count badge-leave">${row.leave}</span>`;
 
             html += `<tr class="${rowClass}">`;
             html += `<td><strong>${row.sn}</strong></td>`;
             html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
             html += `<td>${totalMPBadge}</td><td>${presentBadge}</td><td>${absentBadge}</td><td>${leaveBadge}</td>`;
-
-            const snStr = String(row.sn);
-            const isNonMC = (snStr === '23' || snStr === '24' || snStr === '25' || 
-                             (row.sn >= 14 && row.sn <= 22) || 
-                             (row.sn >= 10 && row.sn <= 12));
 
             if (isNonMC) {
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
@@ -935,13 +960,13 @@
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td>`;
             } else {
-                html += `<td><span class="highlight-number">${row.totalMC}</span></td>`;
-                html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
+                html += `<td><span class="highlight-number">${totalMCText}</span></td>`;
+                html += `<td><span class="highlight-number">${targetRunText}</span></td>`;
                 html += `<td>${progressBar}</td>`;
-                html += `<td>${row.mcWillOff}</td>`;
-                html += `<td>${row.mpShort}</td><td>${row.moldProb}</td><td>${row.moldChange}</td>`;
-                html += `<td>${row.sample}</td><td>${row.mcProb}</td><td>${row.preventive}</td>`;
-                html += `<td>${row.noDemand}</td><td>${row.materialShort}</td><td>${row.overStock}</td><td>${row.accShort}</td>`;
+                html += `<td>${mcWillOffText}</td>`;
+                html += `<td>${mpShortText}</td><td>${moldProbText}</td><td>${moldChangeText}</td>`;
+                html += `<td>${sampleText}</td><td>${mcProbText}</td><td>${preventiveText}</td>`;
+                html += `<td>${noDemandText}</td><td>${materialShortText}</td><td>${overStockText}</td><td>${accShortText}</td>`;
             }
             html += `</tr>`;
         });
@@ -995,7 +1020,7 @@
             row.overStockWIP || '—', row.accessoriesShort || '—'
         ]);
         const totalRow = [
-            '📌 মোট', '', '', '',
+            '📌 মোট', '', '', data.totalFixedMC,
             data.grandTotal.totalHR, data.grandTotal.mcOperator, data.grandTotal.packagingOperator,
             data.grandTotal.running, data.grandTotal.stopped,
             data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%',
@@ -1081,22 +1106,23 @@
             const isNoMC = (row.sn === 23 || row.sn === 24 || row.sn === 25 || 
                             (row.sn >= 14 && row.sn <= 22) || 
                             (row.sn >= 10 && row.sn <= 12));
+            const showExcel = (v) => (v === 0 || v === '0' || v === null || v === undefined) ? '' : v;
             return [
-                row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
-                isNoMC ? '' : row.totalMC,
-                isNoMC ? '' : row.targetRun,
-                isNoMC ? '' : row.runPct.toFixed(1) + '%',
-                isNoMC ? '' : row.mcWillOff,
-                isNoMC ? '' : row.mpShort,
-                isNoMC ? '' : row.moldProb,
-                isNoMC ? '' : row.moldChange,
-                isNoMC ? '' : row.sample,
-                isNoMC ? '' : row.mcProb,
-                isNoMC ? '' : row.preventive,
-                isNoMC ? '' : row.noDemand,
-                isNoMC ? '' : row.materialShort,
-                isNoMC ? '' : row.overStock,
-                isNoMC ? '' : row.accShort
+                row.sn, row.dept, showExcel(row.totalMP), showExcel(row.totalPresent), showExcel(row.absent), showExcel(row.leave),
+                isNoMC ? '' : showExcel(row.totalMC),
+                isNoMC ? '' : showExcel(row.targetRun),
+                isNoMC ? '' : (row.totalMC > 0 ? row.runPct.toFixed(1) + '%' : ''),
+                isNoMC ? '' : showExcel(row.mcWillOff),
+                isNoMC ? '' : showExcel(row.mpShort),
+                isNoMC ? '' : showExcel(row.moldProb),
+                isNoMC ? '' : showExcel(row.moldChange),
+                isNoMC ? '' : showExcel(row.sample),
+                isNoMC ? '' : showExcel(row.mcProb),
+                isNoMC ? '' : showExcel(row.preventive),
+                isNoMC ? '' : showExcel(row.noDemand),
+                isNoMC ? '' : showExcel(row.materialShort),
+                isNoMC ? '' : showExcel(row.overStock),
+                isNoMC ? '' : showExcel(row.accShort)
             ];
         });
         const wbData = [headers, ...csvRows];
