@@ -46,7 +46,7 @@
         .no-data { text-align: center; color: #888; padding: 20px; font-style: italic; }
         .missing-list { display: flex; flex-wrap: wrap; gap: 10px; background: #fff5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #e53935; }
         .missing-item { background: #e53935; color: white; padding: 4px 14px; border-radius: 20px; font-size: 13px; }
-        .clearfix::after { content: ""; display: table; clear: both; }
+        .clearfix::after { content: ""; clear: both; display: table; }
         .filter-status { background: #e3f2fd; padding: 10px 15px; border-radius: 6px; margin: 10px 0; font-size: 14px; color: #0d47a1; }
         .summary-header { background: #fff3e0; padding: 12px 20px; border-radius: 8px; margin: 15px 0; font-size: 16px; font-weight: 600; color: #e65100; border-left: 4px solid #ff9800; }
         .mc-badge { background: #0d47a1; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
@@ -327,11 +327,41 @@
 </div>
 
 <script>
-    // ============================================================
-    // কনফিগারেশন ও গ্লোবাল ভেরিয়েবল
-    // ============================================================
     const API_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
+    // ================================================================
+    // 🔥 ফিক্সড এমসি ডিপার্টমেন্ট লিস্ট (ইউজারের দেওয়া সঠিক তালিকা)
+    // ================================================================
+    const FIXED_MC_DEPTS = [
+        { sn: 1, dept: 'RIP> DPL> Plastic-01', prodIC: 'Mr. Atiqur Rahman', totalMC: 38 },
+        { sn: 2, dept: 'RIP> DPL> Plastic-3', prodIC: 'Mr. Shawon', totalMC: 61 },
+        { sn: 3, dept: 'RIP> DPL> Plastic-6.1', prodIC: 'Mr. Hazrat', totalMC: 39 },
+        { sn: 4, dept: 'RIP> DPL> Plastic-6.2', prodIC: 'Mr. Polash', totalMC: 59 },
+        { sn: 5, dept: 'RIP> DPL> Plastic-7.1', prodIC: 'Mr. Monir', totalMC: 36 },
+        { sn: 6, dept: 'RIP> DPL> Plastic-7.2', prodIC: 'Mr. Sayem', totalMC: 71 },
+        { sn: 7, dept: 'RIP> DPL> Plastic-7.3', prodIC: 'Mr. Saddam', totalMC: 77 },
+        { sn: 8, dept: 'RIP> DPL> Plastic-7.4', prodIC: 'Mr. Saddam', totalMC: 35 },
+        { sn: 9, dept: 'Silicon Project', prodIC: 'Mr. Mamun', totalMC: 9 }
+    ];
+
+    // ================================================================
+    // ডিপার্টমেন্ট নাম ম্যাপিং (ফিক্সড নাম → ডেটাতে থাকা নাম)
+    // ================================================================
+    const DEPT_MAP_MC = {
+        'RIP> DPL> Plastic-01': ['RIP> DPL> Plastic-1'],   // ডেটাতে 'Plastic-1' আছে
+        'RIP> DPL> Plastic-3': ['RIP> DPL> Plastic-3'],
+        'RIP> DPL> Plastic-6.1': ['RIP> DPL> Plastic-6.1'],
+        'RIP> DPL> Plastic-6.2': ['RIP> DPL> Plastic-6.2'],
+        'RIP> DPL> Plastic-7.1': ['RIP> DPL> Plastic-7.1'],
+        'RIP> DPL> Plastic-7.2': ['RIP> DPL> Plastic-7.2'],
+        'RIP> DPL> Plastic-7.3': ['RIP> DPL> Plastic-7.3'],
+        'RIP> DPL> Plastic-7.4': ['RIP> DPL> Plastic-7.4'],
+        'Silicon Project': ['Silicon Project']
+    };
+
+    // ================================================================
+    // বাকি কনস্ট্যান্ট (আগের মতো)
+    // ================================================================
     const SAIFUDDIN_DEPTS = [
         { sn: 1, name: 'RIP> DPL> Plastic-3' },
         { sn: 2, name: 'RIP> DPL> Plastic-6.1' },
@@ -355,7 +385,7 @@
         { sn: 22, name: 'RIP RFL Store' }
     ];
 
-    const DEPT_MAP = {
+    const DEPT_MAP_SAIF = {
         'RIP> DPL> Plastic-3': ['RIP> DPL> Plastic-3', 'Plastic Prod-3.1'],
         'RIP> DPL> Plastic-6.1': ['RIP> DPL> Plastic-6.1'],
         'RIP> DPL> Plastic-6.2': ['RIP> DPL> Plastic-6.2'],
@@ -378,13 +408,6 @@
         'RIP RFL Store': ['RIP RFL Store']
     };
 
-    // শুধুমাত্র যে ডিপার্টমেন্টগুলো MC টেবিলে দেখাতে চাই
-    const MC_DEPARTMENTS = [
-        'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1', 'RIP> DPL> Plastic-6.2',
-        'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2', 'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4',
-        'RIP> DPL> Plastic-1'
-    ];
-
     const MASTER_DEPARTMENTS = [
         'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1', 'RIP> DPL> Plastic-6.2',
         'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2', 'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4',
@@ -405,9 +428,9 @@
     let allData = [];
     let filteredData = [];
 
-    // ============================================================
-    // হেলপার ফাংশন
-    // ============================================================
+    // ================================================================
+    // ইউটিলিটি ফাংশন
+    // ================================================================
     function formatDate(dateStr) {
         if (!dateStr) return '-';
         const d = new Date(dateStr);
@@ -442,9 +465,9 @@
         return parseFloat(v) || 0;
     }
 
-    // ============================================================
+    // ================================================================
     // ডেটা লোড ও ফিল্টার
-    // ============================================================
+    // ================================================================
     async function loadData() {
         document.getElementById('currentTime').innerText = '⏳ লোড হচ্ছে...';
         document.getElementById('filterStatus').innerHTML = '⏳ ডেটা লোড হচ্ছে...';
@@ -519,7 +542,7 @@
     function renderDashboard(data) {
         renderStats(data);
         renderSaifuddinTable(data);
-        renderMcSummaryTable(data);   // <-- নতুন আপডেটেড ফাংশন কল
+        renderMcSummaryTable(data);
         renderGroupTable(data, 'groupATable', 'A');
         renderGroupTable(data, 'groupBTable', 'B');
         renderOverall(data);
@@ -527,9 +550,6 @@
         renderRawData(data);
     }
 
-    // ============================================================
-    // স্ট্যাটিস্টিকস
-    // ============================================================
     function renderStats(data) {
         document.getElementById('totalEntries').innerText = data.length;
         let totalRunning = 0, totalHR = 0, sumPct = 0;
@@ -544,9 +564,204 @@
         document.getElementById('avgRunningPct').innerText = data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%';
     }
 
-    // ============================================================
-    // 🔥 Saifuddin Table (আগের মতো)
-    // ============================================================
+    // ================================================================
+    // 🆕 MC Department - ভিজুয়াল রিপোর্ট (ফিক্সড তালিকা অনুযায়ী)
+    // ================================================================
+    function renderMcSummaryTable(data) {
+        const container = document.getElementById('mcSummaryTable');
+
+        // কলামের ক্রম
+        const colKeys = [
+            'totalHR', 'mcOperator', 'packagingOperator', 'running', 'stopped',
+            'runPct', 'stopPct', 'mpShort', 'moldProblem', 'moldChange',
+            'underSample', 'mcProblem', 'noDemandQty', 'materialMBShortage',
+            'overStockWIP', 'accessoriesShort'
+        ];
+        const colLabels = [
+            'Total HR', 'MC Operator', 'Packaging Operator', 'MC Running', 'MC Stopped',
+            'MC Running %', 'MC Stopped %', 'MP Short', 'Mold Problem', 'Mold Change',
+            'Sample', 'MC Problem', 'No Demand', 'Material & MB Shortage',
+            'Over Stock (WIP)', 'Acc Short'
+        ];
+
+        let rows = [];
+        let grandTotal = {
+            totalHR: 0, mcOperator: 0, packagingOperator: 0,
+            running: 0, stopped: 0,
+            mpShort: 0, moldProblem: 0, moldChange: 0,
+            underSample: 0, mcProblem: 0, noDemandQty: 0,
+            materialMBShortage: 0, overStockWIP: 0, accessoriesShort: 0
+        };
+
+        FIXED_MC_DEPTS.forEach(fixed => {
+            const possibleNames = DEPT_MAP_MC[fixed.dept] || [fixed.dept];
+            let deptRows = [];
+            for (let pn of possibleNames) {
+                const found = data.filter(r => {
+                    let d = getVal(r, ['Department', 'department']);
+                    return d === pn;
+                });
+                deptRows = deptRows.concat(found);
+            }
+
+            let totalHR = 0, mcOperator = 0, packagingOperator = 0;
+            let running = 0, stopped = 0;
+            let mpShort = 0, moldProblem = 0, moldChange = 0;
+            let underSample = 0, mcProblem = 0, noDemandQty = 0;
+            let materialMBShortage = 0, overStockWIP = 0, accessoriesShort = 0;
+
+            deptRows.forEach(r => {
+                totalHR += getNum(r, ['Total HR', 'totalHR']);
+                mcOperator += getNum(r, ['MC Operator', 'mcOperator']);
+                packagingOperator += getNum(r, ['Packaging Operator', 'packagingOperator']);
+                running += getNum(r, ['MC Running', 'mcRunning']);
+                stopped += getNum(r, ['MC Stopped', 'mcStopped']);
+                mpShort += getNum(r, ['MP Short', 'mpShort']);
+                moldProblem += getNum(r, ['Mold Problem', 'moldProblem']);
+                moldChange += getNum(r, ['Mold Change', 'moldChange']);
+                underSample += getNum(r, ['Under Sample', 'underSample']);
+                mcProblem += getNum(r, ['MC Problem', 'mcProblem']);
+                noDemandQty += getNum(r, ['No Demand (QTY)', 'noDemandQty']);
+                materialMBShortage += getNum(r, ['Material & MB Shortage', 'materialMBShortage']);
+                overStockWIP += getNum(r, ['Over Stock (WIP)', 'overStockWIP']);
+                accessoriesShort += getNum(r, ['Accessories Short', 'accessoriesShort']);
+            });
+
+            const runPct = fixed.totalMC > 0 ? ((running / fixed.totalMC) * 100) : 0;
+            const stopPct = fixed.totalMC > 0 ? ((stopped / fixed.totalMC) * 100) : 0;
+
+            rows.push({
+                sn: fixed.sn,
+                dept: fixed.dept,
+                prodIC: fixed.prodIC,
+                totalMC: fixed.totalMC,
+                totalHR, mcOperator, packagingOperator,
+                running, stopped, runPct, stopPct,
+                mpShort, moldProblem, moldChange, underSample, mcProblem,
+                noDemandQty, materialMBShortage, overStockWIP, accessoriesShort
+            });
+
+            grandTotal.totalHR += totalHR;
+            grandTotal.mcOperator += mcOperator;
+            grandTotal.packagingOperator += packagingOperator;
+            grandTotal.running += running;
+            grandTotal.stopped += stopped;
+            grandTotal.mpShort += mpShort;
+            grandTotal.moldProblem += moldProblem;
+            grandTotal.moldChange += moldChange;
+            grandTotal.underSample += underSample;
+            grandTotal.mcProblem += mcProblem;
+            grandTotal.noDemandQty += noDemandQty;
+            grandTotal.materialMBShortage += materialMBShortage;
+            grandTotal.overStockWIP += overStockWIP;
+            grandTotal.accessoriesShort += accessoriesShort;
+        });
+
+        let totalFixedMC = 0;
+        FIXED_MC_DEPTS.forEach(f => totalFixedMC += f.totalMC);
+        const grandRunPct = totalFixedMC > 0 ? ((grandTotal.running / totalFixedMC) * 100) : 0;
+        const grandStopPct = totalFixedMC > 0 ? ((grandTotal.stopped / totalFixedMC) * 100) : 0;
+
+        if (rows.length === 0) {
+            container.innerHTML = `<div class="no-data">কোনো ডেটা পাওয়া যায়নি</div>`;
+            return;
+        }
+
+        let html = `<table class="mc-table"><thead><tr>
+            <th>SN</th>
+            <th>Department</th>
+            <th>Prod IC</th>
+            <th>Total MC</th>`;
+        colLabels.forEach(label => html += `<th>${label}</th>`);
+        html += `</tr></thead><tbody>`;
+
+        rows.forEach(row => {
+            const runPct = row.runPct;
+            const stopPct = row.stopPct;
+            let runClass = 'mc-run-pct-mid';
+            if (runPct >= 80) runClass = 'mc-run-pct-high';
+            else if (runPct < 50) runClass = 'mc-run-pct-low';
+            let stopClass = 'mc-run-pct-mid';
+            if (stopPct <= 20) stopClass = 'mc-run-pct-high';
+            else if (stopPct > 50) stopClass = 'mc-run-pct-low';
+
+            const runBarColor = runPct >= 80 ? 'green' : (runPct >= 50 ? 'yellow' : 'red');
+            const stopBarColor = stopPct <= 20 ? 'green' : (stopPct <= 50 ? 'yellow' : 'red');
+
+            html += `<tr>
+                <td><strong>${row.sn}</strong></td>
+                <td class="dept-name"><strong>${row.dept}</strong></td>
+                <td>${row.prodIC}</td>
+                <td><strong>${row.totalMC}</strong></td>
+                <td>${row.totalHR || '—'}</td>
+                <td>${row.mcOperator || '—'}</td>
+                <td>${row.packagingOperator || '—'}</td>
+                <td>${row.running || '—'}</td>
+                <td>${row.stopped || '—'}</td>
+                <td class="${runClass}">
+                    <div class="mc-bar-wrap">
+                        <span class="pct-text">${runPct.toFixed(1)}%</span>
+                        <div class="bar-bg">
+                            <div class="bar-fill ${runBarColor}" style="width: ${Math.min(runPct, 100)}%;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td class="${stopClass}">
+                    <div class="mc-bar-wrap">
+                        <span class="pct-text">${stopPct.toFixed(1)}%</span>
+                        <div class="bar-bg">
+                            <div class="bar-fill ${stopBarColor}" style="width: ${Math.min(stopPct, 100)}%;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>${row.mpShort || '—'}</td>
+                <td>${row.moldProblem || '—'}</td>
+                <td>${row.moldChange || '—'}</td>
+                <td>${row.underSample || '—'}</td>
+                <td>${row.mcProblem || '—'}</td>
+                <td>${row.noDemandQty || '—'}</td>
+                <td>${row.materialMBShortage || '—'}</td>
+                <td>${row.overStockWIP || '—'}</td>
+                <td>${row.accessoriesShort || '—'}</td>
+            </tr>`;
+        });
+
+        html += `<tr class="total-row">
+            <td colspan="4" style="text-align:right;"><strong>📌 মোট</strong></td>
+            <td><strong>${grandTotal.totalHR}</strong></td>
+            <td><strong>${grandTotal.mcOperator}</strong></td>
+            <td><strong>${grandTotal.packagingOperator}</strong></td>
+            <td><strong>${grandTotal.running}</strong></td>
+            <td><strong>${grandTotal.stopped}</strong></td>
+            <td><strong>${grandRunPct.toFixed(1)}%</strong></td>
+            <td><strong>${grandStopPct.toFixed(1)}%</strong></td>
+            <td><strong>${grandTotal.mpShort}</strong></td>
+            <td><strong>${grandTotal.moldProblem}</strong></td>
+            <td><strong>${grandTotal.moldChange}</strong></td>
+            <td><strong>${grandTotal.underSample}</strong></td>
+            <td><strong>${grandTotal.mcProblem}</strong></td>
+            <td><strong>${grandTotal.noDemandQty}</strong></td>
+            <td><strong>${grandTotal.materialMBShortage}</strong></td>
+            <td><strong>${grandTotal.overStockWIP}</strong></td>
+            <td><strong>${grandTotal.accessoriesShort}</strong></td>
+        </tr>`;
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+
+        window._mcTableData = {
+            rows: rows,
+            grandTotal: grandTotal,
+            grandRunPct: grandRunPct,
+            grandStopPct: grandStopPct,
+            colLabels: colLabels,
+            fixedMCList: FIXED_MC_DEPTS
+        };
+    }
+
+    // ================================================================
+    // Saifuddin Table (আগের মতো)
+    // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
 
@@ -568,7 +783,7 @@
 
         deptList.forEach(item => {
             const deptName = item.name;
-            const possibleNames = DEPT_MAP[deptName] || [deptName];
+            const possibleNames = DEPT_MAP_SAIF[deptName] || [deptName];
             let deptRows = [];
             for (let pn of possibleNames) {
                 const found = data.filter(r => {
@@ -663,7 +878,6 @@
             isGrand: true
         });
 
-        // সর্টিং অর্ডার
         const order = [1,2,3,4,5,6,7,8,9,10,11,12,23,14,15,16,17,18,19,20,21,22,24,25];
         rows.sort((a, b) => order.indexOf(a.sn) - order.indexOf(b.sn));
 
@@ -737,194 +951,9 @@
         window._saifuddinRows = rows;
     }
 
-    // ============================================================
-    // 🔥 NEW: MC Department Table - শুধু MC ডিপার্টমেন্ট, Fixed কলাম, ড্যাশ
-    // ============================================================
-    function renderMcSummaryTable(data) {
-        const container = document.getElementById('mcSummaryTable');
-
-        // ১. শুধু MC_DEPARTMENTS ফিল্টার করছি
-        const mcData = data.filter(row => {
-            const dept = getVal(row, ['Department', 'department']);
-            return MC_DEPARTMENTS.includes(dept);
-        });
-
-        if (mcData.length === 0) {
-            container.innerHTML = `<div class="no-data">কোনো মেশিন ডিপার্টমেন্টের ডেটা নেই</div>`;
-            return;
-        }
-
-        // ২. কজ লিস্ট (যা শো করব)
-        const causeKeys = [
-            { key: 'mpShort', label: 'MP Short' },
-            { key: 'moldProblem', label: 'Mold Problem' },
-            { key: 'moldChange', label: 'Mold Change' },
-            { key: 'underSample', label: 'Sample' },
-            { key: 'mcProblem', label: 'MC Problem' },
-            { key: 'preventiveMaintenance', label: 'Preventive' },
-            { key: 'noDemandQty', label: 'No Demand' },
-            { key: 'materialMBShortage', label: 'Material & MB Shortage' },
-            { key: 'overStockWIP', label: 'Over Stock (WIP)' },
-            { key: 'accessoriesShort', label: 'Acc Short' }
-        ];
-
-        // ৩. ডিপার্টমেন্ট ভিত্তিক ডেটা জমা করছি
-        const deptMap = {};
-        mcData.forEach(row => {
-            const dept = getVal(row, ['Department', 'department']);
-            if (!dept) return;
-            if (!deptMap[dept]) {
-                deptMap[dept] = {
-                    icName: getVal(row, ['IC Name', 'icName']),
-                    totalMC: 0,
-                    totalHR: 0,
-                    mcOperator: 0,
-                    packagingOperator: 0,
-                    running: 0,
-                    stopped: 0,
-                    count: 0,
-                    causes: {}
-                };
-                causeKeys.forEach(c => { deptMap[dept].causes[c.key] = 0; });
-            }
-            const d = deptMap[dept];
-            d.totalMC += getNum(row, ['Total MC', 'totalMC']);
-            d.totalHR += getNum(row, ['Total HR', 'totalHR']);
-            d.mcOperator += getNum(row, ['MC Operator', 'mcOperator']);
-            d.packagingOperator += getNum(row, ['Packaging Operator', 'packagingOperator']);
-            d.running += getNum(row, ['MC Running', 'mcRunning']);
-            d.stopped += getNum(row, ['MC Stopped', 'mcStopped']);
-            d.count += 1;
-            causeKeys.forEach(c => {
-                d.causes[c.key] += getNum(row, [c.key]);
-            });
-        });
-
-        // ৪. অ্যাক্টিভ কজ বের করি (যাতে কোনো ডেটা আছে)
-        let activeCauseKeys = causeKeys.filter(c => {
-            let hasData = false;
-            Object.values(deptMap).forEach(d => {
-                if (d.causes[c.key] > 0) hasData = true;
-            });
-            return hasData;
-        });
-
-        // ৫. টেবিল হেডার তৈরী
-        let html = `<table class="mc-table"><thead><tr>
-            <th>ডিপার্টমেন্ট (Fixed)</th>
-            <th>Prod IC (Fixed)</th>
-            <th>Total MC (Fixed)</th>
-            <th>Total HR</th>
-            <th>MC Operator</th>
-            <th>Packaging Operator</th>
-            <th>MC Running</th>
-            <th>MC Stopped</th>
-            <th>MC Running %</th>
-            <th>MC Stopped %</th>`;
-        activeCauseKeys.forEach(c => { html += `<th>${c.label}</th>`; });
-        html += `</tr></thead><tbody>`;
-
-        // ৬. গ্র্যান্ড টোটাল
-        let grandTotalMC = 0, grandTotalHR = 0, grandMCOp = 0, grandPackOp = 0, grandRunning = 0, grandStopped = 0;
-        let grandCauses = {};
-        activeCauseKeys.forEach(c => { grandCauses[c.key] = 0; });
-
-        // ৭. প্রতিটি ডিপার্টমেন্টের জন্য রেন্ডার
-        for (const [dept, d] of Object.entries(deptMap)) {
-            const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100) : 0;
-            const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100) : 0;
-
-            // ক্লাস ও বার
-            let runClass = 'mc-run-pct-mid';
-            if (runPct >= 80) runClass = 'mc-run-pct-high';
-            else if (runPct < 50) runClass = 'mc-run-pct-low';
-
-            let stopClass = 'mc-run-pct-mid';
-            if (stopPct <= 20) stopClass = 'mc-run-pct-high';
-            else if (stopPct > 50) stopClass = 'mc-run-pct-low';
-
-            const runBarColor = runPct >= 80 ? 'green' : (runPct >= 50 ? 'yellow' : 'red');
-            const stopBarColor = stopPct <= 20 ? 'green' : (stopPct <= 50 ? 'yellow' : 'red');
-
-            html += `<tr>
-                <td class="dept-name"><strong>${dept}</strong></td>
-                <td>${d.icName || '-'}</td>
-                <td><span class="badge-total">${d.totalMC}</span></td>
-                <td>${d.totalHR}</td>
-                <td>${d.mcOperator}</td>
-                <td>${d.packagingOperator}</td>
-                <td><span class="badge-count badge-present">${d.running}</span></td>
-                <td><span class="badge-count badge-absent">${d.stopped}</span></td>
-                <td class="${runClass}">
-                    <div class="mc-bar-wrap">
-                        <span class="pct-text">${runPct.toFixed(1)}%</span>
-                        <div class="bar-bg">
-                            <div class="bar-fill ${runBarColor}" style="width: ${Math.min(runPct, 100)}%;"></div>
-                        </div>
-                    </div>
-                </td>
-                <td class="${stopClass}">
-                    <div class="mc-bar-wrap">
-                        <span class="pct-text">${stopPct.toFixed(1)}%</span>
-                        <div class="bar-bg">
-                            <div class="bar-fill ${stopBarColor}" style="width: ${Math.min(stopPct, 100)}%;"></div>
-                        </div>
-                    </div>
-                </td>`;
-
-            // কজ কলাম - ডেটা থাকলে দেখাবে, না থাকলে ড্যাশ
-            activeCauseKeys.forEach(c => {
-                const val = d.causes[c.key];
-                html += `<td>${val > 0 ? val : '—'}</td>`;
-                grandCauses[c.key] += val;
-            });
-
-            html += `</tr>`;
-
-            // গ্র্যান্ড টোটাল আপডেট
-            grandTotalMC += d.totalMC;
-            grandTotalHR += d.totalHR;
-            grandMCOp += d.mcOperator;
-            grandPackOp += d.packagingOperator;
-            grandRunning += d.running;
-            grandStopped += d.stopped;
-        }
-
-        // ৮. গ্র্যান্ড টোটাল রো
-        const grandRunPct = grandTotalMC > 0 ? ((grandRunning / grandTotalMC) * 100) : 0;
-        const grandStopPct = grandTotalMC > 0 ? ((grandStopped / grandTotalMC) * 100) : 0;
-
-        html += `<tr class="total-row">
-            <td><strong>📌 মোট</strong></td>
-            <td>-</td>
-            <td><strong>${grandTotalMC}</strong></td>
-            <td><strong>${grandTotalHR}</strong></td>
-            <td><strong>${grandMCOp}</strong></td>
-            <td><strong>${grandPackOp}</strong></td>
-            <td><strong>${grandRunning}</strong></td>
-            <td><strong>${grandStopped}</strong></td>
-            <td><strong>${grandRunPct.toFixed(1)}%</strong></td>
-            <td><strong>${grandStopPct.toFixed(1)}%</strong></td>`;
-
-        activeCauseKeys.forEach(c => {
-            html += `<td><strong>${grandCauses[c.key]}</strong></td>`;
-        });
-
-        html += `</tr></tbody></table>`;
-        container.innerHTML = html;
-
-        // ৯. ডাউনলোডের জন্য ডেটা সংরক্ষণ
-        window._mcTableData = {
-            rows: deptMap,
-            activeCauseKeys: activeCauseKeys,
-            grandTotalMC, grandTotalHR, grandMCOp, grandPackOp, grandRunning, grandStopped,
-            grandRunPct, grandStopPct, grandCauses
-        };
-    }
-
-    // ============================================================
-    // ডাউনলোড ফাংশনসমূহ (MC এর জন্য)
-    // ============================================================
+    // ================================================================
+    // ডাউনলোড ফাংশন (MC)
+    // ================================================================
     function downloadMCImage() {
         const container = document.getElementById('mcSummaryTable');
         if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
@@ -954,34 +983,28 @@
     function downloadMCExcel() {
         const data = window._mcTableData;
         if (!data) { alert('ডেটা নেই!'); return; }
-        const headers = ['Department (Fixed)', 'Prod IC (Fixed)', 'Total MC (Fixed)', 'Total HR', 'MC Operator', 'Packaging Operator',
-            'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'
+        const headers = ['SN', 'Department', 'Prod IC', 'Total MC', ...data.colLabels];
+        const rows = data.rows.map(row => [
+            row.sn, row.dept, row.prodIC, row.totalMC,
+            row.totalHR || '—', row.mcOperator || '—', row.packagingOperator || '—',
+            row.running || '—', row.stopped || '—',
+            row.runPct.toFixed(1) + '%', row.stopPct.toFixed(1) + '%',
+            row.mpShort || '—', row.moldProblem || '—', row.moldChange || '—',
+            row.underSample || '—', row.mcProblem || '—',
+            row.noDemandQty || '—', row.materialMBShortage || '—',
+            row.overStockWIP || '—', row.accessoriesShort || '—'
+        ]);
+        const totalRow = [
+            '📌 মোট', '', '', '',
+            data.grandTotal.totalHR, data.grandTotal.mcOperator, data.grandTotal.packagingOperator,
+            data.grandTotal.running, data.grandTotal.stopped,
+            data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%',
+            data.grandTotal.mpShort, data.grandTotal.moldProblem, data.grandTotal.moldChange,
+            data.grandTotal.underSample, data.grandTotal.mcProblem,
+            data.grandTotal.noDemandQty, data.grandTotal.materialMBShortage,
+            data.grandTotal.overStockWIP, data.grandTotal.accessoriesShort
         ];
-        data.activeCauseKeys.forEach(c => { headers.push(c.label); });
-
-        const rows = [];
-        Object.entries(data.rows).forEach(([dept, d]) => {
-            const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
-            const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
-            const rowData = [dept, d.icName || '-', d.totalMC, d.totalHR, d.mcOperator, d.packagingOperator,
-                d.running, d.stopped, runPct + '%', stopPct + '%'
-            ];
-            data.activeCauseKeys.forEach(c => {
-                const val = d.causes[c.key];
-                rowData.push(val > 0 ? val : '—');
-            });
-            rows.push(rowData);
-        });
-
-        const totalRow = ['📌 মোট', '-', data.grandTotalMC, data.grandTotalHR, data.grandMCOp, data.grandPackOp,
-            data.grandRunning, data.grandStopped,
-            data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%'
-        ];
-        data.activeCauseKeys.forEach(c => {
-            totalRow.push(data.grandCauses[c.key] || 0);
-        });
         rows.push(totalRow);
-
         const wbData = [headers, ...rows];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(wbData);
@@ -1018,9 +1041,9 @@
             });
     }
 
-    // ============================================================
-    // Saifuddin ডাউনলোড ফাংশন (আগের মতো)
-    // ============================================================
+    // ================================================================
+    // ডাউনলোড ফাংশন (Saifuddin) – আগের মতো
+    // ================================================================
     function downloadSaifuddinImage() {
         const container = document.getElementById('saifuddinTableContainer');
         if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
@@ -1112,9 +1135,9 @@
             });
     }
 
-    // ============================================================
-    // বাকি ফাংশন (Group, Overall, Missing, Raw Data, Excel)
-    // ============================================================
+    // ================================================================
+    // বাকি ফাংশন (Group, Overall, Missing, Raw, Excel) – আগের মতো
+    // ================================================================
     function renderGroupTable(data, containerId, groupType) {
         const container = document.getElementById(containerId);
         const isGroupA = (groupType === 'A');
