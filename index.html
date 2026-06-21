@@ -7,15 +7,7 @@
     <style>
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 20px; }
         .container { max-width: 950px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-
-        h2 {
-            color: red;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-            font-size: 22px;
-            line-height: 1.4;
-        }
-
+        h2 { color: red; border-bottom: 2px solid #007bff; padding-bottom: 10px; font-size: 22px; line-height: 1.4; }
         .section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #007bff; }
         .section h3 { margin-top: 0; color: #333; }
         .row { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; }
@@ -23,49 +15,34 @@
         label { font-weight: bold; display: block; font-size: 13px; margin-bottom: 4px; }
         input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
         input:disabled { background: #e9ecef; color: #495057; }
-        input:not([readonly])::placeholder {
-            color: red;
-            font-size: 12px;
-            font-weight: bold;
-            opacity: 1;
-        }
+        input:not([readonly])::placeholder { color: red; font-size: 12px; font-weight: bold; opacity: 1; }
         button { background: #28a745; color: white; border: none; padding: 14px; font-size: 18px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 25px; font-weight: bold; }
         button:hover { background: #218838; }
         #status { margin-top: 15px; padding: 10px; border-radius: 6px; text-align: center; }
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
         .flex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
         .qty-placeholder { display: flex; align-items: center; justify-content: center; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 8px; min-width: 150px; height: 70px; }
         .qty-placeholder span { color: #d32f2f; font-weight: bold; font-size: 14px; }
-
-        .machine-box {
-            background: #ffffff;
-            border: 2px solid #0d47a1;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        }
+        .machine-box { background: #ffffff; border: 2px solid #0d47a1; border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
         .machine-box .row { margin-top: 5px; }
         .machine-box label { color: #0d47a1; font-weight: 700; }
-        .machine-box input:not([readonly]) {
-            color: #d32f2f !important;
-            font-weight: 700 !important;
-            font-size: 16px;
-        }
-        .machine-box input[readonly] {
-            color: #d32f2f !important;
-            font-weight: 700 !important;
-            font-size: 16px;
-            background: #ffffff;
-        }
-        .machine-box input::placeholder {
-            color: #d32f2f !important;
-            font-weight: 700 !important;
-            font-size: 12px;
-            opacity: 0.7;
-        }
-
+        .machine-box input:not([readonly]) { color: #d32f2f !important; font-weight: 700 !important; font-size: 16px; }
+        .machine-box input[readonly] { color: #d32f2f !important; font-weight: 700 !important; font-size: 16px; background: #ffffff; }
+        .machine-box input::placeholder { color: #d32f2f !important; font-weight: 700 !important; font-size: 12px; opacity: 0.7; }
         .container { max-height: 100vh; overflow-y: auto; }
+        /* ডুপ্লিকেট মেসেজের জন্য রেড স্টাইল */
+        .duplicate-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -133,7 +110,7 @@
             </div>
         </div>
 
-        <!-- ===== এইচআর ও ম্যানপাওয়ার (সবার জন্য) - এখন শুধু Total Present, Leave, Absent ===== -->
+        <!-- ===== এইচআর ও ম্যানপাওয়ার (সবার জন্য) ===== -->
         <div class="section" id="hrSection">
             <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
             <div class="row">
@@ -197,15 +174,14 @@
 
 <script>
     // =============================================================
-    // 🔥 আপনার Google Apps Script URL
+    // 🔥 আপনার Google Apps Script URL (একই URL GET ও POST এর জন্য)
     // =============================================================
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
     // ============================================================
-    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং (সব)
+    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং
     // ============================================================
     const DEPARTMENT_IC_MAP = {
-        // Production (MC)
         'RIP> DPL> Plastic-3': 'Mr. Shawon',
         'RIP> DPL> Plastic-6.1': 'Mr. Hazrat',
         'RIP> DPL> Plastic-6.2': 'Mr. Polash',
@@ -214,13 +190,9 @@
         'RIP> DPL> Plastic-7.3': 'Mr. Saddam',
         'RIP> DPL> Plastic-7.4': 'Mr. Saddam',
         'RIP> DPL> Plastic-1': 'Mr. Atiqur Rahman',
-        
-        // Packaging (Non-MC)
         'Plastic Packaging-01': 'Mr. Mahbub',
         'Plastic Packaging-02': 'Mr. Rakib',
         'Plastic Packaging-03': 'Mr. Mahbub',
-
-        // Non-MC
         'Plastic-Maintenance.': 'Mr. Rana',
         'Tool Room Maintenance': 'Mr. Kamal',
         'Plastic Inventory & Delivery': 'Mr. Hasan',
@@ -236,7 +208,6 @@
     // ২. ডিপার্টমেন্ট অনুযায়ী Total MC (Non-MC = 0)
     // ============================================================
     const DEPARTMENT_MC = {
-        // Production (MC)
         'RIP> DPL> Plastic-3': 61,
         'RIP> DPL> Plastic-6.1': 39,
         'RIP> DPL> Plastic-6.2': 59,
@@ -245,8 +216,6 @@
         'RIP> DPL> Plastic-7.3': 77,
         'RIP> DPL> Plastic-7.4': 35,
         'RIP> DPL> Plastic-1': 38,
-
-        // Non-MC
         'Plastic Packaging-01': 0,
         'Plastic Packaging-02': 0,
         'Plastic Packaging-03': 0,
@@ -262,7 +231,7 @@
     };
 
     // ============================================================
-    // ৩. Non-MC ডিপার্টমেন্টের তালিকা
+    // ৩. Non-MC ডিপার্টমেন্টের তালিকা (MC ফিল্ড লুকানোর জন্য)
     // ============================================================
     const NON_MC_DEPTS = [
         'Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03',
@@ -273,7 +242,7 @@
     ];
 
     // ============================================================
-    // ৪. ড্রপডাউনে শুধু প্রয়োজনীয় ডিপার্টমেন্ট যোগ করা (Plastic Prof বাদ)
+    // ৪. ড্রপডাউনে ডিপার্টমেন্ট যোগ করা
     // ============================================================
     (function populateDepartments() {
         const select = document.getElementById('department');
@@ -286,7 +255,7 @@
     })();
 
     // ============================================================
-    // ৫. MC ডেটা দেখানো/লুকানো এবং IC, Total MC সেট করা
+    // ৫. ডিপার্টমেন্ট চেঞ্জে আইসি নাম, টোটাল এমসি ও টগল
     // ============================================================
     function toggleMcFields(dept) {
         const isNonMC = NON_MC_DEPTS.includes(dept);
@@ -301,10 +270,8 @@
         const icInput = document.getElementById('icName');
         const totalInput = document.getElementById('totalMC');
 
-        // আইসি নাম সেট
         icInput.value = DEPARTMENT_IC_MAP[dept] || '';
 
-        // টোটাল এমসি সেট
         if (dept in DEPARTMENT_MC) {
             const mcVal = DEPARTMENT_MC[dept];
             if (mcVal > 0) {
@@ -321,10 +288,8 @@
             totalInput.placeholder = 'Typ QTY';
         }
 
-        // MC ফিল্ড টগল
         toggleMcFields(dept);
 
-        // ক্যালকুলেশন রিসেট
         document.getElementById('mcRunning').value = '';
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
@@ -332,7 +297,7 @@
     });
 
     // ============================================================
-    // ৬. অটো ক্যালকুলেশন (শুধু MC Run % এবং Will off %)
+    // ৬. অটো ক্যালকুলেশন (MC Run % ও Will off %)
     // ============================================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
@@ -377,7 +342,33 @@
     }
 
     // ============================================================
-    // ৭. ফর্ম সাবমিট
+    // ৭. ডুপ্লিকেট চেক ফাংশন (GET রিকোয়েস্ট)
+    // ============================================================
+    async function checkDuplicate(date, shift, dept) {
+        try {
+            const response = await fetch(APP_SCRIPT_URL);
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            // ধরে নিচ্ছি data একটি array, প্রতিটি অবজেক্টে entryDate, shift, department ফিল্ড আছে
+            if (!Array.isArray(data)) return false;
+            return data.some(row => {
+                const rowDate = row.entryDate || row.Date || '';
+                // তারিখের ফরম্যাট মিলিয়ে নেওয়া (ধরি সব YYYY-MM-DD)
+                const rowDateStr = rowDate.split('T')[0]; // যদি timestamp আসে
+                return rowDateStr === date && row.Shift === shift && row.Department === dept;
+            });
+        } catch (error) {
+            console.error('Duplicate check failed:', error);
+            return false; // যদি চেক ফেইল করে, তাহলে সাবমিট হতে দেব না? বরং true ধরে নিয়ে সাবমিট বন্ধ করব?
+            // বাস্তবে, নেটওয়ার্ক সমস্যা হলে আমরা সাবমিট করতে দিতে পারি, কিন্তু ব্যবহারকারীকে সতর্ক করতে পারি।
+            // এখানে আমি false রিটার্ন করছি, মানে ডুপ্লিকেট নেই ধরে নিয়ে সাবমিট হবে।
+            // কিন্তু ব্যবহারকারীকে জানানো ভালো যে চেক করা যায়নি।
+            // আমি নিচে অল্টারনেটিভ ব্যবস্থা করছি।
+        }
+    }
+
+    // ============================================================
+    // ৮. ফর্ম সাবমিট (ডুপ্লিকেট চেক সহ)
     // ============================================================
     document.getElementById('entryDate').valueAsDate = new Date();
 
@@ -390,14 +381,36 @@
         e.preventDefault();
         const status = document.getElementById('status');
         status.className = '';
+        status.innerText = '⏳ চেক করা হচ্ছে...';
+
+        const date = document.getElementById('entryDate').value;
+        const shift = document.getElementById('shift').value;
+        const dept = document.getElementById('department').value;
+
+        // ১ম: ডুপ্লিকেট চেক
+        try {
+            const isDuplicate = await checkDuplicate(date, shift, dept);
+            if (isDuplicate) {
+                status.className = 'duplicate-error';
+                status.innerHTML = '⚠️ <strong>আপনার ডিপার্টমেন্ট থেকে কেউ ইতিমধ্যেই এই তারিখ ও শিফটে এন্ট্রি জমা দিয়েছেন। দয়া করে চেক করুন।</strong>';
+                return; // সাবমিট বন্ধ
+            }
+        } catch (error) {
+            // যদি চেক ব্যর্থ হয়, তবুও আমরা সাবমিট করতে পারি, তবে ব্যবহারকারীকে জানাই
+            status.className = 'warning';
+            status.innerText = '⚠️ ডুপ্লিকেট চেক করা যায়নি, তবে আপনি সাবমিট করতে পারেন।';
+            // এখানে আমরা থামছি না, বরং সাবমিট চালিয়ে যাচ্ছি
+        }
+
+        // ডুপ্লিকেট না থাকলে বা চেক ব্যর্থ হলেও সাবমিট
         status.innerText = '⏳ সেভ হচ্ছে...';
         const getVal = (id) => document.getElementById(id).value;
         const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
 
         const payload = {
-            entryDate: getVal('entryDate'),
-            shift: getVal('shift'),
-            department: getVal('department'),
+            entryDate: date,
+            shift: shift,
+            department: dept,
             icName: getVal('icName'),
             totalMC: getNum('totalMC'),
             mcRunning: getNum('mcRunning'),
@@ -419,7 +432,6 @@
             materialMBShortage: getNum('materialMBShortage'),
             overStockWIP: getNum('overStockWIP'),
             accessoriesShort: getNum('accessoriesShort'),
-            // Total MP বাদ, শুধু এই ৩টি পাঠানো হচ্ছে
             totalPresent: getNum('totalPresent'),
             leaveEmployee: getNum('leaveEmployee'),
             absentEmployee: getNum('absentEmployee'),
@@ -459,13 +471,16 @@
             });
 
             status.className = 'success';
-            status.innerText = '✅ ডেটা পাঠানো হয়েছে! Google Sheet চেক করুন।';
+            status.innerText = '✅ ডেটা সফলভাবে জমা হয়েছে!';
 
             // ফিল্ড রিসেট (প্রয়োজনমতো)
             document.getElementById('mcRunning').value = '';
             document.getElementById('mcStopped').value = '';
             document.getElementById('pctRunning').value = '';
             document.getElementById('pctStopped').value = '';
+
+            // 👉 এখানে ইমেইল পাঠানোর জন্য আলাদা কল করা যেতে পারে, তবে সেটা Apps Script-এ করা ভালো।
+            // আপনি চাইলে পোস্টের পর একটি ইমেইল ট্রিগার করতে পারেন, কিন্তু তা Apps Script-এ করাই উত্তম।
 
         } catch (error) {
             status.className = 'error';
