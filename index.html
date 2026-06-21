@@ -8,7 +8,6 @@
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 20px; }
         .container { max-width: 950px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
 
-        /* ✅ টাইটেল লাল (Red) */
         h2 {
             color: red;
             border-bottom: 2px solid #007bff;
@@ -40,7 +39,6 @@
         .qty-placeholder { display: flex; align-items: center; justify-content: center; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 8px; min-width: 150px; height: 70px; }
         .qty-placeholder span { color: #d32f2f; font-weight: bold; font-size: 14px; }
 
-        /* ===== মেশিনের ডেটা বক্স (থিম ছাড়া) ===== */
         .machine-box {
             background: #ffffff;
             border: 2px solid #0d47a1;
@@ -68,11 +66,7 @@
             opacity: 0.7;
         }
 
-        /* স্ক্রলিং সুবিধা (যদি কন্টেন্ট বড় হয়) */
-        .container {
-            max-height: 100vh;
-            overflow-y: auto;
-        }
+        .container { max-height: 100vh; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -99,8 +93,8 @@
             </div>
         </div>
 
-        <!-- ===== মেশিনের ডেটা (থিম ছাড়া) ===== -->
-        <div class="section machine-box">
+        <!-- ===== মেশিনের ডেটা (MC ডিপার্টমেন্টের জন্য) ===== -->
+        <div class="section machine-box" id="mcDataSection">
             <h3>⚙️ মেশিনের ডেটা (অটো ক্যালকুলেশন)</h3>
             <div class="row">
                 <div><label>Total MC</label>
@@ -123,8 +117,8 @@
             </div>
         </div>
 
-        <!-- কারণ (Cause of Stop) -->
-        <div class="section">
+        <!-- ===== স্টপের কারণ (MC ডিপার্টমেন্টের জন্য) ===== -->
+        <div class="section" id="causeSection">
             <h3>⛔ স্টপের কারণ (Cause of Stop - QTY)</h3>
             <div class="flex-grid">
                 <div><label>MP Short</label><input type="number" id="mpShort" placeholder="Typ QTY"></div>
@@ -140,8 +134,8 @@
             </div>
         </div>
 
-        <!-- এইচআর ও ম্যানপাওয়ার -->
-        <div class="section">
+        <!-- ===== এইচআর ও ম্যানপাওয়ার (সবার জন্য) ===== -->
+        <div class="section" id="hrSection">
             <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
             <div class="row">
                 <div><label>Total MP</label><input type="number" id="totalHR" required placeholder="Typ QTY"></div>
@@ -150,8 +144,8 @@
             </div>
         </div>
 
-        <!-- মেশিন টাইপ -->
-        <div class="section">
+        <!-- ===== মেশিন টাইপ (MC ডিপার্টমেন্টের জন্য) ===== -->
+        <div class="section" id="machineTypeSection">
             <h3>🏭 মেশিন টাইপ (Machine Type)</h3>
             <div class="row">
                 <div><label>Export MC</label><input type="number" id="exportMC" placeholder="Typ QTY"></div>
@@ -164,8 +158,8 @@
             </div>
         </div>
 
-        <!-- অপারেটর ও স্টাফ -->
-        <div class="section">
+        <!-- ===== অপারেটর ও স্টাফ (MC ডিপার্টমেন্টের জন্য) ===== -->
+        <div class="section" id="operatorSection">
             <h3>👨‍🔧 অপারেটর ও স্টাফ</h3>
             <div class="flex-grid">
                 <div><label>Prod IC</label><input type="number" id="prodIC" placeholder="Typ QTY"></div>
@@ -198,14 +192,15 @@
 
 <script>
     // =============================================================
-    // 🔥 আপনার Google Apps Script URL এখানে বসান
+    // 🔥 আপনার Google Apps Script URL
     // =============================================================
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
     // ============================================================
-    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং
+    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং (সব যোগ করা হয়েছে)
     // ============================================================
     const DEPARTMENT_IC_MAP = {
+        // Production (MC)
         'RIP> DPL> Plastic-3': 'Mr. Shawon',
         'RIP> DPL> Plastic-6.1': 'Mr. Hazrat',
         'RIP> DPL> Plastic-6.2': 'Mr. Polash',
@@ -213,16 +208,30 @@
         'RIP> DPL> Plastic-7.2': 'Mr. Sayem',
         'RIP> DPL> Plastic-7.3': 'Mr. Saddam',
         'RIP> DPL> Plastic-7.4': 'Mr. Saddam',
-        'RIP> DPL> Plastic-1': 'Mr. Aqtiqur Rahman',
-        'Plastic Packaging-01': 'Mr, Mahbub',
-        'Plastic Packaging-02': 'Mr, Rakib',
-        'Plastic Packaging-03': 'Mr, Mahbub'
+        'RIP> DPL> Plastic-1': 'Mr. Atiqur Rahman',
+        
+        // Packaging (Non-MC)
+        'Plastic Packaging-01': 'Mr. Mahbub',
+        'Plastic Packaging-02': 'Mr. Rakib',
+        'Plastic Packaging-03': 'Mr. Mahbub',
+
+        // 🔥 নতুন যোগ করা Non-MC ডিপার্টমেন্ট
+        'Plastic-Maintenance.': 'Mr. Rana',
+        'Tool Room Maintenance': 'Mr. Kamal',
+        'Plastic Inventory & Delivery': 'Mr. Hasan',
+        'Corporate sales Production.': 'Mr. Tarek',
+        'Plastics-Recycle & Silo': 'Mr. Shafiq',
+        'Product Development & Mold Change': 'Mr. Sumon',
+        'RIP-DPL-Factory Support': 'Mr. Jahir',
+        'DPL-QA': 'Mr. Masud',
+        'RIP RFL Store': 'Mr. Rahim'
     };
 
     // ============================================================
-    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC ম্যাপিং (আপডেটেড)
+    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC ম্যাপিং (Non-MC = 0)
     // ============================================================
     const DEPARTMENT_MC = {
+        // Production (MC)
         'RIP> DPL> Plastic-3': 61,
         'RIP> DPL> Plastic-6.1': 39,
         'RIP> DPL> Plastic-6.2': 59,
@@ -230,53 +239,81 @@
         'RIP> DPL> Plastic-7.2': 76,
         'RIP> DPL> Plastic-7.3': 77,
         'RIP> DPL> Plastic-7.4': 35,
-        'RIP> DPL> Plastic-1': 0,
+        'RIP> DPL> Plastic-1': 38,
+
+        // Non-MC (Packaging, Maintenance, QA, Store, ইত্যাদি)
         'Plastic Packaging-01': 0,
         'Plastic Packaging-02': 0,
         'Plastic Packaging-03': 0,
-        'Plastic Prod-3.1': 61,
-        'Plastic Prod-7.1': 36,
-        'Plastic Prod-7.2': 76,
-        'Plastic Prod-7.3': 77,
-        'Plastic Prod-7.4': 35,
-        'Corporate sales Production': 0,
+        'Plastic-Maintenance.': 0,
+        'Tool Room Maintenance': 0,
+        'Plastic Inventory & Delivery': 0,
+        'Corporate sales Production.': 0,
+        'Plastics-Recycle & Silo': 0,
+        'Product Development & Mold Change': 0,
+        'RIP-DPL-Factory Support': 0,
         'DPL-QA': 0,
-        'Plastic Inventory & Delivery': 0
+        'RIP RFL Store': 0
     };
 
     // ============================================================
-    // ৩. সব ডিপার্টমেন্ট ড্রপডাউনে যোগ করা
+    // ৩. Non-MC ডিপার্টমেন্টের তালিকা (যাদের MC Data দেখাবে না)
+    // ============================================================
+    const NON_MC_DEPTS = [
+        'Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03',
+        'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
+        'Corporate sales Production.', 'Plastics-Recycle & Silo',
+        'Product Development & Mold Change', 'RIP-DPL-Factory Support',
+        'DPL-QA', 'RIP RFL Store'
+    ];
+
+    // ============================================================
+    // ৪. ড্রপডাউনে সব ডিপার্টমেন্ট যোগ করা
     // ============================================================
     (function populateDepartments() {
         const select = document.getElementById('department');
+        // প্রথমে IC ম্যাপের সব ডিপার্টমেন্ট
         Object.keys(DEPARTMENT_IC_MAP).forEach(key => {
             const opt = document.createElement('option');
             opt.value = key;
             opt.textContent = key;
             select.appendChild(opt);
         });
+        // তারপর Plastic Prof-01 থেকে Plastic Prof-360 (Production MC)
         for (let i = 1; i <= 360; i++) {
             const opt = document.createElement('option');
-            opt.value = `Plastic Prof-${String(i).padStart(2, '0')}`;
-            opt.textContent = `Plastic Prof-${String(i).padStart(2, '0')}`;
+            const name = `Plastic Prof-${String(i).padStart(2, '0')}`;
+            opt.value = name;
+            opt.textContent = name;
             select.appendChild(opt);
         }
     })();
 
     // ============================================================
-    // ৪. ডিপার্টমেন্ট চেইঞ্জ হলে IC Name + MC সেট
+    // ৫. MC ডেটা দেখানো/লুকানো এবং IC, Total MC সেট করা
     // ============================================================
+    function toggleMcFields(dept) {
+        const isNonMC = NON_MC_DEPTS.includes(dept);
+        // MC সংক্রান্ত সেকশনগুলো দেখান/লুকান
+        document.getElementById('mcDataSection').style.display = isNonMC ? 'none' : 'block';
+        document.getElementById('causeSection').style.display = isNonMC ? 'none' : 'block';
+        document.getElementById('machineTypeSection').style.display = isNonMC ? 'none' : 'block';
+        document.getElementById('operatorSection').style.display = isNonMC ? 'none' : 'block';
+    }
+
     document.getElementById('department').addEventListener('change', function() {
         const dept = this.value;
         const icInput = document.getElementById('icName');
         const totalInput = document.getElementById('totalMC');
 
+        // আইসি নাম সেট
         if (DEPARTMENT_IC_MAP[dept]) {
             icInput.value = DEPARTMENT_IC_MAP[dept];
         } else {
             icInput.value = '';
         }
 
+        // টোটাল এমসি সেট (নন-এমসি ডিপার্টমেন্টের জন্য ০ বা খালি)
         if (dept in DEPARTMENT_MC) {
             const mcVal = DEPARTMENT_MC[dept];
             if (mcVal > 0) {
@@ -302,6 +339,10 @@
             totalInput.placeholder = 'Typ QTY';
         }
 
+        // MC ডেটা দেখান/লুকান (শুধুমাত্র নন-এমসি ডিপার্টমেন্টের জন্য লুকাবে)
+        toggleMcFields(dept);
+
+        // আগের ক্যালকুলেশন রিসেট
         document.getElementById('mcRunning').value = '';
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
@@ -309,7 +350,7 @@
     });
 
     // ============================================================
-    // ৫. অটো ক্যালকুলেশন
+    // ৬. অটো ক্যালকুলেশন (শুধু এমসি ডিপার্টমেন্টের জন্য)
     // ============================================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
@@ -354,9 +395,20 @@
     }
 
     // ============================================================
-    // ৬. ফর্ম সাবমিট
+    // ৭. ফর্ম সাবমিট (আগের মতোই)
     // ============================================================
     document.getElementById('entryDate').valueAsDate = new Date();
+
+    // পেজ লোড হলে প্রথম ডিফল্ট ডিপার্টমেন্টের জন্য টগল রান করান
+    window.addEventListener('DOMContentLoaded', function() {
+        const dept = document.getElementById('department').value;
+        if (dept) {
+            toggleMcFields(dept);
+        } else {
+            // ডিফল্টভাবে সব সেকশন দেখান (প্রথমবার)
+            toggleMcFields('');
+        }
+    });
 
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
