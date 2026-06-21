@@ -35,7 +35,6 @@
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
         .flex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-        .highlight { background: #fff3cd; border-left: 3px solid #ffc107; }
         .qty-placeholder { display: flex; align-items: center; justify-content: center; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 8px; min-width: 150px; height: 70px; }
         .qty-placeholder span { color: #d32f2f; font-weight: bold; font-size: 14px; }
 
@@ -67,11 +66,6 @@
         }
 
         .container { max-height: 100vh; overflow-y: auto; }
-        .present-field {
-            background: #e8f5e9 !important;
-            color: #1b5e20 !important;
-            font-weight: 700 !important;
-        }
     </style>
 </head>
 <body>
@@ -139,15 +133,15 @@
             </div>
         </div>
 
-        <!-- ===== এইচআর ও ম্যানপাওয়ার (সবার জন্য) ===== -->
+        <!-- ===== এইচআর ও ম্যানপাওয়ার (সবার জন্য) - এখন সব ম্যানুয়াল ===== -->
         <div class="section" id="hrSection">
             <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
             <div class="row">
-                <div><label>Total MP</label><input type="number" id="totalHR" required placeholder="Typ QTY" oninput="calcPresent()"></div>
-                <div><label>Leave</label><input type="number" id="leaveEmployee" placeholder="Typ QTY" oninput="calcPresent()"></div>
-                <div><label>Absent</label><input type="number" id="absentEmployee" placeholder="Typ QTY" oninput="calcPresent()"></div>
+                <div><label>Total MP</label><input type="number" id="totalHR" required placeholder="Typ QTY"></div>
+                <div><label>Leave</label><input type="number" id="leaveEmployee" placeholder="Typ QTY"></div>
+                <div><label>Absent</label><input type="number" id="absentEmployee" placeholder="Typ QTY"></div>
                 <div><label>Total Present</label>
-                    <input type="text" id="totalPresent" readonly class="present-field" value="0">
+                    <input type="number" id="totalPresent" placeholder="Typ QTY">
                 </div>
             </div>
         </div>
@@ -217,13 +211,13 @@
         'RIP> DPL> Plastic-7.3': 'Mr. Saddam',
         'RIP> DPL> Plastic-7.4': 'Mr. Saddam',
         'RIP> DPL> Plastic-1': 'Mr. Atiqur Rahman',
-
+        
         // Packaging (Non-MC)
         'Plastic Packaging-01': 'Mr. Mahbub',
         'Plastic Packaging-02': 'Mr. Rakib',
         'Plastic Packaging-03': 'Mr. Mahbub',
 
-        // Non-MC (Maintenance, Inventory, QA, Store, Support)
+        // Non-MC
         'Plastic-Maintenance.': 'Mr. Rana',
         'Tool Room Maintenance': 'Mr. Kamal',
         'Plastic Inventory & Delivery': 'Mr. Hasan',
@@ -236,7 +230,7 @@
     };
 
     // ============================================================
-    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC ম্যাপিং
+    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC (Non-MC = 0)
     // ============================================================
     const DEPARTMENT_MC = {
         // Production (MC)
@@ -249,7 +243,7 @@
         'RIP> DPL> Plastic-7.4': 35,
         'RIP> DPL> Plastic-1': 38,
 
-        // Non-MC (সব 0)
+        // Non-MC
         'Plastic Packaging-01': 0,
         'Plastic Packaging-02': 0,
         'Plastic Packaging-03': 0,
@@ -276,11 +270,10 @@
     ];
 
     // ============================================================
-    // ৪. ড্রপডাউনে ডিপার্টমেন্ট যোগ করা (Plastic Prof সিরিজ বাদ)
+    // ৪. ড্রপডাউনে শুধু প্রয়োজনীয় ডিপার্টমেন্ট যোগ করা (Plastic Prof বাদ)
     // ============================================================
     (function populateDepartments() {
         const select = document.getElementById('department');
-        // শুধু IC ম্যাপের ডিপার্টমেন্টগুলো যোগ করব (Plastic Prof সিরিজ বাদ)
         Object.keys(DEPARTMENT_IC_MAP).forEach(key => {
             const opt = document.createElement('option');
             opt.value = key;
@@ -290,18 +283,7 @@
     })();
 
     // ============================================================
-    // ৫. Total Present ক্যালকুলেশন
-    // ============================================================
-    function calcPresent() {
-        const totalMP = parseInt(document.getElementById('totalHR').value) || 0;
-        const leave = parseInt(document.getElementById('leaveEmployee').value) || 0;
-        const absent = parseInt(document.getElementById('absentEmployee').value) || 0;
-        const present = totalMP - leave - absent;
-        document.getElementById('totalPresent').value = present >= 0 ? present : 0;
-    }
-
-    // ============================================================
-    // ৬. ডিপার্টমেন্ট চেঞ্জ হলে IC, Total MC, টগল
+    // ৫. MC ডেটা দেখানো/লুকানো এবং IC, Total MC সেট করা
     // ============================================================
     function toggleMcFields(dept) {
         const isNonMC = NON_MC_DEPTS.includes(dept);
@@ -316,14 +298,10 @@
         const icInput = document.getElementById('icName');
         const totalInput = document.getElementById('totalMC');
 
-        // আইসি নাম
-        if (DEPARTMENT_IC_MAP[dept]) {
-            icInput.value = DEPARTMENT_IC_MAP[dept];
-        } else {
-            icInput.value = '';
-        }
+        // আইসি নাম সেট
+        icInput.value = DEPARTMENT_IC_MAP[dept] || '';
 
-        // টোটাল এমসি
+        // টোটাল এমসি সেট
         if (dept in DEPARTMENT_MC) {
             const mcVal = DEPARTMENT_MC[dept];
             if (mcVal > 0) {
@@ -340,19 +318,18 @@
             totalInput.placeholder = 'Typ QTY';
         }
 
+        // MC ফিল্ড টগল
         toggleMcFields(dept);
 
-        // আগের ক্যালকুলেশন রিসেট
+        // ক্যালকুলেশন রিসেট
         document.getElementById('mcRunning').value = '';
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
         document.getElementById('pctStopped').value = '';
-        // Present রিসেট
-        calcPresent();
     });
 
     // ============================================================
-    // ৭. অটো ক্যালকুলেশন (MC)
+    // ৬. অটো ক্যালকুলেশন (শুধু MC Run % এবং Will off %)
     // ============================================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
@@ -397,18 +374,13 @@
     }
 
     // ============================================================
-    // ৮. ফর্ম সাবমিট (পে-লোডে totalPresent যোগ করা হয়েছে)
+    // ৭. ফর্ম সাবমিট
     // ============================================================
     document.getElementById('entryDate').valueAsDate = new Date();
 
     window.addEventListener('DOMContentLoaded', function() {
         const dept = document.getElementById('department').value;
-        if (dept) {
-            toggleMcFields(dept);
-        } else {
-            toggleMcFields('');
-        }
-        calcPresent();
+        toggleMcFields(dept);
     });
 
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
@@ -418,12 +390,6 @@
         status.innerText = '⏳ সেভ হচ্ছে...';
         const getVal = (id) => document.getElementById(id).value;
         const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
-
-        // Total Present গণনা
-        const totalMP = getNum('totalHR');
-        const leave = getNum('leaveEmployee');
-        const absent = getNum('absentEmployee');
-        const totalPresent = totalMP - leave - absent;
 
         const payload = {
             entryDate: getVal('entryDate'),
@@ -453,7 +419,7 @@
             totalHR: getNum('totalHR'),
             leaveEmployee: getNum('leaveEmployee'),
             absentEmployee: getNum('absentEmployee'),
-            totalPresent: totalPresent >= 0 ? totalPresent : 0,
+            totalPresent: getNum('totalPresent'),  // ম্যানুয়াল ইনপুট
             exportMC: getNum('exportMC'),
             domesticMC: getNum('domesticMC'),
             singleMC: getNum('singleMC'),
