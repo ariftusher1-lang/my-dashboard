@@ -565,7 +565,7 @@
     }
 
     // ================================================================
-    // 🆕 MC Department - ভিজুয়াল রিপোর্ট (ফিক্সড তালিকা অনুযায়ী)
+    // 🆕 MC Department - ভিজুয়াল রিপোর্ট (Preventive কলাম যোগ করা হয়েছে)
     // ================================================================
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
@@ -573,7 +573,7 @@
         const colLabels = [
             'Total HR', 'MC Operator', 'Packaging Operator', 'MC Running', 'MC Stopped',
             'MC Running %', 'MC Stopped %', 'MP Short', 'Mold Problem', 'Mold Change',
-            'Sample', 'MC Problem', 'No Demand', 'Material & MB Shortage',
+            'Sample', 'MC Problem', 'Preventive', 'No Demand', 'Material & MB Shortage',
             'Over Stock (WIP)', 'Acc Short'
         ];
 
@@ -582,8 +582,8 @@
             totalHR: 0, mcOperator: 0, packagingOperator: 0,
             running: 0, stopped: 0,
             mpShort: 0, moldProblem: 0, moldChange: 0,
-            underSample: 0, mcProblem: 0, noDemandQty: 0,
-            materialMBShortage: 0, overStockWIP: 0, accessoriesShort: 0
+            underSample: 0, mcProblem: 0, preventive: 0,
+            noDemandQty: 0, materialMBShortage: 0, overStockWIP: 0, accessoriesShort: 0
         };
 
         FIXED_MC_DEPTS.forEach(fixed => {
@@ -600,8 +600,8 @@
             let totalHR = 0, mcOperator = 0, packagingOperator = 0;
             let running = 0, stopped = 0;
             let mpShort = 0, moldProblem = 0, moldChange = 0;
-            let underSample = 0, mcProblem = 0, noDemandQty = 0;
-            let materialMBShortage = 0, overStockWIP = 0, accessoriesShort = 0;
+            let underSample = 0, mcProblem = 0, preventive = 0;
+            let noDemandQty = 0, materialMBShortage = 0, overStockWIP = 0, accessoriesShort = 0;
 
             deptRows.forEach(r => {
                 totalHR += getNum(r, ['Total HR', 'totalHR']);
@@ -614,6 +614,7 @@
                 moldChange += getNum(r, ['Mold Change', 'moldChange']);
                 underSample += getNum(r, ['Under Sample', 'underSample']);
                 mcProblem += getNum(r, ['MC Problem', 'mcProblem']);
+                preventive += getNum(r, ['Preventive Maintenance', 'preventiveMaintenance']);
                 noDemandQty += getNum(r, ['No Demand (QTY)', 'noDemandQty']);
                 materialMBShortage += getNum(r, ['Material & MB Shortage', 'materialMBShortage']);
                 overStockWIP += getNum(r, ['Over Stock (WIP)', 'overStockWIP']);
@@ -630,7 +631,7 @@
                 totalMC: fixed.totalMC,
                 totalHR, mcOperator, packagingOperator,
                 running, stopped, runPct, stopPct,
-                mpShort, moldProblem, moldChange, underSample, mcProblem,
+                mpShort, moldProblem, moldChange, underSample, mcProblem, preventive,
                 noDemandQty, materialMBShortage, overStockWIP, accessoriesShort
             });
 
@@ -644,6 +645,7 @@
             grandTotal.moldChange += moldChange;
             grandTotal.underSample += underSample;
             grandTotal.mcProblem += mcProblem;
+            grandTotal.preventive += preventive;
             grandTotal.noDemandQty += noDemandQty;
             grandTotal.materialMBShortage += materialMBShortage;
             grandTotal.overStockWIP += overStockWIP;
@@ -712,6 +714,7 @@
                 <td>${row.moldChange || '—'}</td>
                 <td>${row.underSample || '—'}</td>
                 <td>${row.mcProblem || '—'}</td>
+                <td>${row.preventive || '—'}</td>
                 <td>${row.noDemandQty || '—'}</td>
                 <td>${row.materialMBShortage || '—'}</td>
                 <td>${row.overStockWIP || '—'}</td>
@@ -719,7 +722,7 @@
             </tr>`;
         });
 
-        // ====================== FIXED মোট সারি ======================
+        // Total Row
         html += `<tr class="total-row">
             <td colspan="3" style="text-align:right;"><strong>📌 মোট</strong></td>
             <td><strong>${totalFixedMC}</strong></td>
@@ -735,6 +738,7 @@
             <td><strong>${grandTotal.moldChange}</strong></td>
             <td><strong>${grandTotal.underSample}</strong></td>
             <td><strong>${grandTotal.mcProblem}</strong></td>
+            <td><strong>${grandTotal.preventive}</strong></td>
             <td><strong>${grandTotal.noDemandQty}</strong></td>
             <td><strong>${grandTotal.materialMBShortage}</strong></td>
             <td><strong>${grandTotal.overStockWIP}</strong></td>
@@ -756,7 +760,7 @@
     }
 
     // ================================================================
-    // Saifuddin Table (এখন ০-কে Dash দেখাবে)
+    // Saifuddin Table (০-কে Dash দেখানো সহ)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -882,7 +886,7 @@
             return;
         }
 
-        // ========== ০-কে Dash-এ রূপান্তর করার হেলপার ফাংশন ==========
+        // ০-কে Dash-এ রূপান্তর
         const show = (v) => (v === 0 || v === '0' || v === null || v === undefined) ? '-' : v;
 
         let html = `<table class="saifuddin-table"><thead><tr>`;
@@ -903,7 +907,6 @@
                              (row.sn >= 14 && row.sn <= 22) || 
                              (row.sn >= 10 && row.sn <= 12));
 
-            // ড্যাশ দেখানোর জন্য ভ্যালু প্রস্তুত
             const totalMPText = show(row.totalMP);
             const presentText = show(row.totalPresent);
             const absentText = show(row.absent);
@@ -943,7 +946,6 @@
                 progressBar = '-';
             }
 
-            // Badge বা সরাসরি টেক্সট
             const totalMPBadge = (row.totalMP === 0) ? '-' : `<span class="badge-count badge-total">${row.totalMP}</span>`;
             const presentBadge = (row.totalPresent === 0) ? '-' : `<span class="badge-count badge-present">${row.totalPresent}</span>`;
             const absentBadge = (row.absent === 0) ? '-' : `<span class="badge-count badge-absent">${row.absent}</span>`;
@@ -1016,6 +1018,7 @@
             row.runPct.toFixed(1) + '%', row.stopPct.toFixed(1) + '%',
             row.mpShort || '—', row.moldProblem || '—', row.moldChange || '—',
             row.underSample || '—', row.mcProblem || '—',
+            row.preventive || '—',
             row.noDemandQty || '—', row.materialMBShortage || '—',
             row.overStockWIP || '—', row.accessoriesShort || '—'
         ]);
@@ -1026,6 +1029,7 @@
             data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%',
             data.grandTotal.mpShort, data.grandTotal.moldProblem, data.grandTotal.moldChange,
             data.grandTotal.underSample, data.grandTotal.mcProblem,
+            data.grandTotal.preventive,
             data.grandTotal.noDemandQty, data.grandTotal.materialMBShortage,
             data.grandTotal.overStockWIP, data.grandTotal.accessoriesShort
         ];
@@ -1067,7 +1071,7 @@
     }
 
     // ================================================================
-    // ডাউনলোড ফাংশন (Saifuddin) – আগের মতো
+    // ডাউনলোড ফাংশন (Saifuddin)
     // ================================================================
     function downloadSaifuddinImage() {
         const container = document.getElementById('saifuddinTableContainer');
@@ -1162,7 +1166,7 @@
     }
 
     // ================================================================
-    // বাকি ফাংশন (Group, Overall, Missing, Raw, Excel) – আগের মতো
+    // বাকি ফাংশন (Group, Overall, Missing, Raw, Excel)
     // ================================================================
     function renderGroupTable(data, containerId, groupType) {
         const container = document.getElementById(containerId);
