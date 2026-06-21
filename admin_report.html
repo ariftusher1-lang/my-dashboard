@@ -10,8 +10,8 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
     </script>
-    <!-- CSS (same as before) -->
     <style>
+        /* ===== CSS (আগের মতোই) ===== */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -665,7 +665,7 @@
         };
 
         // ================================================================
-        // Saifuddin টেবিলের ডিপার্টমেন্ট লিস্ট (শুধু ডিপার্টমেন্ট, SN পরে নির্ধারণ হবে)
+        // Saifuddin টেবিলের ডিপার্টমেন্ট লিস্ট (গ্রুপ অনুযায়ী)
         // ================================================================
         const SAIFUDDIN_DEPTS = [
             // Production (১-৯)
@@ -1119,10 +1119,6 @@
         function renderSaifuddinTable(data) {
             const container = document.getElementById('saifuddinTableContainer');
 
-            // ১. প্রথমে ডিপার্টমেন্টগুলোর ডেটা সংগ্রহ করি (গ্রুপ অনুযায়ী)
-            // আমরা আলাদাভাবে prod, pack, common গ্রুপের ডেটা ও টোটাল ক্যালকুলেট করব
-
-            // ডিপার্টমেন্ট ডেটা সংরক্ষণের জন্য অবজেক্ট
             let deptData = {};
             let groupTotals = {
                 prod: { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
@@ -1136,7 +1132,6 @@
                     preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 }
             };
 
-            // SAIFUDDIN_DEPTS থেকে প্রতিটি ডিপার্টমেন্টের ডেটা বের করি
             SAIFUDDIN_DEPTS.forEach(item => {
                 const deptName = item.name;
                 const group = item.group;
@@ -1190,7 +1185,6 @@
                 totalPresent = totalMP - leave - absent;
                 let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
-                // গ্রুপ টোটালে যোগ
                 groupTotals[group].totalMP += totalMP;
                 groupTotals[group].totalPresent += totalPresent;
                 groupTotals[group].absent += absent;
@@ -1209,7 +1203,6 @@
                 groupTotals[group].overStock += overStock;
                 groupTotals[group].accShort += accShort;
 
-                // ডিপার্টমেন্ট ডেটা সংরক্ষণ (পরে সারি তৈরি করব)
                 deptData[deptName] = {
                     group: group,
                     totalMP,
@@ -1233,227 +1226,61 @@
                 };
             });
 
-            // এখন ক্রমান্বয়ে সারি তৈরি করি
             let rows = [];
-
-            // ক্রম নির্ধারণ: প্রথমে প্রোডাকশন ডিপার্টমেন্টগুলো (যাদের group 'prod')
-            let prodDepts = SAIFUDDIN_DEPTS.filter(d => d.group === 'prod');
-            let packDepts = SAIFUDDIN_DEPTS.filter(d => d.group === 'pack');
-            let commonDepts = SAIFUDDIN_DEPTS.filter(d => d.group === 'common');
-
-            // ১. প্রোডাকশন ডিপার্টমেন্ট (SN 1-9)
             let sn = 0;
+
+            // 1. Production Depts (SN 1-9)
+            let prodDepts = SAIFUDDIN_DEPTS.filter(d => d.group === 'prod');
             prodDepts.forEach(item => {
                 sn++;
                 const name = item.name;
-                const d = deptData[name];
-                if (d) {
-                    rows.push({
-                        sn: sn,
-                        dept: name,
-                        ...d,
-                        isTotal: false,
-                        isGrand: false
-                    });
-                } else {
-                    // যদি ডেটা না থাকে, শূন্য দিয়ে যোগ করি
-                    rows.push({
-                        sn: sn,
-                        dept: name,
-                        totalMP: 0,
-                        totalPresent: 0,
-                        absent: 0,
-                        leave: 0,
-                        totalMC: 0,
-                        targetRun: 0,
-                        runPct: 0,
-                        mcWillOff: 0,
-                        mpShort: 0,
-                        moldProb: 0,
-                        moldChange: 0,
-                        sample: 0,
-                        mcProb: 0,
-                        preventive: 0,
-                        noDemand: 0,
-                        materialShort: 0,
-                        overStock: 0,
-                        accShort: 0,
-                        isTotal: false,
-                        isGrand: false
-                    });
-                }
+                const d = deptData[name] || { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0,
+                    targetRun: 0, runPct: 0, mcWillOff: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0,
+                    mcProb: 0, preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
+                rows.push({ sn, dept: name, ...d, isTotal: false, isGrand: false });
             });
 
-            // ২. Total Production Team (SN 10)
+            // 2. Total Production Team (SN 10)
             sn++;
             let prodTotal = groupTotals.prod;
-            let prodRunPct = prodTotal.totalMC > 0 ? ((prodTotal.targetRun / prodTotal.totalMC) * 100) : 0;
-            rows.push({
-                sn: sn,
-                dept: 'Total Production Team',
-                totalMP: prodTotal.totalMP,
-                totalPresent: prodTotal.totalPresent,
-                absent: prodTotal.absent,
-                leave: prodTotal.leave,
-                totalMC: prodTotal.totalMC,
-                targetRun: prodTotal.targetRun,
-                runPct: prodRunPct,
-                mcWillOff: prodTotal.mcWillOff,
-                mpShort: prodTotal.mpShort,
-                moldProb: prodTotal.moldProb,
-                moldChange: prodTotal.moldChange,
-                sample: prodTotal.sample,
-                mcProb: prodTotal.mcProb,
-                preventive: prodTotal.preventive,
-                noDemand: prodTotal.noDemand,
-                materialShort: prodTotal.materialShort,
-                overStock: prodTotal.overStock,
-                accShort: prodTotal.accShort,
-                isTotal: true,
-                isGrand: false
-            });
+            rows.push({ sn, dept: 'Total Production Team', ...prodTotal, runPct: (prodTotal.totalMC > 0 ? ((prodTotal
+                    .targetRun / prodTotal.totalMC) * 100) : 0), isTotal: true, isGrand: false });
 
-            // ৩. প্যাকেজিং ডিপার্টমেন্ট (SN 11-13)
+            // 3. Packaging Depts (SN 11-13)
+            let packDepts = SAIFUDDIN_DEPTS.filter(d => d.group === 'pack');
             packDepts.forEach(item => {
                 sn++;
                 const name = item.name;
-                const d = deptData[name];
-                if (d) {
-                    rows.push({
-                        sn: sn,
-                        dept: name,
-                        ...d,
-                        isTotal: false,
-                        isGrand: false
-                    });
-                } else {
-                    rows.push({
-                        sn: sn,
-                        dept: name,
-                        totalMP: 0,
-                        totalPresent: 0,
-                        absent: 0,
-                        leave: 0,
-                        totalMC: 0,
-                        targetRun: 0,
-                        runPct: 0,
-                        mcWillOff: 0,
-                        mpShort: 0,
-                        moldProb: 0,
-                        moldChange: 0,
-                        sample: 0,
-                        mcProb: 0,
-                        preventive: 0,
-                        noDemand: 0,
-                        materialShort: 0,
-                        overStock: 0,
-                        accShort: 0,
-                        isTotal: false,
-                        isGrand: false
-                    });
-                }
+                const d = deptData[name] || { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0,
+                    targetRun: 0, runPct: 0, mcWillOff: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0,
+                    mcProb: 0, preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
+                rows.push({ sn, dept: name, ...d, isTotal: false, isGrand: false });
             });
 
-            // ৪. Total Packaging Team (SN 14)
+            // 4. Total Packaging Team (SN 14)
             sn++;
             let packTotal = groupTotals.pack;
-            let packRunPct = packTotal.totalMC > 0 ? ((packTotal.targetRun / packTotal.totalMC) * 100) : 0;
-            rows.push({
-                sn: sn,
-                dept: 'Total Packaging Team',
-                totalMP: packTotal.totalMP,
-                totalPresent: packTotal.totalPresent,
-                absent: packTotal.absent,
-                leave: packTotal.leave,
-                totalMC: packTotal.totalMC,
-                targetRun: packTotal.targetRun,
-                runPct: packRunPct,
-                mcWillOff: packTotal.mcWillOff,
-                mpShort: packTotal.mpShort,
-                moldProb: packTotal.moldProb,
-                moldChange: packTotal.moldChange,
-                sample: packTotal.sample,
-                mcProb: packTotal.mcProb,
-                preventive: packTotal.preventive,
-                noDemand: packTotal.noDemand,
-                materialShort: packTotal.materialShort,
-                overStock: packTotal.overStock,
-                accShort: packTotal.accShort,
-                isTotal: true,
-                isGrand: false
-            });
+            rows.push({ sn, dept: 'Total Packaging Team', ...packTotal, runPct: (packTotal.totalMC > 0 ? ((packTotal
+                    .targetRun / packTotal.totalMC) * 100) : 0), isTotal: true, isGrand: false });
 
-            // ৫. কমন ডিপার্টমেন্ট (SN 15-23)
+            // 5. Common Depts (SN 15-23)
+            let commonDepts = SAIFUDDIN_DEPTS.filter(d => d.group === 'common');
             commonDepts.forEach(item => {
                 sn++;
                 const name = item.name;
-                const d = deptData[name];
-                if (d) {
-                    rows.push({
-                        sn: sn,
-                        dept: name,
-                        ...d,
-                        isTotal: false,
-                        isGrand: false
-                    });
-                } else {
-                    rows.push({
-                        sn: sn,
-                        dept: name,
-                        totalMP: 0,
-                        totalPresent: 0,
-                        absent: 0,
-                        leave: 0,
-                        totalMC: 0,
-                        targetRun: 0,
-                        runPct: 0,
-                        mcWillOff: 0,
-                        mpShort: 0,
-                        moldProb: 0,
-                        moldChange: 0,
-                        sample: 0,
-                        mcProb: 0,
-                        preventive: 0,
-                        noDemand: 0,
-                        materialShort: 0,
-                        overStock: 0,
-                        accShort: 0,
-                        isTotal: false,
-                        isGrand: false
-                    });
-                }
+                const d = deptData[name] || { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0,
+                    targetRun: 0, runPct: 0, mcWillOff: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0,
+                    mcProb: 0, preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
+                rows.push({ sn, dept: name, ...d, isTotal: false, isGrand: false });
             });
 
-            // ৬. Total Common Team (SN 24)
+            // 6. Total Common Team (SN 24)
             sn++;
             let commonTotal = groupTotals.common;
-            let commonRunPct = commonTotal.totalMC > 0 ? ((commonTotal.targetRun / commonTotal.totalMC) * 100) : 0;
-            rows.push({
-                sn: sn,
-                dept: 'Total Common Team',
-                totalMP: commonTotal.totalMP,
-                totalPresent: commonTotal.totalPresent,
-                absent: commonTotal.absent,
-                leave: commonTotal.leave,
-                totalMC: commonTotal.totalMC,
-                targetRun: commonTotal.targetRun,
-                runPct: commonRunPct,
-                mcWillOff: commonTotal.mcWillOff,
-                mpShort: commonTotal.mpShort,
-                moldProb: commonTotal.moldProb,
-                moldChange: commonTotal.moldChange,
-                sample: commonTotal.sample,
-                mcProb: commonTotal.mcProb,
-                preventive: commonTotal.preventive,
-                noDemand: commonTotal.noDemand,
-                materialShort: commonTotal.materialShort,
-                overStock: commonTotal.overStock,
-                accShort: commonTotal.accShort,
-                isTotal: true,
-                isGrand: false
-            });
+            rows.push({ sn, dept: 'Total Common Team', ...commonTotal, runPct: (commonTotal.totalMC > 0 ? ((commonTotal
+                    .targetRun / commonTotal.totalMC) * 100) : 0), isTotal: true, isGrand: false });
 
-            // ৭. Total Manpower (সব গ্রুপের যোগফল)
+            // 7. Total Manpower (SN 25)
             sn++;
             let grandTotal = {
                 totalMP: 0,
@@ -1474,7 +1301,6 @@
                 overStock: 0,
                 accShort: 0
             };
-            // যোগফল বের করি তিন গ্রুপের
             ['prod', 'pack', 'common'].forEach(g => {
                 let t = groupTotals[g];
                 grandTotal.totalMP += t.totalMP;
@@ -1495,16 +1321,10 @@
                 grandTotal.overStock += t.overStock;
                 grandTotal.accShort += t.accShort;
             });
-            rows.push({
-                sn: sn,
-                dept: 'Total Manpower (Leave + Absent + Present)',
-                ...grandTotal,
-                runPct: 0,
-                isTotal: true,
-                isGrand: true
-            });
+            rows.push({ sn, dept: 'Total Manpower (Leave + Absent + Present)', ...grandTotal, runPct: 0, isTotal: true,
+                isGrand: true });
 
-            // ===== এখন টেবিল HTML তৈরি =====
+            // ===== HTML তৈরি =====
             if (rows.length === 0) {
                 container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
                 return;
@@ -1538,8 +1358,6 @@
                 const leaveBadge = (row.leave === 0) ? '-' :
                     `<span class="badge-count badge-leave">${row.leave}</span>`;
 
-                // শুধু মোট সারিগুলো এবং ডিপার্টমেন্ট যাদের group prod/pack/common আছে তাদের জন্য MC কলাম দেখাব
-                // কিন্তু আমরা সব ডিপার্টমেন্টের জন্যই MC কলাম দেখাব, কারণ সব ডিপার্টমেন্টেরই MC ডেটা থাকতে পারে
                 const totalMCText = show(row.totalMC);
                 const targetRunText = show(row.targetRun);
                 const mcWillOffText = show(row.mcWillOff);
@@ -1747,7 +1565,110 @@
         }
 
         // ================================================================
-        // ডাউনলোড ফাংশন (MC, Saifuddin, Excel, Image, PDF)
+        // 🔥 ডাউনলোড ফাংশন (স্টাইলসহ এক্সেল - Saifuddin)
+        // ================================================================
+        function downloadSaifuddinExcel() {
+            const rows = window._saifuddinRows || [];
+            if (rows.length === 0) { alert('ডেটা নেই!'); return; }
+
+            const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
+                'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
+                'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
+                'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'
+            ];
+
+            // ডেটা প্রস্তুত
+            const data = [headers];
+            const rowStyles = [];
+
+            rows.forEach(row => {
+                const showExcel = (v) => (v === 0 || v === '0' || v === null || v === undefined) ? '' : v;
+                const rowData = [
+                    row.sn, row.dept,
+                    showExcel(row.totalMP),
+                    showExcel(row.totalPresent),
+                    showExcel(row.absent),
+                    showExcel(row.leave),
+                    showExcel(row.totalMC),
+                    showExcel(row.targetRun),
+                    (row.totalMC > 0 ? row.runPct.toFixed(1) + '%' : ''),
+                    showExcel(row.mcWillOff),
+                    showExcel(row.mpShort),
+                    showExcel(row.moldProb),
+                    showExcel(row.moldChange),
+                    showExcel(row.sample),
+                    showExcel(row.mcProb),
+                    showExcel(row.preventive),
+                    showExcel(row.noDemand),
+                    showExcel(row.materialShort),
+                    showExcel(row.overStock),
+                    showExcel(row.accShort)
+                ];
+                data.push(rowData);
+                rowStyles.push({
+                    sn: row.sn,
+                    isTotal: row.isTotal || false,
+                    isGrand: row.isGrand || false
+                });
+            });
+
+            // ওয়ার্কবুক তৈরি
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const range = XLSX.utils.decode_range(ws['!ref']);
+
+            // সেল স্টাইলিং (সারি অনুযায়ী)
+            for (let R = range.s.r; R <= range.e.r; R++) {
+                const rowIndex = R - 1; // data array-তে ইনডেক্স (0 = হেডার)
+                if (rowIndex === 0) continue; // হেডার স্কিপ
+
+                const styleInfo = rowStyles[rowIndex - 1];
+                if (!styleInfo) continue;
+
+                let bgColor = null;
+                let fontColor = null;
+                let bold = false;
+
+                // SN 10 = Total Production Team, 14 = Total Packaging, 24 = Total Common, 25 = Total Manpower
+                if (styleInfo.sn === 10) {
+                    bgColor = "E8F5E9"; // Light Green
+                    bold = true;
+                } else if (styleInfo.sn === 14) {
+                    bgColor = "FFF3CD"; // Light Yellow
+                    bold = true;
+                } else if (styleInfo.sn === 24) {
+                    bgColor = "FFE0B2"; // Light Orange
+                    bold = true;
+                } else if (styleInfo.sn === 25) {
+                    bgColor = "1A237E"; // Dark Blue
+                    fontColor = "FFFFFF";
+                    bold = true;
+                }
+
+                if (bgColor) {
+                    for (let C = range.s.c; C <= range.e.c; C++) {
+                        const cellAddr = XLSX.utils.encode_cell({ r: R, c: C });
+                        if (!ws[cellAddr]) continue;
+                        if (!ws[cellAddr].s) ws[cellAddr].s = {};
+
+                        ws[cellAddr].s.fill = { fgColor: { rgb: bgColor } };
+                        ws[cellAddr].s.font = ws[cellAddr].s.font || {};
+                        if (fontColor) ws[cellAddr].s.font.color = { rgb: fontColor };
+                        if (bold) ws[cellAddr].s.font.bold = true;
+                    }
+                }
+            }
+
+            // কলামের প্রস্থ অটো সেট (আলাদাভাবে)
+            ws['!cols'] = headers.map(() => ({ wch: 15 }));
+
+            XLSX.utils.book_append_sheet(wb, ws, "Saifuddin Summary");
+            XLSX.writeFile(wb, `Saifuddin_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+
+        // ================================================================
+        // অন্যান্য ডাউনলোড ফাংশন (MC, Image, PDF, Excel)
         // ================================================================
         function downloadMCImage() {
             const container = document.getElementById('mcSummaryTable');
@@ -1862,42 +1783,6 @@
                     btn.innerText = '📷 ইমেজ ডাউনলোড';
                     btn.disabled = false;
                 });
-        }
-
-        function downloadSaifuddinExcel() {
-            const rows = window._saifuddinRows || [];
-            if (rows.length === 0) { alert('ডেটা নেই!'); return; }
-            const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
-                'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
-                'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
-                'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'
-            ];
-            const csvRows = rows.map(row => {
-                const showExcel = (v) => (v === 0 || v === '0' || v === null || v === undefined) ? '' : v;
-                return [
-                    row.sn, row.dept, showExcel(row.totalMP), showExcel(row.totalPresent), showExcel(row.absent),
-                    showExcel(row.leave),
-                    showExcel(row.totalMC),
-                    showExcel(row.targetRun),
-                    row.totalMC > 0 ? row.runPct.toFixed(1) + '%' : '',
-                    showExcel(row.mcWillOff),
-                    showExcel(row.mpShort),
-                    showExcel(row.moldProb),
-                    showExcel(row.moldChange),
-                    showExcel(row.sample),
-                    showExcel(row.mcProb),
-                    showExcel(row.preventive),
-                    showExcel(row.noDemand),
-                    showExcel(row.materialShort),
-                    showExcel(row.overStock),
-                    showExcel(row.accShort)
-                ];
-            });
-            const wbData = [headers, ...csvRows];
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(wbData);
-            XLSX.utils.book_append_sheet(wb, ws, "Saifuddin Summary");
-            XLSX.writeFile(wb, `Saifuddin_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function downloadSaifuddinPDF() {
