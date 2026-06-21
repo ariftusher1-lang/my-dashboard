@@ -76,6 +76,7 @@
             border: 1px solid #f5c6cb;
             display: none;
         }
+        .required-star { color: red; }
     </style>
 </head>
 <body>
@@ -87,16 +88,16 @@
         <div class="section">
             <h3>📅 মৌলিক তথ্য</h3>
             <div class="row">
-                <div><label>তারিখ (Date)</label><input type="date" id="entryDate" required></div>
-                <div><label>শিফট (Shift)</label>
-                    <select id="shift"><option value="Day">Day</option><option value="Night">Night</option></select>
+                <div><label>তারিখ (Date) <span class="required-star">*</span></label><input type="date" id="entryDate" required></div>
+                <div><label>শিফট (Shift) <span class="required-star">*</span></label>
+                    <select id="shift" required><option value="Day">Day</option><option value="Night">Night</option></select>
                 </div>
-                <div><label>ডিপার্টমেন্ট</label>
+                <div><label>ডিপার্টমেন্ট <span class="required-star">*</span></label>
                     <select id="department" required>
                         <option value="">-- সিলেক্ট করুন --</option>
                     </select>
                 </div>
-                <div><label>আইসি নাম</label>
+                <div><label>আইসি নাম <span class="required-star">*</span></label>
                     <input type="text" id="icName" placeholder="ডিপার্টমেন্ট সিলেক্ট করলে অটো আসবে" required>
                 </div>
             </div>
@@ -107,13 +108,13 @@
             <h3>⚙️ মেশিনের ডেটা (অটো ক্যালকুলেশন)</h3>
             <div class="row">
                 <div><label>Total MC</label>
-                    <input type="number" id="totalMC" required placeholder="Typ QTY">
+                    <input type="number" id="totalMC" placeholder="Typ QTY">
                 </div>
                 <div><label>Target MC Run (Running)</label>
-                    <input type="number" id="mcRunning" required placeholder="Typ QTY" oninput="autoCalculate()">
+                    <input type="number" id="mcRunning" placeholder="Typ QTY" oninput="autoCalculate()">
                 </div>
                 <div><label>MC Will off (Stopped)</label>
-                    <input type="number" id="mcStopped" required placeholder="Typ QTY" oninput="autoCalculate()">
+                    <input type="number" id="mcStopped" placeholder="Typ QTY" oninput="autoCalculate()">
                 </div>
             </div>
             <div class="row">
@@ -147,7 +148,7 @@
         <div class="section" id="hrSection">
             <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
             <div class="row">
-                <div><label>Total Present</label>
+                <div><label>Total Present <span class="required-star">*</span></label>
                     <input type="number" id="totalPresent" placeholder="Typ QTY" required>
                 </div>
                 <div><label>Leave</label>
@@ -406,9 +407,18 @@
         status.className = '';
         status.innerText = '⏳ চেক করা হচ্ছে...';
 
+        // ফিল্ডগুলো ভ্যালিডেট
         const date = document.getElementById('entryDate').value;
         const shift = document.getElementById('shift').value;
         const dept = document.getElementById('department').value;
+        const icName = document.getElementById('icName').value;
+        const totalPresent = document.getElementById('totalPresent').value;
+
+        if (!date || !shift || !dept || !icName || !totalPresent) {
+            status.className = 'error';
+            status.innerText = '❌ দয়া করে সব * চিহ্নিত ফিল্ড পূরণ করুন!';
+            return;
+        }
 
         // ডাবল এন্ট্রি চেক (localStorage)
         const key = `${date}_${shift}_${dept}`;
@@ -427,7 +437,7 @@
             entryDate: date,
             shift: shift,
             department: dept,
-            icName: getVal('icName'),
+            icName: icName,
             totalMC: getNum('totalMC'),
             mcRunning: getNum('mcRunning'),
             mcStopped: getNum('mcStopped'),
@@ -449,8 +459,10 @@
             overStockWIP: getNum('overStockWIP'),
             accessoriesShort: getNum('accessoriesShort'),
             
-            // 🔥 Total Present-কে Total HR হিসেবে পাঠানো হচ্ছে (এবং Present হিসেবেও)
+            // 🔥 Total Present-কে Total HR, Total MP ও Total HR (স্পেসসহ) – সব নামে পাঠানো হচ্ছে
             totalHR: getNum('totalPresent'),
+            totalMP: getNum('totalPresent'),
+            'Total HR': getNum('totalPresent'),
             totalPresent: getNum('totalPresent'),
             leaveEmployee: getNum('leaveEmployee'),
             absentEmployee: getNum('absentEmployee'),
@@ -495,6 +507,7 @@
             status.className = 'success';
             status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে! Google Sheet চেক করুন।';
 
+            // ফিল্ড রিসেট (চাইলে রিসেট করতে পারেন)
             document.getElementById('mcRunning').value = '';
             document.getElementById('mcStopped').value = '';
             document.getElementById('pctRunning').value = '';
