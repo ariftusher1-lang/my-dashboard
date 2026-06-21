@@ -67,6 +67,11 @@
         }
 
         .container { max-height: 100vh; overflow-y: auto; }
+        .present-field {
+            background: #e8f5e9 !important;
+            color: #1b5e20 !important;
+            font-weight: 700 !important;
+        }
     </style>
 </head>
 <body>
@@ -138,9 +143,12 @@
         <div class="section" id="hrSection">
             <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
             <div class="row">
-                <div><label>Total MP</label><input type="number" id="totalHR" required placeholder="Typ QTY"></div>
-                <div><label>Leave</label><input type="number" id="leaveEmployee" placeholder="Typ QTY"></div>
-                <div><label>Absent</label><input type="number" id="absentEmployee" placeholder="Typ QTY"></div>
+                <div><label>Total MP</label><input type="number" id="totalHR" required placeholder="Typ QTY" oninput="calcPresent()"></div>
+                <div><label>Leave</label><input type="number" id="leaveEmployee" placeholder="Typ QTY" oninput="calcPresent()"></div>
+                <div><label>Absent</label><input type="number" id="absentEmployee" placeholder="Typ QTY" oninput="calcPresent()"></div>
+                <div><label>Total Present</label>
+                    <input type="text" id="totalPresent" readonly class="present-field" value="0">
+                </div>
             </div>
         </div>
 
@@ -197,7 +205,7 @@
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
     // ============================================================
-    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং (সব যোগ করা হয়েছে)
+    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং (সব)
     // ============================================================
     const DEPARTMENT_IC_MAP = {
         // Production (MC)
@@ -209,13 +217,13 @@
         'RIP> DPL> Plastic-7.3': 'Mr. Saddam',
         'RIP> DPL> Plastic-7.4': 'Mr. Saddam',
         'RIP> DPL> Plastic-1': 'Mr. Atiqur Rahman',
-        
+
         // Packaging (Non-MC)
         'Plastic Packaging-01': 'Mr. Mahbub',
         'Plastic Packaging-02': 'Mr. Rakib',
         'Plastic Packaging-03': 'Mr. Mahbub',
 
-        // 🔥 নতুন যোগ করা Non-MC ডিপার্টমেন্ট
+        // Non-MC (Maintenance, Inventory, QA, Store, Support)
         'Plastic-Maintenance.': 'Mr. Rana',
         'Tool Room Maintenance': 'Mr. Kamal',
         'Plastic Inventory & Delivery': 'Mr. Hasan',
@@ -228,7 +236,7 @@
     };
 
     // ============================================================
-    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC ম্যাপিং (Non-MC = 0)
+    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC ম্যাপিং
     // ============================================================
     const DEPARTMENT_MC = {
         // Production (MC)
@@ -241,7 +249,7 @@
         'RIP> DPL> Plastic-7.4': 35,
         'RIP> DPL> Plastic-1': 38,
 
-        // Non-MC (Packaging, Maintenance, QA, Store, ইত্যাদি)
+        // Non-MC (সব 0)
         'Plastic Packaging-01': 0,
         'Plastic Packaging-02': 0,
         'Plastic Packaging-03': 0,
@@ -257,7 +265,7 @@
     };
 
     // ============================================================
-    // ৩. Non-MC ডিপার্টমেন্টের তালিকা (যাদের MC Data দেখাবে না)
+    // ৩. Non-MC ডিপার্টমেন্টের তালিকা
     // ============================================================
     const NON_MC_DEPTS = [
         'Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03',
@@ -268,33 +276,35 @@
     ];
 
     // ============================================================
-    // ৪. ড্রপডাউনে সব ডিপার্টমেন্ট যোগ করা
+    // ৪. ড্রপডাউনে ডিপার্টমেন্ট যোগ করা (Plastic Prof সিরিজ বাদ)
     // ============================================================
     (function populateDepartments() {
         const select = document.getElementById('department');
-        // প্রথমে IC ম্যাপের সব ডিপার্টমেন্ট
+        // শুধু IC ম্যাপের ডিপার্টমেন্টগুলো যোগ করব (Plastic Prof সিরিজ বাদ)
         Object.keys(DEPARTMENT_IC_MAP).forEach(key => {
             const opt = document.createElement('option');
             opt.value = key;
             opt.textContent = key;
             select.appendChild(opt);
         });
-        // তারপর Plastic Prof-01 থেকে Plastic Prof-360 (Production MC)
-        for (let i = 1; i <= 360; i++) {
-            const opt = document.createElement('option');
-            const name = `Plastic Prof-${String(i).padStart(2, '0')}`;
-            opt.value = name;
-            opt.textContent = name;
-            select.appendChild(opt);
-        }
     })();
 
     // ============================================================
-    // ৫. MC ডেটা দেখানো/লুকানো এবং IC, Total MC সেট করা
+    // ৫. Total Present ক্যালকুলেশন
+    // ============================================================
+    function calcPresent() {
+        const totalMP = parseInt(document.getElementById('totalHR').value) || 0;
+        const leave = parseInt(document.getElementById('leaveEmployee').value) || 0;
+        const absent = parseInt(document.getElementById('absentEmployee').value) || 0;
+        const present = totalMP - leave - absent;
+        document.getElementById('totalPresent').value = present >= 0 ? present : 0;
+    }
+
+    // ============================================================
+    // ৬. ডিপার্টমেন্ট চেঞ্জ হলে IC, Total MC, টগল
     // ============================================================
     function toggleMcFields(dept) {
         const isNonMC = NON_MC_DEPTS.includes(dept);
-        // MC সংক্রান্ত সেকশনগুলো দেখান/লুকান
         document.getElementById('mcDataSection').style.display = isNonMC ? 'none' : 'block';
         document.getElementById('causeSection').style.display = isNonMC ? 'none' : 'block';
         document.getElementById('machineTypeSection').style.display = isNonMC ? 'none' : 'block';
@@ -306,40 +316,30 @@
         const icInput = document.getElementById('icName');
         const totalInput = document.getElementById('totalMC');
 
-        // আইসি নাম সেট
+        // আইসি নাম
         if (DEPARTMENT_IC_MAP[dept]) {
             icInput.value = DEPARTMENT_IC_MAP[dept];
         } else {
             icInput.value = '';
         }
 
-        // টোটাল এমসি সেট (নন-এমসি ডিপার্টমেন্টের জন্য ০ বা খালি)
+        // টোটাল এমসি
         if (dept in DEPARTMENT_MC) {
             const mcVal = DEPARTMENT_MC[dept];
             if (mcVal > 0) {
                 totalInput.value = mcVal;
                 totalInput.readOnly = true;
-                totalInput.style.background = '#ffffff';
-                totalInput.style.color = '#d32f2f';
-                totalInput.style.fontWeight = '700';
             } else {
                 totalInput.value = '';
                 totalInput.readOnly = false;
-                totalInput.style.background = '#ffffff';
-                totalInput.style.color = '#d32f2f';
-                totalInput.style.fontWeight = '700';
                 totalInput.placeholder = 'Typ QTY';
             }
         } else {
             totalInput.value = '';
             totalInput.readOnly = false;
-            totalInput.style.background = '#ffffff';
-            totalInput.style.color = '#d32f2f';
-            totalInput.style.fontWeight = '700';
             totalInput.placeholder = 'Typ QTY';
         }
 
-        // MC ডেটা দেখান/লুকান (শুধুমাত্র নন-এমসি ডিপার্টমেন্টের জন্য লুকাবে)
         toggleMcFields(dept);
 
         // আগের ক্যালকুলেশন রিসেট
@@ -347,10 +347,12 @@
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
         document.getElementById('pctStopped').value = '';
+        // Present রিসেট
+        calcPresent();
     });
 
     // ============================================================
-    // ৬. অটো ক্যালকুলেশন (শুধু এমসি ডিপার্টমেন্টের জন্য)
+    // ৭. অটো ক্যালকুলেশন (MC)
     // ============================================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
@@ -395,19 +397,18 @@
     }
 
     // ============================================================
-    // ৭. ফর্ম সাবমিট (আগের মতোই)
+    // ৮. ফর্ম সাবমিট (পে-লোডে totalPresent যোগ করা হয়েছে)
     // ============================================================
     document.getElementById('entryDate').valueAsDate = new Date();
 
-    // পেজ লোড হলে প্রথম ডিফল্ট ডিপার্টমেন্টের জন্য টগল রান করান
     window.addEventListener('DOMContentLoaded', function() {
         const dept = document.getElementById('department').value;
         if (dept) {
             toggleMcFields(dept);
         } else {
-            // ডিফল্টভাবে সব সেকশন দেখান (প্রথমবার)
             toggleMcFields('');
         }
+        calcPresent();
     });
 
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
@@ -417,6 +418,12 @@
         status.innerText = '⏳ সেভ হচ্ছে...';
         const getVal = (id) => document.getElementById(id).value;
         const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
+
+        // Total Present গণনা
+        const totalMP = getNum('totalHR');
+        const leave = getNum('leaveEmployee');
+        const absent = getNum('absentEmployee');
+        const totalPresent = totalMP - leave - absent;
 
         const payload = {
             entryDate: getVal('entryDate'),
@@ -446,6 +453,7 @@
             totalHR: getNum('totalHR'),
             leaveEmployee: getNum('leaveEmployee'),
             absentEmployee: getNum('absentEmployee'),
+            totalPresent: totalPresent >= 0 ? totalPresent : 0,
             exportMC: getNum('exportMC'),
             domesticMC: getNum('domesticMC'),
             singleMC: getNum('singleMC'),
