@@ -238,6 +238,41 @@
             font-size: 13px;
             min-width: 40px;
         }
+
+        /* Weekly summary table style */
+        .weekly-table th {
+            background: #1a237e;
+            color: white;
+            padding: 12px 8px;
+            font-weight: 700;
+            font-size: 12px;
+            border-bottom: 3px solid #0d47a1;
+            white-space: nowrap;
+        }
+        .weekly-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e8ecf1;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .weekly-table tr:nth-child(even) {
+            background: #f8faff;
+        }
+        .weekly-table tr:hover {
+            background: #e3edfb !important;
+        }
+        .weekly-table .dept-name {
+            font-weight: 600;
+            color: #1a3a5c;
+            text-align: left;
+            padding-left: 15px;
+        }
+        .weekly-table .total-row td {
+            background: #d4e4f7 !important;
+            font-weight: 700;
+            border-top: 2px solid #1976d2;
+            border-bottom: 2px solid #1976d2;
+        }
     </style>
 </head>
 <body>
@@ -295,7 +330,16 @@
     </div>
     <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
-    <!-- স্ট্যাটস কার্ড -->
+    <!-- সাপ্তাহিক সারাংশ টেবিল (আপডেটেড) -->
+    <div class="section-title clearfix">
+        <span style="background:#1a237e; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📅 সাপ্তাহিক সারাংশ (শেষ ৭ দিনের গড় Present ও MC Run)</span>
+        <div class="btn-group">
+            <button class="btn-image" onclick="downloadWeeklyImage()">📷 ইমেজ ডাউনলোড</button>
+            <button class="btn-excel" onclick="downloadWeeklyExcel()">⬇️ Excel ডাউনলোড</button>
+        </div>
+    </div>
+    <div class="table-wrap" id="weeklySummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
+
     <div class="stats" id="statsContainer">
         <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
         <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
@@ -342,6 +386,19 @@
         'RIP> DPL> Plastic-7.4': 35,
         'Silicon Project': 9
     };
+
+    // প্রথম ৯টি ডিপার্টমেন্ট (ফিক্সড)
+    const FIXED_DEPTS = [
+        { sn: 1, name: 'RIP> DPL> Plastic-1' },
+        { sn: 2, name: 'RIP> DPL> Plastic-3' },
+        { sn: 3, name: 'RIP> DPL> Plastic-6.1' },
+        { sn: 4, name: 'RIP> DPL> Plastic-6.2' },
+        { sn: 5, name: 'RIP> DPL> Plastic-7.1' },
+        { sn: 6, name: 'RIP> DPL> Plastic-7.2' },
+        { sn: 7, name: 'RIP> DPL> Plastic-7.3' },
+        { sn: 8, name: 'RIP> DPL> Plastic-7.4' },
+        { sn: 9, name: 'Silicon Project' }
+    ];
 
     const SAIFUDDIN_DEPTS = [
         { sn: 1, name: 'RIP> DPL> Plastic-1' },
@@ -429,6 +486,13 @@
         return `${day}-${month}-${year}`;
     }
 
+    function formatDateForCompare(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        return d.toISOString().slice(0,10);
+    }
+
     function formatTime(dateStr) {
         if (!dateStr) return '-';
         const d = new Date(dateStr);
@@ -464,6 +528,8 @@
             console.log('📦 মোট ডেটা:', allData.length);
             populateDeptFilter();
             applyFilters();
+            // সাপ্তাহিক সারাংশ সব ডেটা থেকে গণনা করবে (ফিল্টার নির্বিশেষে)
+            renderWeeklySummary(allData);
             document.getElementById('currentTime').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
         } catch (e) {
             console.error('❌ লোড ব্যর্থ:', e);
@@ -527,7 +593,7 @@
     function renderDashboard(data) {
         renderStats(data);
         renderSaifuddinTable(data);
-        renderMcSummaryTable(data); // আপডেটেড ফাংশন (Total Present = Total HR)
+        renderMcSummaryTable(data);
         renderGroupTable(data, 'groupATable', 'A');
         renderGroupTable(data, 'groupBTable', 'B');
         renderOverall(data);
@@ -535,7 +601,7 @@
         renderRawData(data);
     }
 
-    // ===== স্ট্যাটস (অপরিবর্তিত – Present = HR - Leave - Absent) =====
+    // ===== স্ট্যাটস =====
     function renderStats(data) {
         let totalHR = 0, totalPresent = 0, totalLeave = 0, totalAbsent = 0;
         let totalMC = 0, totalTargetRun = 0, sumPct = 0;
@@ -569,7 +635,130 @@
         document.getElementById('avgRunningPct').innerText = data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%';
     }
 
-    // ===== Saifuddin Table (অপরিবর্তিত – Present = HR - Leave - Absent) =====
+    // ===== সাপ্তাহিক সারাংশ (শেষ ৭ দিনের গড় Present ও MC Run) =====
+    function renderWeeklySummary(data) {
+        const container = document.getElementById('weeklySummaryTable');
+        if (!data || data.length === 0) {
+            container.innerHTML = `<div class="no-data">পর্যাপ্ত ডেটা নেই</div>`;
+            return;
+        }
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+
+        const last7DaysData = data.filter(row => {
+            const dateStr = row.entryDate || row.Date || '';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return false;
+            const dDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            const startDate = new Date(sevenDaysAgo.getFullYear(), sevenDaysAgo.getMonth(), sevenDaysAgo.getDate());
+            return dDate >= startDate && dDate <= new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        });
+
+        const rows = [];
+        FIXED_DEPTS.forEach(fixed => {
+            const deptName = fixed.name;
+            const possibleNames = DEPT_MAP[deptName] || [deptName];
+            let deptRows = [];
+            for (let pn of possibleNames) {
+                const found = last7DaysData.filter(r => {
+                    let d = getVal(r, ['Department', 'department']);
+                    return d === pn;
+                });
+                deptRows = deptRows.concat(found);
+            }
+
+            // Prod IC: সর্বশেষ এন্ট্রি থেকে
+            let icName = '';
+            if (deptRows.length > 0) {
+                const sorted = deptRows.sort((a, b) => {
+                    const da = new Date(a.entryDate || a.Date || 0);
+                    const db = new Date(b.entryDate || b.Date || 0);
+                    return db - da;
+                });
+                icName = getVal(sorted[0], ['IC Name', 'icName']) || '';
+            }
+
+            // Present ও MC Run-এর যোগফল ও কাউন্ট
+            let sumPresent = 0, sumRun = 0, count = 0;
+            deptRows.forEach(r => {
+                const hr = getNum(r, ['Total HR', 'totalHR']);
+                const leave = getNum(r, ['Leave Employee', 'leaveEmployee']);
+                const absent = getNum(r, ['Absent Employee', 'absentEmployee']);
+                const present = hr - leave - absent;
+                sumPresent += present;
+                sumRun += getNum(r, ['MC Running', 'mcRunning']);
+                count++;
+            });
+            const avgPresent = count > 0 ? sumPresent / count : 0;
+            const avgRun = count > 0 ? sumRun / count : 0;
+
+            const fixedMC = FIXED_MC_QTY[deptName] || 0;
+
+            rows.push({
+                sn: fixed.sn,
+                dept: deptName,
+                icName: icName,
+                fixedMC: fixedMC,
+                avgPresent: avgPresent,
+                avgRun: avgRun,
+                count: count
+            });
+        });
+
+        // টোটাল সারি (সমস্ত ডিপার্টমেন্টের গড়ের গড় এবং মোট Fixed MC)
+        let totalFixedMC = 0, totalAvgPresent = 0, totalAvgRun = 0, totalCount = 0;
+        rows.forEach(r => {
+            totalFixedMC += r.fixedMC;
+            totalAvgPresent += r.avgPresent;
+            totalAvgRun += r.avgRun;
+            totalCount += r.count;
+        });
+        const overallAvgPresent = rows.length > 0 ? totalAvgPresent / rows.length : 0;
+        const overallAvgRun = rows.length > 0 ? totalAvgRun / rows.length : 0;
+
+        // টেবিল তৈরি
+        let html = `<table class="weekly-table"><thead><tr>
+            <th>SN</th>
+            <th>Department</th>
+            <th>Prod IC</th>
+            <th>Fixed MC QTY</th>
+            <th>Avg Present (Last 7 Days)</th>
+            <th>Avg MC Run (Last 7 Days)</th>
+            <th>Entries Count</th>
+        </tr></thead><tbody>`;
+
+        rows.forEach(row => {
+            html += `<tr>
+                <td><strong>${row.sn}</strong></td>
+                <td class="dept-name"><strong>${row.dept}</strong></td>
+                <td>${row.icName || '-'}</td>
+                <td>${row.fixedMC}</td>
+                <td>${row.avgPresent.toFixed(1)}</td>
+                <td>${row.avgRun.toFixed(1)}</td>
+                <td>${row.count}</td>
+            </tr>`;
+        });
+
+        // টোটাল সারি
+        html += `<tr class="total-row">
+            <td><strong>📌</strong></td>
+            <td><strong>Total / Average</strong></td>
+            <td>-</td>
+            <td><strong>${totalFixedMC}</strong></td>
+            <td><strong>${overallAvgPresent.toFixed(1)}</strong></td>
+            <td><strong>${overallAvgRun.toFixed(1)}</strong></td>
+            <td><strong>${totalCount}</strong></td>
+        </tr>`;
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        window._weeklyRows = rows;
+        window._weeklyTotal = { totalFixedMC, overallAvgPresent, overallAvgRun, totalCount };
+    }
+
+    // ===== Saifuddin Table (অপরিবর্তিত) =====
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
 
@@ -823,9 +1012,7 @@
         window._saifuddinRows = rows;
     }
 
-    // ================================================================
-    // 🔥 আপডেটেড MC Department Table – Total Present = Total HR (কোনো বিয়োগ নয়)
-    // ================================================================
+    // ===== MC Department Table (Total Present) =====
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
         const mcData = data.filter(row => {
@@ -859,7 +1046,9 @@
                 deptMap[dept] = {
                     icName: getVal(row, ['IC Name', 'icName']),
                     totalMC: 0,
-                    totalHR: 0,   // Total HR সংরক্ষণ করব (এটাই Total Present হিসেবে দেখাব)
+                    totalHR: 0,
+                    totalLeave: 0,
+                    totalAbsent: 0,
                     mcOperator: 0,
                     packagingOperator: 0,
                     running: 0,
@@ -871,7 +1060,9 @@
             }
             const d = deptMap[dept];
             d.totalMC += getNum(row, ['Total MC', 'totalMC']);
-            d.totalHR += getNum(row, ['Total HR', 'totalHR']);   // সরাসরি Total HR যোগ
+            d.totalHR += getNum(row, ['Total HR', 'totalHR']);
+            d.totalLeave += getNum(row, ['Leave Employee', 'leaveEmployee']);
+            d.totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
             d.mcOperator += getNum(row, ['MC Operator', 'mcOperator']);
             d.packagingOperator += getNum(row, ['Packaging Operator', 'packagingOperator']);
             d.running += getNum(row, ['MC Running', 'mcRunning']);
@@ -890,7 +1081,6 @@
             return hasData;
         });
 
-        // ===== কলাম: Total Present = Total HR (কোনো বিয়োগ নেই) =====
         let html = `<table class="mc-table"><thead><tr>
             <th>ডিপার্টমেন্ট</th>
             <th>Prod IC</th>
@@ -910,7 +1100,7 @@
         activeCauseKeys.forEach(c => { grandCauses[c.key] = 0; });
 
         for (const [dept, d] of Object.entries(deptMap)) {
-            const totalPresent = d.totalHR;   // ← সরাসরি Total HR কে Present ধরা
+            const totalPresent = d.totalHR - d.totalLeave - d.totalAbsent;
             const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100) : 0;
             const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100) : 0;
 
@@ -998,7 +1188,7 @@
     }
 
     // ================================================================
-    // ডাউনলোড ফাংশন (MC Excel ও PDF আপডেট করা হয়েছে)
+    // ডাউনলোড ফাংশন
     // ================================================================
     function downloadMCImage() {
         const container = document.getElementById('mcSummaryTable');
@@ -1036,7 +1226,7 @@
 
         const rows = [];
         Object.entries(data.rows).forEach(([dept, d]) => {
-            const totalPresent = d.totalHR;   // ← সরাসরি Total HR
+            const totalPresent = d.totalHR - d.totalLeave - d.totalAbsent;
             const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
             const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
             const rowData = [dept, d.icName || '-', totalPresent, d.totalMC, d.mcOperator, d.packagingOperator,
@@ -1093,9 +1283,6 @@
             });
     }
 
-    // ================================================================
-    // বাকি ডাউনলোড ফাংশন (Saifuddin Image, Excel, PDF) – অপরিবর্তিত
-    // ================================================================
     function downloadSaifuddinImage() {
         const container = document.getElementById('saifuddinTableContainer');
         if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
@@ -1275,8 +1462,53 @@
             });
     }
 
+    // ===== Weekly Summary ডাউনলোড =====
+    function downloadWeeklyImage() {
+        const container = document.getElementById('weeklySummaryTable');
+        if (container.innerText.includes('পর্যাপ্ত ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2.5, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Weekly_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadWeeklyExcel() {
+        const rows = window._weeklyRows || [];
+        if (rows.length === 0) { alert('ডেটা নেই!'); return; }
+        const total = window._weeklyTotal || {};
+        const headers = ['SN', 'Department', 'Prod IC', 'Fixed MC QTY', 'Avg Present (Last 7 Days)', 'Avg MC Run (Last 7 Days)', 'Entries Count'];
+        const data = [headers];
+        rows.forEach(row => {
+            data.push([row.sn, row.dept, row.icName || '-', row.fixedMC, row.avgPresent.toFixed(1), row.avgRun.toFixed(1), row.count]);
+        });
+        // টোটাল
+        data.push(['📌', 'Total / Average', '-', total.totalFixedMC || 0, total.overallAvgPresent ? total.overallAvgPresent.toFixed(1) : '0.0', total.overallAvgRun ? total.overallAvgRun.toFixed(1) : '0.0', total.totalCount || 0]);
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "Weekly Summary");
+        XLSX.writeFile(wb, `Weekly_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
     // ================================================================
-    // বাকি ফাংশন (Group, Overall, Missing, Raw Data, Excel)
+    // বাকি ফাংশন (Group, Overall, Missing, Raw Data, Excel) - অপরিবর্তিত
     // ================================================================
     function renderGroupTable(data, containerId, groupType) {
         const container = document.getElementById(containerId);
@@ -1475,6 +1707,7 @@
     function showError(msg) {
         document.getElementById('saifuddinTableContainer').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('mcSummaryTable').innerHTML = `<div class="no-data">${msg}</div>`;
+        document.getElementById('weeklySummaryTable').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('groupATable').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('groupBTable').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('overallTable').innerHTML = `<div class="no-data">${msg}</div>`;
