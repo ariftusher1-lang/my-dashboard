@@ -295,6 +295,7 @@
     </div>
     <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
+    <!-- স্ট্যাটস কার্ড -->
     <div class="stats" id="statsContainer">
         <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
         <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
@@ -526,7 +527,7 @@
     function renderDashboard(data) {
         renderStats(data);
         renderSaifuddinTable(data);
-        renderMcSummaryTable(data);
+        renderMcSummaryTable(data); // আপডেটেড ফাংশন (Total Present = Total HR)
         renderGroupTable(data, 'groupATable', 'A');
         renderGroupTable(data, 'groupBTable', 'B');
         renderOverall(data);
@@ -534,6 +535,7 @@
         renderRawData(data);
     }
 
+    // ===== স্ট্যাটস (অপরিবর্তিত – Present = HR - Leave - Absent) =====
     function renderStats(data) {
         let totalHR = 0, totalPresent = 0, totalLeave = 0, totalAbsent = 0;
         let totalMC = 0, totalTargetRun = 0, sumPct = 0;
@@ -567,9 +569,7 @@
         document.getElementById('avgRunningPct').innerText = data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%';
     }
 
-    // ================================================================
-    // Saifuddin Table
-    // ================================================================
+    // ===== Saifuddin Table (অপরিবর্তিত – Present = HR - Leave - Absent) =====
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
 
@@ -824,7 +824,7 @@
     }
 
     // ================================================================
-    // 🔥 MC Department Table - Total HR এর জায়গায় Total Present
+    // 🔥 আপডেটেড MC Department Table – Total Present = Total HR (কোনো বিয়োগ নয়)
     // ================================================================
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
@@ -859,7 +859,7 @@
                 deptMap[dept] = {
                     icName: getVal(row, ['IC Name', 'icName']),
                     totalMC: 0,
-                    totalPresent: 0,        // ← Total HR পরিবর্তে Total Present
+                    totalHR: 0,   // Total HR সংরক্ষণ করব (এটাই Total Present হিসেবে দেখাব)
                     mcOperator: 0,
                     packagingOperator: 0,
                     running: 0,
@@ -871,10 +871,7 @@
             }
             const d = deptMap[dept];
             d.totalMC += getNum(row, ['Total MC', 'totalMC']);
-            const hr = getNum(row, ['Total HR', 'totalHR']);
-            const leave = getNum(row, ['Leave Employee', 'leaveEmployee']);
-            const absent = getNum(row, ['Absent Employee', 'absentEmployee']);
-            d.totalPresent += (hr - leave - absent);   // Present = HR - Leave - Absent
+            d.totalHR += getNum(row, ['Total HR', 'totalHR']);   // সরাসরি Total HR যোগ
             d.mcOperator += getNum(row, ['MC Operator', 'mcOperator']);
             d.packagingOperator += getNum(row, ['Packaging Operator', 'packagingOperator']);
             d.running += getNum(row, ['MC Running', 'mcRunning']);
@@ -893,10 +890,11 @@
             return hasData;
         });
 
+        // ===== কলাম: Total Present = Total HR (কোনো বিয়োগ নেই) =====
         let html = `<table class="mc-table"><thead><tr>
             <th>ডিপার্টমেন্ট</th>
             <th>Prod IC</th>
-            <th>Total Present</th>    <!-- ← Total HR এর জায়গায় Total Present -->
+            <th>Total Present</th>
             <th>Total MC</th>
             <th>MC Operator</th>
             <th>Packaging Operator</th>
@@ -912,6 +910,7 @@
         activeCauseKeys.forEach(c => { grandCauses[c.key] = 0; });
 
         for (const [dept, d] of Object.entries(deptMap)) {
+            const totalPresent = d.totalHR;   // ← সরাসরি Total HR কে Present ধরা
             const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100) : 0;
             const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100) : 0;
 
@@ -929,7 +928,7 @@
             html += `<tr>
                 <td class="dept-name"><strong>${dept}</strong></td>
                 <td>${d.icName || '-'}</td>
-                <td>${d.totalPresent}</td>    <!-- ← Total Present -->
+                <td><strong>${totalPresent}</strong></td>
                 <td>${d.totalMC}</td>
                 <td>${d.mcOperator}</td>
                 <td>${d.packagingOperator}</td>
@@ -961,7 +960,7 @@
             html += `</tr>`;
 
             grandTotalMC += d.totalMC;
-            grandTotalPresent += d.totalPresent;
+            grandTotalPresent += totalPresent;
             grandMCOp += d.mcOperator;
             grandPackOp += d.packagingOperator;
             grandRunning += d.running;
@@ -974,7 +973,7 @@
         html += `<tr class="total-row">
             <td><strong>📌 মোট</strong></td>
             <td>-</td>
-            <td><strong>${grandTotalPresent}</strong></td>   <!-- ← Total Present -->
+            <td><strong>${grandTotalPresent}</strong></td>
             <td><strong>${grandTotalMC}</strong></td>
             <td><strong>${grandMCOp}</strong></td>
             <td><strong>${grandPackOp}</strong></td>
@@ -999,7 +998,7 @@
     }
 
     // ================================================================
-    // ডাউনলোড ফাংশন
+    // ডাউনলোড ফাংশন (MC Excel ও PDF আপডেট করা হয়েছে)
     // ================================================================
     function downloadMCImage() {
         const container = document.getElementById('mcSummaryTable');
@@ -1037,9 +1036,10 @@
 
         const rows = [];
         Object.entries(data.rows).forEach(([dept, d]) => {
+            const totalPresent = d.totalHR;   // ← সরাসরি Total HR
             const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
             const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
-            const rowData = [dept, d.icName || '-', d.totalPresent, d.totalMC, d.mcOperator, d.packagingOperator,
+            const rowData = [dept, d.icName || '-', totalPresent, d.totalMC, d.mcOperator, d.packagingOperator,
                 d.running, d.stopped, runPct + '%', stopPct + '%'
             ];
             data.activeCauseKeys.forEach(c => {
@@ -1093,6 +1093,9 @@
             });
     }
 
+    // ================================================================
+    // বাকি ডাউনলোড ফাংশন (Saifuddin Image, Excel, PDF) – অপরিবর্তিত
+    // ================================================================
     function downloadSaifuddinImage() {
         const container = document.getElementById('saifuddinTableContainer');
         if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
@@ -1105,7 +1108,6 @@
         btn.disabled = true;
 
         const clone = container.cloneNode(true);
-        
         clone.querySelectorAll('td, th').forEach(el => {
             el.style.whiteSpace = 'nowrap';
         });
