@@ -138,7 +138,7 @@
         .badge-leave { background: #fff3e0; color: #e65100; }
         .badge-total { background: #e3f2fd; color: #0d47a1; }
 
-        /* ----- ৪টি টোটাল হেডিংয়ের জন্য আলাদা রঙ ----- */
+        /* ৪টি টোটাল হেডিংয়ের জন্য আলাদা রঙ */
         .row-production td {
             background: #d4edda !important;
             border-top: 2px solid #28a745 !important;
@@ -543,7 +543,7 @@
     }
 
     // ================================================================
-    // Saifuddin Table - নতুন SN ক্রম ও ৪টি আলাদা রঙ
+    // Saifuddin Table - Total Team গুলো সব কলামে ডেটা দেখাবে
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -727,6 +727,12 @@
             else if (row.sn === 24) rowClass = 'row-common';
             else if (row.sn === 25) rowClass = 'row-manpower';
 
+            // ===== Total Team গুলো (SN 10, 14, 24) সব কলামে ডেটা দেখাবে =====
+            // শুধু ম্যানপাওয়ার (SN 25) এর জন্য MC কলাম ড্যাশ থাকবে
+            const isTotalTeam = (row.sn === 10 || row.sn === 14 || row.sn === 24);
+            const isManpower = (row.sn === 25);
+
+            // showDash: শুধু ম্যানপাওয়ার ছাড়া বাকি টোটাল টিমে ডেটা দেখাবে
             const showDash = (!row.hasData && !row.isFixed);
 
             let pctClass = 'green';
@@ -762,16 +768,17 @@
             html += `<td>${displayTotalMP}</td><td>${displayPresent}</td><td>${displayAbsent}</td><td>${displayLeave}</td>`;
 
             // MC সংক্রান্ত কলাম
-            const isNonMC = (row.sn === 10 || row.sn === 14 || row.sn === 24 || row.sn === 25 ||
-                             (row.sn >= 15 && row.sn <= 23) ||
-                             (row.sn >= 11 && row.sn <= 13));
+            // isNonMC: যেসব ডিপার্টমেন্টে MC নেই (প্যাকেজিং, কমন, মেইনটেন্যান্স ইত্যাদি) + ম্যানপাওয়ার
+            const isNonMC = (row.sn === 25 || (row.sn >= 15 && row.sn <= 23) || (row.sn >= 11 && row.sn <= 13));
 
             if (showDash || isNonMC) {
+                // ড্যাশ দেখাব
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td>`;
             } else {
+                // ডেটা আছে (ফিক্সড প্রোডাকশন ডিপার্টমেন্ট + Total Production Team + Total Packaging Team + Total Common Team)
                 html += `<td><span class="highlight-number">${row.totalMC}</span></td>`;
                 html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
                 html += `<td>${progressBar}</td>`;
@@ -961,7 +968,7 @@
     }
 
     // ================================================================
-    // ডাউনলোড ফাংশন (এক্সেল, ইমেজ, পিডিএফ)
+    // ডাউনলোড ফাংশন (এক্সেল, ইমেজ, পিডিএফ) - অপরিবর্তিত
     // ================================================================
     function downloadMCImage() {
         const container = document.getElementById('mcSummaryTable');
@@ -1093,9 +1100,7 @@
             if (showDash) {
                 return [row.sn, row.dept, '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'];
             }
-            const isNoMC = (row.sn === 10 || row.sn === 14 || row.sn === 24 || row.sn === 25 ||
-                            (row.sn >= 15 && row.sn <= 23) ||
-                            (row.sn >= 11 && row.sn <= 13));
+            const isNoMC = (row.sn === 25 || (row.sn >= 15 && row.sn <= 23) || (row.sn >= 11 && row.sn <= 13));
             return [
                 row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
                 isNoMC ? '-' : row.totalMC,
