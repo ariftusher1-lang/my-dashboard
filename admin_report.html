@@ -46,7 +46,7 @@
         .no-data { text-align: center; color: #888; padding: 20px; font-style: italic; }
         .missing-list { display: flex; flex-wrap: wrap; gap: 10px; background: #fff5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #e53935; }
         .missing-item { background: #e53935; color: white; padding: 4px 14px; border-radius: 20px; font-size: 13px; }
-        .clearfix::after { content: ""; clear: both; display: table; }
+        .clearfix::after { content: ""; display: table; clear: both; }
         .filter-status { background: #e3f2fd; padding: 10px 15px; border-radius: 6px; margin: 10px 0; font-size: 14px; color: #0d47a1; }
         .summary-header { background: #fff3e0; padding: 12px 20px; border-radius: 8px; margin: 15px 0; font-size: 16px; font-weight: 600; color: #e65100; border-left: 4px solid #ff9800; }
         .mc-badge { background: #0d47a1; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
@@ -571,6 +571,7 @@
             let preventive = 0, noDemand = 0, materialShort = 0, overStock = 0, accShort = 0;
 
             deptRows.forEach(r => {
+                // আমরা Total HR থেকে মোট নিচ্ছি, কিন্তু পরে আবার যোগ করে দেখাব
                 totalMP += getNum(r, ['Total HR', 'totalHR']);
                 leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
                 absent += getNum(r, ['Absent Employee', 'absentEmployee']);
@@ -589,7 +590,13 @@
                 accShort += getNum(r, ['Accessories Short', 'accessoriesShort']);
             });
 
+            // Present = Total HR - Leave - Absent
             totalPresent = totalMP - leave - absent;
+
+            // ** Total Manpower পুনঃগণনা = Present + Leave + Absent **
+            // যদিও এটি Total HR-এর সমান, তবুও স্পষ্টতার জন্য যোগ করে সেট করছি
+            totalMP = totalPresent + leave + absent;
+
             let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
             if (item.sn >= 1 && item.sn <= 8) {
@@ -637,10 +644,12 @@
         rows.push({ sn: 24, dept: 'Total Common Team', ...commonTotal, runPct: commonRunPct, isTotal: true });
 
         // ===== 🔥 Total Manpower সারি (SN 25) - Total MP = Total Present + Leave + Absent =====
+        // গ্র্যান্ড টোটালের ক্ষেত্রেও একই নিয়ম
+        const totalManpower = grandTotal.totalPresent + grandTotal.leave + grandTotal.absent;
         rows.push({
             sn: 25,
             dept: 'Total Manpower (Leave + Absent + Present)',
-            totalMP: grandTotal.totalPresent + grandTotal.leave + grandTotal.absent, // ← নতুন ক্যালকুলেশন
+            totalMP: totalManpower,
             totalPresent: grandTotal.totalPresent,
             absent: grandTotal.absent,
             leave: grandTotal.leave,
