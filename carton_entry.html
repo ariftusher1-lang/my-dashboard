@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📦 কার্টন এন্ট্রি ফর্ম</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #0d47a1, #1976d2); color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .header h1 { font-size: 22px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
+        .card h2 { color: #0d47a1; margin-bottom: 15px; border-bottom: 2px solid #1976d2; padding-bottom: 8px; font-size: 18px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-weight: 600; font-size: 13px; color: #333; margin-bottom: 4px; }
+        .form-group input, .form-group select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .form-group input:focus, .form-group select:focus { border-color: #1976d2; outline: none; box-shadow: 0 0 0 2px rgba(25,118,210,0.2); }
+        .form-group .readonly { background: #f5f5f5; color: #333; cursor: not-allowed; }
+        .btn { padding: 8px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: #1976d2; color: white; }
+        .btn-primary:hover { background: #0d47a1; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #1e7e34; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #bd2130; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-warning:hover { background: #e0a800; }
+        .table-wrap { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #e3eef9; color: #0d47a1; padding: 10px 8px; border-bottom: 2px solid #1976d2; white-space: nowrap; text-align: center; }
+        td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f5f9ff; }
+        .total-row { background: #d4e4f7 !important; font-weight: 700; }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-mc { background: #d4edda; color: #155724; }
+        .badge-pack { background: #fff3cd; color: #856404; }
+        .action-bar { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+        .empty-msg { text-align: center; color: #888; padding: 20px; font-style: italic; }
+        .util-pct { font-size: 12px; color: #0d47a1; font-weight: 600; display: block; margin-top: 2px; }
+        .link-back { margin-top: 20px; display: inline-block; background: #6c757d; color: white; padding: 8px 18px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+        .link-back:hover { background: #5a6268; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>📦 কার্টন এন্ট্রি ফর্ম (MC + প্যাকেজিং)</h1>
+        <span>📅 <span id="currentDate"></span></span>
+    </div>
+
+    <!-- এন্ট্রি ফর্ম -->
+    <div class="card">
+        <h2>➕ নতুন এন্ট্রি</h2>
+        <div class="form-grid" id="entryForm">
+            <!-- তারিখ ফিল্ড (নতুন) -->
+            <div class="form-group">
+                <label>📅 তারিখ (Entry Date)</label>
+                <input type="date" id="entryDate" value="">
+            </div>
+            <div class="form-group">
+                <label>🏢 ডিপার্টমেন্ট</label>
+                <select id="deptSelect" onchange="updateProdIC()">
+                    <option value="">-- সিলেক্ট করুন --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>👨‍💼 Prod IC (Fixed)</label>
+                <input type="text" id="prodIC" class="readonly" readonly>
+            </div>
+            <div class="form-group">
+                <label>🕒 শিফট</label>
+                <select id="shiftSelect">
+                    <option value="Day">ডে (Day)</option>
+                    <option value="Night">নাইট (Night)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>🧑‍💼 IC Name (Data Entry)</label>
+                <input type="text" id="icName" placeholder="ইনচার্জের নাম">
+            </div>
+            <div class="form-group">
+                <label>⏳ Input HR (ম্যানুয়াল)</label>
+                <input type="number" id="dayHr" placeholder="যেমন 10" step="0.5" min="0" oninput="calculateTargetAndUtil()">
+            </div>
+            <div class="form-group">
+                <label>🎯 Carton Target (অটো)</label>
+                <input type="number" id="cartonTarget" class="readonly" readonly value="0">
+            </div>
+            <div class="form-group">
+                <label>📦 CTN Output (ম্যানুয়াল)</label>
+                <input type="number" id="ctnOutput" placeholder="যেমন 400" step="1" min="0" oninput="calculatePerHrAndUtil()">
+            </div>
+            <div class="form-group">
+                <label>📊 Per HR CTN (অটো)</label>
+                <input type="number" id="perHrCtn" class="readonly" readonly value="0">
+                <span id="utilDisplay" class="util-pct">Utilisation: 0%</span>
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+                <button class="btn btn-success" onclick="addEntry()">➕ এন্ট্রি যোগ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- অ্যাকশন বার -->
+    <div class="action-bar">
+        <button class="btn btn-warning" onclick="exportCSV()">⬇️ CSV ডাউনলোড</button>
+        <button class="btn btn-danger" onclick="clearAll()">🗑️ সব ডেটা মুছুন</button>
+        <a href="carton_report.html" target="_blank" class="btn btn-primary">📊 রিপোর্ট দেখুন</a>
+    </div>
+
+    <!-- এন্ট্রি লগ -->
+    <div class="card">
+        <h2>📋 এন্ট্রি লগ</h2>
+        <div id="entryLogContainer"><div class="empty-msg">কোনো এন্ট্রি নেই</div></div>
+    </div>
+
+</div>
+
+<script>
+    // ================================================================
+    // কনফিগারেশন
+    // ================================================================
+    const PER_HR_CAPACITY = 40;
+
+    const DEPARTMENTS = [
+        { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur' },
+        { id: 'mc2', name: 'RIP> DPL> Plastic-3', type: 'MC', prodIC: 'Mr. Shawon' },
+        { id: 'mc3', name: 'RIP> DPL> Plastic-6.1', type: 'MC', prodIC: 'Mr. Hazrat' },
+        { id: 'mc4', name: 'RIP> DPL> Plastic-6.2', type: 'MC', prodIC: 'Mr. Polash' },
+        { id: 'mc5', name: 'RIP> DPL> Plastic-7.1', type: 'MC', prodIC: 'Mr. Monir' },
+        { id: 'mc6', name: 'RIP> DPL> Plastic-7.2', type: 'MC', prodIC: 'Mr. Sayem' },
+        { id: 'mc7', name: 'RIP> DPL> Plastic-7.3', type: 'MC', prodIC: 'Mr. Saddam' },
+        { id: 'mc8', name: 'RIP> DPL> Plastic-7.4', type: 'MC', prodIC: 'Mr. Awal' },
+        { id: 'p1', name: 'Plastic Packaging-01', type: 'Packaging', prodIC: 'Mr. Mahbub' },
+        { id: 'p2', name: 'Plastic Packaging-02', type: 'Packaging', prodIC: 'Mr. Rakib' },
+        { id: 'p3', name: 'Plastic Packaging-03', type: 'Packaging', prodIC: 'Mr. Mahbub' }
+    ];
+
+    const DEPT_NAME_TO_IC = {};
+    DEPARTMENTS.forEach(d => { DEPT_NAME_TO_IC[d.name] = d.prodIC; });
+
+    const STORAGE_KEY = 'carton_entry_data';
+
+    function getEntries() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+    }
+
+    function saveEntries(entries) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+
+    // ================================================================
+    // UI ফাংশন
+    // ================================================================
+    function populateDeptDropdown() {
+        const select = document.getElementById('deptSelect');
+        select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
+        DEPARTMENTS.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.name;
+            opt.textContent = d.name;
+            opt.dataset.type = d.type;
+            select.appendChild(opt);
+        });
+    }
+
+    function updateProdIC() {
+        const dept = document.getElementById('deptSelect').value;
+        const icInput = document.getElementById('prodIC');
+        if (dept && DEPT_NAME_TO_IC[dept]) {
+            icInput.value = DEPT_NAME_TO_IC[dept];
+        } else {
+            icInput.value = '';
+        }
+        calculateTargetAndUtil();
+        calculatePerHrAndUtil();
+    }
+
+    function calculateTargetAndUtil() {
+        const dayHr = parseFloat(document.getElementById('dayHr').value) || 0;
+        const target = dayHr * PER_HR_CAPACITY;
+        document.getElementById('cartonTarget').value = target.toFixed(0);
+        calculatePerHrAndUtil();
+    }
+
+    function calculatePerHrAndUtil() {
+        const dayHr = parseFloat(document.getElementById('dayHr').value) || 0;
+        const output = parseFloat(document.getElementById('ctnOutput').value) || 0;
+        const perHr = dayHr > 0 ? output / dayHr : 0;
+        document.getElementById('perHrCtn').value = perHr.toFixed(2);
+        const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
+        document.getElementById('utilDisplay').innerHTML = `Utilisation: ${utilPct.toFixed(1)}%`;
+    }
+
+    function addEntry() {
+        const dept = document.getElementById('deptSelect').value;
+        const prodIC = document.getElementById('prodIC').value;
+        const shift = document.getElementById('shiftSelect').value;
+        const icName = document.getElementById('icName').value.trim() || '-';
+        const dayHr = parseFloat(document.getElementById('dayHr').value) || 0;
+        const target = parseFloat(document.getElementById('cartonTarget').value) || 0;
+        const output = parseFloat(document.getElementById('ctnOutput').value) || 0;
+        const perHr = parseFloat(document.getElementById('perHrCtn').value) || 0;
+        const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
+
+        // তারিখ ইনপুট থেকে নেওয়া
+        const entryDateInput = document.getElementById('entryDate').value;
+        if (!entryDateInput) {
+            alert('দয়া করে একটি তারিখ নির্বাচন করুন!');
+            return;
+        }
+
+        if (!dept) { alert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!'); return; }
+        if (dayHr <= 0) { alert('Day HR অবশ্যই ০-এর বেশি হতে হবে!'); return; }
+
+        const entry = {
+            id: Date.now(),
+            dept,
+            prodIC,
+            shift,
+            icName,
+            dayHr,
+            target,
+            output,
+            perHr,
+            utilPct,
+            entryDate: entryDateInput, // ব্যবহারকারীর দেওয়া তারিখ
+            timestamp: new Date().toLocaleString('bn-BD')
+        };
+
+        const entries = getEntries();
+        entries.push(entry);
+        saveEntries(entries);
+        renderLog();
+        clearForm();
+    }
+
+    function clearForm() {
+        document.getElementById('deptSelect').value = '';
+        document.getElementById('prodIC').value = '';
+        document.getElementById('icName').value = '';
+        document.getElementById('dayHr').value = '';
+        document.getElementById('cartonTarget').value = '0';
+        document.getElementById('ctnOutput').value = '';
+        document.getElementById('perHrCtn').value = '0';
+        document.getElementById('utilDisplay').innerHTML = 'Utilisation: 0%';
+        // তারিখ রিসেট না করে আজকের তারিখ রাখা ভালো
+        const today = new Date().toISOString().slice(0,10);
+        document.getElementById('entryDate').value = today;
+        updateProdIC();
+    }
+
+    function deleteEntry(id) {
+        if (!confirm('এই এন্ট্রি মুছবেন?')) return;
+        let entries = getEntries();
+        entries = entries.filter(e => e.id !== id);
+        saveEntries(entries);
+        renderLog();
+    }
+
+    function clearAll() {
+        if (!confirm('সব ডেটা স্থায়ীভাবে মুছবেন?')) return;
+        saveEntries([]);
+        renderLog();
+    }
+
+    // ================================================================
+    // রেন্ডার লগ
+    // ================================================================
+    function renderLog() {
+        const container = document.getElementById('entryLogContainer');
+        const entries = getEntries();
+        if (entries.length === 0) {
+            container.innerHTML = `<div class="empty-msg">কোনো এন্ট্রি নেই</div>`;
+            return;
+        }
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr>
+                <th>#</th>
+                <th>ডিপার্টমেন্ট</th>
+                <th>Prod IC</th>
+                <th>শিফট</th>
+                <th>IC Name</th>
+                <th>Day HR</th>
+                <th>Target (CTN)</th>
+                <th>CTN Output</th>
+                <th>Per HR CTN</th>
+                <th>Utilisation %</th>
+                <th>তারিখ</th>
+                <th>সময়</th>
+                <th>অ্যাকশন</th>
+            </tr></thead><tbody>`;
+
+        entries.forEach((e, idx) => {
+            const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-mc' : 'badge-pack';
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td><span class="badge ${badgeClass}">${e.dept}</span></td>
+                <td>${e.prodIC}</td>
+                <td>${e.shift}</td>
+                <td>${e.icName}</td>
+                <td>${e.dayHr}</td>
+                <td>${e.target}</td>
+                <td>${e.output}</td>
+                <td>${e.perHr}</td>
+                <td>${e.utilPct ? e.utilPct.toFixed(1) + '%' : '0%'}</td>
+                <td>${e.entryDate}</td>
+                <td>${e.timestamp}</td>
+                <td><button class="btn btn-danger" style="padding:4px 10px; font-size:12px;" onclick="deleteEntry(${e.id})">🗑️</button></td>
+            </tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    // ================================================================
+    // CSV এক্সপোর্ট
+    // ================================================================
+    function exportCSV() {
+        const entries = getEntries();
+        if (entries.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['Department', 'Prod IC', 'Shift', 'IC Name', 'Day HR', 'Target', 'CTN Output', 'Per HR CTN', 'Utilisation %', 'Entry Date', 'Timestamp'];
+        let csv = headers.join(',') + '\n';
+        entries.forEach(e => {
+            const row = [
+                `"${e.dept}"`, `"${e.prodIC}"`, `"${e.shift}"`, `"${e.icName}"`,
+                e.dayHr, e.target, e.output, e.perHr, e.utilPct ? e.utilPct.toFixed(1) : '0',
+                `"${e.entryDate}"`, `"${e.timestamp}"`
+            ];
+            csv += row.join(',') + '\n';
+        });
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Carton_Entry_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    // ================================================================
+    // INIT
+    // ================================================================
+    populateDeptDropdown();
+
+    // আজকের তারিখ ডিফল্ট সেট
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('entryDate').value = today;
+
+    renderLog();
+    document.getElementById('currentDate').innerText = new Date().toLocaleString('bn-BD');
+</script>
+</body>
+</html>

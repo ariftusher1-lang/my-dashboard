@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 কার্টন রিপোর্ট</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #0d47a1, #1976d2); color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .header h1 { font-size: 22px; }
+        .header .right-group { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .header .right-group a { color: white; text-decoration: none; background: #28a745; padding: 6px 15px; border-radius: 6px; font-weight: 600; }
+        .header .right-group a:hover { background: #1e7e34; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
+        .card h2 { color: #0d47a1; margin-bottom: 15px; border-bottom: 2px solid #1976d2; padding-bottom: 8px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .card h2 .btn-group-small { display: flex; gap: 8px; }
+        .btn-group-small .btn-sm { padding: 4px 12px; font-size: 12px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
+        .btn-excel-sm { background: #1e7e34; color: white; }
+        .btn-excel-sm:hover { background: #136b2a; }
+        .btn-image-sm { background: #6c757d; color: white; }
+        .btn-image-sm:hover { background: #5a6268; }
+        .btn-pdf-sm { background: #d32f2f; color: white; }
+        .btn-pdf-sm:hover { background: #b71c1c; }
+        .btn { padding: 8px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-warning:hover { background: #e0a800; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #bd2130; }
+        .btn-primary { background: #1976d2; color: white; }
+        .btn-primary:hover { background: #0d47a1; }
+        .filter-bar { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        .filter-bar label { font-weight: 600; color: #333; }
+        .filter-bar input[type="date"] { padding: 6px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .filter-bar select { padding: 6px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #0d47a1; color: white; padding: 10px 6px; border-bottom: 2px solid #1565c0; white-space: nowrap; text-align: center; font-size: 12px; }
+        td { padding: 8px 5px; text-align: center; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f5f9ff; }
+        .total-row { background: #d4e4f7 !important; font-weight: 700; }
+        .total-row td { border-top: 2px solid #1976d2; }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-online { background: #d4edda; color: #155724; }
+        .badge-offline { background: #f8d7da; color: #721c24; }
+        .empty-msg { text-align: center; color: #888; padding: 40px 20px; font-style: italic; font-size: 16px; }
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-top: 10px; }
+        .summary-cards .card-item { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #1976d2; }
+        .summary-cards .card-item .num { font-size: 24px; font-weight: 700; color: #0d47a1; }
+        .summary-cards .card-item .lbl { font-size: 13px; color: #666; }
+        .dept-name { font-weight: 600; color: #1a3a5c; text-align: left; padding-left: 10px; }
+        .util-high { color: #1b5e20; font-weight: 700; }
+        .util-mid { color: #e65100; font-weight: 700; }
+        .util-low { color: #b71c1c; font-weight: 700; }
+        .pos-1 { background: #ffd700 !important; color: #333; font-weight: 700; border-radius: 4px; }
+        .pos-2 { background: #c0c0c0 !important; color: #333; font-weight: 700; border-radius: 4px; }
+        .pos-3 { background: #cd7f32 !important; color: #fff; font-weight: 700; border-radius: 4px; }
+        .action-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+
+        .row-online-summary td { background: #cce5ff !important; color: #004085; font-weight: 700; border-top: 2px solid #007bff; }
+        .row-offline-summary td { background: #fff3cd !important; color: #856404; font-weight: 700; border-top: 2px solid #ffc107; }
+        .row-grand-total td { background: #d4edda !important; color: #155724; font-weight: 700; border-top: 3px solid #28a745; }
+        .short-online td { background: #e3f2fd !important; color: #0d47a1; }
+        .short-offline td { background: #fff8e1 !important; color: #e65100; }
+        .short-overall td { background: #e8f5e9 !important; color: #1b5e20; }
+
+        .toggle-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-left: 10px;
+        }
+        .toggle-btn:hover { background: #5a6268; }
+        .toggle-btn.hide { background: #28a745; }
+        .toggle-btn.hide:hover { background: #1e7e34; }
+        .section-content { transition: all 0.3s ease; }
+        .section-content.hidden { display: none; }
+        .toggle-wrapper { display: flex; align-items: center; gap: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>📊 কার্টন রিপোর্ট (MC + প্যাকেজিং)</h1>
+        <div class="right-group">
+            <span id="currentDate"></span>
+            <a href="carton_entry.html" target="_blank">📝 এন্ট্রি ফর্ম</a>
+        </div>
+    </div>
+
+    <!-- ফিল্টার বার -->
+    <div class="card">
+        <div class="filter-bar">
+            <label>📅 তারিখ নির্বাচন করুন:</label>
+            <input type="date" id="filterDate" onchange="renderAll()">
+            <button class="btn btn-primary" onclick="renderAll()">🔍 ফিল্টার প্রয়োগ</button>
+            <button class="btn btn-warning" onclick="document.getElementById('filterDate').value=''; renderAll();">🔄 সব দেখান</button>
+            <span id="dateInfo" style="color:#666; font-size:14px; margin-left:10px;"></span>
+        </div>
+    </div>
+
+    <!-- ===== শর্ট সামারি ===== -->
+    <div class="card" id="shortSummaryContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span id="shortHeading">📊 শর্ট সামারি (ফিল্টার অনুযায়ী)</span>
+                <button class="toggle-btn" onclick="toggleSection('shortContent')" id="shortToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadShortExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadShortImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadShortPDF()">📄 PDF</button>
+            </span>
+        </h2>
+        <div id="shortContent" class="section-content">
+            <div id="shortSummaryContent"><div class="empty-msg">কোনো ডেটা নেই</div></div>
+        </div>
+    </div>
+
+    <!-- ===== ১. ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি ===== -->
+    <div class="card" id="dailyReportContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span id="dailyHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি</span>
+                <button class="toggle-btn" onclick="toggleSection('dailyContent')" id="dailyToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadDailyExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadDailyImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadDailyPDF()">📄 PDF</button>
+            </span>
+        </h2>
+        <div id="dailyContent" class="section-content">
+            <div id="summaryTableContainer"><div class="empty-msg">কোনো ডেটা নেই</div></div>
+        </div>
+    </div>
+
+    <!-- ===== ২. এখন পর্যন্ত সারাংশ (সব তারিখ) ===== -->
+    <div class="card" id="overallReportContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span>📊 এখন পর্যন্ত সারাংশ (সব তারিখ)</span>
+                <button class="toggle-btn" onclick="toggleSection('overallContent')" id="overallToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadOverallExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadOverallImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadOverallPDF()">📄 PDF</button>
+            </span>
+        </h2>
+        <div id="overallContent" class="section-content">
+            <div id="overallSummaryContainer"><div class="empty-msg">কোনো ডেটা নেই</div></div>
+        </div>
+    </div>
+
+    <!-- ===== ৩. মাস অনুযায়ী সারাংশ ===== -->
+    <div class="card" id="monthlyReportContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span>📊 মাস অনুযায়ী সারাংশ (Month-wise Summary)</span>
+                <button class="toggle-btn" onclick="toggleSection('monthlyContent')" id="monthlyToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadMonthlyExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadMonthlyImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadMonthlyPDF()">📄 PDF</button>
+            </span>
+        </h2>
+        <div id="monthlyContent" class="section-content">
+            <div class="filter-bar" style="margin-bottom:10px;">
+                <label>📅 মাস নির্বাচন করুন:</label>
+                <select id="monthFilter" onchange="renderMonthlySummary()">
+                    <option value="">-- সিলেক্ট করুন --</option>
+                </select>
+            </div>
+            <div id="monthlySummaryContainer"><div class="empty-msg">কোনো ডেটা নেই</div></div>
+        </div>
+    </div>
+
+    <!-- বাকি ডাউনলোড ও অ্যাকশন -->
+    <div class="action-bar">
+        <button class="btn btn-warning" onclick="exportCSV()">⬇️ CSV ডাউনলোড (ফিল্টার অনুযায়ী)</button>
+        <button class="btn btn-danger" onclick="clearAll()">🗑️ সব ডেটা মুছুন</button>
+    </div>
+
+    <!-- এন্ট্রি লগ -->
+    <div class="card">
+        <h2>📋 এন্ট্রি লগ (সব এন্ট্রি)</h2>
+        <div id="entryLogContainer"><div class="empty-msg">কোনো এন্ট্রি নেই</div></div>
+    </div>
+
+</div>
+
+<script>
+    // ================================================================
+    // কনফিগারেশন
+    // ================================================================
+    const PER_HR_CAPACITY = 40;
+    const DEPARTMENTS = [
+        { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur' },
+        { id: 'mc2', name: 'RIP> DPL> Plastic-3', type: 'MC', prodIC: 'Mr. Shawon' },
+        { id: 'mc3', name: 'RIP> DPL> Plastic-6.1', type: 'MC', prodIC: 'Mr. Hazrat' },
+        { id: 'mc4', name: 'RIP> DPL> Plastic-6.2', type: 'MC', prodIC: 'Mr. Polash' },
+        { id: 'mc5', name: 'RIP> DPL> Plastic-7.1', type: 'MC', prodIC: 'Mr. Monir' },
+        { id: 'mc6', name: 'RIP> DPL> Plastic-7.2', type: 'MC', prodIC: 'Mr. Sayem' },
+        { id: 'mc7', name: 'RIP> DPL> Plastic-7.3', type: 'MC', prodIC: 'Mr. Saddam' },
+        { id: 'mc8', name: 'RIP> DPL> Plastic-7.4', type: 'MC', prodIC: 'Mr. Awal' },
+        { id: 'p1', name: 'Plastic Packaging-01', type: 'Packaging', prodIC: 'Mr. Mahbub' },
+        { id: 'p2', name: 'Plastic Packaging-02', type: 'Packaging', prodIC: 'Mr. Rakib' },
+        { id: 'p3', name: 'Plastic Packaging-03', type: 'Packaging', prodIC: 'Mr. Mahbub' }
+    ];
+    const STORAGE_KEY = 'carton_entry_data';
+
+    function getEntries() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+    }
+
+    function saveEntries(entries) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+
+    function getFilterDate() {
+        return document.getElementById('filterDate').value;
+    }
+
+    function formatDateDisplay(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    // ================================================================
+    // টগল ফাংশন
+    // ================================================================
+    function toggleSection(contentId) {
+        const content = document.getElementById(contentId);
+        const btn = document.getElementById(contentId.replace('Content', 'Toggle'));
+        if (!content || !btn) return;
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            btn.textContent = '🙈 লুকান';
+            btn.classList.remove('hide');
+        } else {
+            content.classList.add('hidden');
+            btn.textContent = '👁️ দেখান';
+            btn.classList.add('hide');
+        }
+    }
+
+    // ================================================================
+    // রেন্ডার
+    // ================================================================
+    function renderAll() {
+        const entries = getEntries();
+        const filterDate = getFilterDate();
+
+        let filtered = entries;
+        let dateDisplay = 'সব তারিখ';
+        if (filterDate) {
+            filtered = entries.filter(e => e.entryDate === filterDate);
+            dateDisplay = formatDateDisplay(filterDate);
+            document.getElementById('dateInfo').innerHTML = `📌 দেখানো হচ্ছে: ${dateDisplay}`;
+        } else {
+            document.getElementById('dateInfo').innerHTML = `📌 সব তারিখের ডেটা দেখানো হচ্ছে`;
+        }
+
+        document.getElementById('shortHeading').innerHTML = `📊 শর্ট সামারি (ফিল্টার অনুযায়ী) ${filterDate ? '— ' + dateDisplay : ''}`;
+        document.getElementById('dailyHeading').innerHTML = `📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি ${filterDate ? '— ' + dateDisplay : ' (সব তারিখ)'}`;
+
+        renderShortSummary(filtered);
+
+        if (filtered.length === 0) {
+            document.getElementById('summaryTableContainer').innerHTML = `<div class="empty-msg">এই তারিখে কোনো এন্ট্রি নেই</div>`;
+            window._dailyTableData = [];
+        } else {
+            renderDailySummary(filtered);
+        }
+
+        renderOverallSummary(entries);
+        populateMonthFilter(entries);
+        renderMonthlySummary();
+        renderLog(filtered);
+
+        document.getElementById('currentDate').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
+    }
+
+    // ================================================================
+    // মাস ফিল্টার পপুলেট
+    // ================================================================
+    function populateMonthFilter(entries) {
+        const select = document.getElementById('monthFilter');
+        const months = new Set();
+        entries.forEach(e => {
+            if (e.entryDate) {
+                const parts = e.entryDate.split('-');
+                if (parts.length === 3) {
+                    const year = parts[0];
+                    const month = parts[1];
+                    const monthNames = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+                    const monthName = monthNames[parseInt(month) - 1];
+                    months.add(`${monthName} ${year}`);
+                }
+            }
+        });
+
+        const sortedMonths = Array.from(months).sort((a, b) => {
+            const aParts = a.split(' ');
+            const bParts = b.split(' ');
+            const monthNames = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+            const aMonth = monthNames.indexOf(aParts[0]);
+            const bMonth = monthNames.indexOf(bParts[0]);
+            const aYear = parseInt(aParts[1]);
+            const bYear = parseInt(bParts[1]);
+            if (aYear !== bYear) return aYear - bYear;
+            return aMonth - bMonth;
+        });
+
+        select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
+        sortedMonths.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            select.appendChild(opt);
+        });
+    }
+
+    // ================================================================
+    // মাস অনুযায়ী সারাংশ রেন্ডার
+    // ================================================================
+    function renderMonthlySummary() {
+        const container = document.getElementById('monthlySummaryContainer');
+        const selectedMonth = document.getElementById('monthFilter').value;
+        const allEntries = getEntries();
+
+        if (!selectedMonth) {
+            container.innerHTML = `<div class="empty-msg">দয়া করে একটি মাস সিলেক্ট করুন</div>`;
+            window._monthlyData = null;
+            return;
+        }
+
+        const parts = selectedMonth.split(' ');
+        const monthNames = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+        const monthIndex = monthNames.indexOf(parts[0]) + 1;
+        const year = parseInt(parts[1]);
+
+        const monthEntries = allEntries.filter(e => {
+            if (!e.entryDate) return false;
+            const dParts = e.entryDate.split('-');
+            if (dParts.length !== 3) return false;
+            const eYear = parseInt(dParts[0]);
+            const eMonth = parseInt(dParts[1]);
+            return eYear === year && eMonth === monthIndex;
+        });
+
+        if (monthEntries.length === 0) {
+            container.innerHTML = `<div class="empty-msg">এই মাসে কোনো এন্ট্রি নেই</div>`;
+            window._monthlyData = null;
+            return;
+        }
+
+        const deptData = {};
+        DEPARTMENTS.forEach(d => {
+            deptData[d.name] = {
+                prodIC: d.prodIC,
+                totalHr: 0,
+                totalTarget: 0,
+                totalOutput: 0,
+                count: 0
+            };
+        });
+
+        monthEntries.forEach(e => {
+            if (deptData[e.dept]) {
+                deptData[e.dept].totalHr += e.dayHr;
+                deptData[e.dept].totalTarget += e.target;
+                deptData[e.dept].totalOutput += e.output;
+                deptData[e.dept].count += 1;
+            }
+        });
+
+        const deptList = [];
+        for (const [dept, data] of Object.entries(deptData)) {
+            const util = data.totalTarget > 0 ? (data.totalOutput / data.totalTarget) * 100 : 0;
+            deptList.push({
+                name: dept,
+                prodIC: data.prodIC,
+                totalHr: data.totalHr,
+                totalTarget: data.totalTarget,
+                totalOutput: data.totalOutput,
+                util: util,
+                count: data.count
+            });
+        }
+
+        deptList.sort((a, b) => b.util - a.util);
+        deptList.forEach((d, idx) => { d.position = idx + 1; });
+
+        window._monthlyData = { deptList, month: selectedMonth };
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr>
+                <th>ডিপার্টমেন্ট</th>
+                <th>Prod IC</th>
+                <th>Total HR</th>
+                <th>Total CTN Cap (Target)</th>
+                <th>Total Carton Output</th>
+                <th>Utilisation %</th>
+                <th>পজিশন</th>
+            </tr></thead><tbody>`;
+
+        let grandHr = 0, grandTarget = 0, grandOutput = 0;
+        deptList.forEach(d => {
+            grandHr += d.totalHr;
+            grandTarget += d.totalTarget;
+            grandOutput += d.totalOutput;
+            let posClass = '';
+            let posDisplay = d.position;
+            if (d.position === 1) { posClass = 'pos-1'; posDisplay = '🥇 ১ম'; }
+            else if (d.position === 2) { posClass = 'pos-2'; posDisplay = '🥈 ২য়'; }
+            else if (d.position === 3) { posClass = 'pos-3'; posDisplay = '🥉 ৩য়'; }
+            html += `<tr>
+                <td class="dept-name">${d.name}</td>
+                <td>${d.prodIC}</td>
+                <td>${d.totalHr}</td>
+                <td>${d.totalTarget}</td>
+                <td><strong>${d.totalOutput}</strong></td>
+                <td class="${d.util >= 80 ? 'util-high' : d.util >= 50 ? 'util-mid' : 'util-low'}">${d.util.toFixed(1)}%</td>
+                <td class="${posClass}"><strong>${posDisplay}</strong></td>
+            </tr>`;
+        });
+
+        const grandUtil = grandTarget > 0 ? (grandOutput / grandTarget) * 100 : 0;
+        html += `<tr class="total-row">
+            <td colspan="2"><strong>📌 গ্র্যান্ড টোটাল</strong></td>
+            <td><strong>${grandHr}</strong></td>
+            <td><strong>${grandTarget}</strong></td>
+            <td><strong>${grandOutput}</strong></td>
+            <td><strong>${grandUtil.toFixed(1)}%</strong></td>
+            <td><strong>-</strong></td>
+        </tr>`;
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    // ================================================================
+    // শর্ট সামারি
+    // ================================================================
+    function renderShortSummary(entries) {
+        const container = document.getElementById('shortSummaryContent');
+        if (entries.length === 0) {
+            container.innerHTML = `<div class="empty-msg">কোনো ডেটা নেই</div>`;
+            window._shortData = null;
+            return;
+        }
+
+        let online = { hr: 0, target: 0, output: 0, count: 0, perHr: 0, util: 0 };
+        let offline = { hr: 0, target: 0, output: 0, count: 0, perHr: 0, util: 0 };
+
+        entries.forEach(e => {
+            const deptInfo = DEPARTMENTS.find(d => d.name === e.dept);
+            if (!deptInfo) return;
+            if (deptInfo.type === 'MC') {
+                online.hr += e.dayHr;
+                online.target += e.target;
+                online.output += e.output;
+                online.count += 1;
+                online.perHr += e.perHr;
+                online.util += e.utilPct || 0;
+            } else if (deptInfo.type === 'Packaging') {
+                offline.hr += e.dayHr;
+                offline.target += e.target;
+                offline.output += e.output;
+                offline.count += 1;
+                offline.perHr += e.perHr;
+                offline.util += e.utilPct || 0;
+            }
+        });
+
+        if (online.count > 0) { online.perHr = online.perHr / online.count; online.util = online.util / online.count; }
+        if (offline.count > 0) { offline.perHr = offline.perHr / offline.count; offline.util = offline.util / offline.count; }
+
+        const overall = {
+            hr: online.hr + offline.hr,
+            target: online.target + offline.target,
+            output: online.output + offline.output,
+            count: online.count + offline.count,
+            perHr: 0,
+            util: 0
+        };
+        if (overall.count > 0) {
+            overall.perHr = (online.perHr * online.count + offline.perHr * offline.count) / overall.count;
+            overall.util = (online.util * online.count + offline.util * offline.count) / overall.count;
+        }
+
+        window._shortData = { online, offline, overall };
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr><th>বিভাগ</th><th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th></tr></thead><tbody>
+            <tr class="short-online">
+                <td><strong>ONLINE PACK</strong></td>
+                <td>${online.hr}</td>
+                <td>${online.target}</td>
+                <td><strong>${online.output}</strong></td>
+                <td>${online.perHr.toFixed(2)}</td>
+                <td class="${online.util >= 80 ? 'util-high' : online.util >= 50 ? 'util-mid' : 'util-low'}">${online.util.toFixed(1)}%</td>
+            </tr>
+            <tr class="short-offline">
+                <td><strong>OFFLINE PACK</strong></td>
+                <td>${offline.hr}</td>
+                <td>${offline.target}</td>
+                <td><strong>${offline.output}</strong></td>
+                <td>${offline.perHr.toFixed(2)}</td>
+                <td class="${offline.util >= 80 ? 'util-high' : offline.util >= 50 ? 'util-mid' : 'util-low'}">${offline.util.toFixed(1)}%</td>
+            </tr>
+            <tr class="short-overall total-row">
+                <td><strong>📌 OVERALL</strong></td>
+                <td><strong>${overall.hr}</strong></td>
+                <td><strong>${overall.target}</strong></td>
+                <td><strong>${overall.output}</strong></td>
+                <td><strong>${overall.perHr.toFixed(2)}</strong></td>
+                <td><strong>${overall.util.toFixed(1)}%</strong></td>
+            </tr>
+        </tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    // ================================================================
+    // ডেইলি সামারি (পূর্ণ টেবিল)
+    // ================================================================
+    function renderDailySummary(entries) {
+        const container = document.getElementById('summaryTableContainer');
+
+        const summary = {};
+        DEPARTMENTS.forEach(d => {
+            summary[d.name] = {
+                prodIC: d.prodIC,
+                type: d.type,
+                dayHr: 0, dayTarget: 0, dayOutput: 0, dayPerHr: 0, dayUtil: 0, dayCount: 0,
+                nightHr: 0, nightTarget: 0, nightOutput: 0, nightPerHr: 0, nightUtil: 0, nightCount: 0,
+                totalHr: 0, totalTarget: 0, totalOutput: 0, totalPerHr: 0, totalUtil: 0, totalCount: 0
+            };
+        });
+
+        entries.forEach(e => {
+            if (summary[e.dept]) {
+                const s = summary[e.dept];
+                if (e.shift === 'Day') {
+                    s.dayHr += e.dayHr; s.dayTarget += e.target; s.dayOutput += e.output;
+                    s.dayPerHr += e.perHr; s.dayUtil += e.utilPct || 0; s.dayCount += 1;
+                } else {
+                    s.nightHr += e.dayHr; s.nightTarget += e.target; s.nightOutput += e.output;
+                    s.nightPerHr += e.perHr; s.nightUtil += e.utilPct || 0; s.nightCount += 1;
+                }
+                s.totalHr += e.dayHr; s.totalTarget += e.target; s.totalOutput += e.output;
+                s.totalPerHr += e.perHr; s.totalUtil += e.utilPct || 0; s.totalCount += 1;
+            }
+        });
+
+        for (const key in summary) {
+            const s = summary[key];
+            if (s.dayCount > 0) { s.dayPerHr = s.dayPerHr / s.dayCount; s.dayUtil = s.dayUtil / s.dayCount; }
+            if (s.nightCount > 0) { s.nightPerHr = s.nightPerHr / s.nightCount; s.nightUtil = s.nightUtil / s.nightCount; }
+            if (s.totalCount > 0) { s.totalPerHr = s.totalPerHr / s.totalCount; s.totalUtil = s.totalUtil / s.totalCount; }
+        }
+
+        let onlineTot = { totalHr:0, totalTarget:0, totalOutput:0, totalPerHr:0, totalUtil:0, totalCount:0, dayHr:0, dayTarget:0, dayOutput:0, dayPerHr:0, dayUtil:0, dayCount:0, nightHr:0, nightTarget:0, nightOutput:0, nightPerHr:0, nightUtil:0, nightCount:0 };
+        let offlineTot = { totalHr:0, totalTarget:0, totalOutput:0, totalPerHr:0, totalUtil:0, totalCount:0, dayHr:0, dayTarget:0, dayOutput:0, dayPerHr:0, dayUtil:0, dayCount:0, nightHr:0, nightTarget:0, nightOutput:0, nightPerHr:0, nightUtil:0, nightCount:0 };
+
+        for (const [dept, s] of Object.entries(summary)) {
+            if (s.type === 'MC') {
+                onlineTot.totalHr += s.totalHr; onlineTot.totalTarget += s.totalTarget; onlineTot.totalOutput += s.totalOutput; onlineTot.totalCount += s.totalCount;
+                onlineTot.totalPerHr += s.totalPerHr * s.totalCount; onlineTot.totalUtil += s.totalUtil * s.totalCount;
+                onlineTot.dayHr += s.dayHr; onlineTot.dayTarget += s.dayTarget; onlineTot.dayOutput += s.dayOutput; onlineTot.dayCount += s.dayCount;
+                onlineTot.dayPerHr += s.dayPerHr * s.dayCount; onlineTot.dayUtil += s.dayUtil * s.dayCount;
+                onlineTot.nightHr += s.nightHr; onlineTot.nightTarget += s.nightTarget; onlineTot.nightOutput += s.nightOutput; onlineTot.nightCount += s.nightCount;
+                onlineTot.nightPerHr += s.nightPerHr * s.nightCount; onlineTot.nightUtil += s.nightUtil * s.nightCount;
+            } else if (s.type === 'Packaging') {
+                offlineTot.totalHr += s.totalHr; offlineTot.totalTarget += s.totalTarget; offlineTot.totalOutput += s.totalOutput; offlineTot.totalCount += s.totalCount;
+                offlineTot.totalPerHr += s.totalPerHr * s.totalCount; offlineTot.totalUtil += s.totalUtil * s.totalCount;
+                offlineTot.dayHr += s.dayHr; offlineTot.dayTarget += s.dayTarget; offlineTot.dayOutput += s.dayOutput; offlineTot.dayCount += s.dayCount;
+                offlineTot.dayPerHr += s.dayPerHr * s.dayCount; offlineTot.dayUtil += s.dayUtil * s.dayCount;
+                offlineTot.nightHr += s.nightHr; offlineTot.nightTarget += s.nightTarget; offlineTot.nightOutput += s.nightOutput; offlineTot.nightCount += s.nightCount;
+                offlineTot.nightPerHr += s.nightPerHr * s.nightCount; offlineTot.nightUtil += s.nightUtil * s.nightCount;
+            }
+        }
+
+        if (onlineTot.totalCount > 0) { onlineTot.totalPerHr = onlineTot.totalPerHr / onlineTot.totalCount; onlineTot.totalUtil = onlineTot.totalUtil / onlineTot.totalCount; }
+        if (onlineTot.dayCount > 0) { onlineTot.dayPerHr = onlineTot.dayPerHr / onlineTot.dayCount; onlineTot.dayUtil = onlineTot.dayUtil / onlineTot.dayCount; }
+        if (onlineTot.nightCount > 0) { onlineTot.nightPerHr = onlineTot.nightPerHr / onlineTot.nightCount; onlineTot.nightUtil = onlineTot.nightUtil / onlineTot.nightCount; }
+        if (offlineTot.totalCount > 0) { offlineTot.totalPerHr = offlineTot.totalPerHr / offlineTot.totalCount; offlineTot.totalUtil = offlineTot.totalUtil / offlineTot.totalCount; }
+        if (offlineTot.dayCount > 0) { offlineTot.dayPerHr = offlineTot.dayPerHr / offlineTot.dayCount; offlineTot.dayUtil = offlineTot.dayUtil / offlineTot.dayCount; }
+        if (offlineTot.nightCount > 0) { offlineTot.nightPerHr = offlineTot.nightPerHr / offlineTot.nightCount; offlineTot.nightUtil = offlineTot.nightUtil / offlineTot.nightCount; }
+
+        const grandTot = {
+            totalHr: onlineTot.totalHr + offlineTot.totalHr,
+            totalTarget: onlineTot.totalTarget + offlineTot.totalTarget,
+            totalOutput: onlineTot.totalOutput + offlineTot.totalOutput,
+            totalCount: onlineTot.totalCount + offlineTot.totalCount,
+            totalPerHr: 0, totalUtil: 0,
+            dayHr: onlineTot.dayHr + offlineTot.dayHr,
+            dayTarget: onlineTot.dayTarget + offlineTot.dayTarget,
+            dayOutput: onlineTot.dayOutput + offlineTot.dayOutput,
+            dayCount: onlineTot.dayCount + offlineTot.dayCount,
+            dayPerHr: 0, dayUtil: 0,
+            nightHr: onlineTot.nightHr + offlineTot.nightHr,
+            nightTarget: onlineTot.nightTarget + offlineTot.nightTarget,
+            nightOutput: onlineTot.nightOutput + offlineTot.nightOutput,
+            nightCount: onlineTot.nightCount + offlineTot.nightCount,
+            nightPerHr: 0, nightUtil: 0
+        };
+        if (grandTot.totalCount > 0) { grandTot.totalPerHr = (onlineTot.totalPerHr * onlineTot.totalCount + offlineTot.totalPerHr * offlineTot.totalCount) / grandTot.totalCount; grandTot.totalUtil = (onlineTot.totalUtil * onlineTot.totalCount + offlineTot.totalUtil * offlineTot.totalCount) / grandTot.totalCount; }
+        if (grandTot.dayCount > 0) { grandTot.dayPerHr = (onlineTot.dayPerHr * onlineTot.dayCount + offlineTot.dayPerHr * offlineTot.dayCount) / grandTot.dayCount; grandTot.dayUtil = (onlineTot.dayUtil * onlineTot.dayCount + offlineTot.dayUtil * offlineTot.dayCount) / grandTot.dayCount; }
+        if (grandTot.nightCount > 0) { grandTot.nightPerHr = (onlineTot.nightPerHr * onlineTot.nightCount + offlineTot.nightPerHr * offlineTot.nightCount) / grandTot.nightCount; grandTot.nightUtil = (onlineTot.nightUtil * onlineTot.nightCount + offlineTot.nightUtil * offlineTot.nightCount) / grandTot.nightCount; }
+
+        const sortedDepts = Object.entries(summary).filter(([dept, data]) => data.totalCount > 0).sort((a, b) => b[1].totalUtil - a[1].totalUtil);
+        const rankMap = {};
+        sortedDepts.forEach(([dept, data], idx) => { if (idx < 3) rankMap[dept] = idx + 1; });
+
+        let tableRows = [];
+
+        const mcDepts = DEPARTMENTS.filter(d => d.type === 'MC');
+        mcDepts.forEach(d => {
+            const dept = d.name;
+            const s = summary[dept];
+            if (!s) return;
+            let posDisplay = '-'; let posClass = '';
+            if (rankMap[dept] === 1) { posDisplay = '🥇 ১ম'; posClass = 'pos-1'; }
+            else if (rankMap[dept] === 2) { posDisplay = '🥈 ২য়'; posClass = 'pos-2'; }
+            else if (rankMap[dept] === 3) { posDisplay = '🥉 ৩য়'; posClass = 'pos-3'; }
+            tableRows.push({
+                isSummary: false, dept: dept, prodIC: s.prodIC, typeLabel: 'ON LINE PACK', badgeClass: 'badge-online',
+                totalHr: s.totalHr, totalTarget: s.totalTarget, totalOutput: s.totalOutput,
+                totalPerHr: s.totalPerHr, totalUtil: s.totalUtil,
+                utilColor: s.totalUtil >= 80 ? 'util-high' : (s.totalUtil >= 50 ? 'util-mid' : 'util-low'),
+                position: posDisplay, posClass: posClass,
+                dayHr: s.dayHr, dayTarget: s.dayTarget, dayOutput: s.dayOutput, dayPerHr: s.dayPerHr, dayUtil: s.dayUtil,
+                nightHr: s.nightHr, nightTarget: s.nightTarget, nightOutput: s.nightOutput, nightPerHr: s.nightPerHr, nightUtil: s.nightUtil
+            });
+        });
+
+        tableRows.push({
+            isSummary: true, summaryType: 'online',
+            dept: 'ON LINE PACK Summary', prodIC: '', typeLabel: '',
+            totalHr: onlineTot.totalHr, totalTarget: onlineTot.totalTarget, totalOutput: onlineTot.totalOutput,
+            totalPerHr: onlineTot.totalPerHr, totalUtil: onlineTot.totalUtil, position: '-',
+            dayHr: onlineTot.dayHr, dayTarget: onlineTot.dayTarget, dayOutput: onlineTot.dayOutput,
+            dayPerHr: onlineTot.dayPerHr, dayUtil: onlineTot.dayUtil,
+            nightHr: onlineTot.nightHr, nightTarget: onlineTot.nightTarget, nightOutput: onlineTot.nightOutput,
+            nightPerHr: onlineTot.nightPerHr, nightUtil: onlineTot.nightUtil
+        });
+
+        const packDepts = DEPARTMENTS.filter(d => d.type === 'Packaging');
+        packDepts.forEach(d => {
+            const dept = d.name;
+            const s = summary[dept];
+            if (!s) return;
+            let posDisplay = '-'; let posClass = '';
+            if (rankMap[dept] === 1) { posDisplay = '🥇 ১ম'; posClass = 'pos-1'; }
+            else if (rankMap[dept] === 2) { posDisplay = '🥈 ২য়'; posClass = 'pos-2'; }
+            else if (rankMap[dept] === 3) { posDisplay = '🥉 ৩য়'; posClass = 'pos-3'; }
+            tableRows.push({
+                isSummary: false, dept: dept, prodIC: s.prodIC, typeLabel: 'OFF LINE PACK', badgeClass: 'badge-offline',
+                totalHr: s.totalHr, totalTarget: s.totalTarget, totalOutput: s.totalOutput,
+                totalPerHr: s.totalPerHr, totalUtil: s.totalUtil,
+                utilColor: s.totalUtil >= 80 ? 'util-high' : (s.totalUtil >= 50 ? 'util-mid' : 'util-low'),
+                position: posDisplay, posClass: posClass,
+                dayHr: s.dayHr, dayTarget: s.dayTarget, dayOutput: s.dayOutput, dayPerHr: s.dayPerHr, dayUtil: s.dayUtil,
+                nightHr: s.nightHr, nightTarget: s.nightTarget, nightOutput: s.nightOutput, nightPerHr: s.nightPerHr, nightUtil: s.nightUtil
+            });
+        });
+
+        tableRows.push({
+            isSummary: true, summaryType: 'offline',
+            dept: 'OFF LINE PACK Summary', prodIC: '', typeLabel: '',
+            totalHr: offlineTot.totalHr, totalTarget: offlineTot.totalTarget, totalOutput: offlineTot.totalOutput,
+            totalPerHr: offlineTot.totalPerHr, totalUtil: offlineTot.totalUtil, position: '-',
+            dayHr: offlineTot.dayHr, dayTarget: offlineTot.dayTarget, dayOutput: offlineTot.dayOutput,
+            dayPerHr: offlineTot.dayPerHr, dayUtil: offlineTot.dayUtil,
+            nightHr: offlineTot.nightHr, nightTarget: offlineTot.nightTarget, nightOutput: offlineTot.nightOutput,
+            nightPerHr: offlineTot.nightPerHr, nightUtil: offlineTot.nightUtil
+        });
+
+        tableRows.push({
+            isSummary: true, summaryType: 'grand',
+            dept: '📌 গ্র্যান্ড টোটাল', prodIC: '', typeLabel: '',
+            totalHr: grandTot.totalHr, totalTarget: grandTot.totalTarget, totalOutput: grandTot.totalOutput,
+            totalPerHr: grandTot.totalPerHr, totalUtil: grandTot.totalUtil, position: '-',
+            dayHr: grandTot.dayHr, dayTarget: grandTot.dayTarget, dayOutput: grandTot.dayOutput,
+            dayPerHr: grandTot.dayPerHr, dayUtil: grandTot.dayUtil,
+            nightHr: grandTot.nightHr, nightTarget: grandTot.nightTarget, nightOutput: grandTot.nightOutput,
+            nightPerHr: grandTot.nightPerHr, nightUtil: grandTot.nightUtil
+        });
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr>
+                <th rowspan="2">ডিপার্টমেন্ট</th>
+                <th rowspan="2">Prod IC</th>
+                <th rowspan="2">টাইপ</th>
+                <th colspan="6" style="background:#1a237e;">📊 ডে + নাইট (Total)</th>
+                <th colspan="5" style="background:#0d47a1;">☀️ ডে শিফট</th>
+                <th colspan="5" style="background:#1a237e;">🌙 নাইট শিফট</th>
+            </tr>
+            <tr>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th><th>পজিশন</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+            </tr></thead><tbody>`;
+
+        tableRows.forEach(row => {
+            let rowClass = '';
+            if (row.isSummary) {
+                if (row.summaryType === 'online') rowClass = 'row-online-summary';
+                else if (row.summaryType === 'offline') rowClass = 'row-offline-summary';
+                else if (row.summaryType === 'grand') rowClass = 'row-grand-total';
+            }
+            const utilColor = row.totalUtil >= 80 ? 'util-high' : (row.totalUtil >= 50 ? 'util-mid' : 'util-low');
+            html += `<tr class="${rowClass}">`;
+            html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
+            html += `<td>${row.prodIC}</td>`;
+            html += `<td>${row.typeLabel ? `<span class="${row.badgeClass || ''}">${row.typeLabel}</span>` : '-'}</td>`;
+            html += `<td><strong>${row.totalHr}</strong></td>`;
+            html += `<td>${row.totalTarget}</td>`;
+            html += `<td><strong>${row.totalOutput}</strong></td>`;
+            html += `<td>${row.totalPerHr.toFixed(2)}</td>`;
+            html += `<td class="${utilColor}">${row.totalUtil.toFixed(1)}%</td>`;
+            html += `<td class="${row.posClass || ''}"><strong>${row.position}</strong></td>`;
+            html += `<td>${row.dayHr}</td>`;
+            html += `<td>${row.dayTarget}</td>`;
+            html += `<td>${row.dayOutput}</td>`;
+            html += `<td>${row.dayPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.dayUtil.toFixed(1)}%</td>`;
+            html += `<td>${row.nightHr}</td>`;
+            html += `<td>${row.nightTarget}</td>`;
+            html += `<td>${row.nightOutput}</td>`;
+            html += `<td>${row.nightPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.nightUtil.toFixed(1)}%</td>`;
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+        window._dailyTableData = tableRows;
+    }
+
+    // ================================================================
+    // ওভারঅল সারাংশ (সব তারিখ)
+    // ================================================================
+    function renderOverallSummary(allEntries) {
+        const container = document.getElementById('overallSummaryContainer');
+        if (allEntries.length === 0) {
+            container.innerHTML = `<div class="empty-msg">কোনো ডেটা নেই</div>`;
+            return;
+        }
+
+        const deptData = {};
+        DEPARTMENTS.forEach(d => {
+            deptData[d.name] = { prodIC: d.prodIC, totalHr: 0, totalTarget: 0, totalOutput: 0, count: 0 };
+        });
+
+        allEntries.forEach(e => {
+            if (deptData[e.dept]) {
+                deptData[e.dept].totalHr += e.dayHr;
+                deptData[e.dept].totalTarget += e.target;
+                deptData[e.dept].totalOutput += e.output;
+                deptData[e.dept].count += 1;
+            }
+        });
+
+        const deptList = [];
+        for (const [dept, data] of Object.entries(deptData)) {
+            const util = data.totalTarget > 0 ? (data.totalOutput / data.totalTarget) * 100 : 0;
+            deptList.push({
+                name: dept,
+                prodIC: data.prodIC,
+                totalHr: data.totalHr,
+                totalTarget: data.totalTarget,
+                totalOutput: data.totalOutput,
+                util: util,
+                count: data.count
+            });
+        }
+
+        deptList.sort((a, b) => b.util - a.util);
+        deptList.forEach((d, idx) => { d.position = idx + 1; });
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>Total HR</th><th>Total CTN Cap (Target)</th><th>Total Carton Output</th><th>Utilisation %</th><th>পজিশন</th></tr></thead><tbody>`;
+
+        let grandHr = 0, grandTarget = 0, grandOutput = 0;
+        deptList.forEach(d => {
+            grandHr += d.totalHr;
+            grandTarget += d.totalTarget;
+            grandOutput += d.totalOutput;
+            let posClass = '';
+            let posDisplay = d.position;
+            if (d.position === 1) { posClass = 'pos-1'; posDisplay = '🥇 ১ম'; }
+            else if (d.position === 2) { posClass = 'pos-2'; posDisplay = '🥈 ২য়'; }
+            else if (d.position === 3) { posClass = 'pos-3'; posDisplay = '🥉 ৩য়'; }
+            html += `<tr>
+                <td class="dept-name">${d.name}</td>
+                <td>${d.prodIC}</td>
+                <td>${d.totalHr}</td>
+                <td>${d.totalTarget}</td>
+                <td><strong>${d.totalOutput}</strong></td>
+                <td class="${d.util >= 80 ? 'util-high' : d.util >= 50 ? 'util-mid' : 'util-low'}">${d.util.toFixed(1)}%</td>
+                <td class="${posClass}"><strong>${posDisplay}</strong></td>
+            </tr>`;
+        });
+
+        const grandUtil = grandTarget > 0 ? (grandOutput / grandTarget) * 100 : 0;
+        html += `<tr class="total-row">
+            <td colspan="2"><strong>📌 গ্র্যান্ড টোটাল</strong></td>
+            <td><strong>${grandHr}</strong></td>
+            <td><strong>${grandTarget}</strong></td>
+            <td><strong>${grandOutput}</strong></td>
+            <td><strong>${grandUtil.toFixed(1)}%</strong></td>
+            <td><strong>-</strong></td>
+        </tr>`;
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    // ================================================================
+    // এন্ট্রি লগ
+    // ================================================================
+    function renderLog(entries) {
+        const container = document.getElementById('entryLogContainer');
+        if (entries.length === 0) {
+            container.innerHTML = `<div class="empty-msg">কোনো এন্ট্রি নেই</div>`;
+            return;
+        }
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr>
+                <th>#</th><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th>
+                <th>Day HR</th><th>Target (CTN)</th><th>CTN Output</th><th>Per HR CTN</th>
+                <th>Utilisation %</th><th>তারিখ</th><th>সময়</th>
+            </tr></thead><tbody>`;
+
+        entries.forEach((e, idx) => {
+            const type = DEPARTMENTS.find(d => d.name === e.dept)?.type;
+            const badgeClass = type === 'MC' ? 'badge-online' : 'badge-offline';
+            const util = e.utilPct || 0;
+            const utilClass = util >= 80 ? 'util-high' : (util >= 50 ? 'util-mid' : 'util-low');
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td><span class="badge ${badgeClass}">${e.dept}</span></td>
+                <td>${e.prodIC}</td>
+                <td>${e.shift}</td>
+                <td>${e.icName}</td>
+                <td>${e.dayHr}</td>
+                <td>${e.target}</td>
+                <td>${e.output}</td>
+                <td>${e.perHr}</td>
+                <td class="${utilClass}">${util.toFixed(1)}%</td>
+                <td>${e.entryDate}</td>
+                <td>${e.timestamp}</td>
+            </tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    // ================================================================
+    // ডাউনলোড ফাংশন – শর্ট সামারি
+    // ================================================================
+    function downloadShortExcel() {
+        const data = window._shortData;
+        if (!data) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['বিভাগ', 'HR', 'Target', 'Output', 'CTN/HR', 'Util%'];
+        const rows = [
+            ['ONLINE PACK', data.online.hr, data.online.target, data.online.output, data.online.perHr.toFixed(2), data.online.util.toFixed(1) + '%'],
+            ['OFFLINE PACK', data.offline.hr, data.offline.target, data.offline.output, data.offline.perHr.toFixed(2), data.offline.util.toFixed(1) + '%'],
+            ['OVERALL', data.overall.hr, data.overall.target, data.overall.output, data.overall.perHr.toFixed(2), data.overall.util.toFixed(1) + '%']
+        ];
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Short Summary');
+        XLSX.writeFile(wb, `Short_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadShortImage() {
+        const container = document.getElementById('shortSummaryContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Short_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    }
+
+    function downloadShortPDF() {
+        const container = document.getElementById('shortSummaryContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Short_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    }
+
+    // ================================================================
+    // ডাউনলোড ফাংশন – ডেইলি
+    // ================================================================
+    function downloadDailyExcel() {
+        const rows = window._dailyTableData;
+        if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'টাইপ', 'Total HR', 'Total Target', 'Total Output', 'CTN/HR', 'Util%', 'পজিশন', 'Day HR', 'Day Target', 'Day Output', 'Day CTN/HR', 'Day Util%', 'Night HR', 'Night Target', 'Night Output', 'Night CTN/HR', 'Night Util%'];
+        const aoa = [headers];
+        rows.forEach(row => {
+            aoa.push([
+                row.dept, row.prodIC, row.typeLabel || '',
+                row.totalHr, row.totalTarget, row.totalOutput,
+                row.totalPerHr.toFixed(2), row.totalUtil.toFixed(1) + '%', row.position,
+                row.dayHr, row.dayTarget, row.dayOutput,
+                row.dayPerHr.toFixed(2), row.dayUtil.toFixed(1) + '%',
+                row.nightHr, row.nightTarget, row.nightOutput,
+                row.nightPerHr.toFixed(2), row.nightUtil.toFixed(1) + '%'
+            ]);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r + 1; R <= range.e.r; R++) {
+            const firstCell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
+            if (!firstCell) continue;
+            const val = firstCell.v;
+            let fillColor = null, fontColor = null, bold = false;
+            if (val === 'ON LINE PACK Summary') { fillColor = 'CCE5FF'; fontColor = '004085'; bold = true; }
+            else if (val === 'OFF LINE PACK Summary') { fillColor = 'FFF3CD'; fontColor = '856404'; bold = true; }
+            else if (val === '📌 গ্র্যান্ড টোটাল') { fillColor = 'D4EDDA'; fontColor = '155724'; bold = true; }
+            if (fillColor) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellRef]) ws[cellRef] = { v: '' };
+                    if (!ws[cellRef].s) ws[cellRef].s = {};
+                    ws[cellRef].s.fill = { fgColor: { rgb: fillColor } };
+                    if (fontColor) {
+                        ws[cellRef].s.font = { color: { rgb: fontColor }, bold: bold };
+                    } else if (bold) {
+                        if (!ws[cellRef].s.font) ws[cellRef].s.font = {};
+                        ws[cellRef].s.font.bold = true;
+                    }
+                }
+            }
+        }
+        XLSX.utils.book_append_sheet(wb, ws, 'Daily Summary');
+        XLSX.writeFile(wb, `Daily_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadDailyImage() {
+        const container = document.getElementById('dailyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Daily_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    }
+
+    function downloadDailyPDF() {
+        const container = document.getElementById('dailyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Daily_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    }
+
+    // ================================================================
+    // ডাউনলোড ফাংশন – ওভারঅল
+    // ================================================================
+    function downloadOverallExcel() {
+        const container = document.getElementById('overallReportContainer');
+        const table = container.querySelector('table');
+        if (!table) { alert('টেবিল পাওয়া যায়নি!'); return; }
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, 'Overall Summary');
+        XLSX.writeFile(wb, `Overall_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadOverallImage() {
+        const container = document.getElementById('overallReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Overall_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    }
+
+    function downloadOverallPDF() {
+        const container = document.getElementById('overallReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Overall_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    }
+
+    // ================================================================
+    // ডাউনলোড ফাংশন – মাস অনুযায়ী
+    // ================================================================
+    function downloadMonthlyExcel() {
+        const data = window._monthlyData;
+        if (!data || data.deptList.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'Total HR', 'Total CTN Cap (Target)', 'Total Carton Output', 'Utilisation %', 'পজিশন'];
+        const rows = data.deptList.map(d => [
+            d.name, d.prodIC, d.totalHr, d.totalTarget, d.totalOutput,
+            d.util.toFixed(1) + '%', d.position === 1 ? '🥇 ১ম' : d.position === 2 ? '🥈 ২য়' : d.position === 3 ? '🥉 ৩য়' : d.position
+        ]);
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, `Month_${data.month}`);
+        XLSX.writeFile(wb, `Monthly_Summary_${data.month.replace(' ', '_')}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadMonthlyImage() {
+        const container = document.getElementById('monthlyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Monthly_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    }
+
+    function downloadMonthlyPDF() {
+        const container = document.getElementById('monthlyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Monthly_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    }
+
+    // ================================================================
+    // CSV এক্সপোর্ট (ফিল্টার অনুযায়ী)
+    // ================================================================
+    function exportCSV() {
+        const entries = getEntries();
+        const filterDate = getFilterDate();
+        let filtered = entries;
+        if (filterDate) {
+            filtered = entries.filter(e => e.entryDate === filterDate);
+        }
+        if (filtered.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['Department', 'Prod IC', 'Shift', 'IC Name', 'Day HR', 'Target', 'CTN Output', 'Per HR CTN', 'Utilisation %', 'Entry Date', 'Timestamp'];
+        let csv = headers.join(',') + '\n';
+        filtered.forEach(e => {
+            const row = [
+                `"${e.dept}"`, `"${e.prodIC}"`, `"${e.shift}"`, `"${e.icName}"`,
+                e.dayHr, e.target, e.output, e.perHr, e.utilPct ? e.utilPct.toFixed(1) : '0',
+                `"${e.entryDate}"`, `"${e.timestamp}"`
+            ];
+            csv += row.join(',') + '\n';
+        });
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Carton_Report_${filterDate || 'All'}_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    function clearAll() {
+        if (!confirm('সব ডেটা স্থায়ীভাবে মুছবেন?')) return;
+        saveEntries([]);
+        renderAll();
+    }
+
+    // ================================================================
+    // INIT
+    // ================================================================
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('filterDate').value = today;
+    renderAll();
+</script>
+</body>
+</html>
