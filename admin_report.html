@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Excel স্টাইলিংয়ের জন্য xlsx-js-style ব্যবহার করা হয়েছে -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -138,6 +139,7 @@
         .badge-leave { background: #fff3e0; color: #e65100; }
         .badge-total { background: #e3f2fd; color: #0d47a1; }
 
+        /* ----- ৪টি টোটাল হেডিংয়ের জন্য আলাদা রঙ ----- */
         .row-production td {
             background: #d4edda !important;
             border-top: 2px solid #28a745 !important;
@@ -329,6 +331,19 @@
 <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
+    // ===== ফিক্সড MC QTY (Change 2) =====
+    const FIXED_MC_QTY = {
+        'RIP> DPL> Plastic-1': 38,
+        'RIP> DPL> Plastic-3': 59,
+        'RIP> DPL> Plastic-6.1': 39,
+        'RIP> DPL> Plastic-6.2': 64,
+        'RIP> DPL> Plastic-7.1': 36,
+        'RIP> DPL> Plastic-7.2': 71,
+        'RIP> DPL> Plastic-7.3': 77,
+        'RIP> DPL> Plastic-7.4': 35,
+        'Silicon Project': 9
+    };
+
     // ===== নতুন SN ক্রম অনুযায়ী SAIFUDDIN_DEPTS =====
     const SAIFUDDIN_DEPTS = [
         { sn: 1, name: 'RIP> DPL> Plastic-1' },
@@ -358,21 +373,8 @@
         // Total Manpower বসবে SN 25
     ];
 
-    // ===== ফিক্সড SN (যাদের ডেটা না থাকলেও ০ দেখাবে) =====
+    // ===== ফিক্সড SN (যাদের ডেটা না থাকলেও Total MP, Present, Absent, Leave ০ দেখাবে) =====
     const FIXED_SN_LIST = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-    // ===== ফিক্সড Total MC মান (হার্ডকোডেড) =====
-    const FIXED_MC = {
-        'RIP> DPL> Plastic-1': 38,
-        'RIP> DPL> Plastic-3': 59,
-        'RIP> DPL> Plastic-6.1': 39,
-        'RIP> DPL> Plastic-6.2': 64,
-        'RIP> DPL> Plastic-7.1': 36,
-        'RIP> DPL> Plastic-7.2': 71,
-        'RIP> DPL> Plastic-7.3': 77,
-        'RIP> DPL> Plastic-7.4': 35,
-        'Silicon Project': 9
-    };
 
     const DEPT_MAP = {
         'RIP> DPL> Plastic-3': ['RIP> DPL> Plastic-3', 'Plastic Prod-3.1'],
@@ -555,7 +557,7 @@
     }
 
     // ================================================================
-    // Saifuddin Table - নতুন SN ক্রম ও ৪টি আলাদা রঙ
+    // Saifuddin Table (Change 1 + Change 2 প্রয়োগ করা হয়েছে)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -592,7 +594,7 @@
             const isFixed = FIXED_SN_LIST.includes(item.sn);
 
             let totalPresent = 0, absent = 0, leave = 0;
-            let totalMC = 0, targetRun = 0, mcWillOff = 0;
+            let calculatedMC = 0, targetRun = 0, mcWillOff = 0;
             let mpShort = 0, moldProb = 0, moldChange = 0, sample = 0, mcProb = 0;
             let preventive = 0, noDemand = 0, materialShort = 0, overStock = 0, accShort = 0;
 
@@ -601,8 +603,7 @@
                     totalPresent += getNum(r, ['Total HR', 'totalHR']);
                     leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
                     absent += getNum(r, ['Absent Employee', 'absentEmployee']);
-                    // totalMC আমরা ফিক্সড মান ব্যবহার করব, ডেটা থেকে নেব না
-                    // targetRun, mcWillOff ইত্যাদি ডেটা থেকে নেব
+                    calculatedMC += getNum(r, ['Total MC', 'totalMC']);
                     targetRun += getNum(r, ['MC Running', 'mcRunning']);
                     mcWillOff += getNum(r, ['MC Stopped', 'mcStopped']);
                     mpShort += getNum(r, ['MP Short', 'mpShort']);
@@ -618,23 +619,16 @@
                 });
             }
 
-            // ===== ফিক্সড Total MC =====
-            if (FIXED_MC[deptName] !== undefined) {
-                totalMC = FIXED_MC[deptName];
-            } else {
-                // ফিক্সড তালিকায় না থাকলে ডেটা থেকে নিবে (যেমন Packaging, Common)
-                totalMC = 0;
-                if (hasData) {
-                    deptRows.forEach(r => {
-                        totalMC += getNum(r, ['Total MC', 'totalMC']);
-                    });
-                }
+            // ===== Change 2: ফিক্সড MC QTY প্রয়োগ =====
+            let totalMC = calculatedMC;
+            if (FIXED_MC_QTY[deptName] !== undefined) {
+                totalMC = FIXED_MC_QTY[deptName];
             }
 
             const totalMP = totalPresent + leave + absent;
             let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
-            // গ্রুপ অনুযায়ী টোটাল যোগ
+            // গ্রুপ টোটালে যোগ (ফিক্সড MC ব্যবহার করে)
             if (item.sn >= 1 && item.sn <= 9) {
                 prodTotal.totalMP += totalMP; prodTotal.totalPresent += totalPresent; prodTotal.absent += absent; prodTotal.leave += leave;
                 prodTotal.totalMC += totalMC; prodTotal.targetRun += targetRun; prodTotal.mcWillOff += mcWillOff;
@@ -661,7 +655,6 @@
             grandTotal.sample += sample; grandTotal.mcProb += mcProb; grandTotal.preventive += preventive;
             grandTotal.noDemand += noDemand; grandTotal.materialShort += materialShort; grandTotal.overStock += overStock; grandTotal.accShort += accShort;
 
-            // ডিপার্টমেন্টের সারি যোগ
             rows.push({
                 sn: item.sn,
                 dept: deptName,
@@ -753,7 +746,6 @@
             else if (row.sn === 24) rowClass = 'row-common';
             else if (row.sn === 25) rowClass = 'row-manpower';
 
-            // showDash শুধু ডেটা না থাকলে এবং ফিক্সড না হলে
             const showDash = (!row.hasData && !row.isFixed);
 
             let pctClass = 'green';
@@ -793,20 +785,21 @@
                              (row.sn >= 15 && row.sn <= 23) ||
                              (row.sn >= 11 && row.sn <= 13));
 
-            // যদি showDash হয় অথবা non-MC হয়, তাহলে সব ড্যাশ
             if (showDash || isNonMC) {
+                // Total MC এবং Target Run ড্যাশ
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
+                // ===== Change 1: ১১টি কারণের কলামে ডেটা থাকলেই দেখাবে, না থাকলে '-' =====
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td>`;
             } else {
-                // ===== শুধুমাত্র ডেটা থাকলেই কলামগুলো দেখাবে, না হলে ড্যাশ =====
-                // Total MC ফিক্সড দেখাবে
+                // ডেটা আছে অথবা ফিক্সড (MC ডিপার্টমেন্ট)
                 html += `<td><span class="highlight-number">${row.totalMC}</span></td>`;
                 html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
                 html += `<td>${progressBar}</td>`;
-                // নিচের কলামগুলো শুধুমাত্র ডেটা থাকলেই দেখাবে, না থাকলে ড্যাশ
+                // MC Will off (Change 1)
                 html += `<td>${row.mcWillOff > 0 ? row.mcWillOff : '-'}</td>`;
+                // বাকি ১০টি কারণ (Change 1)
                 html += `<td>${row.mpShort > 0 ? row.mpShort : '-'}</td>`;
                 html += `<td>${row.moldProb > 0 ? row.moldProb : '-'}</td>`;
                 html += `<td>${row.moldChange > 0 ? row.moldChange : '-'}</td>`;
@@ -1119,6 +1112,9 @@
             });
     }
 
+    // ================================================================
+    // Change 3: Excel ডাউনলোডে রঙ যোগ করা হয়েছে
+    // ================================================================
     function downloadSaifuddinExcel() {
         const rows = window._saifuddinRows || [];
         if (rows.length === 0) { alert('ডেটা নেই!'); return; }
@@ -1126,35 +1122,70 @@
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
             'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
             'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'];
-        const csvRows = rows.map(row => {
+        
+        const data = [headers];
+        rows.forEach(row => {
             const showDash = (!row.hasData && !row.isFixed);
             if (showDash) {
-                return [row.sn, row.dept, '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'];
+                data.push([row.sn, row.dept, '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-']);
+                return;
             }
             const isNoMC = (row.sn === 10 || row.sn === 14 || row.sn === 24 || row.sn === 25 ||
                             (row.sn >= 15 && row.sn <= 23) ||
                             (row.sn >= 11 && row.sn <= 13));
-            return [
+            data.push([
                 row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
                 isNoMC ? '-' : row.totalMC,
                 isNoMC ? '-' : row.targetRun,
                 isNoMC ? '-' : row.runPct.toFixed(1) + '%',
-                isNoMC ? '-' : (row.mcWillOff > 0 ? row.mcWillOff : '-'),
-                isNoMC ? '-' : (row.mpShort > 0 ? row.mpShort : '-'),
-                isNoMC ? '-' : (row.moldProb > 0 ? row.moldProb : '-'),
-                isNoMC ? '-' : (row.moldChange > 0 ? row.moldChange : '-'),
-                isNoMC ? '-' : (row.sample > 0 ? row.sample : '-'),
-                isNoMC ? '-' : (row.mcProb > 0 ? row.mcProb : '-'),
-                isNoMC ? '-' : (row.preventive > 0 ? row.preventive : '-'),
-                isNoMC ? '-' : (row.noDemand > 0 ? row.noDemand : '-'),
-                isNoMC ? '-' : (row.materialShort > 0 ? row.materialShort : '-'),
-                isNoMC ? '-' : (row.overStock > 0 ? row.overStock : '-'),
-                isNoMC ? '-' : (row.accShort > 0 ? row.accShort : '-')
-            ];
+                isNoMC ? '-' : row.mcWillOff,
+                isNoMC ? '-' : row.mpShort,
+                isNoMC ? '-' : row.moldProb,
+                isNoMC ? '-' : row.moldChange,
+                isNoMC ? '-' : row.sample,
+                isNoMC ? '-' : row.mcProb,
+                isNoMC ? '-' : row.preventive,
+                isNoMC ? '-' : row.noDemand,
+                isNoMC ? '-' : row.materialShort,
+                isNoMC ? '-' : row.overStock,
+                isNoMC ? '-' : row.accShort
+            ]);
         });
-        const wbData = [headers, ...csvRows];
+
         const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(wbData);
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        
+        // ===== রঙ প্রয়োগ =====
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; R++) {
+            const snCell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
+            if (!snCell) continue;
+            const sn = snCell.v;
+            let fillColor = null;
+            let fontColor = null;
+            let bold = true;
+            if (sn === 10) { fillColor = 'D4EDDA'; }      // Production - সবুজ
+            else if (sn === 14) { fillColor = 'FFF3CD'; } // Packaging - হলুদ
+            else if (sn === 24) { fillColor = 'CCE5FF'; } // Common - হালকা নীল
+            else if (sn === 25) { fillColor = '1A237E'; fontColor = 'FFFFFF'; } // Manpower - গাঢ় নীল, সাদা লেখা
+
+            if (fillColor) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellRef]) ws[cellRef] = { v: '' };
+                    if (!ws[cellRef].s) ws[cellRef].s = {};
+                    ws[cellRef].s.fill = { fgColor: { rgb: fillColor } };
+                    if (fontColor) {
+                        ws[cellRef].s.font = { color: { rgb: fontColor }, bold: bold };
+                    } else {
+                        // ডিফল্ট বোল্ড
+                        if (!ws[cellRef].s.font) ws[cellRef].s.font = {};
+                        ws[cellRef].s.font.bold = bold;
+                    }
+                }
+            }
+        }
+
         XLSX.utils.book_append_sheet(wb, ws, "Saifuddin Summary");
         XLSX.writeFile(wb, `Saifuddin_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
