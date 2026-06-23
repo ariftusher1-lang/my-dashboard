@@ -273,6 +273,18 @@
             border-top: 2px solid #1976d2;
             border-bottom: 2px solid #1976d2;
         }
+        .weekly-filter-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .weekly-filter-area select {
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -330,15 +342,23 @@
     </div>
     <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
-    <!-- সাপ্তাহিক সারাংশ টেবিল (আপডেটেড) -->
+    <!-- ===== সাপ্তাহিক সারাংশ (একটি ফিল্টার সহ) ===== -->
     <div class="section-title clearfix">
-        <span style="background:#1a237e; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📅 সাপ্তাহিক সারাংশ (শেষ ৭ দিনের গড় Present ও MC Run)</span>
+        <div class="weekly-filter-area">
+            <span style="background:#1a237e; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📅 সাপ্তাহিক সারাংশ</span>
+            <select id="weeklyDaysFilter" onchange="renderWeeklySummaryFromData()">
+                <option value="7">শেষ ৭ দিনের গড়</option>
+                <option value="14">শেষ ১৪ দিনের গড়</option>
+                <option value="21">শেষ ২১ দিনের গড়</option>
+                <option value="30">শেষ ৩০ দিনের গড়</option>
+            </select>
+        </div>
         <div class="btn-group">
             <button class="btn-image" onclick="downloadWeeklyImage()">📷 ইমেজ ডাউনলোড</button>
             <button class="btn-excel" onclick="downloadWeeklyExcel()">⬇️ Excel ডাউনলোড</button>
         </div>
     </div>
-    <div class="table-wrap" id="weeklySummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
+    <div class="table-wrap" id="weeklySummaryContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
     <div class="stats" id="statsContainer">
         <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
@@ -387,7 +407,6 @@
         'Silicon Project': 9
     };
 
-    // প্রথম ৯টি ডিপার্টমেন্ট (ফিক্সড)
     const FIXED_DEPTS = [
         { sn: 1, name: 'RIP> DPL> Plastic-1' },
         { sn: 2, name: 'RIP> DPL> Plastic-3' },
@@ -486,25 +505,6 @@
         return `${day}-${month}-${year}`;
     }
 
-    function formatDateForCompare(dateStr) {
-        if (!dateStr) return '';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return '';
-        return d.toISOString().slice(0,10);
-    }
-
-    function formatTime(dateStr) {
-        if (!dateStr) return '-';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        return d.toLocaleString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-            timeZone: 'Asia/Dhaka'
-        });
-    }
-
     function getVal(row, keys) {
         for (let k of keys) {
             if (row[k] !== undefined && row[k] !== null && row[k] !== '') return row[k];
@@ -528,8 +528,8 @@
             console.log('📦 মোট ডেটা:', allData.length);
             populateDeptFilter();
             applyFilters();
-            // সাপ্তাহিক সারাংশ সব ডেটা থেকে গণনা করবে (ফিল্টার নির্বিশেষে)
-            renderWeeklySummary(allData);
+            // সাপ্তাহিক সারাংশ রেন্ডার
+            renderWeeklySummaryFromData();
             document.getElementById('currentTime').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
         } catch (e) {
             console.error('❌ লোড ব্যর্থ:', e);
@@ -635,25 +635,30 @@
         document.getElementById('avgRunningPct').innerText = data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%';
     }
 
-    // ===== সাপ্তাহিক সারাংশ (শেষ ৭ দিনের গড় Present ও MC Run) =====
-    function renderWeeklySummary(data) {
-        const container = document.getElementById('weeklySummaryTable');
+    // ===== সাপ্তাহিক সারাংশ (ড্রপডাউন অনুযায়ী) =====
+    function renderWeeklySummaryFromData() {
+        const days = parseInt(document.getElementById('weeklyDaysFilter').value) || 7;
+        renderWeeklySummary(allData, days, 'weeklySummaryContainer');
+    }
+
+    function renderWeeklySummary(data, days, containerId) {
+        const container = document.getElementById(containerId);
         if (!data || data.length === 0) {
             container.innerHTML = `<div class="no-data">পর্যাপ্ত ডেটা নেই</div>`;
             return;
         }
 
         const today = new Date();
-        const sevenDaysAgo = new Date(today);
-        sevenDaysAgo.setDate(today.getDate() - 7);
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - days);
 
-        const last7DaysData = data.filter(row => {
+        const filteredData = data.filter(row => {
             const dateStr = row.entryDate || row.Date || '';
             const d = new Date(dateStr);
             if (isNaN(d.getTime())) return false;
             const dDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-            const startDate = new Date(sevenDaysAgo.getFullYear(), sevenDaysAgo.getMonth(), sevenDaysAgo.getDate());
-            return dDate >= startDate && dDate <= new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+            return dDate >= start && dDate <= new Date(today.getFullYear(), today.getMonth(), today.getDate());
         });
 
         const rows = [];
@@ -662,14 +667,13 @@
             const possibleNames = DEPT_MAP[deptName] || [deptName];
             let deptRows = [];
             for (let pn of possibleNames) {
-                const found = last7DaysData.filter(r => {
+                const found = filteredData.filter(r => {
                     let d = getVal(r, ['Department', 'department']);
                     return d === pn;
                 });
                 deptRows = deptRows.concat(found);
             }
 
-            // Prod IC: সর্বশেষ এন্ট্রি থেকে
             let icName = '';
             if (deptRows.length > 0) {
                 const sorted = deptRows.sort((a, b) => {
@@ -680,7 +684,6 @@
                 icName = getVal(sorted[0], ['IC Name', 'icName']) || '';
             }
 
-            // Present ও MC Run-এর যোগফল ও কাউন্ট
             let sumPresent = 0, sumRun = 0, count = 0;
             deptRows.forEach(r => {
                 const hr = getNum(r, ['Total HR', 'totalHR']);
@@ -693,7 +696,6 @@
             });
             const avgPresent = count > 0 ? sumPresent / count : 0;
             const avgRun = count > 0 ? sumRun / count : 0;
-
             const fixedMC = FIXED_MC_QTY[deptName] || 0;
 
             rows.push({
@@ -707,7 +709,6 @@
             });
         });
 
-        // টোটাল সারি (সমস্ত ডিপার্টমেন্টের গড়ের গড় এবং মোট Fixed MC)
         let totalFixedMC = 0, totalAvgPresent = 0, totalAvgRun = 0, totalCount = 0;
         rows.forEach(r => {
             totalFixedMC += r.fixedMC;
@@ -718,14 +719,13 @@
         const overallAvgPresent = rows.length > 0 ? totalAvgPresent / rows.length : 0;
         const overallAvgRun = rows.length > 0 ? totalAvgRun / rows.length : 0;
 
-        // টেবিল তৈরি
         let html = `<table class="weekly-table"><thead><tr>
             <th>SN</th>
             <th>Department</th>
             <th>Prod IC</th>
             <th>Fixed MC QTY</th>
-            <th>Avg Present (Last 7 Days)</th>
-            <th>Avg MC Run (Last 7 Days)</th>
+            <th>Avg Present (Last ${days} Days)</th>
+            <th>Avg MC Run (Last ${days} Days)</th>
             <th>Entries Count</th>
         </tr></thead><tbody>`;
 
@@ -741,7 +741,6 @@
             </tr>`;
         });
 
-        // টোটাল সারি
         html += `<tr class="total-row">
             <td><strong>📌</strong></td>
             <td><strong>Total / Average</strong></td>
@@ -754,8 +753,8 @@
 
         html += `</tbody></table>`;
         container.innerHTML = html;
-        window._weeklyRows = rows;
-        window._weeklyTotal = { totalFixedMC, overallAvgPresent, overallAvgRun, totalCount };
+        // ডাউনলোডের জন্য ডেটা সংরক্ষণ
+        window._currentWeeklyData = { rows, totalFixedMC, overallAvgPresent, overallAvgRun, totalCount, days };
     }
 
     // ===== Saifuddin Table (অপরিবর্তিত) =====
@@ -1188,7 +1187,7 @@
     }
 
     // ================================================================
-    // ডাউনলোড ফাংশন
+    // ডাউনলোড ফাংশন (MC, Saifuddin, Weekly)
     // ================================================================
     function downloadMCImage() {
         const container = document.getElementById('mcSummaryTable');
@@ -1462,9 +1461,9 @@
             });
     }
 
-    // ===== Weekly Summary ডাউনলোড =====
+    // ===== উইকলি ডাউনলোড (বর্তমান ফিল্টার অনুযায়ী) =====
     function downloadWeeklyImage() {
-        const container = document.getElementById('weeklySummaryTable');
+        const container = document.getElementById('weeklySummaryContainer');
         if (container.innerText.includes('পর্যাপ্ত ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
             alert('⚠️ ডেটা নেই!');
             return;
@@ -1475,7 +1474,8 @@
         html2canvas(container, { scale: 2.5, backgroundColor: '#ffffff', logging: false })
             .then(canvas => {
                 const link = document.createElement('a');
-                link.download = `Weekly_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                const days = document.getElementById('weeklyDaysFilter').value;
+                link.download = `Weekly_Summary_${days}days_${new Date().toISOString().slice(0,10)}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 btn.innerText = '📷 ইমেজ ডাউনলোড';
@@ -1490,21 +1490,16 @@
     }
 
     function downloadWeeklyExcel() {
-        const rows = window._weeklyRows || [];
-        if (rows.length === 0) { alert('ডেটা নেই!'); return; }
-        const total = window._weeklyTotal || {};
-        const headers = ['SN', 'Department', 'Prod IC', 'Fixed MC QTY', 'Avg Present (Last 7 Days)', 'Avg MC Run (Last 7 Days)', 'Entries Count'];
-        const data = [headers];
-        rows.forEach(row => {
-            data.push([row.sn, row.dept, row.icName || '-', row.fixedMC, row.avgPresent.toFixed(1), row.avgRun.toFixed(1), row.count]);
-        });
-        // টোটাল
-        data.push(['📌', 'Total / Average', '-', total.totalFixedMC || 0, total.overallAvgPresent ? total.overallAvgPresent.toFixed(1) : '0.0', total.overallAvgRun ? total.overallAvgRun.toFixed(1) : '0.0', total.totalCount || 0]);
+        const data = window._currentWeeklyData;
+        if (!data || data.rows.length === 0) { alert('ডেটা নেই!'); return; }
+        const headers = ['SN', 'Department', 'Prod IC', 'Fixed MC QTY', `Avg Present (Last ${data.days} Days)`, `Avg MC Run (Last ${data.days} Days)`, 'Entries Count'];
+        const rows = data.rows.map(row => [row.sn, row.dept, row.icName || '-', row.fixedMC, row.avgPresent.toFixed(1), row.avgRun.toFixed(1), row.count]);
+        rows.push(['📌', 'Total / Average', '-', data.totalFixedMC, data.overallAvgPresent.toFixed(1), data.overallAvgRun.toFixed(1), data.totalCount]);
 
         const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "Weekly Summary");
-        XLSX.writeFile(wb, `Weekly_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        XLSX.utils.book_append_sheet(wb, ws, `Weekly ${data.days} Days`);
+        XLSX.writeFile(wb, `Weekly_Summary_${data.days}days_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
 
     // ================================================================
@@ -1704,10 +1699,22 @@
         URL.revokeObjectURL(link.href);
     }
 
+    function formatTime(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'Asia/Dhaka'
+        });
+    }
+
     function showError(msg) {
         document.getElementById('saifuddinTableContainer').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('mcSummaryTable').innerHTML = `<div class="no-data">${msg}</div>`;
-        document.getElementById('weeklySummaryTable').innerHTML = `<div class="no-data">${msg}</div>`;
+        document.getElementById('weeklySummaryContainer').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('groupATable').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('groupBTable').innerHTML = `<div class="no-data">${msg}</div>`;
         document.getElementById('overallTable').innerHTML = `<div class="no-data">${msg}</div>`;
