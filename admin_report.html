@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Excel স্টাইলিংয়ের জন্য xlsx-js-style ব্যবহার করা হয়েছে -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -139,7 +138,6 @@
         .badge-leave { background: #fff3e0; color: #e65100; }
         .badge-total { background: #e3f2fd; color: #0d47a1; }
 
-        /* ----- ৪টি টোটাল হেডিংয়ের জন্য আলাদা রঙ ----- */
         .row-production td {
             background: #d4edda !important;
             border-top: 2px solid #28a745 !important;
@@ -331,7 +329,7 @@
 <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
-    // ===== ফিক্সড MC QTY (Change 2) =====
+    // ===== ফিক্সড MC QTY =====
     const FIXED_MC_QTY = {
         'RIP> DPL> Plastic-1': 38,
         'RIP> DPL> Plastic-3': 59,
@@ -344,7 +342,7 @@
         'Silicon Project': 9
     };
 
-    // ===== নতুন SN ক্রম অনুযায়ী SAIFUDDIN_DEPTS =====
+    // ===== নতুন SN ক্রম =====
     const SAIFUDDIN_DEPTS = [
         { sn: 1, name: 'RIP> DPL> Plastic-1' },
         { sn: 2, name: 'RIP> DPL> Plastic-3' },
@@ -355,11 +353,9 @@
         { sn: 7, name: 'RIP> DPL> Plastic-7.3' },
         { sn: 8, name: 'RIP> DPL> Plastic-7.4' },
         { sn: 9, name: 'Silicon Project' },
-        // Total Production Team বসবে SN 10
         { sn: 11, name: 'Plastic Packaging-01' },
         { sn: 12, name: 'Plastic Packaging-02' },
         { sn: 13, name: 'Plastic Packaging-03' },
-        // Total Packaging Team বসবে SN 14
         { sn: 15, name: 'Plastic-Maintenance.' },
         { sn: 16, name: 'Tool Room Maintenance' },
         { sn: 17, name: 'Plastic Inventory & Delivery' },
@@ -369,11 +365,8 @@
         { sn: 21, name: 'RIP-DPL-Factory Support' },
         { sn: 22, name: 'DPL-QA' },
         { sn: 23, name: 'RIP RFL Store' }
-        // Total Common Team বসবে SN 24
-        // Total Manpower বসবে SN 25
     ];
 
-    // ===== ফিক্সড SN (যাদের ডেটা না থাকলেও Total MP, Present, Absent, Leave ০ দেখাবে) =====
     const FIXED_SN_LIST = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     const DEPT_MAP = {
@@ -557,7 +550,7 @@
     }
 
     // ================================================================
-    // Saifuddin Table (Change 1 + Change 2 প্রয়োগ করা হয়েছে)
+    // Saifuddin Table - টোটাল সারিতে সব যোগফল দেখানো হবে
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -619,7 +612,6 @@
                 });
             }
 
-            // ===== Change 2: ফিক্সড MC QTY প্রয়োগ =====
             let totalMC = calculatedMC;
             if (FIXED_MC_QTY[deptName] !== undefined) {
                 totalMC = FIXED_MC_QTY[deptName];
@@ -628,7 +620,6 @@
             const totalMP = totalPresent + leave + absent;
             let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
-            // গ্রুপ টোটালে যোগ (ফিক্সড MC ব্যবহার করে)
             if (item.sn >= 1 && item.sn <= 9) {
                 prodTotal.totalMP += totalMP; prodTotal.totalPresent += totalPresent; prodTotal.absent += absent; prodTotal.leave += leave;
                 prodTotal.totalMC += totalMC; prodTotal.targetRun += targetRun; prodTotal.mcWillOff += mcWillOff;
@@ -665,7 +656,6 @@
                 isFixed: isFixed
             });
 
-            // ===== ১. Production Total (SN 10) =====
             if (item.sn === 9) {
                 let prodRunPct = prodTotal.totalMC > 0 ? ((prodTotal.targetRun / prodTotal.totalMC) * 100) : 0;
                 rows.push({
@@ -679,7 +669,6 @@
                 });
             }
 
-            // ===== ২. Packaging Total (SN 14) =====
             if (item.sn === 13) {
                 let packRunPct = packagingTotal.totalMC > 0 ? ((packagingTotal.targetRun / packagingTotal.totalMC) * 100) : 0;
                 rows.push({
@@ -693,7 +682,6 @@
                 });
             }
 
-            // ===== ৩. Common Total (SN 24) ও ৪. Manpower Total (SN 25) =====
             if (item.sn === 23) {
                 let commonRunPct = commonTotal.totalMC > 0 ? ((commonTotal.targetRun / commonTotal.totalMC) * 100) : 0;
                 rows.push({
@@ -730,7 +718,6 @@
             return;
         }
 
-        // ===== HTML তৈরি =====
         let html = `<table class="saifuddin-table"><thead><tr>`;
         const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
@@ -747,6 +734,11 @@
             else if (row.sn === 25) rowClass = 'row-manpower';
 
             const showDash = (!row.hasData && !row.isFixed);
+
+            // ===== টোটাল সারি নয় এমন ডিপার্টমেন্ট যেগুলো non-MC =====
+            // এখন টোটাল সারিগুলো (10,14,24,25) isNonMC-এর অন্তর্ভুক্ত নয়
+            const isNonMC = ((row.sn >= 11 && row.sn <= 13) ||
+                             (row.sn >= 15 && row.sn <= 23));
 
             let pctClass = 'green';
             if (row.runPct < 60) pctClass = 'red';
@@ -780,36 +772,35 @@
             html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
             html += `<td>${displayTotalMP}</td><td>${displayPresent}</td><td>${displayAbsent}</td><td>${displayLeave}</td>`;
 
-            // MC সংক্রান্ত কলাম
-            const isNonMC = (row.sn === 10 || row.sn === 14 || row.sn === 24 || row.sn === 25 ||
-                             (row.sn >= 15 && row.sn <= 23) ||
-                             (row.sn >= 11 && row.sn <= 13));
-
+            // MC ও কারণ কলাম
             if (showDash || isNonMC) {
-                // Total MC এবং Target Run ড্যাশ
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
-                // ===== Change 1: ১১টি কারণের কলামে ডেটা থাকলেই দেখাবে, না থাকলে '-' =====
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td>`;
             } else {
-                // ডেটা আছে অথবা ফিক্সড (MC ডিপার্টমেন্ট)
+                // টোটাল সারি বা MC ডিপার্টমেন্ট
                 html += `<td><span class="highlight-number">${row.totalMC}</span></td>`;
                 html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
                 html += `<td>${progressBar}</td>`;
-                // MC Will off (Change 1)
-                html += `<td>${row.mcWillOff > 0 ? row.mcWillOff : '-'}</td>`;
-                // বাকি ১০টি কারণ (Change 1)
-                html += `<td>${row.mpShort > 0 ? row.mpShort : '-'}</td>`;
-                html += `<td>${row.moldProb > 0 ? row.moldProb : '-'}</td>`;
-                html += `<td>${row.moldChange > 0 ? row.moldChange : '-'}</td>`;
-                html += `<td>${row.sample > 0 ? row.sample : '-'}</td>`;
-                html += `<td>${row.mcProb > 0 ? row.mcProb : '-'}</td>`;
-                html += `<td>${row.preventive > 0 ? row.preventive : '-'}</td>`;
-                html += `<td>${row.noDemand > 0 ? row.noDemand : '-'}</td>`;
-                html += `<td>${row.materialShort > 0 ? row.materialShort : '-'}</td>`;
-                html += `<td>${row.overStock > 0 ? row.overStock : '-'}</td>`;
-                html += `<td>${row.accShort > 0 ? row.accShort : '-'}</td>`;
+
+                // ===== টোটাল সারি হলে সরাসরি সংখ্যা দেখাবে (শূন্য হলেও), অন্যথায় ডেটা থাকলেই দেখাবে =====
+                const displayVal = (val) => {
+                    if (row.isTotal) return val;
+                    return val > 0 ? val : '-';
+                };
+
+                html += `<td>${displayVal(row.mcWillOff)}</td>`;
+                html += `<td>${displayVal(row.mpShort)}</td>`;
+                html += `<td>${displayVal(row.moldProb)}</td>`;
+                html += `<td>${displayVal(row.moldChange)}</td>`;
+                html += `<td>${displayVal(row.sample)}</td>`;
+                html += `<td>${displayVal(row.mcProb)}</td>`;
+                html += `<td>${displayVal(row.preventive)}</td>`;
+                html += `<td>${displayVal(row.noDemand)}</td>`;
+                html += `<td>${displayVal(row.materialShort)}</td>`;
+                html += `<td>${displayVal(row.overStock)}</td>`;
+                html += `<td>${displayVal(row.accShort)}</td>`;
             }
             html += `</tr>`;
         });
@@ -992,7 +983,7 @@
     }
 
     // ================================================================
-    // ডাউনলোড ফাংশন (এক্সেল, ইমেজ, পিডিএফ)
+    // ডাউনলোড ফাংশন
     // ================================================================
     function downloadMCImage() {
         const container = document.getElementById('mcSummaryTable');
@@ -1112,9 +1103,7 @@
             });
     }
 
-    // ================================================================
-    // Change 3: Excel ডাউনলোডে রঙ যোগ করা হয়েছে
-    // ================================================================
+    // ===== Excel-এ টোটাল সারিতে সব সংখ্যা দেখানো হবে =====
     function downloadSaifuddinExcel() {
         const rows = window._saifuddinRows || [];
         if (rows.length === 0) { alert('ডেটা নেই!'); return; }
@@ -1130,9 +1119,10 @@
                 data.push([row.sn, row.dept, '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-']);
                 return;
             }
-            const isNoMC = (row.sn === 10 || row.sn === 14 || row.sn === 24 || row.sn === 25 ||
-                            (row.sn >= 15 && row.sn <= 23) ||
-                            (row.sn >= 11 && row.sn <= 13));
+            // ===== টোটাল সারি নয় এমন non-MC ডিপার্টমেন্ট =====
+            const isNoMC = ((row.sn >= 11 && row.sn <= 13) ||
+                            (row.sn >= 15 && row.sn <= 23));
+            // টোটাল সারিগুলো (10,14,24,25) isNoMC-তে অন্তর্ভুক্ত নয়
             data.push([
                 row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
                 isNoMC ? '-' : row.totalMC,
@@ -1155,20 +1145,17 @@
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(data);
         
-        // ===== রঙ প্রয়োগ =====
+        // ===== রঙ প্রয়োগ (টোটাল সারিগুলোতে) =====
         const range = XLSX.utils.decode_range(ws['!ref']);
         for (let R = range.s.r; R <= range.e.r; R++) {
             const snCell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
             if (!snCell) continue;
             const sn = snCell.v;
-            let fillColor = null;
-            let fontColor = null;
-            let bold = true;
-            if (sn === 10) { fillColor = 'D4EDDA'; }      // Production - সবুজ
-            else if (sn === 14) { fillColor = 'FFF3CD'; } // Packaging - হলুদ
-            else if (sn === 24) { fillColor = 'CCE5FF'; } // Common - হালকা নীল
-            else if (sn === 25) { fillColor = '1A237E'; fontColor = 'FFFFFF'; } // Manpower - গাঢ় নীল, সাদা লেখা
-
+            let fillColor = null, fontColor = null;
+            if (sn === 10) fillColor = 'D4EDDA';
+            else if (sn === 14) fillColor = 'FFF3CD';
+            else if (sn === 24) fillColor = 'CCE5FF';
+            else if (sn === 25) { fillColor = '1A237E'; fontColor = 'FFFFFF'; }
             if (fillColor) {
                 for (let C = range.s.c; C <= range.e.c; C++) {
                     const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
@@ -1176,11 +1163,10 @@
                     if (!ws[cellRef].s) ws[cellRef].s = {};
                     ws[cellRef].s.fill = { fgColor: { rgb: fillColor } };
                     if (fontColor) {
-                        ws[cellRef].s.font = { color: { rgb: fontColor }, bold: bold };
+                        ws[cellRef].s.font = { color: { rgb: fontColor }, bold: true };
                     } else {
-                        // ডিফল্ট বোল্ড
                         if (!ws[cellRef].s.font) ws[cellRef].s.font = {};
-                        ws[cellRef].s.font.bold = bold;
+                        ws[cellRef].s.font.bold = true;
                     }
                 }
             }
