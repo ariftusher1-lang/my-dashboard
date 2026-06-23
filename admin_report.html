@@ -565,37 +565,41 @@
                 deptRows = deptRows.concat(found);
             }
 
-            // Total Present, Leave, Absent আলাদাভাবে যোগ করি
+            // চেক করি ডেটা আছে কিনা
+            const hasData = deptRows.length > 0;
+
             let totalPresent = 0, absent = 0, leave = 0;
             let totalMC = 0, targetRun = 0, mcWillOff = 0;
             let mpShort = 0, moldProb = 0, moldChange = 0, sample = 0, mcProb = 0;
             let preventive = 0, noDemand = 0, materialShort = 0, overStock = 0, accShort = 0;
 
-            deptRows.forEach(r => {
-                // Total Present = Total HR (ধরে নিচ্ছি)
-                totalPresent += getNum(r, ['Total HR', 'totalHR']);
-                leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
-                absent += getNum(r, ['Absent Employee', 'absentEmployee']);
-                totalMC += getNum(r, ['Total MC', 'totalMC']);
-                targetRun += getNum(r, ['MC Running', 'mcRunning']);
-                mcWillOff += getNum(r, ['MC Stopped', 'mcStopped']);
-                mpShort += getNum(r, ['MP Short', 'mpShort']);
-                moldProb += getNum(r, ['Mold Problem', 'moldProblem']);
-                moldChange += getNum(r, ['Mold Change', 'moldChange']);
-                sample += getNum(r, ['Under Sample', 'underSample']);
-                mcProb += getNum(r, ['MC Problem', 'mcProblem']);
-                preventive += getNum(r, ['Preventive Maintenance', 'preventiveMaintenance']);
-                noDemand += getNum(r, ['No Demand (QTY)', 'noDemandQty']);
-                materialShort += getNum(r, ['Material & MB Shortage', 'materialMBShortage']);
-                overStock += getNum(r, ['Over Stock (WIP)', 'overStockWIP']);
-                accShort += getNum(r, ['Accessories Short', 'accessoriesShort']);
-            });
+            if (hasData) {
+                deptRows.forEach(r => {
+                    totalPresent += getNum(r, ['Total HR', 'totalHR']);
+                    leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
+                    absent += getNum(r, ['Absent Employee', 'absentEmployee']);
+                    totalMC += getNum(r, ['Total MC', 'totalMC']);
+                    targetRun += getNum(r, ['MC Running', 'mcRunning']);
+                    mcWillOff += getNum(r, ['MC Stopped', 'mcStopped']);
+                    mpShort += getNum(r, ['MP Short', 'mpShort']);
+                    moldProb += getNum(r, ['Mold Problem', 'moldProblem']);
+                    moldChange += getNum(r, ['Mold Change', 'moldChange']);
+                    sample += getNum(r, ['Under Sample', 'underSample']);
+                    mcProb += getNum(r, ['MC Problem', 'mcProblem']);
+                    preventive += getNum(r, ['Preventive Maintenance', 'preventiveMaintenance']);
+                    noDemand += getNum(r, ['No Demand (QTY)', 'noDemandQty']);
+                    materialShort += getNum(r, ['Material & MB Shortage', 'materialMBShortage']);
+                    overStock += getNum(r, ['Over Stock (WIP)', 'overStockWIP']);
+                    accShort += getNum(r, ['Accessories Short', 'accessoriesShort']);
+                });
+            }
 
             // Total MP = Present + Leave + Absent
             const totalMP = totalPresent + leave + absent;
 
             let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
+            // গ্রুপ টোটালে যোগ করি (শুধু ডেটা থাকলেই নয়, সব সময় যোগ হবে)
             if (item.sn >= 1 && item.sn <= 8) {
                 prodTotal.totalMP += totalMP; prodTotal.totalPresent += totalPresent; prodTotal.absent += absent; prodTotal.leave += leave;
                 prodTotal.totalMC += totalMC; prodTotal.targetRun += targetRun; prodTotal.mcWillOff += mcWillOff;
@@ -627,20 +631,21 @@
                 dept: deptName,
                 totalMP, totalPresent, absent, leave, totalMC, targetRun, runPct, mcWillOff,
                 mpShort, moldProb, moldChange, sample, mcProb, preventive, noDemand, materialShort, overStock, accShort,
-                isTotal: false
+                isTotal: false,
+                hasData: hasData   // <-- নতুন ফ্ল্যাগ
             });
         });
 
         let prodRunPct = prodTotal.totalMC > 0 ? ((prodTotal.targetRun / prodTotal.totalMC) * 100) : 0;
-        rows.push({ sn: 9, dept: 'Total Production Team', ...prodTotal, runPct: prodRunPct, isTotal: true });
+        rows.push({ sn: 9, dept: 'Total Production Team', ...prodTotal, runPct: prodRunPct, isTotal: true, hasData: true });
 
         let packRunPct = packagingTotal.totalMC > 0 ? ((packagingTotal.targetRun / packagingTotal.totalMC) * 100) : 0;
-        rows.push({ sn: 23, dept: 'Total Packaging Team', ...packagingTotal, runPct: packRunPct, isTotal: true });
+        rows.push({ sn: 23, dept: 'Total Packaging Team', ...packagingTotal, runPct: packRunPct, isTotal: true, hasData: true });
 
         let commonRunPct = commonTotal.totalMC > 0 ? ((commonTotal.targetRun / commonTotal.totalMC) * 100) : 0;
-        rows.push({ sn: 24, dept: 'Total Common Team', ...commonTotal, runPct: commonRunPct, isTotal: true });
+        rows.push({ sn: 24, dept: 'Total Common Team', ...commonTotal, runPct: commonRunPct, isTotal: true, hasData: true });
 
-        // ===== 🔥 Total Manpower সারি (SN 25) - Total MP = Total Present + Leave + Absent =====
+        // ===== Total Manpower সারি =====
         const totalManpower = grandTotal.totalPresent + grandTotal.leave + grandTotal.absent;
         rows.push({
             sn: 25,
@@ -653,10 +658,11 @@
             mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
             preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0,
             isTotal: true,
-            isGrand: true
+            isGrand: true,
+            hasData: true
         });
 
-        // কাস্টম সর্টিং অর্ডার
+        // সর্টিং অর্ডার
         const order = [1,2,3,4,5,6,7,8,9,10,11,12,23,14,15,16,17,18,19,20,21,22,24,25];
         rows.sort((a, b) => order.indexOf(a.sn) - order.indexOf(b.sn));
 
@@ -679,6 +685,18 @@
             else if (row.sn === 23 || row.sn === 24) rowClass = 'row-packaging';
             else if (row.sn === 25) rowClass = 'row-manpower';
 
+            // ডেটা না থাকলে সব কলামে ড্যাশ (শুধু SN ও Dept বাদে)
+            const showDash = !row.hasData && !row.isTotal;
+
+            // বর্তমানের জন্য আমরা isNonMC চেক করব, কিন্তু তার সাথে showDash যুক্ত করব
+            const snStr = String(row.sn);
+            const isNonMC = (snStr === '23' || snStr === '24' || snStr === '25' || 
+                             (row.sn >= 14 && row.sn <= 22) || 
+                             (row.sn >= 10 && row.sn <= 12));
+
+            // যদি showDash হয়, তাহলে সব কলামে ড্যাশ, এমনকি Total MP, Present, Absent, Leave-তেও
+            // কিন্তু টোটাল সারিগুলোর জন্য showDash false, তাই তাদের ডেটা দেখাবে
+
             let pctClass = 'green';
             if (row.runPct < 60) pctClass = 'red';
             else if (row.runPct < 80) pctClass = 'yellow';
@@ -693,28 +711,26 @@
                 </div>
             `;
 
-            const presentBadge = `<span class="badge-count badge-present">${row.totalPresent}</span>`;
-            const absentBadge = `<span class="badge-count badge-absent">${row.absent}</span>`;
-            const leaveBadge = `<span class="badge-count badge-leave">${row.leave}</span>`;
-            const totalMPBadge = `<span class="badge-count badge-total">${row.totalMP}</span>`;
+            // ড্যাশ দেখানোর সময় ব্যাজ না, সরাসরি "-" দেখাব
+            const displayTotalMP = showDash ? '-' : `<span class="badge-count badge-total">${row.totalMP}</span>`;
+            const displayPresent = showDash ? '-' : `<span class="badge-count badge-present">${row.totalPresent}</span>`;
+            const displayAbsent = showDash ? '-' : `<span class="badge-count badge-absent">${row.absent}</span>`;
+            const displayLeave = showDash ? '-' : `<span class="badge-count badge-leave">${row.leave}</span>`;
 
             html += `<tr class="${rowClass}">`;
             html += `<td><strong>${row.sn}</strong></td>`;
             html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
-            html += `<td>${totalMPBadge}</td><td>${presentBadge}</td><td>${absentBadge}</td><td>${leaveBadge}</td>`;
+            html += `<td>${displayTotalMP}</td><td>${displayPresent}</td><td>${displayAbsent}</td><td>${displayLeave}</td>`;
 
-            // ===== Non-MC ডিপার্টমেন্টগুলোর জন্য ড্যাশ =====
-            const snStr = String(row.sn);
-            const isNonMC = (snStr === '23' || snStr === '24' || snStr === '25' || 
-                             (row.sn >= 14 && row.sn <= 22) || 
-                             (row.sn >= 10 && row.sn <= 12));
-
-            if (isNonMC) {
+            // MC সংক্রান্ত কলাম
+            if (showDash || isNonMC) {
+                // যদি showDash হয় অথবা non-MC হয়, তাহলে সব ড্যাশ
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td>`;
             } else {
+                // ডেটা আছে এবং MC ডিপার্টমেন্ট
                 html += `<td><span class="highlight-number">${row.totalMC}</span></td>`;
                 html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
                 html += `<td>${progressBar}</td>`;
@@ -1035,22 +1051,26 @@
             const isNoMC = (row.sn === 23 || row.sn === 24 || row.sn === 25 || 
                             (row.sn >= 14 && row.sn <= 22) || 
                             (row.sn >= 10 && row.sn <= 12));
+            // যদি ডেটা না থাকে (hasData false) তাহলে সব কলামে "-"
+            if (!row.hasData && !row.isTotal) {
+                return [row.sn, row.dept, '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'];
+            }
             return [
                 row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
-                isNoMC ? '' : row.totalMC,
-                isNoMC ? '' : row.targetRun,
-                isNoMC ? '' : row.runPct.toFixed(1) + '%',
-                isNoMC ? '' : row.mcWillOff,
-                isNoMC ? '' : row.mpShort,
-                isNoMC ? '' : row.moldProb,
-                isNoMC ? '' : row.moldChange,
-                isNoMC ? '' : row.sample,
-                isNoMC ? '' : row.mcProb,
-                isNoMC ? '' : row.preventive,
-                isNoMC ? '' : row.noDemand,
-                isNoMC ? '' : row.materialShort,
-                isNoMC ? '' : row.overStock,
-                isNoMC ? '' : row.accShort
+                isNoMC ? '-' : row.totalMC,
+                isNoMC ? '-' : row.targetRun,
+                isNoMC ? '-' : row.runPct.toFixed(1) + '%',
+                isNoMC ? '-' : row.mcWillOff,
+                isNoMC ? '-' : row.mpShort,
+                isNoMC ? '-' : row.moldProb,
+                isNoMC ? '-' : row.moldChange,
+                isNoMC ? '-' : row.sample,
+                isNoMC ? '-' : row.mcProb,
+                isNoMC ? '-' : row.preventive,
+                isNoMC ? '-' : row.noDemand,
+                isNoMC ? '-' : row.materialShort,
+                isNoMC ? '-' : row.overStock,
+                isNoMC ? '-' : row.accShort
             ];
         });
         const wbData = [headers, ...csvRows];
