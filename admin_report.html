@@ -565,14 +565,15 @@
                 deptRows = deptRows.concat(found);
             }
 
-            let totalMP = 0, totalPresent = 0, absent = 0, leave = 0;
+            // Total Present, Leave, Absent আলাদাভাবে যোগ করি
+            let totalPresent = 0, absent = 0, leave = 0;
             let totalMC = 0, targetRun = 0, mcWillOff = 0;
             let mpShort = 0, moldProb = 0, moldChange = 0, sample = 0, mcProb = 0;
             let preventive = 0, noDemand = 0, materialShort = 0, overStock = 0, accShort = 0;
 
             deptRows.forEach(r => {
-                // আমরা Total HR থেকে মোট নিচ্ছি, কিন্তু পরে আবার যোগ করে দেখাব
-                totalMP += getNum(r, ['Total HR', 'totalHR']);
+                // Total Present = Total HR (ধরে নিচ্ছি)
+                totalPresent += getNum(r, ['Total HR', 'totalHR']);
                 leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
                 absent += getNum(r, ['Absent Employee', 'absentEmployee']);
                 totalMC += getNum(r, ['Total MC', 'totalMC']);
@@ -590,12 +591,8 @@
                 accShort += getNum(r, ['Accessories Short', 'accessoriesShort']);
             });
 
-            // Present = Total HR - Leave - Absent
-            totalPresent = totalMP - leave - absent;
-
-            // ** Total Manpower পুনঃগণনা = Present + Leave + Absent **
-            // যদিও এটি Total HR-এর সমান, তবুও স্পষ্টতার জন্য যোগ করে সেট করছি
-            totalMP = totalPresent + leave + absent;
+            // Total MP = Present + Leave + Absent
+            const totalMP = totalPresent + leave + absent;
 
             let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
@@ -644,7 +641,6 @@
         rows.push({ sn: 24, dept: 'Total Common Team', ...commonTotal, runPct: commonRunPct, isTotal: true });
 
         // ===== 🔥 Total Manpower সারি (SN 25) - Total MP = Total Present + Leave + Absent =====
-        // গ্র্যান্ড টোটালের ক্ষেত্রেও একই নিয়ম
         const totalManpower = grandTotal.totalPresent + grandTotal.leave + grandTotal.absent;
         rows.push({
             sn: 25,
