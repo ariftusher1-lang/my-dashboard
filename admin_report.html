@@ -9,8 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
-        .container { max-width: 1600px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 10px 20px; }
+        .container { max-width: 100%; margin: 0 auto; padding: 0 10px; }
         .header { background: linear-gradient(135deg, #0d47a1, #1976d2); color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .header h1 { font-size: 24px; }
         .header span { font-size: 14px; opacity: 0.9; }
@@ -239,7 +239,6 @@
             min-width: 40px;
         }
 
-        /* Weekly summary table style */
         .weekly-table th {
             background: #1a237e;
             color: white;
@@ -342,7 +341,6 @@
     </div>
     <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
-    <!-- ===== সাপ্তাহিক সারাংশ (একটি ফিল্টার সহ) ===== -->
     <div class="section-title clearfix">
         <div class="weekly-filter-area">
             <span style="background:#1a237e; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📅 সাপ্তাহিক সারাংশ</span>
@@ -528,7 +526,6 @@
             console.log('📦 মোট ডেটা:', allData.length);
             populateDeptFilter();
             applyFilters();
-            // সাপ্তাহিক সারাংশ রেন্ডার
             renderWeeklySummaryFromData();
             document.getElementById('currentTime').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
         } catch (e) {
@@ -613,13 +610,9 @@
             totalHR += hr;
             totalLeave += leave;
             totalAbsent += absent;
-            totalPresent += (hr - leave - absent);
-
-            const mc = getNum(r, ['Total MC', 'totalMC']);
-            const run = getNum(r, ['MC Running', 'mcRunning']);
-            totalMC += mc;
-            totalTargetRun += run;
-
+            totalPresent += hr; // Present = Total HR (নতুন নিয়ম)
+            totalMC += getNum(r, ['Total MC', 'totalMC']);
+            totalTargetRun += getNum(r, ['MC Running', 'mcRunning']);
             let pct = getVal(r, ['% Running', 'pctRunning']);
             sumPct += parseFloat(pct) || 0;
         });
@@ -635,7 +628,7 @@
         document.getElementById('avgRunningPct').innerText = data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%';
     }
 
-    // ===== সাপ্তাহিক সারাংশ (ড্রপডাউন অনুযায়ী) =====
+    // ===== সাপ্তাহিক সারাংশ =====
     function renderWeeklySummaryFromData() {
         const days = parseInt(document.getElementById('weeklyDaysFilter').value) || 7;
         renderWeeklySummary(allData, days, 'weeklySummaryContainer');
@@ -687,10 +680,7 @@
             let sumPresent = 0, sumRun = 0, count = 0;
             deptRows.forEach(r => {
                 const hr = getNum(r, ['Total HR', 'totalHR']);
-                const leave = getNum(r, ['Leave Employee', 'leaveEmployee']);
-                const absent = getNum(r, ['Absent Employee', 'absentEmployee']);
-                const present = hr - leave - absent;
-                sumPresent += present;
+                sumPresent += hr; // Present = Total HR
                 sumRun += getNum(r, ['MC Running', 'mcRunning']);
                 count++;
             });
@@ -753,11 +743,10 @@
 
         html += `</tbody></table>`;
         container.innerHTML = html;
-        // ডাউনলোডের জন্য ডেটা সংরক্ষণ
         window._currentWeeklyData = { rows, totalFixedMC, overallAvgPresent, overallAvgRun, totalCount, days };
     }
 
-    // ===== Saifuddin Table (অপরিবর্তিত) =====
+    // ===== Saifuddin Table =====
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
 
@@ -985,12 +974,10 @@
                 html += `<td><span class="highlight-number">${row.totalMC}</span></td>`;
                 html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
                 html += `<td>${progressBar}</td>`;
-
                 const displayVal = (val) => {
                     if (row.isTotal) return val;
                     return val > 0 ? val : '-';
                 };
-
                 html += `<td>${displayVal(row.mcWillOff)}</td>`;
                 html += `<td>${displayVal(row.mpShort)}</td>`;
                 html += `<td>${displayVal(row.moldProb)}</td>`;
@@ -1011,7 +998,7 @@
         window._saifuddinRows = rows;
     }
 
-    // ===== MC Department Table (Total Present) =====
+    // ===== MC Department Table (Total Present = Total HR) =====
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
         const mcData = data.filter(row => {
@@ -1099,7 +1086,8 @@
         activeCauseKeys.forEach(c => { grandCauses[c.key] = 0; });
 
         for (const [dept, d] of Object.entries(deptMap)) {
-            const totalPresent = d.totalHR - d.totalLeave - d.totalAbsent;
+            // change: Total Present = Total HR (Leave/Absent বাদ)
+            const totalPresent = d.totalHR;
             const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100) : 0;
             const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100) : 0;
 
@@ -1187,323 +1175,7 @@
     }
 
     // ================================================================
-    // ডাউনলোড ফাংশন (MC, Saifuddin, Weekly)
-    // ================================================================
-    function downloadMCImage() {
-        const container = document.getElementById('mcSummaryTable');
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-        const btn = document.querySelector('.btn-image');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-            .then(canvas => {
-                const link = document.createElement('a');
-                link.download = `MC_Summary_${new Date().toISOString().slice(0,10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            });
-    }
-
-    function downloadMCExcel() {
-        const data = window._mcTableData;
-        if (!data) { alert('ডেটা নেই!'); return; }
-        const headers = ['Department', 'Prod IC', 'Total Present', 'Total MC', 'MC Operator', 'Packaging Operator',
-            'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'
-        ];
-        data.activeCauseKeys.forEach(c => { headers.push(c.label); });
-
-        const rows = [];
-        Object.entries(data.rows).forEach(([dept, d]) => {
-            const totalPresent = d.totalHR - d.totalLeave - d.totalAbsent;
-            const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
-            const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
-            const rowData = [dept, d.icName || '-', totalPresent, d.totalMC, d.mcOperator, d.packagingOperator,
-                d.running, d.stopped, runPct + '%', stopPct + '%'
-            ];
-            data.activeCauseKeys.forEach(c => {
-                rowData.push(d.causes[c.key] || 0);
-            });
-            rows.push(rowData);
-        });
-
-        const totalRow = ['📌 মোট', '-', data.grandTotalPresent, data.grandTotalMC, data.grandMCOp, data.grandPackOp,
-            data.grandRunning, data.grandStopped,
-            data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%'
-        ];
-        data.activeCauseKeys.forEach(c => {
-            totalRow.push(data.grandCauses[c.key] || 0);
-        });
-        rows.push(totalRow);
-
-        const wbData = [headers, ...rows];
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(wbData);
-        XLSX.utils.book_append_sheet(wb, ws, "MC Summary");
-        XLSX.writeFile(wb, `MC_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
-    }
-
-    function downloadMCPDF() {
-        const container = document.getElementById('mcSummaryTable');
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-        const btn = document.querySelector('.btn-pdf');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-            .then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('l', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`MC_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
-                btn.innerText = '📄 PDF ডাউনলোড';
-                btn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert('❌ PDF তৈরি ব্যর্থ!');
-                btn.innerText = '📄 PDF ডাউনলোড';
-                btn.disabled = false;
-            });
-    }
-
-    function downloadSaifuddinImage() {
-        const container = document.getElementById('saifuddinTableContainer');
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-
-        const btn = document.querySelector('.btn-image');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-
-        const clone = container.cloneNode(true);
-        clone.querySelectorAll('td, th').forEach(el => {
-            el.style.whiteSpace = 'nowrap';
-        });
-
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = `
-            width: 2000px; 
-            padding: 25px; 
-            background: white; 
-            border: 4px solid #0d47a1; 
-            border-radius: 16px; 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
-            margin: 0 auto; 
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        `;
-
-        const title = document.createElement('h2');
-        title.style.cssText = `
-            color: #0d47a1; 
-            text-align: center; 
-            margin-bottom: 20px; 
-            border-bottom: 3px solid #1976d2; 
-            padding-bottom: 12px;
-            font-size: 24px;
-        `;
-        title.innerText = '📊 Summery Table For Mr. Saifuddin';
-        wrapper.appendChild(title);
-
-        wrapper.appendChild(clone);
-
-        const footer = document.createElement('p');
-        footer.style.cssText = `
-            text-align: right; 
-            color: #555; 
-            font-size: 13px; 
-            margin-top: 18px;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-        `;
-        footer.innerText = `📅 Generated: ${new Date().toLocaleString('bn-BD')}`;
-        wrapper.appendChild(footer);
-
-        document.body.appendChild(wrapper);
-
-        html2canvas(wrapper, { 
-            scale: 2.5, 
-            backgroundColor: '#ffffff', 
-            logging: false,
-            useCORS: true,
-            allowTaint: true
-        })
-        .then(canvas => {
-            const link = document.createElement('a');
-            link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            document.body.removeChild(wrapper);
-            btn.innerText = '📷 ইমেজ ডাউনলোড';
-            btn.disabled = false;
-        })
-        .catch(err => {
-            console.error(err);
-            if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
-            alert('❌ ইমেজ তৈরি ব্যর্থ!');
-            btn.innerText = '📷 ইমেজ ডাউনলোড';
-            btn.disabled = false;
-        });
-    }
-
-    function downloadSaifuddinExcel() {
-        const rows = window._saifuddinRows || [];
-        if (rows.length === 0) { alert('ডেটা নেই!'); return; }
-        const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
-            'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
-            'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
-            'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'];
-        
-        const data = [headers];
-        rows.forEach(row => {
-            const showDash = (!row.hasData && !row.isFixed);
-            if (showDash) {
-                data.push([row.sn, row.dept, '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-']);
-                return;
-            }
-            const isNoMC = ((row.sn >= 11 && row.sn <= 13) ||
-                            (row.sn >= 15 && row.sn <= 23));
-            data.push([
-                row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
-                isNoMC ? '-' : row.totalMC,
-                isNoMC ? '-' : row.targetRun,
-                isNoMC ? '-' : row.runPct.toFixed(1) + '%',
-                isNoMC ? '-' : row.mcWillOff,
-                isNoMC ? '-' : row.mpShort,
-                isNoMC ? '-' : row.moldProb,
-                isNoMC ? '-' : row.moldChange,
-                isNoMC ? '-' : row.sample,
-                isNoMC ? '-' : row.mcProb,
-                isNoMC ? '-' : row.preventive,
-                isNoMC ? '-' : row.noDemand,
-                isNoMC ? '-' : row.materialShort,
-                isNoMC ? '-' : row.overStock,
-                isNoMC ? '-' : row.accShort
-            ]);
-        });
-
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(data);
-        
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        for (let R = range.s.r; R <= range.e.r; R++) {
-            const snCell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
-            if (!snCell) continue;
-            const sn = snCell.v;
-            let fillColor = null, fontColor = null;
-            if (sn === 10) fillColor = 'D4EDDA';
-            else if (sn === 14) fillColor = 'FFF3CD';
-            else if (sn === 24) fillColor = 'CCE5FF';
-            else if (sn === 25) { fillColor = '1A237E'; fontColor = 'FFFFFF'; }
-            if (fillColor) {
-                for (let C = range.s.c; C <= range.e.c; C++) {
-                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-                    if (!ws[cellRef]) ws[cellRef] = { v: '' };
-                    if (!ws[cellRef].s) ws[cellRef].s = {};
-                    ws[cellRef].s.fill = { fgColor: { rgb: fillColor } };
-                    if (fontColor) {
-                        ws[cellRef].s.font = { color: { rgb: fontColor }, bold: true };
-                    } else {
-                        if (!ws[cellRef].s.font) ws[cellRef].s.font = {};
-                        ws[cellRef].s.font.bold = true;
-                    }
-                }
-            }
-        }
-
-        XLSX.utils.book_append_sheet(wb, ws, "Saifuddin Summary");
-        XLSX.writeFile(wb, `Saifuddin_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
-    }
-
-    function downloadSaifuddinPDF() {
-        const container = document.getElementById('saifuddinTableContainer');
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-        const btn = document.querySelector('.btn-pdf');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-            .then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('l', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`Saifuddin_Report_${new Date().toISOString().slice(0,10)}.pdf`);
-                btn.innerText = '📄 PDF ডাউনলোড';
-                btn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert('❌ PDF তৈরি ব্যর্থ!');
-                btn.innerText = '📄 PDF ডাউনলোড';
-                btn.disabled = false;
-            });
-    }
-
-    // ===== উইকলি ডাউনলোড (বর্তমান ফিল্টার অনুযায়ী) =====
-    function downloadWeeklyImage() {
-        const container = document.getElementById('weeklySummaryContainer');
-        if (container.innerText.includes('পর্যাপ্ত ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-        const btn = document.querySelector('.btn-image');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-        html2canvas(container, { scale: 2.5, backgroundColor: '#ffffff', logging: false })
-            .then(canvas => {
-                const link = document.createElement('a');
-                const days = document.getElementById('weeklyDaysFilter').value;
-                link.download = `Weekly_Summary_${days}days_${new Date().toISOString().slice(0,10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            });
-    }
-
-    function downloadWeeklyExcel() {
-        const data = window._currentWeeklyData;
-        if (!data || data.rows.length === 0) { alert('ডেটা নেই!'); return; }
-        const headers = ['SN', 'Department', 'Prod IC', 'Fixed MC QTY', `Avg Present (Last ${data.days} Days)`, `Avg MC Run (Last ${data.days} Days)`, 'Entries Count'];
-        const rows = data.rows.map(row => [row.sn, row.dept, row.icName || '-', row.fixedMC, row.avgPresent.toFixed(1), row.avgRun.toFixed(1), row.count]);
-        rows.push(['📌', 'Total / Average', '-', data.totalFixedMC, data.overallAvgPresent.toFixed(1), data.overallAvgRun.toFixed(1), data.totalCount]);
-
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-        XLSX.utils.book_append_sheet(wb, ws, `Weekly ${data.days} Days`);
-        XLSX.writeFile(wb, `Weekly_Summary_${data.days}days_${new Date().toISOString().slice(0,10)}.xlsx`);
-    }
-
-    // ================================================================
-    // বাকি ফাংশন (Group, Overall, Missing, Raw Data, Excel) - অপরিবর্তিত
+    // Group Table - (Change: Present = Total HR, Group B তে MC কলাম বাদ)
     // ================================================================
     function renderGroupTable(data, containerId, groupType) {
         const container = document.getElementById(containerId);
@@ -1521,23 +1193,31 @@
                 totalHR += getNum(r, ['Total HR', 'totalHR']);
                 leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
                 absent += getNum(r, ['Absent Employee', 'absentEmployee']);
-                totalMC += getNum(r, ['Total MC', 'totalMC']);
-                running += getNum(r, ['MC Running', 'mcRunning']);
-                stopped += getNum(r, ['MC Stopped', 'mcStopped']);
+                if (isGroupA) {
+                    totalMC += getNum(r, ['Total MC', 'totalMC']);
+                    running += getNum(r, ['MC Running', 'mcRunning']);
+                    stopped += getNum(r, ['MC Stopped', 'mcStopped']);
+                }
             });
-            const present = totalHR - leave - absent;
+            const present = totalHR; // Present = Total HR (আগের ভুল বাদ)
             const runPct = totalMC > 0 ? ((running / totalMC) * 100) : 0;
             const stopPct = totalMC > 0 ? ((stopped / totalMC) * 100) : 0;
             rows.push({ dept, items, totalHR, leave, absent, present, totalMC, running, stopped, runPct, stopPct });
         });
+
         if (rows.length === 0) {
             container.innerHTML = `<div class="no-data">এই গ্রুপে কোনো ডেটা নেই</div>`;
             return;
         }
+
         let html = `<table><thead><tr>`;
         html += `<th>ডিপার্টমেন্ট</th><th>Date</th><th>Shift</th>`;
         html += `<th>Total HR</th><th>Leave</th><th>Absent</th><th>Present</th>`;
-        html += `<th>Total MC</th><th>Running</th><th>Stopped</th><th>Run %</th><th>Stop %</th></tr></thead><tbody>`;
+        if (isGroupA) {
+            html += `<th>Total MC</th><th>Running</th><th>Stopped</th><th>Run %</th><th>Stop %</th>`;
+        }
+        html += `</tr></thead><tbody>`;
+
         let sumHR = 0, sumLeave = 0, sumAbsent = 0, sumMC = 0, sumRunning = 0, sumStopped = 0;
         rows.forEach(row => {
             let rawDate = getVal(row.items[0], ['entryDate', 'Date']) || '-';
@@ -1545,22 +1225,34 @@
             const shift = getVal(row.items[0], ['Shift', 'shift']) || '-';
             html += `<tr><td><strong>${row.dept}</strong></td><td>${date}</td><td>${shift}</td>`;
             html += `<td>${row.totalHR}</td><td>${row.leave}</td><td>${row.absent}</td><td>${row.present}</td>`;
-            html += `<td>${row.totalMC}</td><td>${row.running}</td><td>${row.stopped}</td>`;
-            html += `<td>${row.runPct.toFixed(1)}%</td><td>${row.stopPct.toFixed(1)}%</td></tr>`;
+            if (isGroupA) {
+                html += `<td>${row.totalMC}</td><td>${row.running}</td><td>${row.stopped}</td>`;
+                html += `<td>${row.runPct.toFixed(1)}%</td><td>${row.stopPct.toFixed(1)}%</td>`;
+            }
+            html += `</tr>`;
             sumHR += row.totalHR; sumLeave += row.leave; sumAbsent += row.absent;
-            sumMC += row.totalMC; sumRunning += row.running; sumStopped += row.stopped;
+            if (isGroupA) {
+                sumMC += row.totalMC; sumRunning += row.running; sumStopped += row.stopped;
+            }
         });
-        const totalPresent = sumHR - sumLeave - sumAbsent;
+
+        const totalPresent = sumHR; // Present = Total HR
         const totalRunPct = sumMC > 0 ? ((sumRunning / sumMC) * 100) : 0;
         const totalStopPct = sumMC > 0 ? ((sumStopped / sumMC) * 100) : 0;
+
         html += `<tr class="total-row"><td><strong>📌 মোট (Group ${groupType})</strong></td><td>-</td><td>-</td>`;
         html += `<td><strong>${sumHR}</strong></td><td>${sumLeave}</td><td>${sumAbsent}</td><td><strong>${totalPresent}</strong></td>`;
-        html += `<td><strong>${sumMC}</strong></td><td><strong>${sumRunning}</strong></td><td><strong>${sumStopped}</strong></td>`;
-        html += `<td><strong>${totalRunPct.toFixed(1)}%</strong></td><td><strong>${totalStopPct.toFixed(1)}%</strong></td></tr>`;
-        html += `</tbody></table>`;
+        if (isGroupA) {
+            html += `<td><strong>${sumMC}</strong></td><td><strong>${sumRunning}</strong></td><td><strong>${sumStopped}</strong></td>`;
+            html += `<td><strong>${totalRunPct.toFixed(1)}%</strong></td><td><strong>${totalStopPct.toFixed(1)}%</strong></td>`;
+        }
+        html += `</tr></tbody></table>`;
         container.innerHTML = html;
     }
 
+    // ================================================================
+    // বাকি ফাংশন (Overall, Missing, Raw Data, Excel) - অপরিবর্তিত
+    // ================================================================
     function renderOverall(data) {
         const container = document.getElementById('overallTable');
         let totalHR = 0, leave = 0, absent = 0;
@@ -1569,7 +1261,7 @@
             leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
             absent += getNum(r, ['Absent Employee', 'absentEmployee']);
         });
-        const present = totalHR - leave - absent;
+        const present = totalHR; // Present = Total HR
         const pctPresent = totalHR > 0 ? ((present / totalHR) * 100) : 0;
         const pctAbsent = totalHR > 0 ? ((absent / totalHR) * 100) : 0;
         let rawDate = data.length > 0 ? getVal(data[0], ['entryDate', 'Date']) : '-';
@@ -1650,6 +1342,320 @@
         container.innerHTML = html;
     }
 
+    function formatTime(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'Asia/Dhaka'
+        });
+    }
+
+    // ================================================================
+    // ডাউনলোড ফাংশন (MC, Saifuddin, Weekly)
+    // ================================================================
+    function downloadMCImage() {
+        const container = document.getElementById('mcSummaryTable');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `MC_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadMCExcel() {
+        const data = window._mcTableData;
+        if (!data) { alert('ডেটা নেই!'); return; }
+        const headers = ['Department', 'Prod IC', 'Total Present', 'Total MC', 'MC Operator', 'Packaging Operator',
+            'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'
+        ];
+        data.activeCauseKeys.forEach(c => { headers.push(c.label); });
+
+        const rows = [];
+        Object.entries(data.rows).forEach(([dept, d]) => {
+            const totalPresent = d.totalHR;
+            const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
+            const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
+            const rowData = [dept, d.icName || '-', totalPresent, d.totalMC, d.mcOperator, d.packagingOperator,
+                d.running, d.stopped, runPct + '%', stopPct + '%'
+            ];
+            data.activeCauseKeys.forEach(c => {
+                rowData.push(d.causes[c.key] || 0);
+            });
+            rows.push(rowData);
+        });
+
+        const totalRow = ['📌 মোট', '-', data.grandTotalPresent, data.grandTotalMC, data.grandMCOp, data.grandPackOp,
+            data.grandRunning, data.grandStopped,
+            data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%'
+        ];
+        data.activeCauseKeys.forEach(c => {
+            totalRow.push(data.grandCauses[c.key] || 0);
+        });
+        rows.push(totalRow);
+
+        const wbData = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wbData);
+        XLSX.utils.book_append_sheet(wb, ws, "MC Summary");
+        XLSX.writeFile(wb, `MC_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadMCPDF() {
+        const container = document.getElementById('mcSummaryTable');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-pdf');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`MC_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ PDF তৈরি ব্যর্থ!');
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadSaifuddinImage() {
+        const container = document.getElementById('saifuddinTableContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        const clone = container.cloneNode(true);
+        clone.querySelectorAll('td, th').forEach(el => {
+            el.style.whiteSpace = 'nowrap';
+        });
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `
+            width: 2000px; 
+            padding: 25px; 
+            background: white; 
+            border: 4px solid #0d47a1; 
+            border-radius: 16px; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            margin: 0 auto; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        `;
+        const title = document.createElement('h2');
+        title.style.cssText = `
+            color: #0d47a1; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-bottom: 3px solid #1976d2; 
+            padding-bottom: 12px;
+            font-size: 24px;
+        `;
+        title.innerText = '📊 Summery Table For Mr. Saifuddin';
+        wrapper.appendChild(title);
+        wrapper.appendChild(clone);
+        const footer = document.createElement('p');
+        footer.style.cssText = `
+            text-align: right; 
+            color: #555; 
+            font-size: 13px; 
+            margin-top: 18px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        `;
+        footer.innerText = `📅 Generated: ${new Date().toLocaleString('bn-BD')}`;
+        wrapper.appendChild(footer);
+        document.body.appendChild(wrapper);
+        html2canvas(wrapper, { 
+            scale: 2.5, 
+            backgroundColor: '#ffffff', 
+            logging: false,
+            useCORS: true,
+            allowTaint: true
+        })
+        .then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            document.body.removeChild(wrapper);
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        })
+        .catch(err => {
+            console.error(err);
+            if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+            alert('❌ ইমেজ তৈরি ব্যর্থ!');
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        });
+    }
+
+    function downloadSaifuddinExcel() {
+        const rows = window._saifuddinRows || [];
+        if (rows.length === 0) { alert('ডেটা নেই!'); return; }
+        const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
+            'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
+            'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
+            'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'];
+        const data = [headers];
+        rows.forEach(row => {
+            const showDash = (!row.hasData && !row.isFixed);
+            if (showDash) {
+                data.push([row.sn, row.dept, '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-']);
+                return;
+            }
+            const isNoMC = ((row.sn >= 11 && row.sn <= 13) ||
+                            (row.sn >= 15 && row.sn <= 23));
+            data.push([
+                row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
+                isNoMC ? '-' : row.totalMC,
+                isNoMC ? '-' : row.targetRun,
+                isNoMC ? '-' : row.runPct.toFixed(1) + '%',
+                isNoMC ? '-' : row.mcWillOff,
+                isNoMC ? '-' : row.mpShort,
+                isNoMC ? '-' : row.moldProb,
+                isNoMC ? '-' : row.moldChange,
+                isNoMC ? '-' : row.sample,
+                isNoMC ? '-' : row.mcProb,
+                isNoMC ? '-' : row.preventive,
+                isNoMC ? '-' : row.noDemand,
+                isNoMC ? '-' : row.materialShort,
+                isNoMC ? '-' : row.overStock,
+                isNoMC ? '-' : row.accShort
+            ]);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; R++) {
+            const snCell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
+            if (!snCell) continue;
+            const sn = snCell.v;
+            let fillColor = null, fontColor = null;
+            if (sn === 10) fillColor = 'D4EDDA';
+            else if (sn === 14) fillColor = 'FFF3CD';
+            else if (sn === 24) fillColor = 'CCE5FF';
+            else if (sn === 25) { fillColor = '1A237E'; fontColor = 'FFFFFF'; }
+            if (fillColor) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellRef]) ws[cellRef] = { v: '' };
+                    if (!ws[cellRef].s) ws[cellRef].s = {};
+                    ws[cellRef].s.fill = { fgColor: { rgb: fillColor } };
+                    if (fontColor) {
+                        ws[cellRef].s.font = { color: { rgb: fontColor }, bold: true };
+                    } else {
+                        if (!ws[cellRef].s.font) ws[cellRef].s.font = {};
+                        ws[cellRef].s.font.bold = true;
+                    }
+                }
+            }
+        }
+        XLSX.utils.book_append_sheet(wb, ws, "Saifuddin Summary");
+        XLSX.writeFile(wb, `Saifuddin_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadSaifuddinPDF() {
+        const container = document.getElementById('saifuddinTableContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-pdf');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Saifuddin_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ PDF তৈরি ব্যর্থ!');
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadWeeklyImage() {
+        const container = document.getElementById('weeklySummaryContainer');
+        if (container.innerText.includes('পর্যাপ্ত ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2.5, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                const days = document.getElementById('weeklyDaysFilter').value;
+                link.download = `Weekly_Summary_${days}days_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadWeeklyExcel() {
+        const data = window._currentWeeklyData;
+        if (!data || data.rows.length === 0) { alert('ডেটা নেই!'); return; }
+        const headers = ['SN', 'Department', 'Prod IC', 'Fixed MC QTY', `Avg Present (Last ${data.days} Days)`, `Avg MC Run (Last ${data.days} Days)`, 'Entries Count'];
+        const rows = data.rows.map(row => [row.sn, row.dept, row.icName || '-', row.fixedMC, row.avgPresent.toFixed(1), row.avgRun.toFixed(1), row.count]);
+        rows.push(['📌', 'Total / Average', '-', data.totalFixedMC, data.overallAvgPresent.toFixed(1), data.overallAvgRun.toFixed(1), data.totalCount]);
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        XLSX.utils.book_append_sheet(wb, ws, `Weekly ${data.days} Days`);
+        XLSX.writeFile(wb, `Weekly_Summary_${data.days}days_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
     function downloadExcel() {
         if (filteredData.length === 0) { alert('ডেটা নেই!'); return; }
         const headers = [
@@ -1697,18 +1703,6 @@
         link.download = `DPL_Report_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
         URL.revokeObjectURL(link.href);
-    }
-
-    function formatTime(dateStr) {
-        if (!dateStr) return '-';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        return d.toLocaleString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-            timeZone: 'Asia/Dhaka'
-        });
     }
 
     function showError(msg) {
