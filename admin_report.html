@@ -342,7 +342,7 @@
         'Silicon Project': 9
     };
 
-    // ===== নতুন SN ক্রম =====
+    // ===== SN ক্রম =====
     const SAIFUDDIN_DEPTS = [
         { sn: 1, name: 'RIP> DPL> Plastic-1' },
         { sn: 2, name: 'RIP> DPL> Plastic-3' },
@@ -550,7 +550,7 @@
     }
 
     // ================================================================
-    // Saifuddin Table - টোটাল সারিতে সব যোগফল দেখানো হবে
+    // Saifuddin Table (টোটাল সারিতে সব যোগফল)
     // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
@@ -735,8 +735,6 @@
 
             const showDash = (!row.hasData && !row.isFixed);
 
-            // ===== টোটাল সারি নয় এমন ডিপার্টমেন্ট যেগুলো non-MC =====
-            // এখন টোটাল সারিগুলো (10,14,24,25) isNonMC-এর অন্তর্ভুক্ত নয়
             const isNonMC = ((row.sn >= 11 && row.sn <= 13) ||
                              (row.sn >= 15 && row.sn <= 23));
 
@@ -772,19 +770,16 @@
             html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
             html += `<td>${displayTotalMP}</td><td>${displayPresent}</td><td>${displayAbsent}</td><td>${displayLeave}</td>`;
 
-            // MC ও কারণ কলাম
             if (showDash || isNonMC) {
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td>`;
             } else {
-                // টোটাল সারি বা MC ডিপার্টমেন্ট
                 html += `<td><span class="highlight-number">${row.totalMC}</span></td>`;
                 html += `<td><span class="highlight-number">${row.targetRun}</span></td>`;
                 html += `<td>${progressBar}</td>`;
 
-                // ===== টোটাল সারি হলে সরাসরি সংখ্যা দেখাবে (শূন্য হলেও), অন্যথায় ডেটা থাকলেই দেখাবে =====
                 const displayVal = (val) => {
                     if (row.isTotal) return val;
                     return val > 0 ? val : '-';
@@ -811,7 +806,7 @@
     }
 
     // ================================================================
-    // MC Department Table - আগের মতো
+    // MC Department Table
     // ================================================================
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
@@ -1077,33 +1072,96 @@
             });
     }
 
+    // ================================================================
+    // 🔥 উন্নত ইমেজ ডাউনলোড (বর্ডার, টাইটেল, ফুটার সহ)
+    // ================================================================
     function downloadSaifuddinImage() {
         const container = document.getElementById('saifuddinTableContainer');
         if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
             alert('⚠️ ডেটা নেই!');
             return;
         }
+
         const btn = document.querySelector('.btn-image');
         btn.innerText = '⏳...';
         btn.disabled = true;
-        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-            .then(canvas => {
-                const link = document.createElement('a');
-                link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            });
+
+        // ১. কন্টেইনারটি ক্লোন করুন
+        const clone = container.cloneNode(true);
+        
+        // ২. একটি র‍্যাপার ডিভি তৈরি করুন (ইমেজের ফ্রেম)
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `
+            padding: 30px; 
+            background: white; 
+            border: 4px solid #0d47a1; 
+            border-radius: 16px; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            width: fit-content; 
+            margin: 0 auto;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        `;
+
+        // ৩. টাইটেল যোগ করুন
+        const title = document.createElement('h2');
+        title.style.cssText = `
+            color: #0d47a1; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-bottom: 3px solid #1976d2; 
+            padding-bottom: 12px;
+            font-size: 24px;
+        `;
+        title.innerText = '📊 Summery Table For Mr. Saifuddin';
+        wrapper.appendChild(title);
+
+        // ৪. ক্লোন করা টেবিল যোগ করুন
+        wrapper.appendChild(clone);
+
+        // ৫. ফুটার (জেনারেট করার তারিখ) যোগ করুন
+        const footer = document.createElement('p');
+        footer.style.cssText = `
+            text-align: right; 
+            color: #555; 
+            font-size: 13px; 
+            margin-top: 18px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        `;
+        footer.innerText = `📅 Generated: ${new Date().toLocaleString('bn-BD')}`;
+        wrapper.appendChild(footer);
+
+        // ৬. র‍্যাপারকে DOM-এ অস্থায়ীভাবে যোগ করুন
+        document.body.appendChild(wrapper);
+
+        // ৭. html2canvas দিয়ে ক্যাপচার করুন
+        html2canvas(wrapper, { 
+            scale: 2.5, 
+            backgroundColor: '#ffffff', 
+            logging: false,
+            useCORS: true,
+            allowTaint: true
+        })
+        .then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            // ক্লিনআপ
+            document.body.removeChild(wrapper);
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        })
+        .catch(err => {
+            console.error(err);
+            if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+            alert('❌ ইমেজ তৈরি ব্যর্থ!');
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        });
     }
 
-    // ===== Excel-এ টোটাল সারিতে সব সংখ্যা দেখানো হবে =====
     function downloadSaifuddinExcel() {
         const rows = window._saifuddinRows || [];
         if (rows.length === 0) { alert('ডেটা নেই!'); return; }
@@ -1119,10 +1177,8 @@
                 data.push([row.sn, row.dept, '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-']);
                 return;
             }
-            // ===== টোটাল সারি নয় এমন non-MC ডিপার্টমেন্ট =====
             const isNoMC = ((row.sn >= 11 && row.sn <= 13) ||
                             (row.sn >= 15 && row.sn <= 23));
-            // টোটাল সারিগুলো (10,14,24,25) isNoMC-তে অন্তর্ভুক্ত নয়
             data.push([
                 row.sn, row.dept, row.totalMP, row.totalPresent, row.absent, row.leave,
                 isNoMC ? '-' : row.totalMC,
@@ -1145,7 +1201,6 @@
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(data);
         
-        // ===== রঙ প্রয়োগ (টোটাল সারিগুলোতে) =====
         const range = XLSX.utils.decode_range(ws['!ref']);
         for (let R = range.s.r; R <= range.e.r; R++) {
             const snCell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
@@ -1206,7 +1261,7 @@
     }
 
     // ================================================================
-    // বাকি ফাংশন (Group, Overall, Missing, Raw Data, Excel) - অপরিবর্তিত
+    // বাকি ফাংশন (Group, Overall, Missing, Raw Data, Excel)
     // ================================================================
     function renderGroupTable(data, containerId, groupType) {
         const container = document.getElementById(containerId);
