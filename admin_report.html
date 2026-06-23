@@ -24,10 +24,11 @@
         .btn-primary:hover { background: #0d47a1; }
         .btn-success { background: #28a745; color: white; }
         .btn-success:hover { background: #1e7e34; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
-        .stats .card { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-left: 4px solid #1976d2; }
-        .stats .card .label { font-size: 13px; color: #666; }
-        .stats .card .value { font-size: 26px; font-weight: 700; color: #0d47a1; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 20px 0; }
+        .stats .card { background: white; padding: 14px 16px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-left: 4px solid #1976d2; }
+        .stats .card .label { font-size: 12px; color: #666; font-weight: 600; }
+        .stats .card .value { font-size: 22px; font-weight: 700; color: #0d47a1; }
+        .stats .card .sub { font-size: 11px; color: #999; }
         .section-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #1976d2; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
         .btn-excel { background: #1e7e34; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
@@ -78,13 +79,7 @@
             padding: 10px 8px;
             border-bottom: 1px solid #e8ecf1;
             vertical-align: middle;
-        }
-        .saifuddin-table tbody tr:nth-child(even) {
-            background: #f8faff;
-        }
-        .saifuddin-table tbody tr:hover {
-            background: #e3edfb !important;
-            transition: 0.2s;
+            white-space: nowrap;
         }
         .saifuddin-table .dept-name {
             font-weight: 600;
@@ -132,6 +127,7 @@
             border-radius: 30px;
             font-weight: 700;
             font-size: 13px;
+            white-space: nowrap;
         }
         .badge-present { background: #e8f5e9; color: #1b5e20; }
         .badge-absent { background: #ffebee; color: #b71c1c; }
@@ -301,9 +297,14 @@
 
     <div class="stats" id="statsContainer">
         <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
-        <div class="card"><div class="label">⚙️ মোট MC Running</div><div class="value" id="totalMcRunning">0.0</div></div>
+        <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
+        <div class="card"><div class="label">✅ মোট Present</div><div class="value" id="totalPresent">0</div></div>
+        <div class="card"><div class="label">📤 মোট Leave</div><div class="value" id="totalLeave">0</div></div>
+        <div class="card"><div class="label">❌ মোট Absent</div><div class="value" id="totalAbsent">0</div></div>
+        <div class="card"><div class="label">👥 মোট Manpower</div><div class="value" id="totalManpower">0</div></div>
+        <div class="card"><div class="label">⚙️ মোট MC</div><div class="value" id="totalMC">0</div></div>
+        <div class="card"><div class="label">🏃 মোট Target Run</div><div class="value" id="totalTargetRun">0</div></div>
         <div class="card"><div class="label">📈 গড় % Running</div><div class="value" id="avgRunningPct">0.0%</div></div>
-        <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0.0</div></div>
     </div>
 
     <div class="section-title">📊 ডেইলি সারাংশ (Summary)</div>
@@ -534,16 +535,35 @@
     }
 
     function renderStats(data) {
-        document.getElementById('totalEntries').innerText = data.length;
-        let totalRunning = 0, totalHR = 0, sumPct = 0;
+        let totalHR = 0, totalPresent = 0, totalLeave = 0, totalAbsent = 0;
+        let totalMC = 0, totalTargetRun = 0, sumPct = 0;
+
         data.forEach(r => {
-            totalRunning += getNum(r, ['MC Running', 'mcRunning']);
-            totalHR += getNum(r, ['Total HR', 'totalHR']);
+            const hr = getNum(r, ['Total HR', 'totalHR']);
+            const leave = getNum(r, ['Leave Employee', 'leaveEmployee']);
+            const absent = getNum(r, ['Absent Employee', 'absentEmployee']);
+            totalHR += hr;
+            totalLeave += leave;
+            totalAbsent += absent;
+            totalPresent += (hr - leave - absent);
+
+            const mc = getNum(r, ['Total MC', 'totalMC']);
+            const run = getNum(r, ['MC Running', 'mcRunning']);
+            totalMC += mc;
+            totalTargetRun += run;
+
             let pct = getVal(r, ['% Running', 'pctRunning']);
             sumPct += parseFloat(pct) || 0;
         });
-        document.getElementById('totalMcRunning').innerText = totalRunning.toFixed(1);
-        document.getElementById('totalHr').innerText = totalHR.toFixed(1);
+
+        document.getElementById('totalEntries').innerText = data.length;
+        document.getElementById('totalHr').innerText = totalHR;
+        document.getElementById('totalPresent').innerText = totalPresent;
+        document.getElementById('totalLeave').innerText = totalLeave;
+        document.getElementById('totalAbsent').innerText = totalAbsent;
+        document.getElementById('totalManpower').innerText = totalPresent + totalLeave + totalAbsent;
+        document.getElementById('totalMC').innerText = totalMC;
+        document.getElementById('totalTargetRun').innerText = totalTargetRun;
         document.getElementById('avgRunningPct').innerText = data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%';
     }
 
@@ -804,7 +824,7 @@
     }
 
     // ================================================================
-    // MC Department Table
+    // 🔥 MC Department Table - Total HR এর জায়গায় Total Present
     // ================================================================
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
@@ -839,7 +859,7 @@
                 deptMap[dept] = {
                     icName: getVal(row, ['IC Name', 'icName']),
                     totalMC: 0,
-                    totalHR: 0,
+                    totalPresent: 0,        // ← Total HR পরিবর্তে Total Present
                     mcOperator: 0,
                     packagingOperator: 0,
                     running: 0,
@@ -851,7 +871,10 @@
             }
             const d = deptMap[dept];
             d.totalMC += getNum(row, ['Total MC', 'totalMC']);
-            d.totalHR += getNum(row, ['Total HR', 'totalHR']);
+            const hr = getNum(row, ['Total HR', 'totalHR']);
+            const leave = getNum(row, ['Leave Employee', 'leaveEmployee']);
+            const absent = getNum(row, ['Absent Employee', 'absentEmployee']);
+            d.totalPresent += (hr - leave - absent);   // Present = HR - Leave - Absent
             d.mcOperator += getNum(row, ['MC Operator', 'mcOperator']);
             d.packagingOperator += getNum(row, ['Packaging Operator', 'packagingOperator']);
             d.running += getNum(row, ['MC Running', 'mcRunning']);
@@ -873,8 +896,8 @@
         let html = `<table class="mc-table"><thead><tr>
             <th>ডিপার্টমেন্ট</th>
             <th>Prod IC</th>
+            <th>Total Present</th>    <!-- ← Total HR এর জায়গায় Total Present -->
             <th>Total MC</th>
-            <th>Total HR</th>
             <th>MC Operator</th>
             <th>Packaging Operator</th>
             <th>MC Running</th>
@@ -884,7 +907,7 @@
         activeCauseKeys.forEach(c => { html += `<th>${c.label}</th>`; });
         html += `</tr></thead><tbody>`;
 
-        let grandTotalMC = 0, grandTotalHR = 0, grandMCOp = 0, grandPackOp = 0, grandRunning = 0, grandStopped = 0;
+        let grandTotalMC = 0, grandTotalPresent = 0, grandMCOp = 0, grandPackOp = 0, grandRunning = 0, grandStopped = 0;
         let grandCauses = {};
         activeCauseKeys.forEach(c => { grandCauses[c.key] = 0; });
 
@@ -906,8 +929,8 @@
             html += `<tr>
                 <td class="dept-name"><strong>${dept}</strong></td>
                 <td>${d.icName || '-'}</td>
+                <td>${d.totalPresent}</td>    <!-- ← Total Present -->
                 <td>${d.totalMC}</td>
-                <td>${d.totalHR}</td>
                 <td>${d.mcOperator}</td>
                 <td>${d.packagingOperator}</td>
                 <td>${d.running}</td>
@@ -938,7 +961,7 @@
             html += `</tr>`;
 
             grandTotalMC += d.totalMC;
-            grandTotalHR += d.totalHR;
+            grandTotalPresent += d.totalPresent;
             grandMCOp += d.mcOperator;
             grandPackOp += d.packagingOperator;
             grandRunning += d.running;
@@ -951,8 +974,8 @@
         html += `<tr class="total-row">
             <td><strong>📌 মোট</strong></td>
             <td>-</td>
+            <td><strong>${grandTotalPresent}</strong></td>   <!-- ← Total Present -->
             <td><strong>${grandTotalMC}</strong></td>
-            <td><strong>${grandTotalHR}</strong></td>
             <td><strong>${grandMCOp}</strong></td>
             <td><strong>${grandPackOp}</strong></td>
             <td><strong>${grandRunning}</strong></td>
@@ -970,7 +993,7 @@
         window._mcTableData = {
             rows: deptMap,
             activeCauseKeys: activeCauseKeys,
-            grandTotalMC, grandTotalHR, grandMCOp, grandPackOp, grandRunning, grandStopped,
+            grandTotalMC, grandTotalPresent, grandMCOp, grandPackOp, grandRunning, grandStopped,
             grandRunPct, grandStopPct, grandCauses
         };
     }
@@ -1007,7 +1030,7 @@
     function downloadMCExcel() {
         const data = window._mcTableData;
         if (!data) { alert('ডেটা নেই!'); return; }
-        const headers = ['Department', 'Prod IC', 'Total MC', 'Total HR', 'MC Operator', 'Packaging Operator',
+        const headers = ['Department', 'Prod IC', 'Total Present', 'Total MC', 'MC Operator', 'Packaging Operator',
             'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'
         ];
         data.activeCauseKeys.forEach(c => { headers.push(c.label); });
@@ -1016,7 +1039,7 @@
         Object.entries(data.rows).forEach(([dept, d]) => {
             const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
             const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
-            const rowData = [dept, d.icName || '-', d.totalMC, d.totalHR, d.mcOperator, d.packagingOperator,
+            const rowData = [dept, d.icName || '-', d.totalPresent, d.totalMC, d.mcOperator, d.packagingOperator,
                 d.running, d.stopped, runPct + '%', stopPct + '%'
             ];
             data.activeCauseKeys.forEach(c => {
@@ -1025,7 +1048,7 @@
             rows.push(rowData);
         });
 
-        const totalRow = ['📌 মোট', '-', data.grandTotalMC, data.grandTotalHR, data.grandMCOp, data.grandPackOp,
+        const totalRow = ['📌 মোট', '-', data.grandTotalPresent, data.grandTotalMC, data.grandMCOp, data.grandPackOp,
             data.grandRunning, data.grandStopped,
             data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%'
         ];
@@ -1070,9 +1093,6 @@
             });
     }
 
-    // ================================================================
-    // 🔥 ইমেজ ডাউনলোড (প্রস্থ 2700px করা হয়েছে)
-    // ================================================================
     function downloadSaifuddinImage() {
         const container = document.getElementById('saifuddinTableContainer');
         if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
@@ -1086,9 +1106,13 @@
 
         const clone = container.cloneNode(true);
         
+        clone.querySelectorAll('td, th').forEach(el => {
+            el.style.whiteSpace = 'nowrap';
+        });
+
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `
-            width: 2700px; 
+            width: 2000px; 
             padding: 25px; 
             background: white; 
             border: 4px solid #0d47a1; 
