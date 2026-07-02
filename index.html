@@ -214,7 +214,7 @@
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnFf9_D0a8EAdJVeFQUClLIyNMv8--q8zEeWzKeUnunJ5tBWSwSYQ15bTyXyyVhAkpiA/exec';
 
     // ============================================================
-    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং (সঠিক)
+    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং
     // ============================================================
     const DEPARTMENT_IC_MAP = {
         // Production (MC)
@@ -232,7 +232,7 @@
         'Plastic Packaging-02': 'Mr. Rakib',
         'Plastic Packaging-03': 'Mr. Mahbub',
 
-        // Non-MC (আপনার দেওয়া সঠিক নাম)
+        // Non-MC
         'Plastic-Maintenance.': 'Mr. Maruf',
         'Tool Room Maintenance': 'Mr. Jabed',
         'Plastic Inventory & Delivery': 'Mr. Faysal',
@@ -243,8 +243,8 @@
         'DPL-QA': 'Mr. Rafi',
         'RIP RFL Store': 'Mr. Mithun',
 
-        // 🔥 নতুন যোগ: Silicon Project
-        'Silicon Project': 'Mamun'   // <-- এখানে আইসি নাম Mamun
+        // 🔥 Silicon Project (MC - 9 machines)
+        'Silicon Project': 'Mamun'
     };
 
     // ============================================================
@@ -261,6 +261,9 @@
         'RIP> DPL> Plastic-7.4': 35,
         'RIP> DPL> Plastic-1': 38,
 
+        // 🔥 Silicon Project (MC - 9 machines)
+        'Silicon Project': 9,
+
         // Non-MC
         'Plastic Packaging-01': 0,
         'Plastic Packaging-02': 0,
@@ -273,22 +276,19 @@
         'Product Development & Mold Change': 0,
         'RIP-DPL-Factory Support': 0,
         'DPL-QA': 0,
-        'RIP RFL Store': 0,
-        // 🔥 Silicon Project-এর Total MC 0 (Non-MC)
-        'Silicon Project': 0
+        'RIP RFL Store': 0
     };
 
     // ============================================================
-    // ৩. Non-MC ডিপার্টমেন্টের তালিকা
+    // ৩. Non-MC ডিপার্টমেন্টের তালিকা (Silicon Project বাদ)
     // ============================================================
     const NON_MC_DEPTS = [
         'Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03',
         'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
         'Corporate sales Production.', 'Plastics-Recycle & Silo',
         'Product Development & Mold Change', 'RIP-DPL-Factory Support',
-        'DPL-QA', 'RIP RFL Store',
-        // 🔥 Silicon Project-কে Non-MC তালিকায় যোগ করলাম
-        'Silicon Project'
+        'DPL-QA', 'RIP RFL Store'
+        // Silicon Project এখানে নেই, তাই এটি MC হিসেবে আচরণ করবে
     ];
 
     // ============================================================
@@ -296,9 +296,7 @@
     // ============================================================
     function populateDepartments() {
         const select = document.getElementById('department');
-        // পুরোনো অপশন ক্লিয়ার করে শুধু "সিলেক্ট করুন" রাখুন
         select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
-        // DEPARTMENT_IC_MAP থেকে সব ডিপার্টমেন্ট যোগ করুন
         Object.keys(DEPARTMENT_IC_MAP).forEach(key => {
             const opt = document.createElement('option');
             opt.value = key;
@@ -312,13 +310,8 @@
     // ৫. DOM লোড হলে সব সেটআপ
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
-        // ড্রপডাউন পপুলেট
         populateDepartments();
-        
-        // আজকের তারিখ সেট
         document.getElementById('entryDate').valueAsDate = new Date();
-        
-        // ডিফল্ট ডিপার্টমেন্টের জন্য টগল (যদি কোনো ডিফল্ট সিলেক্টেড থাকে)
         const dept = document.getElementById('department').value;
         toggleMcFields(dept);
     });
@@ -339,10 +332,8 @@
         const icInput = document.getElementById('icName');
         const totalInput = document.getElementById('totalMC');
 
-        // আইসি নাম সেট
         icInput.value = DEPARTMENT_IC_MAP[dept] || '';
 
-        // টোটাল এমসি সেট
         if (dept in DEPARTMENT_MC) {
             const mcVal = DEPARTMENT_MC[dept];
             if (mcVal > 0) {
@@ -359,10 +350,8 @@
             totalInput.placeholder = 'Typ QTY';
         }
 
-        // MC ফিল্ড টগল
         toggleMcFields(dept);
 
-        // ক্যালকুলেশন রিসেট
         document.getElementById('mcRunning').value = '';
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
@@ -370,7 +359,7 @@
     });
 
     // ============================================================
-    // ৭. অটো ক্যালকুলেশন (শুধু MC Run % এবং Will off %)
+    // ৭. অটো ক্যালকুলেশন (MC Run % এবং Will off %)
     // ============================================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
@@ -426,7 +415,6 @@
         status.className = '';
         status.innerText = '⏳ চেক করা হচ্ছে...';
 
-        // ফিল্ডগুলো ভ্যালিডেট
         const date = document.getElementById('entryDate').value;
         const shift = document.getElementById('shift').value;
         const dept = document.getElementById('department').value;
@@ -439,7 +427,6 @@
             return;
         }
 
-        // ডাবল এন্ট্রি চেক (localStorage)
         const key = `${date}_${shift}_${dept}`;
         if (localStorage.getItem(key) === 'submitted') {
             duplicateAlert.style.display = 'block';
@@ -452,7 +439,6 @@
         const getVal = (id) => document.getElementById(id).value;
         const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
 
-        // totalPresent-কে totalHR হিসেবেও পাঠানো হচ্ছে
         const totalHRValue = getNum('totalPresent');
 
         const payload = {
@@ -530,7 +516,6 @@
             status.className = 'success';
             status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে! Google Sheet চেক করুন।';
 
-            // ফিল্ড রিসেট (অপশনাল)
             document.getElementById('mcRunning').value = '';
             document.getElementById('mcStopped').value = '';
             document.getElementById('pctRunning').value = '';
