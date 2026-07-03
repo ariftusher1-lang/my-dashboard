@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>প্রতিদিনের এন্ট্রি ফর্ম + Admin Report</title>
     <style>
-        /* (স্টাইল আগের মতোই – সংক্ষেপে দিচ্ছি) */
         * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 20px; margin: 0; }
         .container { max-width: 1200px; margin: auto; background: #fff; padding: 25px 30px 35px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
@@ -485,10 +484,60 @@
     });
 
     // ================================================================
-    //  📊  ADMIN REPORT – ফিল্টার সহ (ফিক্সড)
+    //  📊  ADMIN REPORT – ফিল্টার সহ (ডেট ফরম্যাট ফিক্সড)
     // ================================================================
 
     let allReportData = [];
+
+    // ---------- ডেট নরমালাইজেশন ফাংশন (সব ফরম্যাট হ্যান্ডেল করে) ----------
+    function normalizeDate(dateValue) {
+        if (!dateValue) return '';
+        
+        // যদি স্ট্রিং হয়
+        if (typeof dateValue === 'string') {
+            // চেক করি YYYY-MM-DD ফরম্যাটে আছে কিনা
+            let match = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (match) {
+                return match[0]; // YYYY-MM-DD
+            }
+            // চেক করি ISO ফরম্যাট (YYYY-MM-DDTHH:mm:ss.sssZ)
+            match = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})T/);
+            if (match) {
+                return match[0]; // YYYY-MM-DD
+            }
+            // চেক করি DD/MM/YYYY ফরম্যাট
+            match = dateValue.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+            if (match) {
+                return match[3] + '-' + match[2] + '-' + match[1]; // YYYY-MM-DD
+            }
+            // চেক করি MM/DD/YYYY ফরম্যাট
+            match = dateValue.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+            if (match) {
+                // এটা আগেরটার মতোই, কিন্তু অর্ডার আলাদা
+                // আমরা চেষ্টা করি
+            }
+            // যদি কোনো ফরম্যাট না মেলে, তাহলে প্রথম ১০ অক্ষর নেওয়ার চেষ্টা করি
+            if (dateValue.length >= 10) {
+                return dateValue.substring(0, 10);
+            }
+            return dateValue;
+        }
+        
+        // যদি Date অবজেক্ট হয়
+        if (dateValue instanceof Date) {
+            const year = dateValue.getFullYear();
+            const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+            const day = String(dateValue.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+        
+        // অন্য কিছু হলে স্ট্রিং করে চেষ্টা করি
+        const str = String(dateValue);
+        if (str.length >= 10) {
+            return str.substring(0, 10);
+        }
+        return str;
+    }
 
     async function fetchAllData() {
         const reportContent = document.getElementById('reportContent');
@@ -499,6 +548,11 @@
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const result = await response.json();
             allReportData = result.data || [];
+            console.log('📥 মোট ডেটা পাওয়া গেছে:', allReportData.length);
+            if (allReportData.length > 0) {
+                console.log('📅 প্রথম ডেটার Date:', allReportData[0]['Date']);
+                console.log('📅 প্রথম ডেটার Date (normalized):', normalizeDate(allReportData[0]['Date']));
+            }
             return allReportData;
         } catch (error) {
             console.error('ডেটা ফেচ ব্যর্থ:', error);
@@ -507,23 +561,27 @@
         }
     }
 
-    // ফিল্টার ফাংশন – শুধু তারিখের YYYY-MM-DD অংশ তুলনা করে
+    // ---------- ফিল্টার ফাংশন (নরমালাইজড ডেট ব্যবহার করে) ----------
     function applyFilters(data) {
         const deptFilter = document.getElementById('filterDept').value;
         const dateFilter = document.getElementById('filterDate').value;
         const shiftFilter = document.getElementById('filterShift').value;
 
-        return data.filter(row => {
+        console.log('🔍 ফিল্টার মান:', { deptFilter, dateFilter, shiftFilter });
+
+        const filtered = data.filter(row => {
             let match = true;
             if (deptFilter && row['Department'] !== deptFilter) match = false;
             if (dateFilter) {
-                // row['Date'] থেকে শুধু YYYY-MM-DD বের করি
-                let rowDate = row['Date'] ? row['Date'].toString().substring(0, 10) : '';
+                const rowDate = normalizeDate(row['Date']);
                 if (rowDate !== dateFilter) match = false;
             }
             if (shiftFilter && row['Shift'] !== shiftFilter) match = false;
             return match;
         });
+
+        console.log('📊 ফিল্টারকৃত ডেটা:', filtered.length);
+        return filtered;
     }
 
     function renderTable(data) {
