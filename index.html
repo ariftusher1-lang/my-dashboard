@@ -3,68 +3,55 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>প্রতিদিনের এন্ট্রি ফর্ম + রিপোর্ট</title>
+    <title>প্রতিদিনের এন্ট্রি ফর্ম + Admin Report</title>
     <style>
-        /* ----- RESET & BASE ----- */
         * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 20px; margin: 0; }
         .container { max-width: 1200px; margin: auto; background: #fff; padding: 25px 30px 35px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-
-        h2 { color: #c62828; border-bottom: 3px solid #0d47a1; padding-bottom: 12px; font-size: 20px; margin-top: 0; }
+        h2 { color: #c62828; border-bottom: 3px solid #0d47a1; padding-bottom: 12px; font-size: 20px; }
         .section { background: #f8fafc; padding: 16px 18px 18px; border-radius: 10px; margin-top: 18px; border-left: 5px solid #0d47a1; }
-        .section h3 { margin-top: 0; margin-bottom: 12px; color: #1e293b; font-size: 16px; }
-
         .row { display: flex; flex-wrap: wrap; gap: 14px 18px; margin-top: 4px; }
         .row>div { flex: 1 1 150px; min-width: 130px; }
         .flex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 10px 14px; }
-
         label { font-weight: 700; display: block; font-size: 12.5px; margin-bottom: 3px; }
         .required-star { color: #d32f2f; }
-
         input, select { width: 100%; padding: 7px 10px; border: 1px solid #cdd5df; border-radius: 6px; font-size: 14px; background: #fff; }
         input::placeholder { color: #b71c1c; font-weight: 700; font-size: 11.5px; opacity: 0.8; }
         input[readonly] { background: #fff; color: #b71c1c !important; font-weight: 700; }
         .machine-box { border: 2px solid #0d47a1; border-radius: 12px; padding: 16px 18px; background: #fff; }
-
-        button { background: #1e7e34; color: #fff; border: none; padding: 15px; font-size: 19px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px; transition: 0.2s; }
+        .qty-placeholder { display: flex; align-items: center; justify-content: center; background: #fff3cd; border: 1.5px dashed #f9a825; border-radius: 6px; padding: 6px; min-height: 52px; font-weight: 700; color: #b71c1c; }
+        button { background: #1e7e34; color: #fff; border: none; padding: 15px; font-size: 19px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 18px; transition: 0.2s; }
         button:hover { background: #146c2a; }
         .btn-secondary { background: #0d47a1; }
-        .btn-secondary:hover { background: #0a357a; }
-
+        .btn-secondary:hover { background: #0a3a7a; }
+        .btn-danger { background: #b71c1c; }
+        .btn-danger:hover { background: #8f1515; }
         #status { margin-top: 16px; padding: 12px; border-radius: 8px; text-align: center; font-weight: 700; }
         .success { background: #d4edda; color: #0b5e2e; border: 1px solid #b7dfb9; }
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         #duplicateAlert { background: #f8d7da; color: #721c24; padding: 12px 16px; border-radius: 8px; margin-top: 14px; border: 1.5px solid #f5c6cb; display: none; font-weight: 700; }
         #duplicateAlert.show { display: block; }
 
-        /* ----- REPORT TABLE ----- */
-        #reportContainer { margin-top: 30px; overflow-x: auto; }
-        #reportContainer table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        #reportContainer th { background: #0d47a1; color: #fff; padding: 8px 6px; border: 1px solid #0d47a1; text-align: center; white-space: nowrap; }
-        #reportContainer td { padding: 6px 4px; border: 1px solid #ccc; text-align: center; }
-        #reportContainer tr:nth-child(even) { background: #f8f9fa; }
-        #reportContainer tr:hover { background: #e3f2fd; }
-
-        .report-actions { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
-        .report-actions button { width: auto; padding: 10px 25px; font-size: 16px; }
-
-        .qty-placeholder { display: flex; align-items: center; justify-content: center; background: #fff3cd; border: 1.5px dashed #f9a825; border-radius: 6px; padding: 6px; min-height: 52px; font-weight: 700; color: #b71c1c; }
-
-        @media (max-width: 600px) {
-            .container { padding: 16px; }
-            .row>div { flex: 1 1 100%; }
-            .flex-grid { grid-template-columns: 1fr 1fr; }
-            .report-actions button { width: 100%; }
-        }
+        #reportSection { margin-top: 30px; border-top: 3px solid #0d47a1; padding-top: 20px; display: none; }
+        #reportSection h3 { color: #0d47a1; font-size: 22px; }
+        .table-wrapper { overflow-x: auto; max-height: 500px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
+        th { background: #0d47a1; color: #fff; position: sticky; top: 0; z-index: 2; padding: 8px 6px; white-space: nowrap; text-align: center; }
+        td { padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: center; white-space: nowrap; }
+        tr:nth-child(even) { background: #f8fafc; }
+        tr:hover { background: #e2e8f0; }
+        .report-actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 15px 0; }
+        .report-actions button { flex: 1; min-width: 120px; padding: 12px; font-size: 16px; }
+        .loader { text-align: center; padding: 30px; font-size: 18px; color: #0d47a1; }
+        .no-data { text-align: center; padding: 30px; font-size: 16px; color: #666; }
+        @media (max-width: 600px) { .container { padding: 16px; } .row>div { flex: 1 1 100%; } .flex-grid { grid-template-columns: 1fr 1fr; } th, td { font-size: 11px; padding: 4px 3px; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-
     <h2>📋 প্রতিদিনের প্রতি শিফটের ম্যানপাওয়ার এলোকেশন ও মেশিন রানিং মনিটরিং</h2>
 
-    <!-- ======== ফর্ম ======== -->
     <form id="entryForm" novalidate>
         <!-- মৌলিক তথ্য -->
         <div class="section">
@@ -164,35 +151,34 @@
         </div>
 
         <button type="submit">💾 ডেটা সেভ করুন</button>
-        <div id="duplicateAlert">⚠️ এই তারিখ, শিফট ও ডিপার্টমেন্টে ইতিমধ্যে একটি এন্ট্রি আছে! একাধিক এন্ট্রি অনুমোদিত নয়।</div>
+        <div id="duplicateAlert">⚠️ এই তারিখ, শিফট ও ডিপার্টমেন্টে ইতিমধ্যে একটি এন্ট্রি আছে!</div>
     </form>
 
     <div id="status"></div>
 
-    <!-- ======== রিপোর্ট ভিউ ======== -->
-    <hr style="margin: 30px 0; border: 1px solid #ddd;" />
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-        <h3 style="color: #0d47a1;">📊 Admin Report (সব ডেটা)</h3>
-        <div class="report-actions">
-            <button class="btn-secondary" id="viewReportBtn">📋 রিপোর্ট দেখুন</button>
-            <button class="btn-secondary" id="hideReportBtn" style="display:none;">✖️ রিপোর্ট লুকান</button>
-        </div>
-    </div>
-    <div id="reportContainer" style="display:none; margin-top: 15px;">
-        <div id="reportTableWrapper" style="overflow-x: auto;"></div>
+    <!-- Admin Report বাটন -->
+    <div style="margin-top:25px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button type="button" id="showReportBtn" class="btn-secondary" style="flex:1;">📊 Admin Report (সব ডেটা দেখুন)</button>
+        <button type="button" id="hideReportBtn" class="btn-danger" style="flex:1; display:none;">❌ রিপোর্ট বন্ধ করুন</button>
     </div>
 
+    <div id="reportSection">
+        <h3>📋 Admin Report – সমস্ত এন্ট্রি</h3>
+        <div class="report-actions">
+            <button id="refreshReportBtn" class="btn-secondary">🔄 রিফ্রেশ</button>
+            <button id="exportCsvBtn" class="btn-secondary">⬇ CSV ডাউনলোড</button>
+        </div>
+        <div id="reportContent"><div class="loader">⏳ ডেটা লোড হচ্ছে...</div></div>
+    </div>
 </div>
 
 <script>
     // ================================================================
-    //  CONFIG
+    // 🚀  আপনার Apps Script URL (এখানে বসান)
     // ================================================================
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3xRJjy3peTmiLdiOvAkaO3_tTQtmzOTREUg_Sj6-ioQSwmrfzHlDlC6NN6bIfk7PiHw/exec';
 
-    // ================================================================
-    //  DEPARTMENT MAPS (same as before)
-    // ================================================================
+    // ---------- ডিপার্টমেন্ট ম্যাপিং ----------
     const DEPARTMENT_IC_MAP = {
         'RIP> DPL> Plastic-3': 'Mr. Shawon',
         'RIP> DPL> Plastic-6.1': 'Mr. Hazrat',
@@ -217,27 +203,14 @@
         'Silicon Project': 'Mamun'
     };
     const DEPARTMENT_MC = {
-        'RIP> DPL> Plastic-3': 61,
-        'RIP> DPL> Plastic-6.1': 39,
-        'RIP> DPL> Plastic-6.2': 59,
-        'RIP> DPL> Plastic-7.1': 36,
-        'RIP> DPL> Plastic-7.2': 71,
-        'RIP> DPL> Plastic-7.3': 77,
-        'RIP> DPL> Plastic-7.4': 35,
-        'RIP> DPL> Plastic-1': 38,
-        'Silicon Project': 9,
-        'Plastic Packaging-01': 0,
-        'Plastic Packaging-02': 0,
-        'Plastic Packaging-03': 0,
-        'Plastic-Maintenance.': 0,
-        'Tool Room Maintenance': 0,
-        'Plastic Inventory & Delivery': 0,
-        'Corporate sales Production.': 0,
-        'Plastics-Recycle & Silo': 0,
-        'Product Development & Mold Change': 0,
-        'RIP-DPL-Factory Support': 0,
-        'DPL-QA': 0,
-        'RIP RFL Store': 0
+        'RIP> DPL> Plastic-3': 61, 'RIP> DPL> Plastic-6.1': 39, 'RIP> DPL> Plastic-6.2': 59,
+        'RIP> DPL> Plastic-7.1': 36, 'RIP> DPL> Plastic-7.2': 71, 'RIP> DPL> Plastic-7.3': 77,
+        'RIP> DPL> Plastic-7.4': 35, 'RIP> DPL> Plastic-1': 38, 'Silicon Project': 9,
+        'Plastic Packaging-01': 0, 'Plastic Packaging-02': 0, 'Plastic Packaging-03': 0,
+        'Plastic-Maintenance.': 0, 'Tool Room Maintenance': 0, 'Plastic Inventory & Delivery': 0,
+        'Corporate sales Production.': 0, 'Plastics-Recycle & Silo': 0,
+        'Product Development & Mold Change': 0, 'RIP-DPL-Factory Support': 0,
+        'DPL-QA': 0, 'RIP RFL Store': 0
     };
     const NON_MC_DEPTS = [
         'Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03',
@@ -247,9 +220,6 @@
         'DPL-QA', 'RIP RFL Store'
     ];
 
-    // ================================================================
-    //  FORM LOGIC (same as before)
-    // ================================================================
     function populateDepartments() {
         const sel = document.getElementById('department');
         sel.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
@@ -263,10 +233,9 @@
 
     function toggleMcFields(dept) {
         const isNonMC = NON_MC_DEPTS.includes(dept);
-        document.getElementById('mcDataSection').style.display = isNonMC ? 'none' : 'block';
-        document.getElementById('causeSection').style.display = isNonMC ? 'none' : 'block';
-        document.getElementById('machineTypeSection').style.display = isNonMC ? 'none' : 'block';
-        document.getElementById('operatorSection').style.display = isNonMC ? 'none' : 'block';
+        ['mcDataSection', 'causeSection', 'machineTypeSection', 'operatorSection'].forEach(id => {
+            document.getElementById(id).style.display = isNonMC ? 'none' : 'block';
+        });
     }
 
     document.getElementById('department').addEventListener('change', function() {
@@ -330,28 +299,25 @@
         document.getElementById('pctStopped').value = pctS.toFixed(2) + '%';
     }
 
-    // ================================================================
-    //  DUPLICATE CHECK
-    // ================================================================
     async function checkDuplicate(date, shift, dept) {
         const localKey = `sub_${date}_${shift}_${dept}`;
-        if (localStorage.getItem(localKey) === 'true') return true;
+        if (localStorage.getItem(localKey) === 'true') {
+            console.warn('⚠️ localStorage-এ ডুপ্লিকেট পাওয়া গেছে');
+            return true;
+        }
         try {
             const url = `${APP_SCRIPT_URL}?action=check&date=${encodeURIComponent(date)}&shift=${encodeURIComponent(shift)}&dept=${encodeURIComponent(dept)}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const result = await response.json();
-            if (result && typeof result.exists === 'boolean') return result.exists === true;
-            return false;
+            console.log('🔍 চেক রেসপন্স:', result);
+            return result.exists === true;
         } catch (error) {
-            console.warn('Check failed, fallback to localStorage:', error);
+            console.warn('⚠️ চেক ব্যর্থ, localStorage-এ নির্ভর:', error);
             return localStorage.getItem(localKey) === 'true';
         }
     }
 
-    // ================================================================
-    //  RESET FORM
-    // ================================================================
     function resetForm() {
         const fields = [
             'entryDate', 'shift', 'department', 'icName',
@@ -385,9 +351,6 @@
         toggleMcFields('');
     }
 
-    // ================================================================
-    //  FORM SUBMIT
-    // ================================================================
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const status = document.getElementById('status');
@@ -424,7 +387,7 @@
         const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
 
         const payload = {
-            entryDate: date, shift: shift, department: dept, icName: icName,
+            entryDate: date, shift, department: dept, icName,
             totalMC: getNum('totalMC'), mcRunning: getNum('mcRunning'),
             mcStopped: getNum('mcStopped'), pctRunning: getVal('pctRunning') || '0%',
             pctStopped: getVal('pctStopped') || '0%',
@@ -451,8 +414,6 @@
             welding: getNum('welding'), hrTransfer: getNum('hrTransfer')
         };
 
-        console.log('📤 পাঠানো ডেটা:', payload);
-
         try {
             await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
@@ -460,125 +421,100 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
             const localKey = `sub_${date}_${shift}_${dept}`;
             localStorage.setItem(localKey, 'true');
             setTimeout(() => localStorage.removeItem(localKey), 7 * 24 * 60 * 60 * 1000);
 
             status.className = 'success';
-            status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে! Google Sheet চেক করুন।';
+            status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে!';
             resetForm();
-
         } catch (error) {
             status.className = 'error';
             status.innerText = '❌ সেভ করতে ব্যর্থ! নেটওয়ার্ক চেক করুন।';
-            console.error('❌ POST error:', error);
+            console.error(error);
         }
     });
 
-    // ================================================================
-    //  🆕 REPORT VIEW (Fetch all data from Sheet)
-    // ================================================================
+    // ---------- Admin Report ----------
     async function fetchAllData() {
-        const status = document.getElementById('status');
-        status.className = '';
-        status.innerText = '⏳ ডেটা আনতে হচ্ছে...';
-
+        const reportContent = document.getElementById('reportContent');
+        reportContent.innerHTML = '<div class="loader">⏳ ডেটা লোড হচ্ছে...</div>';
         try {
-            // আমরা action=getAllData ব্যবহার করব
-            const url = `${APP_SCRIPT_URL}?action=getAllData`;
+            const url = `${APP_SCRIPT_URL}?action=getData`;
             const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            console.log('📊 রিপোর্ট ডেটা:', data);
-
-            if (data && data.length > 0) {
-                return data;
-            } else {
-                status.className = 'warning';
-                status.innerText = '⚠️ কোনো ডেটা পাওয়া যায়নি।';
-                return [];
-            }
+            const result = await response.json();
+            return result.data || [];
         } catch (error) {
-            status.className = 'error';
-            status.innerText = '❌ ডেটা আনতে ব্যর্থ! নেটওয়ার্ক চেক করুন।';
-            console.error('❌ Fetch error:', error);
-            return [];
+            console.error('ডেটা ফেচ ব্যর্থ:', error);
+            reportContent.innerHTML = `<div class="error">❌ ডেটা লোড করতে ব্যর্থ!</div>`;
+            return null;
         }
     }
 
     function renderTable(data) {
-        const wrapper = document.getElementById('reportTableWrapper');
+        const container = document.getElementById('reportContent');
         if (!data || data.length === 0) {
-            wrapper.innerHTML = '<p style="padding:20px; text-align:center;">কোনো ডেটা নেই</p>';
+            container.innerHTML = '<div class="no-data">📭 এখনো কোনো ডেটা নেই।</div>';
             return;
         }
-
-        // ধরে নিচ্ছি প্রথম row হচ্ছে headers (যেমন Timestamp, Date, Shift, ...)
-        // অথবা ডেটা আসবে array of objects. আমার Apps Script-এ আমি array of arrays পাঠাব
-        // এখানে আমি অনুমান করছি data হলো array of arrays, প্রথমটি header
-        // কিন্তু যদি প্রথমটি header না হয়, তাহলে হেডার তৈরি করব object keys থেকে
-
-        let headers = [];
-        let rows = [];
-
-        if (data.length > 0 && Array.isArray(data[0])) {
-            // প্রথম array টি header
-            headers = data[0];
-            rows = data.slice(1);
-        } else if (data.length > 0 && typeof data[0] === 'object') {
-            // object array
-            headers = Object.keys(data[0]);
-            rows = data.map(row => headers.map(key => row[key] || ''));
-        } else {
-            wrapper.innerHTML = '<p>ডেটা ফরম্যাট সঠিক নয়</p>';
-            return;
-        }
-
-        let html = '<table><thead><tr>';
-        headers.forEach(h => {
-            html += `<th>${h}</th>`;
-        });
+        const headers = Object.keys(data[0]);
+        let html = '<div class="table-wrapper"><table><thead><tr>';
+        headers.forEach(h => html += `<th>${h}</th>`);
         html += '</tr></thead><tbody>';
-
-        rows.forEach(row => {
+        data.forEach(row => {
             html += '<tr>';
-            row.forEach(cell => {
-                html += `<td>${cell !== undefined && cell !== null ? cell : ''}</td>`;
+            headers.forEach(h => {
+                let val = row[h] ?? '';
+                if (typeof val === 'string' && val.length > 20) val = val.substring(0, 18) + '…';
+                html += `<td>${val}</td>`;
             });
             html += '</tr>';
         });
-
-        html += '</tbody></table>';
-        wrapper.innerHTML = html;
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
     }
 
-    // ----- রিপোর্ট দেখান/লুকান -----
-    document.getElementById('viewReportBtn').addEventListener('click', async function() {
-        const container = document.getElementById('reportContainer');
-        const hideBtn = document.getElementById('hideReportBtn');
-        const viewBtn = this;
-
-        // যদি ইতিমধ্যে খোলা থাকে, তাহলে রিফ্রেশ করি
-        container.style.display = 'block';
-        hideBtn.style.display = 'inline-block';
-        viewBtn.style.display = 'none';
-
+    document.getElementById('showReportBtn').addEventListener('click', async function() {
+        const section = document.getElementById('reportSection');
+        section.style.display = 'block';
+        this.style.display = 'none';
+        document.getElementById('hideReportBtn').style.display = 'block';
         const data = await fetchAllData();
-        renderTable(data);
+        if (data !== null) renderTable(data);
     });
 
     document.getElementById('hideReportBtn').addEventListener('click', function() {
-        document.getElementById('reportContainer').style.display = 'none';
+        document.getElementById('reportSection').style.display = 'none';
         this.style.display = 'none';
-        document.getElementById('viewReportBtn').style.display = 'inline-block';
-        document.getElementById('status').innerText = '';
-        document.getElementById('status').className = '';
+        document.getElementById('showReportBtn').style.display = 'block';
     });
 
-    // ================================================================
-    //  INIT
-    // ================================================================
+    document.getElementById('refreshReportBtn').addEventListener('click', async function() {
+        const data = await fetchAllData();
+        if (data !== null) renderTable(data);
+    });
+
+    document.getElementById('exportCsvBtn').addEventListener('click', function() {
+        const table = document.querySelector('#reportContent table');
+        if (!table) { alert('প্রথমে ডেটা লোড করুন।'); return; }
+        let csv = '';
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('th, td');
+            const rowData = [];
+            cols.forEach(col => rowData.push('"' + col.innerText.replace(/"/g, '""') + '"'));
+            csv += rowData.join(',') + '\n';
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Admin_Report.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
+    });
+
+    // ---------- INIT ----------
     document.addEventListener('DOMContentLoaded', function() {
         populateDepartments();
         document.getElementById('entryDate').valueAsDate = new Date();
