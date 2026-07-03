@@ -483,12 +483,12 @@
     });
 
     // ================================================================
-    //  📊  ADMIN REPORT – ডেট ফরম্যাট নরমালাইজেশন (ফিক্সড)
+    //  📊  ADMIN REPORT – ডেট ফরম্যাট নরমালাইজেশন (সম্পূর্ণ ফিক্স)
     // ================================================================
 
     let allReportData = [];
 
-    // ---------- উন্নত ডেট নরমালাইজেশন ফাংশন ----------
+    // ---------- শক্তিশালী ডেট নরমালাইজেশন (টাইমজোন সহ) ----------
     function normalizeDate(dateValue) {
         if (!dateValue) return '';
 
@@ -501,10 +501,10 @@
         }
 
         // স্ট্রিং এ কনভার্ট
-        const str = String(dateValue).trim();
+        let str = String(dateValue).trim();
         if (!str) return '';
 
-        // প্যাটার্ন ১: YYYY-MM-DD (সাথে টাইম থাকলেও)
+        // প্যাটার্ন ১: YYYY-MM-DD (সাথে টাইম থাকলেও, যেমন "2026-07-03T10:03:5...")
         let match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
         if (match) {
             return match[1] + '-' + match[2] + '-' + match[3];
@@ -516,11 +516,17 @@
             return match[3] + '-' + match[2] + '-' + match[1];
         }
 
-        // প্যাটার্ন ৩: MM/DD/YYYY
+        // প্যাটার্ন ৩: MM/DD/YYYY (যদি আগেরটা না মিলে)
         match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
         if (match) {
-            // চেষ্টা করি, কিন্তু এটা আগেরটার মতোই – আলাদা করা কঠিন, তাই আমরা ধরে নিচ্ছি DD/MM/YYYY
-            // যদি এর আগে না মিলে, তাহলে প্রথম ১০ অক্ষর নিই
+            // এটা আগেরটার মতোই, কিন্তু আমরা ধরে নিচ্ছি DD/MM/YYYY
+            // যদি আগের স্টেপে না মিলে, তাহলে প্রথম ১০ অক্ষর নেওয়ার চেষ্টা
+        }
+
+        // প্যাটার্ন ৪: "2026-07-03T10:03:5" এরকম (T এর আগের অংশ)
+        match = str.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (match) {
+            return match[1];
         }
 
         // শেষ চেষ্টা: প্রথম ১০ অক্ষর নেওয়া (যেমন "2026-07-02T" -> "2026-07-02")
@@ -548,8 +554,8 @@
             console.log('📥 মোট ডেটা পাওয়া গেছে:', allReportData.length);
             if (allReportData.length > 0) {
                 const sample = allReportData[0];
-                console.log('📅 নমুনা ডেটার Date ফিল্ড:', sample['Date']);
-                console.log('📅 নমুনা ডেটার Date (normalized):', normalizeDate(sample['Date']));
+                console.log('📅 নমুনা ডেটার "Date" ফিল্ড:', sample['Date']);
+                console.log('📅 নমুনা ডেটার "Date" (normalized):', normalizeDate(sample['Date']));
             }
             return allReportData;
         } catch (error) {
@@ -572,6 +578,7 @@
             if (dateFilter) {
                 const rowDate = normalizeDate(row['Date']);
                 if (rowDate !== dateFilter) {
+                    // ডিবাগের জন্য লগ
                     console.log(`❌ তারিখ মেলেনি: rowDate="${rowDate}", filter="${dateFilter}"`);
                     match = false;
                 }
@@ -584,6 +591,7 @@
         return filtered;
     }
 
+    // রেন্ডার করার সময় Date ফিল্ডকে নরমালাইজ করে দেখানো
     function renderTable(data) {
         const container = document.getElementById('reportContent');
         const countSpan = document.getElementById('filterCount');
@@ -592,14 +600,20 @@
             countSpan.textContent = '(০টি)';
             return;
         }
+
         const headers = Object.keys(data[0]);
         let html = '<div class="table-wrapper"><table><thead><tr>';
         headers.forEach(h => html += `<th>${h}</th>`);
         html += '</tr></thead><tbody>';
+
         data.forEach(row => {
             html += '<tr>';
             headers.forEach(h => {
                 let val = row[h] ?? '';
+                // Date ফিল্ড হলে নরমালাইজ করে দেখাই
+                if (h === 'Date' || h === 'Timestamp') {
+                    val = normalizeDate(val);
+                }
                 if (typeof val === 'string' && val.length > 20) val = val.substring(0, 18) + '…';
                 html += `<td>${val}</td>`;
             });
