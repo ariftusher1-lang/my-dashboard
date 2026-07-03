@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>প্রতিদিনের এন্ট্রি ফর্ম + Admin Report</title>
     <style>
+        /* (স্টাইল আগের মতোই – সংক্ষেপে দিচ্ছি) */
         * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 20px; margin: 0; }
         .container { max-width: 1200px; margin: auto; background: #fff; padding: 25px 30px 35px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
@@ -26,15 +27,11 @@
         .btn-secondary:hover { background: #0a3a7a; }
         .btn-danger { background: #b71c1c; }
         .btn-danger:hover { background: #8f1515; }
-        .btn-success { background: #1e7e34; }
-        .btn-success:hover { background: #146c2a; }
         #status { margin-top: 16px; padding: 12px; border-radius: 8px; text-align: center; font-weight: 700; }
         .success { background: #d4edda; color: #0b5e2e; border: 1px solid #b7dfb9; }
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         #duplicateAlert { background: #f8d7da; color: #721c24; padding: 12px 16px; border-radius: 8px; margin-top: 14px; border: 1.5px solid #f5c6cb; display: none; font-weight: 700; }
         #duplicateAlert.show { display: block; }
-
-        /* রিপোর্ট সেকশন */
         #reportSection { margin-top: 30px; border-top: 3px solid #0d47a1; padding-top: 20px; display: none; }
         #reportSection h3 { color: #0d47a1; font-size: 22px; margin-bottom: 5px; }
         .filter-bar { display: flex; flex-wrap: wrap; gap: 12px 18px; background: #eef2f7; padding: 12px 16px; border-radius: 8px; margin: 12px 0 16px 0; align-items: flex-end; }
@@ -265,7 +262,6 @@
             opt.textContent = key;
             sel.appendChild(opt);
         });
-        // ফিল্টার ডিপার্টমেন্ট ড্রপডাউনেও যোগ করি
         const filterDept = document.getElementById('filterDept');
         filterDept.innerHTML = '<option value="">সব</option>';
         Object.keys(DEPARTMENT_IC_MAP).forEach(key => {
@@ -489,10 +485,10 @@
     });
 
     // ================================================================
-    //  📊  ADMIN REPORT – ফিল্টার সহ
+    //  📊  ADMIN REPORT – ফিল্টার সহ (ফিক্সড)
     // ================================================================
 
-    let allReportData = []; // সব ডেটা সংরক্ষণ
+    let allReportData = [];
 
     async function fetchAllData() {
         const reportContent = document.getElementById('reportContent');
@@ -511,6 +507,7 @@
         }
     }
 
+    // ফিল্টার ফাংশন – শুধু তারিখের YYYY-MM-DD অংশ তুলনা করে
     function applyFilters(data) {
         const deptFilter = document.getElementById('filterDept').value;
         const dateFilter = document.getElementById('filterDate').value;
@@ -519,7 +516,11 @@
         return data.filter(row => {
             let match = true;
             if (deptFilter && row['Department'] !== deptFilter) match = false;
-            if (dateFilter && row['Date'] !== dateFilter) match = false;
+            if (dateFilter) {
+                // row['Date'] থেকে শুধু YYYY-MM-DD বের করি
+                let rowDate = row['Date'] ? row['Date'].toString().substring(0, 10) : '';
+                if (rowDate !== dateFilter) match = false;
+            }
             if (shiftFilter && row['Shift'] !== shiftFilter) match = false;
             return match;
         });
@@ -562,7 +563,6 @@
     // ফিল্টার ইভেন্ট
     document.getElementById('applyFilterBtn').addEventListener('click', function() {
         if (allReportData.length === 0) {
-            // ডেটা না থাকলে প্রথমে ফেচ করি
             fetchAndRenderReport();
         } else {
             const filtered = applyFilters(allReportData);
@@ -581,7 +581,6 @@
         }
     });
 
-    // রিপোর্ট দেখানো/লুকানো
     document.getElementById('showReportBtn').addEventListener('click', async function() {
         const section = document.getElementById('reportSection');
         section.style.display = 'block';
@@ -600,7 +599,6 @@
         await fetchAndRenderReport();
     });
 
-    // CSV ডাউনলোড (বর্তমান ফিল্টার করা ডেটা)
     document.getElementById('exportCsvBtn').addEventListener('click', function() {
         const table = document.querySelector('#reportContent table');
         if (!table) { alert('প্রথমে ডেটা লোড করুন।'); return; }
@@ -612,7 +610,7 @@
             cols.forEach(col => rowData.push('"' + col.innerText.replace(/"/g, '""') + '"'));
             csv += rowData.join(',') + '\n';
         });
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM for Bengali
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = 'Admin_Report.csv';
