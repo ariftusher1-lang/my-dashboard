@@ -77,9 +77,6 @@
             display: none;
         }
         .required-star { color: red; }
-        .review-section { margin-top: 15px; text-align: center; display: none; }
-        .review-section button { width: auto; padding: 10px 20px; font-size: 16px; margin-top: 0; background: #007bff; }
-        .review-section button:hover { background: #0069d9; }
     </style>
 </head>
 <body>
@@ -208,9 +205,6 @@
         <div id="duplicateAlert">⚠️ আপনার ডিপার্টমেন্ট থেকে ইতিমধ্যে একই তারিখ ও শিফটের ডেটা জমা দেওয়া হয়েছে! দয়া করে চেক করুন।</div>
     </form>
     <div id="status"></div>
-    <div class="review-section" id="reviewSection">
-        <button id="viewMyEntryBtn">📋 আমার এন্ট্রি দেখুন</button>
-    </div>
 </div>
 
 <script>
@@ -294,9 +288,8 @@
         'Corporate sales Production.', 'Plastics-Recycle & Silo',
         'Product Development & Mold Change', 'RIP-DPL-Factory Support',
         'DPL-QA', 'RIP RFL Store'
+        // Silicon Project এখানে নেই, তাই এটি MC হিসেবে আচরণ করবে
     ];
-
-    let lastSubmitted = null; // রিভিউর জন্য
 
     // ============================================================
     // ৪. ড্রপডাউন পপুলেট ফাংশন
@@ -476,32 +469,13 @@
         document.getElementById('duplicateAlert').style.display = 'none';
         document.getElementById('status').className = '';
         document.getElementById('status').innerText = '';
-        document.getElementById('reviewSection').style.display = 'none';
 
         // টগল ফাংশন পুনরায় কল করে MC সেকশন আপডেট
         toggleMcFields('');
     }
 
     // ============================================================
-    // ৯. ডুপ্লিকেট চেক (Apps Script-এর doGet-এ action=check কল করবে)
-    // ============================================================
-    async function checkDuplicate(date, shift, dept) {
-        try {
-            const url = `${APP_SCRIPT_URL}?action=check&date=${encodeURIComponent(date)}&shift=${encodeURIComponent(shift)}&dept=${encodeURIComponent(dept)}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Network error');
-            const result = await response.json();
-            return result.exists === true;
-        } catch (error) {
-            console.warn('চেক ব্যর্থ, লোকাল স্টোরেজ ব্যবহার:', error);
-            // ব্যাকআপ: লোকাল স্টোরেজ চেক
-            const key = `${date}_${shift}_${dept}`;
-            return localStorage.getItem(key) === 'submitted';
-        }
-    }
-
-    // ============================================================
-    // ১০. ফর্ম সাবমিট (সাফল্যের পর ফর্ম রিসেট ও রিভিউ দেখাবে)
+    // ৯. ডাবল এন্ট্রি চেক ও ফর্ম সাবমিট (সাফল্যের পর ফর্ম রিসেট)
     // ============================================================
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -524,9 +498,8 @@
             return;
         }
 
-        // 🔥 ডুপ্লিকেট চেক (Apps Script-এ কল)
-        const isDup = await checkDuplicate(date, shift, dept);
-        if (isDup) {
+        const key = `${date}_${shift}_${dept}`;
+        if (localStorage.getItem(key) === 'submitted') {
             duplicateAlert.style.display = 'block';
             status.className = 'error';
             status.innerText = '❌ ডুপ্লিকেট এন্ট্রি অনুমোদিত নয়!';
@@ -602,49 +575,26 @@
         console.log('📤 পাঠানো ডেটা:', payload);
 
         try {
-            const response = await fetch(APP_SCRIPT_URL, {
+            await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
+                mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            const result = await response.json();
-            if (result.success) {
-                // লোকাল স্টোরেজে মার্ক করুন (ব্যাকআপ)
-                const key = `${date}_${shift}_${dept}`;
-                localStorage.setItem(key, 'submitted');
 
-                status.className = 'success';
-                status.innerText = '✅ ডেটা সফলভাবে জমা হয়েছে!';
+            localStorage.setItem(key, 'submitted');
 
-                // রিভিউ সেকশন দেখান
-                lastSubmitted = { date, shift, dept };
-                document.getElementById('reviewSection').style.display = 'block';
+            status.className = 'success';
+            status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে! Google Sheet চেক করুন।';
 
-                // ফর্ম রিসেট করুন
-                resetForm();
-            } else {
-                status.className = 'error';
-                status.innerText = result.message || '❌ সেভ করতে ব্যর্থ!';
-            }
+            // 🔥 সেভ হওয়ার পর সব ফিল্ড রিসেট করি
+            resetForm();
+
         } catch (error) {
             status.className = 'error';
             status.innerText = '❌ সেভ করতে ব্যর্থ! নেটওয়ার্ক চেক করুন।';
             console.error('Error details:', error);
         }
-    });
-
-    // ============================================================
-    // ১১. "আমার এন্ট্রি দেখুন" বাটন – রিপোর্ট দেখাবে
-    // ============================================================
-    document.getElementById('viewMyEntryBtn').addEventListener('click', function() {
-        if (!lastSubmitted) return;
-        const { date, shift, dept } = lastSubmitted;
-        // রিপোর্ট সেকশন খুলতে চাইলে নতুন ট্যাবে বা একই পেজে
-        // যেহেতু রিপোর্ট সেকশন নেই, তাই আমরা একটি নতুন উইন্ডোতে শুধু ফিল্টার সহ URL খুলতে পারি
-        // অথবা এখানে আপনি চাইলে একটি মোডাল বা নতুন সেকশন তৈরি করতে পারেন।
-        // সহজ সমাধান: অ্যালার্টে দেখান
-        alert(`আপনার এন্ট্রি:\nতারিখ: ${date}\nশিফট: ${shift}\nডিপার্টমেন্ট: ${dept}\n\nআপনি Google Sheet-এ গিয়ে দেখতে পারেন।`);
-        // চাইলে এখানে একটি ফাংশন কল করে রিপোর্ট লোড করতে পারেন
     });
 </script>
 </body>
