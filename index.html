@@ -470,7 +470,6 @@
             status.className = 'success';
             status.innerText = '✅ আপনার তথ্য সঠিকভাবে জমা হয়েছে!';
 
-            // রিপোর্ট ওপেন থাকলে রিফ্রেশ করি
             if (document.getElementById('reportSection').style.display === 'block') {
                 fetchAndRenderReport();
             }
@@ -484,45 +483,15 @@
     });
 
     // ================================================================
-    //  📊  ADMIN REPORT – ফিল্টার সহ (ডেট ফরম্যাট ফিক্সড)
+    //  📊  ADMIN REPORT – ডেট ফরম্যাট নরমালাইজেশন (ফিক্সড)
     // ================================================================
 
     let allReportData = [];
 
-    // ---------- ডেট নরমালাইজেশন ফাংশন (সব ফরম্যাট হ্যান্ডেল করে) ----------
+    // ---------- উন্নত ডেট নরমালাইজেশন ফাংশন ----------
     function normalizeDate(dateValue) {
         if (!dateValue) return '';
-        
-        // যদি স্ট্রিং হয়
-        if (typeof dateValue === 'string') {
-            // চেক করি YYYY-MM-DD ফরম্যাটে আছে কিনা
-            let match = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
-            if (match) {
-                return match[0]; // YYYY-MM-DD
-            }
-            // চেক করি ISO ফরম্যাট (YYYY-MM-DDTHH:mm:ss.sssZ)
-            match = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})T/);
-            if (match) {
-                return match[0]; // YYYY-MM-DD
-            }
-            // চেক করি DD/MM/YYYY ফরম্যাট
-            match = dateValue.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-            if (match) {
-                return match[3] + '-' + match[2] + '-' + match[1]; // YYYY-MM-DD
-            }
-            // চেক করি MM/DD/YYYY ফরম্যাট
-            match = dateValue.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-            if (match) {
-                // এটা আগেরটার মতোই, কিন্তু অর্ডার আলাদা
-                // আমরা চেষ্টা করি
-            }
-            // যদি কোনো ফরম্যাট না মেলে, তাহলে প্রথম ১০ অক্ষর নেওয়ার চেষ্টা করি
-            if (dateValue.length >= 10) {
-                return dateValue.substring(0, 10);
-            }
-            return dateValue;
-        }
-        
+
         // যদি Date অবজেক্ট হয়
         if (dateValue instanceof Date) {
             const year = dateValue.getFullYear();
@@ -530,12 +499,40 @@
             const day = String(dateValue.getDate()).padStart(2, '0');
             return year + '-' + month + '-' + day;
         }
-        
-        // অন্য কিছু হলে স্ট্রিং করে চেষ্টা করি
-        const str = String(dateValue);
-        if (str.length >= 10) {
-            return str.substring(0, 10);
+
+        // স্ট্রিং এ কনভার্ট
+        const str = String(dateValue).trim();
+        if (!str) return '';
+
+        // প্যাটার্ন ১: YYYY-MM-DD (সাথে টাইম থাকলেও)
+        let match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+            return match[1] + '-' + match[2] + '-' + match[3];
         }
+
+        // প্যাটার্ন ২: DD/MM/YYYY
+        match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+        if (match) {
+            return match[3] + '-' + match[2] + '-' + match[1];
+        }
+
+        // প্যাটার্ন ৩: MM/DD/YYYY
+        match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+        if (match) {
+            // চেষ্টা করি, কিন্তু এটা আগেরটার মতোই – আলাদা করা কঠিন, তাই আমরা ধরে নিচ্ছি DD/MM/YYYY
+            // যদি এর আগে না মিলে, তাহলে প্রথম ১০ অক্ষর নিই
+        }
+
+        // শেষ চেষ্টা: প্রথম ১০ অক্ষর নেওয়া (যেমন "2026-07-02T" -> "2026-07-02")
+        if (str.length >= 10) {
+            const substr = str.substring(0, 10);
+            // চেক করি এটি YYYY-MM-DD ফরম্যাটে আছে কিনা
+            if (/^\d{4}-\d{2}-\d{2}$/.test(substr)) {
+                return substr;
+            }
+        }
+
+        // কোনো ফরম্যাটই মেলেনি – আসল স্ট্রিং রিটার্ন করি (যাতে সমস্যা বোঝা যায়)
         return str;
     }
 
@@ -550,8 +547,9 @@
             allReportData = result.data || [];
             console.log('📥 মোট ডেটা পাওয়া গেছে:', allReportData.length);
             if (allReportData.length > 0) {
-                console.log('📅 প্রথম ডেটার Date:', allReportData[0]['Date']);
-                console.log('📅 প্রথম ডেটার Date (normalized):', normalizeDate(allReportData[0]['Date']));
+                const sample = allReportData[0];
+                console.log('📅 নমুনা ডেটার Date ফিল্ড:', sample['Date']);
+                console.log('📅 নমুনা ডেটার Date (normalized):', normalizeDate(sample['Date']));
             }
             return allReportData;
         } catch (error) {
@@ -561,7 +559,6 @@
         }
     }
 
-    // ---------- ফিল্টার ফাংশন (নরমালাইজড ডেট ব্যবহার করে) ----------
     function applyFilters(data) {
         const deptFilter = document.getElementById('filterDept').value;
         const dateFilter = document.getElementById('filterDate').value;
@@ -574,7 +571,10 @@
             if (deptFilter && row['Department'] !== deptFilter) match = false;
             if (dateFilter) {
                 const rowDate = normalizeDate(row['Date']);
-                if (rowDate !== dateFilter) match = false;
+                if (rowDate !== dateFilter) {
+                    console.log(`❌ তারিখ মেলেনি: rowDate="${rowDate}", filter="${dateFilter}"`);
+                    match = false;
+                }
             }
             if (shiftFilter && row['Shift'] !== shiftFilter) match = false;
             return match;
