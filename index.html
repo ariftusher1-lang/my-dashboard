@@ -27,7 +27,7 @@
         .btn-danger { background: #b71c1c; }
         .btn-danger:hover { background: #8f1515; }
         #status { margin-top: 16px; padding: 12px; border-radius: 8px; text-align: center; font-weight: 700; }
-        .success { background: #d4edda; color: #0b5e2e; border: 1px solid #b7dfb9; }
+        .success { background: #d4edda; color: #0b5e2e; border: 1px solid #b7dfb9; }  /* সবুজ */
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         #duplicateAlert { background: #f8d7da; color: #721c24; padding: 12px 16px; border-radius: 8px; margin-top: 14px; border: 1.5px solid #f5c6cb; display: none; font-weight: 700; }
         #duplicateAlert.show { display: block; }
@@ -59,7 +59,6 @@
     <h2>📋 প্রতিদিনের প্রতি শিফটের ম্যানপাওয়ার এলোকেশন ও মেশিন রানিং মনিটরিং</h2>
 
     <form id="entryForm" novalidate>
-        <!-- মৌলিক তথ্য -->
         <div class="section">
             <h3>📅 মৌলিক তথ্য</h3>
             <div class="row">
@@ -76,7 +75,6 @@
             </div>
         </div>
 
-        <!-- মেশিনের ডেটা -->
         <div class="section machine-box" id="mcDataSection">
             <h3>⚙️ মেশিনের ডেটা (অটো ক্যালকুলেশন)</h3>
             <div class="row">
@@ -90,7 +88,6 @@
             </div>
         </div>
 
-        <!-- স্টপের কারণ -->
         <div class="section" id="causeSection">
             <h3>⛔ স্টপের কারণ</h3>
             <div class="flex-grid">
@@ -107,7 +104,6 @@
             </div>
         </div>
 
-        <!-- এইচআর -->
         <div class="section">
             <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
             <div class="row">
@@ -117,7 +113,6 @@
             </div>
         </div>
 
-        <!-- মেশিন টাইপ -->
         <div class="section" id="machineTypeSection">
             <h3>🏭 মেশিন টাইপ</h3>
             <div class="row">
@@ -129,7 +124,6 @@
             </div>
         </div>
 
-        <!-- অপারেটর -->
         <div class="section" id="operatorSection">
             <h3>👨‍🔧 অপারেটর ও স্টাফ</h3>
             <div class="flex-grid">
@@ -170,8 +164,6 @@
 
     <div id="reportSection">
         <h3>📋 Admin Report – সমস্ত এন্ট্রি <span id="filterCount" class="filter-count"></span></h3>
-        
-        <!-- ফিল্টার বার -->
         <div class="filter-bar" id="filterBar">
             <div>
                 <label>ডিপার্টমেন্ট</label>
@@ -194,7 +186,6 @@
                 <button type="button" id="clearFilterBtn" class="btn-danger">🗑️ রিসেট</button>
             </div>
         </div>
-
         <div class="report-actions">
             <button id="refreshReportBtn" class="btn-secondary">🔄 রিফ্রেশ</button>
             <button id="exportCsvBtn" class="btn-secondary">⬇ CSV ডাউনলোড</button>
@@ -205,9 +196,9 @@
 
 <script>
     // ================================================================
-    // 🚀  আপনার Apps Script URL (এখানে বসান)
+    // 🚀  আপনার নতুন Apps Script URL (এখানে বসান)
     // ================================================================
-    const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1pvGNZW18lv0F8wPzmYn_B-V9zxu-Tj29hHG18i2ideHg4EZwyQO0Sc7_xKk9rJWINA/exec';
+    const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKUjHxIZMWm1p68HQJ3Ljid5_w1TV5J_WJNUug76rqVbCH5vY3IsOuQHLB5Fiaii-gsg/exec';
 
     // ---------- ডিপার্টমেন্ট ম্যাপিং ----------
     const DEPARTMENT_IC_MAP = {
@@ -457,24 +448,26 @@
         };
 
         try {
-            await fetch(APP_SCRIPT_URL, {
+            const response = await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
-                mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            const localKey = `sub_${date}_${shift}_${dept}`;
-            localStorage.setItem(localKey, 'true');
-            setTimeout(() => localStorage.removeItem(localKey), 7 * 24 * 60 * 60 * 1000);
-
-            status.className = 'success';
-            status.innerText = '✅ আপনার তথ্য সঠিকভাবে জমা হয়েছে!';
-
-            if (document.getElementById('reportSection').style.display === 'block') {
-                fetchAndRenderReport();
+            const result = await response.json();
+            if (result.success) {
+                status.className = 'success';
+                status.innerText = '✅ আপনার তথ্য সঠিকভাবে জমা হয়েছে!';
+                const localKey = `sub_${date}_${shift}_${dept}`;
+                localStorage.setItem(localKey, 'true');
+                setTimeout(() => localStorage.removeItem(localKey), 7 * 24 * 60 * 60 * 1000);
+                if (document.getElementById('reportSection').style.display === 'block') {
+                    fetchAndRenderReport();
+                }
+                resetForm();
+            } else {
+                status.className = 'error';
+                status.innerText = result.message || '❌ সেভ করতে ব্যর্থ!';
             }
-
-            resetForm();
         } catch (error) {
             status.className = 'error';
             status.innerText = '❌ সেভ করতে ব্যর্থ! নেটওয়ার্ক চেক করুন।';
@@ -483,62 +476,29 @@
     });
 
     // ================================================================
-    //  📊  ADMIN REPORT – ডেট ফরম্যাট নরমালাইজেশন (সম্পূর্ণ ফিক্স)
+    //  📊  ADMIN REPORT – ফিল্টার সহ
     // ================================================================
 
     let allReportData = [];
 
-    // ---------- শক্তিশালী ডেট নরমালাইজেশন (টাইমজোন সহ) ----------
     function normalizeDate(dateValue) {
         if (!dateValue) return '';
-
-        // যদি Date অবজেক্ট হয়
         if (dateValue instanceof Date) {
             const year = dateValue.getFullYear();
             const month = String(dateValue.getMonth() + 1).padStart(2, '0');
             const day = String(dateValue.getDate()).padStart(2, '0');
             return year + '-' + month + '-' + day;
         }
-
-        // স্ট্রিং এ কনভার্ট
-        let str = String(dateValue).trim();
+        const str = String(dateValue).trim();
         if (!str) return '';
-
-        // প্যাটার্ন ১: YYYY-MM-DD (সাথে টাইম থাকলেও, যেমন "2026-07-03T10:03:5...")
         let match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (match) {
-            return match[1] + '-' + match[2] + '-' + match[3];
-        }
-
-        // প্যাটার্ন ২: DD/MM/YYYY
+        if (match) return match[1] + '-' + match[2] + '-' + match[3];
         match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-        if (match) {
-            return match[3] + '-' + match[2] + '-' + match[1];
-        }
-
-        // প্যাটার্ন ৩: MM/DD/YYYY (যদি আগেরটা না মিলে)
-        match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-        if (match) {
-            // এটা আগেরটার মতোই, কিন্তু আমরা ধরে নিচ্ছি DD/MM/YYYY
-            // যদি আগের স্টেপে না মিলে, তাহলে প্রথম ১০ অক্ষর নেওয়ার চেষ্টা
-        }
-
-        // প্যাটার্ন ৪: "2026-07-03T10:03:5" এরকম (T এর আগের অংশ)
-        match = str.match(/^(\d{4}-\d{2}-\d{2})/);
-        if (match) {
-            return match[1];
-        }
-
-        // শেষ চেষ্টা: প্রথম ১০ অক্ষর নেওয়া (যেমন "2026-07-02T" -> "2026-07-02")
+        if (match) return match[3] + '-' + match[2] + '-' + match[1];
         if (str.length >= 10) {
             const substr = str.substring(0, 10);
-            // চেক করি এটি YYYY-MM-DD ফরম্যাটে আছে কিনা
-            if (/^\d{4}-\d{2}-\d{2}$/.test(substr)) {
-                return substr;
-            }
+            if (/^\d{4}-\d{2}-\d{2}$/.test(substr)) return substr;
         }
-
-        // কোনো ফরম্যাটই মেলেনি – আসল স্ট্রিং রিটার্ন করি (যাতে সমস্যা বোঝা যায়)
         return str;
     }
 
@@ -552,11 +512,6 @@
             const result = await response.json();
             allReportData = result.data || [];
             console.log('📥 মোট ডেটা পাওয়া গেছে:', allReportData.length);
-            if (allReportData.length > 0) {
-                const sample = allReportData[0];
-                console.log('📅 নমুনা ডেটার "Date" ফিল্ড:', sample['Date']);
-                console.log('📅 নমুনা ডেটার "Date" (normalized):', normalizeDate(sample['Date']));
-            }
             return allReportData;
         } catch (error) {
             console.error('ডেটা ফেচ ব্যর্থ:', error);
@@ -570,28 +525,18 @@
         const dateFilter = document.getElementById('filterDate').value;
         const shiftFilter = document.getElementById('filterShift').value;
 
-        console.log('🔍 ফিল্টার মান:', { deptFilter, dateFilter, shiftFilter });
-
-        const filtered = data.filter(row => {
+        return data.filter(row => {
             let match = true;
             if (deptFilter && row['Department'] !== deptFilter) match = false;
             if (dateFilter) {
                 const rowDate = normalizeDate(row['Date']);
-                if (rowDate !== dateFilter) {
-                    // ডিবাগের জন্য লগ
-                    console.log(`❌ তারিখ মেলেনি: rowDate="${rowDate}", filter="${dateFilter}"`);
-                    match = false;
-                }
+                if (rowDate !== dateFilter) match = false;
             }
             if (shiftFilter && row['Shift'] !== shiftFilter) match = false;
             return match;
         });
-
-        console.log('📊 ফিল্টারকৃত ডেটা:', filtered.length);
-        return filtered;
     }
 
-    // রেন্ডার করার সময় Date ফিল্ডকে নরমালাইজ করে দেখানো
     function renderTable(data) {
         const container = document.getElementById('reportContent');
         const countSpan = document.getElementById('filterCount');
@@ -600,20 +545,14 @@
             countSpan.textContent = '(০টি)';
             return;
         }
-
         const headers = Object.keys(data[0]);
         let html = '<div class="table-wrapper"><table><thead><tr>';
         headers.forEach(h => html += `<th>${h}</th>`);
         html += '</tr></thead><tbody>';
-
         data.forEach(row => {
             html += '<tr>';
             headers.forEach(h => {
                 let val = row[h] ?? '';
-                // Date ফিল্ড হলে নরমালাইজ করে দেখাই
-                if (h === 'Date' || h === 'Timestamp') {
-                    val = normalizeDate(val);
-                }
                 if (typeof val === 'string' && val.length > 20) val = val.substring(0, 18) + '…';
                 html += `<td>${val}</td>`;
             });
@@ -632,7 +571,6 @@
         }
     }
 
-    // ফিল্টার ইভেন্ট
     document.getElementById('applyFilterBtn').addEventListener('click', function() {
         if (allReportData.length === 0) {
             fetchAndRenderReport();
@@ -690,9 +628,7 @@
         URL.revokeObjectURL(link.href);
     });
 
-    // ================================================================
-    //  🚀  INIT
-    // ================================================================
+    // ---------- INIT ----------
     document.addEventListener('DOMContentLoaded', function() {
         populateDepartments();
         document.getElementById('entryDate').valueAsDate = new Date();
