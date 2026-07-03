@@ -202,14 +202,14 @@
         </div>
 
         <button type="submit">💾 ডেটা সেভ করুন</button>
-        <div id="duplicateAlert">⚠️ আপনার ডিপার্টমেন্ট থেকে ইতিমধ্যে একই তারিখ ও শিফটের ডেটা জমা দেওয়া হয়েছে! দয়া করে চেক করুন।</div>
+        <div id="duplicateAlert">⚠️ এই তারিখ, শিফট ও ডিপার্টমেন্টে ইতিমধ্যে একটি এন্ট্রি করা হয়েছে! একাধিক এন্ট্রি অনুমোদিত নয়।</div>
     </form>
     <div id="status"></div>
 </div>
 
 <script>
     // =============================================================
-    // 🔥 আপনার Google Apps Script URL (সঠিক)
+    // 🔥 আপনার Google Apps Script URL (এখন GET রিকোয়েস্ট সাপোর্ট করবে)
     // =============================================================
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnFf9_D0a8EAdJVeFQUClLIyNMv8--q8zEeWzKeUnunJ5tBWSwSYQ15bTyXyyVhAkpiA/exec';
 
@@ -217,7 +217,6 @@
     // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং
     // ============================================================
     const DEPARTMENT_IC_MAP = {
-        // Production (MC)
         'RIP> DPL> Plastic-3': 'Mr. Shawon',
         'RIP> DPL> Plastic-6.1': 'Mr. Hazrat',
         'RIP> DPL> Plastic-6.2': 'Mr. Polash',
@@ -226,13 +225,9 @@
         'RIP> DPL> Plastic-7.3': 'Mr. Saddam',
         'RIP> DPL> Plastic-7.4': 'Mr. Saddam',
         'RIP> DPL> Plastic-1': 'Mr. Atiqur Rahman',
-        
-        // Packaging (Non-MC)
         'Plastic Packaging-01': 'Mr. Mahbub',
         'Plastic Packaging-02': 'Mr. Rakib',
         'Plastic Packaging-03': 'Mr. Mahbub',
-
-        // Non-MC
         'Plastic-Maintenance.': 'Mr. Maruf',
         'Tool Room Maintenance': 'Mr. Jabed',
         'Plastic Inventory & Delivery': 'Mr. Faysal',
@@ -242,16 +237,10 @@
         'RIP-DPL-Factory Support': 'Mr. Rofik',
         'DPL-QA': 'Mr. Rafi',
         'RIP RFL Store': 'Mr. Mithun',
-
-        // 🔥 Silicon Project (MC - 9 machines)
         'Silicon Project': 'Mamun'
     };
 
-    // ============================================================
-    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC (Non-MC = 0)
-    // ============================================================
     const DEPARTMENT_MC = {
-        // Production (MC)
         'RIP> DPL> Plastic-3': 61,
         'RIP> DPL> Plastic-6.1': 39,
         'RIP> DPL> Plastic-6.2': 59,
@@ -260,11 +249,7 @@
         'RIP> DPL> Plastic-7.3': 77,
         'RIP> DPL> Plastic-7.4': 35,
         'RIP> DPL> Plastic-1': 38,
-
-        // 🔥 Silicon Project (MC - 9 machines)
         'Silicon Project': 9,
-
-        // Non-MC
         'Plastic Packaging-01': 0,
         'Plastic Packaging-02': 0,
         'Plastic Packaging-03': 0,
@@ -279,20 +264,16 @@
         'RIP RFL Store': 0
     };
 
-    // ============================================================
-    // ৩. Non-MC ডিপার্টমেন্টের তালিকা (Silicon Project বাদ)
-    // ============================================================
     const NON_MC_DEPTS = [
         'Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03',
         'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
         'Corporate sales Production.', 'Plastics-Recycle & Silo',
         'Product Development & Mold Change', 'RIP-DPL-Factory Support',
         'DPL-QA', 'RIP RFL Store'
-        // Silicon Project এখানে নেই, তাই এটি MC হিসেবে আচরণ করবে
     ];
 
     // ============================================================
-    // ৪. ড্রপডাউন পপুলেট ফাংশন
+    // ২. ড্রপডাউন পপুলেট
     // ============================================================
     function populateDepartments() {
         const select = document.getElementById('department');
@@ -303,21 +284,10 @@
             opt.textContent = key;
             select.appendChild(opt);
         });
-        console.log('✅ ডিপার্টমেন্ট ড্রপডাউন পপুলেট করা হয়েছে।');
     }
 
     // ============================================================
-    // ৫. DOM লোড হলে সব সেটআপ
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', function() {
-        populateDepartments();
-        document.getElementById('entryDate').valueAsDate = new Date();
-        const dept = document.getElementById('department').value;
-        toggleMcFields(dept);
-    });
-
-    // ============================================================
-    // ৬. MC ডেটা দেখানো/লুকানো এবং IC, Total MC সেট করা
+    // ৩. MC ডেটা দেখানো/লুকানো
     // ============================================================
     function toggleMcFields(dept) {
         const isNonMC = NON_MC_DEPTS.includes(dept);
@@ -359,7 +329,7 @@
     });
 
     // ============================================================
-    // ৭. অটো ক্যালকুলেশন (MC Run % এবং Will off %)
+    // ৪. অটো ক্যালকুলেশন
     // ============================================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
@@ -404,23 +374,34 @@
     }
 
     // ============================================================
-    // ৮. ফর্ম রিসেট ফাংশন (সব ফিল্ড খালি করবে)
+    // ৫. 🔍 Google Sheet-এ ডুপ্লিকেট চেক করুন
+    // ============================================================
+    async function checkDuplicate(date, shift, dept) {
+        try {
+            const url = `${APP_SCRIPT_URL}?action=check&date=${encodeURIComponent(date)}&shift=${encodeURIComponent(shift)}&dept=${encodeURIComponent(dept)}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network error');
+            const result = await response.json();
+            return result.exists === true;
+        } catch (error) {
+            console.warn('চেক করতে ব্যর্থ, ধরে নিচ্ছি ডুপ্লিকেট নেই:', error);
+            return false;
+        }
+    }
+
+    // ============================================================
+    // ৬. ফর্ম রিসেট
     // ============================================================
     function resetForm() {
-        // মৌলিক তথ্য
         document.getElementById('entryDate').value = '';
-        document.getElementById('shift').value = 'Day'; // ডিফল্ট Day
+        document.getElementById('shift').value = 'Day';
         document.getElementById('department').value = '';
         document.getElementById('icName').value = '';
-
-        // MC সেকশন
         document.getElementById('totalMC').value = '';
         document.getElementById('mcRunning').value = '';
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
         document.getElementById('pctStopped').value = '';
-
-        // স্টপের কারণ
         document.getElementById('mpShort').value = '';
         document.getElementById('moldProblem').value = '';
         document.getElementById('moldChange').value = '';
@@ -431,19 +412,13 @@
         document.getElementById('materialMBShortage').value = '';
         document.getElementById('overStockWIP').value = '';
         document.getElementById('accessoriesShort').value = '';
-
-        // HR
         document.getElementById('totalPresent').value = '';
         document.getElementById('leaveEmployee').value = '';
         document.getElementById('absentEmployee').value = '';
-
-        // মেশিন টাইপ
         document.getElementById('exportMC').value = '';
         document.getElementById('domesticMC').value = '';
         document.getElementById('singleMC').value = '';
         document.getElementById('doubleMC').value = '';
-
-        // অপারেটর ও স্টাফ
         document.getElementById('prodIC').value = '';
         document.getElementById('sic').value = '';
         document.getElementById('mcOperator').value = '';
@@ -464,18 +439,14 @@
         document.getElementById('rework').value = '';
         document.getElementById('welding').value = '';
         document.getElementById('hrTransfer').value = '';
-
-        // অ্যালার্ট ও স্ট্যাটাস ক্লিয়ার
         document.getElementById('duplicateAlert').style.display = 'none';
         document.getElementById('status').className = '';
         document.getElementById('status').innerText = '';
-
-        // টগল ফাংশন পুনরায় কল করে MC সেকশন আপডেট
         toggleMcFields('');
     }
 
     // ============================================================
-    // ৯. ডাবল এন্ট্রি চেক ও ফর্ম সাবমিট (সাফল্যের পর ফর্ম রিসেট)
+    // ৭. ফর্ম সাবমিট
     // ============================================================
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -498,8 +469,9 @@
             return;
         }
 
-        const key = `${date}_${shift}_${dept}`;
-        if (localStorage.getItem(key) === 'submitted') {
+        // 🔍 ডুপ্লিকেট চেক
+        const isDuplicate = await checkDuplicate(date, shift, dept);
+        if (isDuplicate) {
             duplicateAlert.style.display = 'block';
             status.className = 'error';
             status.innerText = '❌ ডুপ্লিকেট এন্ট্রি অনুমোদিত নয়!';
@@ -582,12 +554,10 @@
                 body: JSON.stringify(payload)
             });
 
-            localStorage.setItem(key, 'submitted');
-
             status.className = 'success';
             status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে! Google Sheet চেক করুন।';
 
-            // 🔥 সেভ হওয়ার পর সব ফিল্ড রিসেট করি
+            // ফর্ম রিসেট
             resetForm();
 
         } catch (error) {
@@ -595,6 +565,15 @@
             status.innerText = '❌ সেভ করতে ব্যর্থ! নেটওয়ার্ক চেক করুন।';
             console.error('Error details:', error);
         }
+    });
+
+    // ============================================================
+    // ৮. INIT
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        populateDepartments();
+        document.getElementById('entryDate').valueAsDate = new Date();
+        toggleMcFields('');
     });
 </script>
 </body>
