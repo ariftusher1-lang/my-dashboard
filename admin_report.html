@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* ----- আপনার পুরনো স্টাইল ঠিক একই ----- */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 10px 20px; }
         .container { max-width: 100%; margin: 0 auto; padding: 0 10px; }
@@ -53,6 +52,39 @@
         .summary-header { background: #fff3e0; padding: 12px 20px; border-radius: 8px; margin: 15px 0; font-size: 16px; font-weight: 600; color: #e65100; border-left: 4px solid #ff9800; }
         .mc-badge { background: #0d47a1; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
         .saifuddin-title { background: #1a237e; color: white; padding: 8px 20px; border-radius: 6px; display: inline-block; font-weight: 600; }
+
+        /* 🔥 ডুপ্লিকেট ডিপার্টমেন্ট হাইলাইট (সবুজ) */
+        .row-duplicate {
+            background: #d4edda !important;
+            border-left: 4px solid #28a745 !important;
+        }
+        .row-duplicate td:first-child {
+            border-left: 4px solid #28a745;
+        }
+        .row-duplicate:hover {
+            background: #c3e6cb !important;
+        }
+        /* টোটাল সারি ডুপ্লিকেট নয়, তাই ওভাররাইড */
+        .total-row.row-duplicate {
+            background: #d4e4f7 !important;
+            border-left: none !important;
+        }
+        /* প্রোডাকশন/প্যাকেজিং/কমন সারি ডুপ্লিকেট হলে ওভাররাইড */
+        .row-production.row-duplicate td {
+            background: #d4edda !important;
+            border-color: #28a745 !important;
+        }
+        .row-packaging.row-duplicate td {
+            background: #d4edda !important;
+            border-color: #28a745 !important;
+        }
+        .row-common.row-duplicate td {
+            background: #d4edda !important;
+            border-color: #28a745 !important;
+        }
+        .row-manpower.row-duplicate {
+            background: #1a237e !important;
+        }
 
         .saifuddin-table {
             width: 100%;
@@ -611,7 +643,7 @@
             totalHR += hr;
             totalLeave += leave;
             totalAbsent += absent;
-            totalPresent += hr; // Present = Total HR (নতুন নিয়ম)
+            totalPresent += hr; // Present = Total HR
             totalMC += getNum(r, ['Total MC', 'totalMC']);
             totalTargetRun += getNum(r, ['MC Running', 'mcRunning']);
             let pct = getVal(r, ['% Running', 'pctRunning']);
@@ -747,13 +779,13 @@
         window._currentWeeklyData = { rows, totalFixedMC, overallAvgPresent, overallAvgRun, totalCount, days };
     }
 
-    // ===== Saifuddin Table (আপডেট: Double MC ও Packaging Operator যোগ) =====
+    // ===== Saifuddin Table (ডুপ্লিকেট হাইলাইট সহ) =====
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
 
         let rows = [];
         let prodTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
-            doubleMC: 0, packagingOperator: 0, // নতুন
+            doubleMC: 0, packagingOperator: 0,
             mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
             preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
         let packagingTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
@@ -785,10 +817,12 @@
 
             const hasData = deptRows.length > 0;
             const isFixed = FIXED_SN_LIST.includes(item.sn);
+            // ⭐ ডুপ্লিকেট চেক: একাধিক এন্ট্রি থাকলে true
+            const isDuplicate = deptRows.length > 1;
 
             let totalPresent = 0, absent = 0, leave = 0;
             let calculatedMC = 0, targetRun = 0, mcWillOff = 0;
-            let doubleMC = 0, packagingOperator = 0; // নতুন
+            let doubleMC = 0, packagingOperator = 0;
             let mpShort = 0, moldProb = 0, moldChange = 0, sample = 0, mcProb = 0;
             let preventive = 0, noDemand = 0, materialShort = 0, overStock = 0, accShort = 0;
 
@@ -800,7 +834,6 @@
                     calculatedMC += getNum(r, ['Total MC', 'totalMC']);
                     targetRun += getNum(r, ['MC Running', 'mcRunning']);
                     mcWillOff += getNum(r, ['MC Stopped', 'mcStopped']);
-                    // নতুন ফিল্ড
                     doubleMC += getNum(r, ['Double MC', 'doubleMC']);
                     packagingOperator += getNum(r, ['Packaging Operator', 'packagingOperator']);
                     mpShort += getNum(r, ['MP Short', 'mpShort']);
@@ -824,12 +857,12 @@
             const totalMP = totalPresent + leave + absent;
             let runPct = totalMC > 0 ? ((targetRun / totalMC) * 100) : 0;
 
-            // গ্রুপ টোটালে যোগ
             const rowTotal = { totalMP, totalPresent, absent, leave, totalMC, targetRun, mcWillOff,
                 doubleMC, packagingOperator,
                 mpShort, moldProb, moldChange, sample, mcProb,
                 preventive, noDemand, materialShort, overStock, accShort };
 
+            // গ্রুপ টোটাল
             if (item.sn >= 1 && item.sn <= 9) {
                 prodTotal.totalMP += totalMP; prodTotal.totalPresent += totalPresent; prodTotal.absent += absent; prodTotal.leave += leave;
                 prodTotal.totalMC += totalMC; prodTotal.targetRun += targetRun; prodTotal.mcWillOff += mcWillOff;
@@ -863,12 +896,13 @@
             rows.push({
                 sn: item.sn,
                 dept: deptName,
-                totalMP, totalPresent, absent, leave, totalMC, targetRun, runPct, mcWillOff,
-                doubleMC, packagingOperator,
-                mpShort, moldProb, moldChange, sample, mcProb, preventive, noDemand, materialShort, overStock, accShort,
+                ...rowTotal,
+                runPct: runPct,
                 isTotal: false,
                 hasData: hasData,
-                isFixed: isFixed
+                isFixed: isFixed,
+                isDuplicate: isDuplicate,  // ⭐ ডুপ্লিকেট ফ্ল্যাগ
+                entryCount: deptRows.length
             });
 
             if (item.sn === 9) {
@@ -880,7 +914,9 @@
                     runPct: prodRunPct,
                     isTotal: true,
                     hasData: true,
-                    isFixed: false
+                    isFixed: false,
+                    isDuplicate: false,
+                    entryCount: 0
                 });
             }
 
@@ -893,7 +929,9 @@
                     runPct: packRunPct,
                     isTotal: true,
                     hasData: true,
-                    isFixed: false
+                    isFixed: false,
+                    isDuplicate: false,
+                    entryCount: 0
                 });
             }
 
@@ -906,7 +944,9 @@
                     runPct: commonRunPct,
                     isTotal: true,
                     hasData: true,
-                    isFixed: false
+                    isFixed: false,
+                    isDuplicate: false,
+                    entryCount: 0
                 });
 
                 const totalManpower = grandTotal.totalPresent + grandTotal.leave + grandTotal.absent;
@@ -924,7 +964,9 @@
                     isTotal: true,
                     isGrand: true,
                     hasData: true,
-                    isFixed: false
+                    isFixed: false,
+                    isDuplicate: false,
+                    entryCount: 0
                 });
             }
         });
@@ -934,10 +976,10 @@
             return;
         }
 
-        // নতুন হেডার: Double MC ও Packaging Operator MP Short-এর আগে
+        // হেডার
         const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
-            'Double MC', 'Packaging Operator', // <- নতুন দুটি কলাম
+            'Double MC', 'Packaging Operator',
             'MP Short', 'Mold Prob', 'Mold Change', 'Sample', 'MC prob',
             'Preventive', 'No demand', 'Material short & MB', 'Over Stock', 'Acc short'];
 
@@ -951,6 +993,11 @@
             else if (row.sn === 14) rowClass = 'row-packaging';
             else if (row.sn === 24) rowClass = 'row-common';
             else if (row.sn === 25) rowClass = 'row-manpower';
+
+            // ⭐ ডুপ্লিকেট হলে row-duplicate ক্লাস যোগ করি (টোটাল নয়)
+            if (row.isDuplicate && !row.isTotal) {
+                rowClass += ' row-duplicate';
+            }
 
             const showDash = (!row.hasData && !row.isFixed);
             const isNonMC = ((row.sn >= 11 && row.sn <= 13) ||
@@ -985,15 +1032,17 @@
 
             html += `<tr class="${rowClass}">`;
             html += `<td><strong>${row.sn}</strong></td>`;
-            html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
+            html += `<td class="dept-name"><strong>${row.dept}</strong>`;
+            // ডুপ্লিকেট হলে ব্যাজ দেখাই
+            if (row.isDuplicate && !row.isTotal) {
+                html += ` <span style="background:#28a745; color:white; padding:2px 8px; border-radius:12px; font-size:11px;">🔁 ${row.entryCount} entries</span>`;
+            }
+            html += `</td>`;
             html += `<td>${displayTotalMP}</td><td>${displayPresent}</td><td>${displayAbsent}</td><td>${displayLeave}</td>`;
 
             if (showDash || isNonMC) {
-                // MC সংক্রান্ত কলামগুলো - (Total MC, Target, Run %, Will off) - ড্যাশ
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td>`;
-                // Double MC ও Packaging Operator - শো ড্যাশ বা মান (এখানে ড্যাশ)
                 html += `<td>-</td><td>-</td>`;
-                // বাকি কারণগুলোর জন্য ড্যাশ
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
                 html += `<td>-</td>`;
@@ -1006,10 +1055,8 @@
                     return val > 0 ? val : '-';
                 };
                 html += `<td>${displayVal(row.mcWillOff)}</td>`;
-                // Double MC ও Packaging Operator - এখানে দেখাই
                 html += `<td>${displayVal(row.doubleMC)}</td>`;
                 html += `<td>${displayVal(row.packagingOperator)}</td>`;
-                // তারপর বাকি কারণ
                 html += `<td>${displayVal(row.mpShort)}</td>`;
                 html += `<td>${displayVal(row.moldProb)}</td>`;
                 html += `<td>${displayVal(row.moldChange)}</td>`;
@@ -1030,7 +1077,7 @@
         window._saifuddinHeaders = headers;
     }
 
-    // ===== MC Department Table (আগের মতো) =====
+    // ===== MC Department Table =====
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
         const mcData = data.filter(row => {
@@ -1206,7 +1253,7 @@
     }
 
     // ================================================================
-    // Group Table - (আগের মতো)
+    // Group Table
     // ================================================================
     function renderGroupTable(data, containerId, groupType) {
         const container = document.getElementById(containerId);
@@ -1282,7 +1329,7 @@
     }
 
     // ================================================================
-    // বাকি ফাংশন (Overall, Missing, Raw Data, Excel) - অপরিবর্তিত
+    // Overall, Missing, Raw Data
     // ================================================================
     function renderOverall(data) {
         const container = document.getElementById('overallTable');
@@ -1386,7 +1433,7 @@
     }
 
     // ================================================================
-    // ডাউনলোড ফাংশন (MC, Saifuddin, Weekly)
+    // ডাউনলোড ফাংশন
     // ================================================================
     function downloadMCImage() {
         const container = document.getElementById('mcSummaryTable');
@@ -1529,9 +1576,9 @@
         footer.innerText = `📅 Generated: ${new Date().toLocaleString('bn-BD')}`;
         wrapper.appendChild(footer);
         document.body.appendChild(wrapper);
-        html2canvas(wrapper, { 
-            scale: 2.5, 
-            backgroundColor: '#ffffff', 
+        html2canvas(wrapper, {
+            scale: 2.5,
+            backgroundColor: '#ffffff',
             logging: false,
             useCORS: true,
             allowTaint: true
@@ -1567,7 +1614,6 @@
             }
             const isNoMC = ((row.sn >= 11 && row.sn <= 13) ||
                             (row.sn >= 15 && row.sn <= 23));
-            // Order according to headers
             const rowData = [
                 row.sn,
                 row.dept,
@@ -1579,10 +1625,8 @@
                 isNoMC ? '-' : row.targetRun,
                 isNoMC ? '-' : row.runPct.toFixed(1) + '%',
                 isNoMC ? '-' : row.mcWillOff,
-                // Double MC & Packaging Operator
                 isNoMC ? '-' : row.doubleMC,
                 isNoMC ? '-' : row.packagingOperator,
-                // বাকি
                 isNoMC ? '-' : row.mpShort,
                 isNoMC ? '-' : row.moldProb,
                 isNoMC ? '-' : row.moldChange,
