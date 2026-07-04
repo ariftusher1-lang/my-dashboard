@@ -53,37 +53,40 @@
         .mc-badge { background: #0d47a1; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
         .saifuddin-title { background: #1a237e; color: white; padding: 8px 20px; border-radius: 6px; display: inline-block; font-weight: 600; }
 
-        /* 🔥 ডুপ্লিকেট ডিপার্টমেন্ট হাইলাইট (সবুজ) */
+        /* 🔥 ডুপ্লিকেট ডিপার্টমেন্ট হাইলাইট – লাল (Red) */
         .row-duplicate {
-            background: #d4edda !important;
-            border-left: 4px solid #28a745 !important;
+            background: #f8d7da !important;  /* হালকা লাল */
+            border-left: 4px solid #dc3545 !important; /* গাঢ় লাল বর্ডার */
         }
         .row-duplicate td:first-child {
-            border-left: 4px solid #28a745;
+            border-left: 4px solid #dc3545;
         }
         .row-duplicate:hover {
-            background: #c3e6cb !important;
+            background: #f1c0c0 !important; /* হোভার করলে একটু গাঢ় লাল */
         }
         /* টোটাল সারি ডুপ্লিকেট নয়, তাই ওভাররাইড */
         .total-row.row-duplicate {
             background: #d4e4f7 !important;
             border-left: none !important;
         }
-        /* প্রোডাকশন/প্যাকেজিং/কমন সারি ডুপ্লিকেট হলে ওভাররাইড */
+        /* প্রোডাকশন/প্যাকেজিং/কমন সারি ডুপ্লিকেট হলে ওভাররাইড (লাল) */
         .row-production.row-duplicate td {
-            background: #d4edda !important;
-            border-color: #28a745 !important;
+            background: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #721c24 !important;
         }
         .row-packaging.row-duplicate td {
-            background: #d4edda !important;
-            border-color: #28a745 !important;
+            background: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #721c24 !important;
         }
         .row-common.row-duplicate td {
-            background: #d4edda !important;
-            border-color: #28a745 !important;
+            background: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #721c24 !important;
         }
         .row-manpower.row-duplicate {
-            background: #1a237e !important;
+            background: #1a237e !important; /* ম্যানপাওয়ার ডুপ্লিকেট নয়, তাই আগের মতো */
         }
 
         .saifuddin-table {
@@ -166,6 +169,15 @@
         .badge-absent { background: #ffebee; color: #b71c1c; }
         .badge-leave { background: #fff3e0; color: #e65100; }
         .badge-total { background: #e3f2fd; color: #0d47a1; }
+        /* ডুপ্লিকেট ব্যাজ (লাল) */
+        .badge-duplicate {
+            background: #dc3545 !important;
+            color: white !important;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
 
         .row-production td {
             background: #d4edda !important;
@@ -779,7 +791,9 @@
         window._currentWeeklyData = { rows, totalFixedMC, overallAvgPresent, overallAvgRun, totalCount, days };
     }
 
-    // ===== Saifuddin Table (ডুপ্লিকেট হাইলাইট সহ) =====
+    // ================================================================
+    // Saifuddin Table (ডুপ্লিকেট → লাল রঙ)
+    // ================================================================
     function renderSaifuddinTable(data) {
         const container = document.getElementById('saifuddinTableContainer');
 
@@ -817,8 +831,7 @@
 
             const hasData = deptRows.length > 0;
             const isFixed = FIXED_SN_LIST.includes(item.sn);
-            // ⭐ ডুপ্লিকেট চেক: একাধিক এন্ট্রি থাকলে true
-            const isDuplicate = deptRows.length > 1;
+            const isDuplicate = deptRows.length > 1; // 🔥 চেক
 
             let totalPresent = 0, absent = 0, leave = 0;
             let calculatedMC = 0, targetRun = 0, mcWillOff = 0;
@@ -862,7 +875,6 @@
                 mpShort, moldProb, moldChange, sample, mcProb,
                 preventive, noDemand, materialShort, overStock, accShort };
 
-            // গ্রুপ টোটাল
             if (item.sn >= 1 && item.sn <= 9) {
                 prodTotal.totalMP += totalMP; prodTotal.totalPresent += totalPresent; prodTotal.absent += absent; prodTotal.leave += leave;
                 prodTotal.totalMC += totalMC; prodTotal.targetRun += targetRun; prodTotal.mcWillOff += mcWillOff;
@@ -901,7 +913,7 @@
                 isTotal: false,
                 hasData: hasData,
                 isFixed: isFixed,
-                isDuplicate: isDuplicate,  // ⭐ ডুপ্লিকেট ফ্ল্যাগ
+                isDuplicate: isDuplicate,
                 entryCount: deptRows.length
             });
 
@@ -976,7 +988,6 @@
             return;
         }
 
-        // হেডার
         const headers = ['SN', 'Department', 'Total MP', 'Total Present', 'Absent', 'Leave',
             'Total MC', 'Target MC Run', 'MC Run %', 'MC Will off',
             'Double MC', 'Packaging Operator',
@@ -994,7 +1005,7 @@
             else if (row.sn === 24) rowClass = 'row-common';
             else if (row.sn === 25) rowClass = 'row-manpower';
 
-            // ⭐ ডুপ্লিকেট হলে row-duplicate ক্লাস যোগ করি (টোটাল নয়)
+            // 🔥 ডুপ্লিকেট হলে row-duplicate ক্লাস যোগ (টোটাল বাদ)
             if (row.isDuplicate && !row.isTotal) {
                 rowClass += ' row-duplicate';
             }
@@ -1033,9 +1044,9 @@
             html += `<tr class="${rowClass}">`;
             html += `<td><strong>${row.sn}</strong></td>`;
             html += `<td class="dept-name"><strong>${row.dept}</strong>`;
-            // ডুপ্লিকেট হলে ব্যাজ দেখাই
+            // 🔥 ডুপ্লিকেট ব্যাজ – লাল
             if (row.isDuplicate && !row.isTotal) {
-                html += ` <span style="background:#28a745; color:white; padding:2px 8px; border-radius:12px; font-size:11px;">🔁 ${row.entryCount} entries</span>`;
+                html += ` <span class="badge-duplicate">🔁 ${row.entryCount} entries</span>`;
             }
             html += `</td>`;
             html += `<td>${displayTotalMP}</td><td>${displayPresent}</td><td>${displayAbsent}</td><td>${displayLeave}</td>`;
@@ -1077,7 +1088,7 @@
         window._saifuddinHeaders = headers;
     }
 
-    // ===== MC Department Table =====
+    // ===== MC Department Table (আগের মতো) =====
     function renderMcSummaryTable(data) {
         const container = document.getElementById('mcSummaryTable');
         const mcData = data.filter(row => {
@@ -1253,7 +1264,7 @@
     }
 
     // ================================================================
-    // Group Table
+    // Group Table (আগের মতো)
     // ================================================================
     function renderGroupTable(data, containerId, groupType) {
         const container = document.getElementById(containerId);
@@ -1329,7 +1340,7 @@
     }
 
     // ================================================================
-    // Overall, Missing, Raw Data
+    // বাকি ফাংশন (Overall, Missing, Raw Data, Excel) - অপরিবর্তিত
     // ================================================================
     function renderOverall(data) {
         const container = document.getElementById('overallTable');
@@ -1433,7 +1444,7 @@
     }
 
     // ================================================================
-    // ডাউনলোড ফাংশন
+    // ডাউনলোড ফাংশন (MC, Saifuddin, Weekly)
     // ================================================================
     function downloadMCImage() {
         const container = document.getElementById('mcSummaryTable');
