@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>প্রতিদিনের এন্ট্রি ফর্ম + রিভিউ</title>
+    <title>প্রতিদিনের এন্ট্রি ফর্ম</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -383,7 +383,7 @@
     // ============================================================
     // 🚀  আপনার Apps Script URL (এখানে বসান)
     // ============================================================
-    const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwP8Zo9wQjC1srQq5XEkQdSST6fGkb7iT32ThXvobA7BYLzADywf1rmCfh3fss-Zy73WA/exec';
+    const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzsDhcEhyprW4gpQ2I6_qyowhznHY85VQXUi4FVxJNzm9Etw8oPtf40aom1bO14UUgayg/exec';
 
     // ---------- ডিপার্টমেন্ট ম্যাপিং ----------
     const DEPARTMENT_IC_MAP = {
@@ -426,20 +426,6 @@
         'Product Development & Mold Change', 'RIP-DPL-Factory Support',
         'DPL-QA', 'RIP RFL Store'
     ];
-
-    // ---------- নেটওয়ার্ক চেক ----------
-    function checkNetwork() {
-        const badge = document.getElementById('offlineBadge');
-        if (!navigator.onLine) {
-            badge.classList.add('show');
-            return false;
-        } else {
-            badge.classList.remove('show');
-            return true;
-        }
-    }
-    window.addEventListener('online', () => document.getElementById('offlineBadge').classList.remove('show'));
-    window.addEventListener('offline', () => document.getElementById('offlineBadge').classList.add('show'));
 
     // ---------- ড্রপডাউন ----------
     function populateDepartments() {
@@ -513,6 +499,20 @@
         document.getElementById('pctRunning').value = pR.toFixed(2) + '%';
         document.getElementById('pctStopped').value = pS.toFixed(2) + '%';
     }
+
+    // ---------- নেটওয়ার্ক চেক ----------
+    function checkNetwork() {
+        const badge = document.getElementById('offlineBadge');
+        if (!navigator.onLine) {
+            badge.classList.add('show');
+            return false;
+        } else {
+            badge.classList.remove('show');
+            return true;
+        }
+    }
+    window.addEventListener('online', () => document.getElementById('offlineBadge').classList.remove('show'));
+    window.addEventListener('offline', () => document.getElementById('offlineBadge').classList.add('show'));
 
     // ---------- ডুপ্লিকেট চেক ----------
     async function checkDuplicate(date, shift, dept) {
@@ -588,7 +588,7 @@
             return;
         }
 
-        // 🔥 ডুপ্লিকেট চেক
+        // ডুপ্লিকেট চেক
         const isDup = await checkDuplicate(date, shift, dept);
         if (isDup) {
             dupAlert.style.display = 'block';
@@ -638,16 +638,7 @@
                 body: JSON.stringify(payload)
             });
             
-            // রেসপন্স পড়ার চেষ্টা করি
-            let result;
-            try {
-                result = await response.json();
-            } catch (e) {
-                // যদি JSON পার্স না হয়, টেক্সট পড়ি
-                const text = await response.text();
-                console.log('Raw response:', text);
-                result = { success: false, message: 'সার্ভার থেকে সঠিক রেসপন্স পাওয়া যায়নি' };
-            }
+            const result = await response.json();
 
             if (result.success) {
                 status.className = 'success';
@@ -689,7 +680,7 @@
     });
 
     // ============================================================
-    //  📊  ADMIN REPORT – ফিল্টার সহ
+    //  📊  ADMIN REPORT
     // ============================================================
     let allReportData = [];
 
