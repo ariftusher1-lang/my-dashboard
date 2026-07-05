@@ -151,6 +151,7 @@
             border: 1px solid var(--border-color);
             margin-bottom: 10px;
             flex-wrap: wrap;
+            cursor: pointer;
         }
         .counter-box .count-number {
             font-size: 20px;
@@ -450,6 +451,20 @@
             border: 2px solid var(--footer-note-border);
             display: inline-block;
             transition: background 0.3s, color 0.3s, border 0.3s;
+        }
+
+        /* ভয়েস স্পিকার আইকন (ছোট) */
+        .voice-icon {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+        .voice-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -878,13 +893,10 @@
             if (!result.data) throw new Error('No data');
             const allData = result.data;
 
-            // আজকের তারিখ
             const today = new Date().toISOString().slice(0,10);
-            // বর্তমান শিফট (দিনের উপর ভিত্তি করে)
             const hours = new Date().getHours();
             const currentShift = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
 
-            // ফিল্টার: আজকের + শিফট ম্যাচ
             const filtered = allData.filter(row => {
                 const rowDate = row.Date || row.entryDate || '';
                 const rowShift = row.Shift || row.shift || '';
@@ -901,7 +913,24 @@
     }
 
     // ============================================================
-    // ৮. ফর্ম সাবমিট (সেভ + রসিদ দেখানো)
+    // ৮. 🗣️ ভয়েস ফাংশন (সাফল্য বার্তা)
+    // ============================================================
+    function speakSuccess() {
+        if ('speechSynthesis' in window) {
+            // আগের কোনো কথা বলা বন্ধ করি
+            window.speechSynthesis.cancel();
+
+            const msg = new SpeechSynthesisUtterance('আপনার তথ্য সঠিকভাবে জমা হয়েছে!');
+            msg.lang = 'bn-BD';
+            msg.rate = 0.9;
+            msg.pitch = 1.1;
+            msg.volume = 1;
+            window.speechSynthesis.speak(msg);
+        }
+    }
+
+    // ============================================================
+    // ৯. ফর্ম সাবমিট (সেভ + রসিদ + ভয়েস)
     // ============================================================
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -998,7 +1027,7 @@
         console.log('📤 পাঠানো ডেটা:', payload);
 
         try {
-            const response = await fetch(APP_SCRIPT_URL, {
+            await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
@@ -1009,7 +1038,10 @@
             status.className = 'success';
             status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে!';
 
-            // 🔥 রসিদ দেখান
+            // 🔥 ভয়েস বলুন
+            speakSuccess();
+
+            // রসিদ দেখান
             showReceipt(payload);
 
             // কাউন্টার আপডেট
@@ -1025,13 +1057,12 @@
     });
 
     // ============================================================
-    // ৯. রসিদ দেখানো
+    // ১০. রসিদ ফাংশন
     // ============================================================
     function showReceipt(data) {
         const modal = document.getElementById('receiptModal');
         const body = document.getElementById('receiptBody');
 
-        // গুরুত্বপূর্ণ ফিল্ডগুলো নির্বাচন
         const fields = [
             { label: '📅 তারিখ', key: 'entryDate' },
             { label: '🕒 শিফট', key: 'shift' },
@@ -1090,7 +1121,6 @@
         });
         html += '</div>';
 
-        // সময় যোগ
         const now = new Date().toLocaleString('bn-BD');
         html += `<p style="margin-top:12px; font-size:13px; color:var(--label-color); text-align:right;">📅 জমা: ${now}</p>`;
 
@@ -1106,17 +1136,14 @@
         window.print();
     }
 
-    // ক্লোজ বাটন
     document.querySelector('.btn-close-receipt').addEventListener('click', closeReceipt);
-    // মোডালের বাইরে ক্লিক করলে বন্ধ
     document.getElementById('receiptModal').addEventListener('click', function(e) {
         if (e.target === this) closeReceipt();
     });
 
     // ============================================================
-    // ১০. অতিরিক্ত: কাউন্টার ম্যানুয়াল রিফ্রেশ (যদি চান)
+    // ১১. কাউন্টার রিফ্রেশ (ক্লিক করলে)
     // ============================================================
-    // কাউন্টার বক্সে ক্লিক করলে রিফ্রেশ হবে
     document.getElementById('counterBox').addEventListener('click', function() {
         updateEntryCounter();
         this.querySelector('#counterStatus').textContent = '🔄 রিফ্রেশ...';
