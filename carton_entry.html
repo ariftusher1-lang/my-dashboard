@@ -27,8 +27,6 @@
         .btn-danger:hover { background: #bd2130; }
         .btn-warning { background: #ffc107; color: #333; }
         .btn-warning:hover { background: #e0a800; }
-        .btn-info { background: #17a2b8; color: white; }
-        .btn-info:hover { background: #138496; }
         .table-wrap { overflow-x: auto; margin-top: 15px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { background: #e3eef9; color: #0d47a1; padding: 10px 8px; border-bottom: 2px solid #1976d2; white-space: nowrap; text-align: center; }
@@ -45,8 +43,6 @@
         .link-back:hover { background: #5a6268; }
         .alert-box { background: #fff3cd; border-left: 6px solid #ffc107; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px; color: #856404; font-weight: 500; display: none; }
         .alert-box.show { display: block; }
-        .alert-box .action-link { color: #0d47a1; font-weight: 700; text-decoration: underline; cursor: pointer; margin-left: 10px; }
-        .alert-box .action-link:hover { color: #004080; }
     </style>
 </head>
 <body>
@@ -60,7 +56,7 @@
     <div id="alertMessage" class="alert-box"></div>
 
     <div class="card">
-        <h2 id="formTitle">➕ নতুন এন্ট্রি</h2>
+        <h2>➕ নতুন এন্ট্রি</h2>
         <div class="form-grid" id="entryForm">
             <div class="form-group">
                 <label>📅 তারিখ (Entry Date)</label>
@@ -105,8 +101,7 @@
                 <span id="utilDisplay" class="util-pct">Utilisation: 0%</span>
             </div>
             <div class="form-group" style="justify-content: flex-end;">
-                <button class="btn btn-success" id="submitBtn" onclick="handleSubmit()">➕ এন্ট্রি যোগ করুন</button>
-                <button class="btn btn-secondary" id="cancelUpdateBtn" style="display:none; background:#6c757d; color:white; margin-top:5px;" onclick="cancelUpdate()">বাতিল করুন</button>
+                <button class="btn btn-success" onclick="addEntry()">➕ এন্ট্রি যোগ করুন</button>
             </div>
         </div>
     </div>
@@ -148,9 +143,6 @@
     DEPARTMENTS.forEach(d => { DEPT_NAME_TO_IC[d.name] = d.prodIC; });
 
     const STORAGE_KEY = 'carton_entry_data';
-
-    // গ্লোবাল ভেরিয়েবল: আপডেট মোডে থাকলে এন্ট্রি আইডি
-    let updateEntryId = null;
 
     function getEntries() {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -202,119 +194,60 @@
     }
 
     // ================================================================
-    // আপডেট মোডে ফর্ম লোড করা
+    // 🗣️ ভয়েস ফাংশন (Female Voice - অ্যালার্ট ও সফলতার জন্য)
     // ================================================================
-    function loadEntryForUpdate(entryId) {
-        const entries = getEntries();
-        const entry = entries.find(e => e.id === entryId);
-        if (!entry) return;
-
-        // ফর্মে ডেটা বসান
-        document.getElementById('entryDate').value = entry.entryDate;
-        document.getElementById('deptSelect').value = entry.dept;
-        updateProdIC(); // এটি আইসি নাম সেট করবে
-        document.getElementById('shiftSelect').value = entry.shift; // Day
-        document.getElementById('icName').value = entry.icName;
-        document.getElementById('dayHr').value = entry.dayHr;
-        document.getElementById('cartonTarget').value = entry.target;
-        document.getElementById('ctnOutput').value = ''; // আপডেটের জন্য খালি রাখি
-        document.getElementById('perHrCtn').value = '0';
-        document.getElementById('utilDisplay').innerHTML = 'Utilisation: 0%';
-
-        // আপডেট মোড সেট
-        updateEntryId = entryId;
-        document.getElementById('formTitle').innerHTML = '✏️ এন্ট্রি আপডেট করুন (CTN Output)';
-        document.getElementById('submitBtn').innerHTML = '💾 আপডেট করুন';
-        document.getElementById('cancelUpdateBtn').style.display = 'inline-block';
-
-        // CTN Output ফিল্ডে ফোকাস
-        document.getElementById('ctnOutput').focus();
-
-        // অ্যালার্ট বার্তা মুছে ফেলি
-        const alertBox = document.getElementById('alertMessage');
-        alertBox.classList.remove('show');
-        alertBox.innerText = '';
+    function getFemaleVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        // ১. বাংলা Female
+        for (let v of voices) {
+            if (v.lang.startsWith('bn') && v.name.toLowerCase().includes('female')) return v;
+        }
+        // ২. যেকোনো বাংলা
+        for (let v of voices) {
+            if (v.lang.startsWith('bn')) return v;
+        }
+        // ৩. যেকোনো Female ইংরেজি
+        for (let v of voices) {
+            if (v.name.toLowerCase().includes('female')) return v;
+        }
+        return null;
     }
 
-    function cancelUpdate() {
-        updateEntryId = null;
-        document.getElementById('formTitle').innerHTML = '➕ নতুন এন্ট্রি';
-        document.getElementById('submitBtn').innerHTML = '➕ এন্ট্রি যোগ করুন';
-        document.getElementById('cancelUpdateBtn').style.display = 'none';
-        clearForm();
-    }
-
-    // ================================================================
-    // হ্যান্ডেল সাবমিট (যোগ বা আপডেট)
-    // ================================================================
-    function handleSubmit() {
-        if (updateEntryId) {
-            updateEntry();
+    function speakText(text, pitch = 1.2, rate = 0.85) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'bn-BD';
+        msg.rate = rate;
+        msg.pitch = pitch;
+        msg.volume = 1;
+        const voice = getFemaleVoice();
+        if (voice) msg.voice = voice;
+        // ভয়েস লোড না হলে অপেক্ষা
+        if (window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.onvoiceschanged = function() {
+                const v2 = getFemaleVoice();
+                if (v2) msg.voice = v2;
+                window.speechSynthesis.speak(msg);
+            };
         } else {
-            addEntry();
+            window.speechSynthesis.speak(msg);
         }
     }
 
-    function updateEntry() {
-        const alertBox = document.getElementById('alertMessage');
-        alertBox.classList.remove('show');
-        alertBox.innerText = '';
+    // অ্যালার্টের জন্য ভয়েস
+    function speakAlert(alertText) {
+        speakText(alertText, 1.1, 0.85);
+    }
 
-        const dept = document.getElementById('deptSelect').value;
-        const prodIC = document.getElementById('prodIC').value;
-        const shift = document.getElementById('shiftSelect').value;
-        const icName = document.getElementById('icName').value.trim() || '-';
-        const dayHr = parseFloat(document.getElementById('dayHr').value) || 0;
-        const target = parseFloat(document.getElementById('cartonTarget').value) || 0;
-        const output = parseFloat(document.getElementById('ctnOutput').value) || 0;
-        const perHr = dayHr > 0 ? output / dayHr : 0;
-        const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
-        const entryDate = document.getElementById('entryDate').value;
-
-        if (!entryDate) { alert('দয়া করে একটি তারিখ নির্বাচন করুন!'); return; }
-        if (!dept) { alert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!'); return; }
-        if (dayHr <= 0) { alert('Day HR অবশ্যই ০-এর বেশি হতে হবে!'); return; }
-        if (output <= 0) { alert('CTN Output অবশ্যই ০-এর বেশি হতে হবে!'); return; }
-
-        let entries = getEntries();
-        const index = entries.findIndex(e => e.id === updateEntryId);
-        if (index === -1) {
-            alert('এন্ট্রি খুঁজে পাওয়া যায়নি!');
-            return;
-        }
-
-        // আপডেট
-        entries[index] = {
-            ...entries[index],
-            dayHr,
-            target,
-            output,
-            perHr,
-            utilPct,
-            icName,
-            timestamp: new Date().toLocaleString('bn-BD')
-        };
-
-        saveEntries(entries);
-        renderLog();
-
-        // সফল বার্তা
-        alertBox.style.borderLeftColor = '#28a745';
-        alertBox.style.background = '#d4edda';
-        alertBox.style.color = '#155724';
-        alertBox.innerText = `✅ CTN Output আপডেট হয়েছে! (CTN: ${output}) এখন আপনি Night Shift-এর এন্ট্রি দিতে পারেন।`;
-        alertBox.classList.add('show');
-
-        // আপডেট মোড রিসেট
-        cancelUpdate();
-
-        setTimeout(() => {
-            alertBox.classList.remove('show');
-        }, 5000);
+    // সফল এন্ট্রির জন্য ভয়েস (আগের মতো)
+    function speakSuccess() {
+        const msg = 'আপনার তথ্য সঠিকভাবে জমা হয়েছে। আপনি যদি এন্ট্রি দেওয়ার সময় কোনো ভুল করে থাকেন, তাহলে দ্রুত সাইফুদ্দিন অথবা সায়েম ভাইয়ের সাথে যোগাযোগ করুন। তারা রিপোর্টটি সংশোধন করতে সাহায্য করবেন।';
+        speakText(msg, 1.2, 0.85);
     }
 
     // ================================================================
-    // অ্যাড এন্ট্রি (আগের মতো, তবে আপডেট লিংক যোগ করা হয়েছে)
+    // 🔥 আপডেটেড অ্যাড এন্ট্রি (শক্তিশালী ভ্যালিডেশন + ভয়েস)
     // ================================================================
     function addEntry() {
         const alertBox = document.getElementById('alertMessage');
@@ -341,39 +274,45 @@
 
         const entries = getEntries();
 
-        // STEP 1: Day Shift-এর জন্য ডুপ্লিকেট চেক
+        // --- STEP 1: চেক করা আগের Day Shift এন্ট্রি আছে কিনা ---
         const existingDayEntries = entries.filter(e => 
             e.entryDate === entryDate && e.shift === 'Day' && e.dept === dept
         );
 
+        // যদি ইউজার Day Shift দিতে চায়
         if (shift === 'Day') {
             if (existingDayEntries.length > 0) {
-                alertBox.innerText = `⚠️ আজকের "${dept}" ডিপার্টমেন্টে ইতিমধ্যে একটি Day Shift এন্ট্রি আছে! (IC: ${existingDayEntries[0].icName})।\nদয়া করে আগের এন্ট্রি ডিলিট করে নতুন করুন, অথবা শুধুমাত্র Night Shift দিন।`;
+                const alertMsg = `"${dept}" ডিপার্টমেন্টের ${entryDate} তারিখের Day Shift-এ ইতিমধ্যে একটি এন্ট্রি আছে! IC Name: ${existingDayEntries[0].icName}। দয়া করে আগের এন্ট্রি ডিলিট করে নতুন করুন, অথবা শুধুমাত্র Night Shift দিন।`;
+                alertBox.innerText = `⚠️ ${alertMsg}`;
                 alertBox.classList.add('show');
+                speakAlert(alertMsg);
                 return;
             }
         }
 
-        // STEP 2: Night Shift-এর জন্য চেক এবং আপডেট লিংক
+        // --- STEP 2: Night Shift দিতে চাইলে Day Shift-এর Output চেক ---
         if (shift === 'Night') {
             if (existingDayEntries.length === 0) {
-                alertBox.innerText = `⚠️ আজকের "${dept}" ডিপার্টমেন্টে কোনো Day Shift এন্ট্রি নেই! আগে Day Shift-এর CTN Output সহ এন্ট্রি সম্পূর্ণ করুন।`;
+                const alertMsg = `"${dept}" ডিপার্টমেন্টের ${entryDate} তারিখে কোনো Day Shift এন্ট্রি নেই! আগে Day Shift-এর CTN Output সহ এন্ট্রি সম্পূর্ণ করুন।`;
+                alertBox.innerText = `⚠️ ${alertMsg}`;
                 alertBox.classList.add('show');
+                speakAlert(alertMsg);
                 return;
             }
 
+            // Day Entry আছে, কিন্তু তার Output ০ কিনা চেক করি
             const dayEntry = existingDayEntries[0];
             if (!dayEntry.output || dayEntry.output === 0) {
-                // এখানে আপডেট লিংক যোগ করছি
-                alertBox.innerHTML = `⚠️ "${dept}" ডিপার্টমেন্টের Day Shift-এর CTN Output (বর্তমানে ${dayEntry.output}) দেওয়া হয়নি!<br>
-                <span class="action-link" onclick="loadEntryForUpdate(${dayEntry.id})">এখনই CTN Output আপডেট করুন ➜</span>`;
+                const alertMsg = `"${dept}" ডিপার্টমেন্টের ${entryDate} তারিখের Day Shift-এর CTN Output (বর্তমানে ${dayEntry.output}) দেওয়া হয়নি! IC Name: ${dayEntry.icName}। দয়া করে আগে এই Day Shift-এর CTN Output আপডেট করুন (০-এর বেশি), তারপর Night Shift HR এর Data Entry দিন।`;
+                alertBox.innerText = `⚠️ ${alertMsg}`;
                 alertBox.classList.add('show');
+                speakAlert(alertMsg);
                 return;
             }
             // সব ঠিক থাকলে নিচে এগোবে
         }
 
-        // STEP 3: নতুন এন্ট্রি তৈরি
+        // --- STEP 3: এন্ট্রি তৈরি ও সেভ ---
         const entry = {
             id: Date.now(),
             dept,
@@ -394,11 +333,13 @@
         renderLog();
         clearForm();
 
+        // সফল বার্তা + ভয়েস
         alertBox.style.borderLeftColor = '#28a745';
         alertBox.style.background = '#d4edda';
         alertBox.style.color = '#155724';
         alertBox.innerText = `✅ ${shift} Shift-এর এন্ট্রি সফলভাবে যোগ হয়েছে! (CTN: ${output})`;
         alertBox.classList.add('show');
+        speakSuccess();
 
         setTimeout(() => {
             alertBox.classList.remove('show');
@@ -513,6 +454,14 @@
     document.getElementById('entryDate').value = today;
     renderLog();
     document.getElementById('currentDate').innerText = new Date().toLocaleString('bn-BD');
+
+    // ভয়েস প্রি-লোড (ব্যাকগ্রাউন্ডে ভয়েস লোড হয়ে যাক)
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = function() {
+            window.speechSynthesis.getVoices();
+        };
+    }
 </script>
 </body>
 </html>
