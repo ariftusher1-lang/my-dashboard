@@ -41,6 +41,9 @@
             --footer-note-text: #b71c1c;
             --counter-bg: #e3f2fd;
             --counter-text: #0d47a1;
+            --summary-card-bg: #d4edda;
+            --summary-card-border: #28a745;
+            --summary-card-text: #155724;
         }
 
         /* ----- ডার্ক মোডের ভেরিয়েবল ----- */
@@ -79,6 +82,9 @@
             --footer-note-text: #ef9a9a;
             --counter-bg: #1a2a3a;
             --counter-text: #64b5f6;
+            --summary-card-bg: #1e3a2a;
+            --summary-card-border: #2d7d46;
+            --summary-card-text: #8bc34a;
         }
 
         /* ----- মৌলিক স্টাইল ----- */
@@ -346,6 +352,50 @@
             margin-left: 8px;
             display: inline-block;
         }
+
+        /* ----- নতুন: সামারি কার্ড স্টাইল ----- */
+        #summaryCard {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: var(--summary-card-bg);
+            border: 2px solid var(--summary-card-border);
+            border-radius: 12px;
+            color: var(--summary-card-text);
+            font-size: 16px;
+            line-height: 1.8;
+            box-shadow: 0 2px 8px var(--shadow-color);
+            transition: background 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
+        }
+        #summaryCard .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #summaryCard .card-item {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px 15px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        #summaryCard .card-item:last-child {
+            border-bottom: none;
+        }
+        #summaryCard .card-label {
+            font-weight: 600;
+            min-width: 120px;
+        }
+        #summaryCard .card-value {
+            font-weight: 400;
+        }
+        #summaryCard .card-highlight {
+            font-weight: 700;
+            color: var(--summary-card-text);
+        }
     </style>
 </head>
 <body>
@@ -490,6 +540,17 @@
         <button type="submit">💾 ডেটা সেভ করুন</button>
         <div id="duplicateAlert">⚠️ আপনার ডিপার্টমেন্ট থেকে ইতিমধ্যে একই তারিখ ও শিফটের ডেটা জমা দেওয়া হয়েছে! দয়া করে চেক করুন।</div>
     </form>
+    
+    <!-- ===== সামারি কার্ড (নতুন) ===== -->
+    <div id="summaryCard">
+        <div class="card-title">✅ সফলভাবে জমা হয়েছে!</div>
+        <div class="card-item"><span class="card-label">📅 তারিখ ও শিফট:</span><span class="card-value" id="summaryDateShift"></span></div>
+        <div class="card-item"><span class="card-label">🏭 ডিপার্টমেন্ট:</span><span class="card-value" id="summaryDept"></span></div>
+        <div class="card-item"><span class="card-label">👤 আইসি নাম:</span><span class="card-value" id="summaryIC"></span></div>
+        <div class="card-item"><span class="card-label">⚙️ মেশিন রান:</span><span class="card-value" id="summaryMCRun"></span></div>
+        <div class="card-item"><span class="card-label">👥 মোট কর্মী:</span><span class="card-value" id="summaryTotalHR"></span></div>
+    </div>
+
     <div id="status"></div>
 
     <!-- ফুটার – রিপোর্ট লিংক + কন্টাক্ট -->
@@ -518,7 +579,7 @@
         'RIP> DPL> Plastic-7.1': 'Mr. Monir',
         'RIP> DPL> Plastic-7.2': 'Mr. Sayem',
         'RIP> DPL> Plastic-7.3': 'Mr. Saddam',
-        'RIP> DPL> Plastic-7.4': 'Mr. Saddam',
+        'RIP> DPL> Plastic-7.4': 'Mr. Awal',
         'RIP> DPL> Plastic-1': 'Mr. Atiqur Rahman',
         'Plastic Packaging-01': 'Mr. Mahbub',
         'Plastic Packaging-02': 'Mr. Rakib',
@@ -734,7 +795,7 @@
     }
 
     // ============================================================
-    // ৬. রিসেট ফর্ম
+    // ৬. রিসেট ফর্ম (সামারি কার্ড লুকাবে)
     // ============================================================
     function resetForm() {
         document.getElementById('entryDate').value = '';
@@ -786,6 +847,8 @@
         document.getElementById('duplicateAlert').style.display = 'none';
         document.getElementById('status').className = '';
         document.getElementById('status').innerHTML = '';
+        // সামারি কার্ড লুকাও
+        document.getElementById('summaryCard').style.display = 'none';
         toggleMcFields('');
     }
 
@@ -898,7 +961,7 @@
     }
 
     // ============================================================
-    // ৯. ফর্ম সাবমিট (সেভ + ভয়েস + সবুজ বক্সে বার্তা)
+    // ৯. ফর্ম সাবমিট (সেভ + সামারি কার্ড + ভয়েস)
     // ============================================================
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -934,15 +997,21 @@
         const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
         const totalHRValue = getNum('totalPresent');
 
+        // পড়ে রাখি সামারি কার্ডের জন্য ডেটা
+        const totalMC = getNum('totalMC');
+        const mcRunning = getNum('mcRunning');
+        const mcStopped = getNum('mcStopped');
+        const pctRunning = getVal('pctRunning') || '0%';
+
         const payload = {
             entryDate: date,
             shift: shift,
             department: dept,
             icName: icName,
-            totalMC: getNum('totalMC'),
-            mcRunning: getNum('mcRunning'),
-            mcStopped: getNum('mcStopped'),
-            pctRunning: getVal('pctRunning') || '0%',
+            totalMC: totalMC,
+            mcRunning: mcRunning,
+            mcStopped: mcStopped,
+            pctRunning: pctRunning,
             pctStopped: getVal('pctStopped') || '0%',
             prodHR: '0',
             targetCTN: '0',
@@ -1004,14 +1073,21 @@
 
             localStorage.setItem(key, 'submitted');
             
-            // ✅ সবুজ বক্সে লম্বা বার্তা দেখান
+            // ✅ সামারি কার্ড পপুলেট
+            document.getElementById('summaryDateShift').textContent = `${date} | ${shift}`;
+            document.getElementById('summaryDept').textContent = dept;
+            document.getElementById('summaryIC').textContent = icName;
+            // মেশিন রান: pctRunning (যেমন "90%") এবং (running/total) দেখাই
+            const runDisplay = (totalMC > 0) ? `${pctRunning} (${mcRunning}/${totalMC}টি)` : 'N/A';
+            document.getElementById('summaryMCRun').textContent = runDisplay;
+            document.getElementById('summaryTotalHR').textContent = totalHRValue + ' জন';
+
+            // কার্ড দেখান
+            document.getElementById('summaryCard').style.display = 'block';
+            
+            // স্ট্যাটাস বার্তা এখন কার্ডের নিচে ছোট করে দেখানো যায়, তবে আমরা চাইলে কার্ডই যথেষ্ট
             status.className = 'success';
-            status.innerHTML = `
-                ✅ আপনার তথ্য সঠিকভাবে জমা হয়েছে।<br><br>
-                আপনি যদি এন্ট্রি দেওয়ার সময় কোনো ভুল করে থাকেন, তাহলে দ্রুত 
-                <strong>Saifuddin</strong> অথবা <strong>Sayem</strong> ভাইয়ের সাথে যোগাযোগ করুন।<br>
-                তারা রিপোর্টটি সংশোধন করতে সাহায্য করবেন।
-            `;
+            status.innerHTML = '✅ ডেটা সফলভাবে সংরক্ষিত হয়েছে! নিচের সারাংশ দেখুন।';
 
             // 🗣️ ভয়েস বলুন (Female Voice)
             speakSuccess();
@@ -1019,6 +1095,7 @@
             // কাউন্টার আপডেট
             updateEntryCounter();
 
+            // ফর্ম রিসেট করুন (কার্ড কিন্তু থাকবে)
             resetForm();
 
         } catch (error) {
