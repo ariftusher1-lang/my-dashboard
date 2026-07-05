@@ -2,7 +2,7 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>প্রতিদিনের এন্ট্রি ফর্ম</title>
     <style>
         /* ----- সাধারণ ভেরিয়েবল (ডিফল্ট লাইট মোড) ----- */
@@ -39,6 +39,11 @@
             --footer-note-bg: #fff5f5;
             --footer-note-border: #e53935;
             --footer-note-text: #b71c1c;
+            --counter-bg: #e3f2fd;
+            --counter-text: #0d47a1;
+            --modal-overlay: rgba(0,0,0,0.5);
+            --modal-bg: #ffffff;
+            --modal-text: #333333;
         }
 
         /* ----- ডার্ক মোডের ভেরিয়েবল ----- */
@@ -75,6 +80,11 @@
             --footer-note-bg: #2a1a1a;
             --footer-note-border: #e53935;
             --footer-note-text: #ef9a9a;
+            --counter-bg: #1a2a3a;
+            --counter-text: #64b5f6;
+            --modal-overlay: rgba(0,0,0,0.7);
+            --modal-bg: #2a2a2a;
+            --modal-text: #e0e0e0;
         }
 
         /* ----- মৌলিক স্টাইল ----- */
@@ -95,6 +105,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 15px var(--shadow-color);
             transition: background 0.3s, box-shadow 0.3s;
+            position: relative;
         }
 
         h2 {
@@ -125,6 +136,142 @@
             border-color: #0d47a1;
         }
 
+        /* ----- কাউন্টার স্টাইল ----- */
+        .counter-box {
+            background: var(--counter-bg);
+            color: var(--counter-text);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.3s, color 0.3s;
+            border: 1px solid var(--border-color);
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .counter-box .count-number {
+            font-size: 20px;
+            background: var(--container-bg);
+            padding: 0 10px;
+            border-radius: 30px;
+            color: var(--counter-text);
+        }
+
+        /* ----- রসিদ মোডাল ----- */
+        .receipt-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-overlay);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.3s;
+        }
+        .receipt-modal.active {
+            display: flex;
+        }
+        .receipt-content {
+            background: var(--modal-bg);
+            color: var(--modal-text);
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 25px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px var(--shadow-color);
+            position: relative;
+            transition: background 0.3s, color 0.3s;
+        }
+        .receipt-content h3 {
+            color: var(--header-color);
+            border-bottom: 2px solid var(--border-left);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        .receipt-content .receipt-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 20px;
+            font-size: 14px;
+        }
+        .receipt-content .receipt-item {
+            display: flex;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .receipt-content .receipt-item .label {
+            font-weight: 600;
+            min-width: 45%;
+            color: var(--label-color);
+        }
+        .receipt-content .receipt-item .value {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        .receipt-actions {
+            margin-top: 18px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .receipt-actions button {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 0;
+        }
+        .btn-print {
+            background: #0d47a1;
+        }
+        .btn-print:hover {
+            background: #0a3a7a;
+        }
+        .btn-close-receipt {
+            background: #6c757d;
+        }
+        .btn-close-receipt:hover {
+            background: #5a6268;
+        }
+
+        /* ----- প্রিন্ট স্টাইল ----- */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .receipt-modal, .receipt-modal.active {
+                display: block !important;
+                position: static !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .receipt-content {
+                max-width: 100% !important;
+                box-shadow: none !important;
+                padding: 20px !important;
+                background: white !important;
+                color: black !important;
+            }
+            .receipt-content * {
+                visibility: visible !important;
+            }
+            .receipt-actions {
+                display: none !important;
+            }
+            .dark-toggle, .report-footer, .counter-box {
+                display: none !important;
+            }
+        }
+
+        /* বাকি স্টাইল আগের মতো */
         .section {
             background: var(--section-bg);
             padding: 15px;
@@ -270,7 +417,7 @@
         }
         .required-star { color: red; }
 
-        /* ফুটার স্টাইল (ডার্ক মোডে স্বয়ংক্রিয়ভাবে পরিবর্তিত হবে) */
+        /* ফুটার */
         .report-footer {
             margin-top: 20px;
             display: flex;
@@ -309,10 +456,19 @@
 <body>
 
 <div class="container">
+
+    <!-- ===== হেডার ===== -->
     <h2>
-        📋 প্রতিদিনের প্রতি শিফটের ম্যানপাওয়ার এলোকেশন এবং মেশিন রানিং মনিটরিং এর জন্য প্রয়োজনীয় এন্ট্রি ডাটা
+        📋 প্রতিদিনের প্রতি শিফটের ম্যানপাওয়ার এলোকেশন এবং মেশিন রানিং মনিটরিং
         <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
     </h2>
+
+    <!-- ===== রিয়েল-টাইম কাউন্টার ===== -->
+    <div class="counter-box" id="counterBox">
+        📊 আজকের এন্ট্রি: <span class="count-number" id="entryCount">০</span>
+        <span style="font-weight:400; font-size:14px; margin-left:5px;" id="counterShiftInfo">(Day)</span>
+        <span id="counterStatus" style="font-weight:400; font-size:13px; margin-left:8px; opacity:0.7;">⏳ লোড হচ্ছে...</span>
+    </div>
 
     <form id="entryForm">
 
@@ -335,7 +491,7 @@
             </div>
         </div>
 
-        <!-- ===== মেশিনের ডেটা (MC ডিপার্টমেন্টের জন্য) ===== -->
+        <!-- মেশিনের ডেটা -->
         <div class="section machine-box" id="mcDataSection">
             <h3>⚙️ মেশিনের ডেটা (অটো ক্যালকুলেশন)</h3>
             <div class="row">
@@ -359,7 +515,7 @@
             </div>
         </div>
 
-        <!-- ===== স্টপের কারণ (MC ডিপার্টমেন্টের জন্য) ===== -->
+        <!-- স্টপের কারণ -->
         <div class="section" id="causeSection">
             <h3>⛔ স্টপের কারণ (Cause of Stop - QTY)</h3>
             <div class="flex-grid">
@@ -376,7 +532,7 @@
             </div>
         </div>
 
-        <!-- ===== এইচআর ও ম্যানপাওয়ার (সবার জন্য) ===== -->
+        <!-- এইচআর -->
         <div class="section" id="hrSection">
             <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
             <div class="row">
@@ -392,7 +548,7 @@
             </div>
         </div>
 
-        <!-- ===== মেশিন টাইপ (MC ডিপার্টমেন্টের জন্য) ===== -->
+        <!-- মেশিন টাইপ -->
         <div class="section" id="machineTypeSection">
             <h3>🏭 মেশিন টাইপ (Machine Type)</h3>
             <div class="row">
@@ -406,7 +562,7 @@
             </div>
         </div>
 
-        <!-- ===== অপারেটর ও স্টাফ (MC ডিপার্টমেন্টের জন্য) ===== -->
+        <!-- অপারেটর -->
         <div class="section" id="operatorSection">
             <h3>👨‍🔧 অপারেটর ও স্টাফ</h3>
             <div class="flex-grid">
@@ -438,7 +594,7 @@
     </form>
     <div id="status"></div>
 
-    <!-- ফুটার – রিপোর্ট লিংক + কন্টাক্ট নোটিশ -->
+    <!-- ফুটার – রিপোর্ট লিংক + কন্টাক্ট -->
     <div class="report-footer">
         <a href="https://my-dashboard-a4y.pages.dev/admin_report" target="_blank">📊 রিপোর্ট দেখুন</a>
         <div class="contact-note">
@@ -448,6 +604,18 @@
 
 </div>
 
+<!-- ===== এন্ট্রি রসিদ মোডাল ===== -->
+<div class="receipt-modal" id="receiptModal">
+    <div class="receipt-content" id="receiptContent">
+        <h3>🧾 এন্ট্রি রসিদ</h3>
+        <div id="receiptBody"></div>
+        <div class="receipt-actions">
+            <button class="btn-print" onclick="printReceipt()">🖨️ প্রিন্ট করুন</button>
+            <button class="btn-close-receipt" onclick="closeReceipt()">❌ বন্ধ করুন</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // =============================================================
     // 🔥 আপনার Google Apps Script URL (সঠিক)
@@ -455,10 +623,9 @@
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnFf9_D0a8EAdJVeFQUClLIyNMv8--q8zEeWzKeUnunJ5tBWSwSYQ15bTyXyyVhAkpiA/exec';
 
     // ============================================================
-    // ১. ডিপার্টমেন্ট অনুযায়ী আইসি নাম ম্যাপিং
+    // ১. ডিপার্টমেন্ট ম্যাপিং
     // ============================================================
     const DEPARTMENT_IC_MAP = {
-        // Production (MC)
         'RIP> DPL> Plastic-3': 'Mr. Shawon',
         'RIP> DPL> Plastic-6.1': 'Mr. Hazrat',
         'RIP> DPL> Plastic-6.2': 'Mr. Polash',
@@ -467,13 +634,9 @@
         'RIP> DPL> Plastic-7.3': 'Mr. Saddam',
         'RIP> DPL> Plastic-7.4': 'Mr. Saddam',
         'RIP> DPL> Plastic-1': 'Mr. Atiqur Rahman',
-        
-        // Packaging (Non-MC)
         'Plastic Packaging-01': 'Mr. Mahbub',
         'Plastic Packaging-02': 'Mr. Rakib',
         'Plastic Packaging-03': 'Mr. Mahbub',
-
-        // Non-MC
         'Plastic-Maintenance.': 'Mr. Maruf',
         'Tool Room Maintenance': 'Mr. Jabed',
         'Plastic Inventory & Delivery': 'Mr. Faysal',
@@ -483,16 +646,10 @@
         'RIP-DPL-Factory Support': 'Mr. Rofik',
         'DPL-QA': 'Mr. Rafi',
         'RIP RFL Store': 'Mr. Mithun',
-
-        // 🔥 Silicon Project (MC - 9 machines)
         'Silicon Project': 'Mamun'
     };
 
-    // ============================================================
-    // ২. ডিপার্টমেন্ট অনুযায়ী Total MC (Non-MC = 0)
-    // ============================================================
     const DEPARTMENT_MC = {
-        // Production (MC)
         'RIP> DPL> Plastic-3': 61,
         'RIP> DPL> Plastic-6.1': 39,
         'RIP> DPL> Plastic-6.2': 59,
@@ -501,11 +658,7 @@
         'RIP> DPL> Plastic-7.3': 77,
         'RIP> DPL> Plastic-7.4': 35,
         'RIP> DPL> Plastic-1': 38,
-
-        // 🔥 Silicon Project (MC - 9 machines)
         'Silicon Project': 9,
-
-        // Non-MC
         'Plastic Packaging-01': 0,
         'Plastic Packaging-02': 0,
         'Plastic Packaging-03': 0,
@@ -520,20 +673,48 @@
         'RIP RFL Store': 0
     };
 
-    // ============================================================
-    // ৩. Non-MC ডিপার্টমেন্টের তালিকা (Silicon Project বাদ)
-    // ============================================================
     const NON_MC_DEPTS = [
         'Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03',
         'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
         'Corporate sales Production.', 'Plastics-Recycle & Silo',
         'Product Development & Mold Change', 'RIP-DPL-Factory Support',
         'DPL-QA', 'RIP RFL Store'
-        // Silicon Project এখানে নেই, তাই এটি MC হিসেবে আচরণ করবে
     ];
 
     // ============================================================
-    // ৪. ড্রপডাউন পপুলেট ফাংশন
+    // ২. DOM লোড হলে সেটআপ
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        populateDepartments();
+        const today = new Date().toISOString().slice(0,10);
+        document.getElementById('entryDate').value = today;
+        const dept = document.getElementById('department').value;
+        toggleMcFields(dept);
+
+        // ডার্ক মোড রিস্টোর
+        const darkMode = localStorage.getItem('darkMode') === 'true';
+        if (darkMode) {
+            document.body.classList.add('dark-mode');
+            document.getElementById('darkModeToggle').textContent = '☀️';
+        }
+
+        // কাউন্টার আপডেট
+        updateEntryCounter();
+        // প্রতি ৩০ সেকেন্ড পর পর আপডেট
+        setInterval(updateEntryCounter, 30000);
+    });
+
+    // ============================================================
+    // ৩. ডার্ক মোড টগল
+    // ============================================================
+    document.getElementById('darkModeToggle').addEventListener('click', function() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', isDark);
+        this.textContent = isDark ? '☀️' : '🌙';
+    });
+
+    // ============================================================
+    // ৪. ডিপার্টমেন্ট পপুলেট
     // ============================================================
     function populateDepartments() {
         const select = document.getElementById('department');
@@ -544,38 +725,8 @@
             opt.textContent = key;
             select.appendChild(opt);
         });
-        console.log('✅ ডিপার্টমেন্ট ড্রপডাউন পপুলেট করা হয়েছে।');
     }
 
-    // ============================================================
-    // ৫. DOM লোড হলে সব সেটআপ (ডার্ক মোড সহ)
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', function() {
-        populateDepartments();
-        document.getElementById('entryDate').valueAsDate = new Date();
-        const dept = document.getElementById('department').value;
-        toggleMcFields(dept);
-
-        // ডার্ক মোড রিস্টোর
-        const darkMode = localStorage.getItem('darkMode') === 'true';
-        if (darkMode) {
-            document.body.classList.add('dark-mode');
-            document.getElementById('darkModeToggle').textContent = '☀️';
-        }
-    });
-
-    // ============================================================
-    // ৬. ডার্ক মোড টগল
-    // ============================================================
-    document.getElementById('darkModeToggle').addEventListener('click', function() {
-        const isDark = document.body.classList.toggle('dark-mode');
-        localStorage.setItem('darkMode', isDark);
-        this.textContent = isDark ? '☀️' : '🌙';
-    });
-
-    // ============================================================
-    // ৭. MC ডেটা দেখানো/লুকানো এবং IC, Total MC সেট করা
-    // ============================================================
     function toggleMcFields(dept) {
         const isNonMC = NON_MC_DEPTS.includes(dept);
         document.getElementById('mcDataSection').style.display = isNonMC ? 'none' : 'block';
@@ -588,7 +739,6 @@
         const dept = this.value;
         const icInput = document.getElementById('icName');
         const totalInput = document.getElementById('totalMC');
-
         icInput.value = DEPARTMENT_IC_MAP[dept] || '';
 
         if (dept in DEPARTMENT_MC) {
@@ -606,9 +756,7 @@
             totalInput.readOnly = false;
             totalInput.placeholder = 'Typ QTY';
         }
-
         toggleMcFields(dept);
-
         document.getElementById('mcRunning').value = '';
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
@@ -616,7 +764,7 @@
     });
 
     // ============================================================
-    // ৮. অটো ক্যালকুলেশন (MC Run % এবং Will off %)
+    // ৫. অটো ক্যালকুলেশন
     // ============================================================
     function autoCalculate() {
         const total = parseInt(document.getElementById('totalMC').value) || 0;
@@ -632,22 +780,22 @@
         const sInput = document.getElementById('mcStopped');
         if (active === rInput) {
             if (running > total) running = total;
-            document.getElementById('mcRunning').value = running;
+            rInput.value = running;
             stopped = total - running;
-            document.getElementById('mcStopped').value = stopped;
+            sInput.value = stopped;
         } else if (active === sInput) {
             if (stopped > total) stopped = total;
-            document.getElementById('mcStopped').value = stopped;
+            sInput.value = stopped;
             running = total - stopped;
-            document.getElementById('mcRunning').value = running;
+            rInput.value = running;
         } else {
             if (running + stopped !== total && (running > 0 || stopped > 0)) {
                 if (running > 0 && running <= total) {
                     stopped = total - running;
-                    document.getElementById('mcStopped').value = stopped;
+                    sInput.value = stopped;
                 } else if (stopped > 0 && stopped <= total) {
                     running = total - stopped;
-                    document.getElementById('mcRunning').value = running;
+                    rInput.value = running;
                 }
             }
         }
@@ -661,23 +809,18 @@
     }
 
     // ============================================================
-    // ৯. ফর্ম রিসেট ফাংশন (সব ফিল্ড খালি করবে)
+    // ৬. রিসেট ফর্ম
     // ============================================================
     function resetForm() {
-        // মৌলিক তথ্য
         document.getElementById('entryDate').value = '';
-        document.getElementById('shift').value = 'Day'; // ডিফল্ট Day
+        document.getElementById('shift').value = 'Day';
         document.getElementById('department').value = '';
         document.getElementById('icName').value = '';
-
-        // MC সেকশন
         document.getElementById('totalMC').value = '';
         document.getElementById('mcRunning').value = '';
         document.getElementById('mcStopped').value = '';
         document.getElementById('pctRunning').value = '';
         document.getElementById('pctStopped').value = '';
-
-        // স্টপের কারণ
         document.getElementById('mpShort').value = '';
         document.getElementById('moldProblem').value = '';
         document.getElementById('moldChange').value = '';
@@ -688,19 +831,13 @@
         document.getElementById('materialMBShortage').value = '';
         document.getElementById('overStockWIP').value = '';
         document.getElementById('accessoriesShort').value = '';
-
-        // HR
         document.getElementById('totalPresent').value = '';
         document.getElementById('leaveEmployee').value = '';
         document.getElementById('absentEmployee').value = '';
-
-        // মেশিন টাইপ
         document.getElementById('exportMC').value = '';
         document.getElementById('domesticMC').value = '';
         document.getElementById('singleMC').value = '';
         document.getElementById('doubleMC').value = '';
-
-        // অপারেটর ও স্টাফ
         document.getElementById('prodIC').value = '';
         document.getElementById('sic').value = '';
         document.getElementById('mcOperator').value = '';
@@ -721,18 +858,50 @@
         document.getElementById('rework').value = '';
         document.getElementById('welding').value = '';
         document.getElementById('hrTransfer').value = '';
-
-        // অ্যালার্ট ও স্ট্যাটাস ক্লিয়ার
         document.getElementById('duplicateAlert').style.display = 'none';
         document.getElementById('status').className = '';
         document.getElementById('status').innerText = '';
-
-        // টগল ফাংশন পুনরায় কল করে MC সেকশন আপডেট
         toggleMcFields('');
     }
 
     // ============================================================
-    // ১০. ডাবল এন্ট্রি চেক ও ফর্ম সাবমিট (সাফল্যের পর ফর্ম রিসেট)
+    // ৭. কাউন্টার আপডেট (রিয়েল-টাইম)
+    // ============================================================
+    async function updateEntryCounter() {
+        const counterStatus = document.getElementById('counterStatus');
+        const countSpan = document.getElementById('entryCount');
+        const shiftInfo = document.getElementById('counterShiftInfo');
+        try {
+            counterStatus.textContent = '⏳ লোড হচ্ছে...';
+            const response = await fetch(APP_SCRIPT_URL + '?action=getData');
+            const result = await response.json();
+            if (!result.data) throw new Error('No data');
+            const allData = result.data;
+
+            // আজকের তারিখ
+            const today = new Date().toISOString().slice(0,10);
+            // বর্তমান শিফট (দিনের উপর ভিত্তি করে)
+            const hours = new Date().getHours();
+            const currentShift = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
+
+            // ফিল্টার: আজকের + শিফট ম্যাচ
+            const filtered = allData.filter(row => {
+                const rowDate = row.Date || row.entryDate || '';
+                const rowShift = row.Shift || row.shift || '';
+                return rowDate === today && rowShift === currentShift;
+            });
+
+            countSpan.textContent = filtered.length;
+            shiftInfo.textContent = `(${currentShift})`;
+            counterStatus.textContent = '✅ আপডেটেড';
+        } catch (error) {
+            console.error('কাউন্টার আপডেট ব্যর্থ:', error);
+            counterStatus.textContent = '⚠️ লোড ব্যর্থ';
+        }
+    }
+
+    // ============================================================
+    // ৮. ফর্ম সাবমিট (সেভ + রসিদ দেখানো)
     // ============================================================
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -766,7 +935,6 @@
         status.innerText = '⏳ সেভ হচ্ছে...';
         const getVal = (id) => document.getElementById(id).value;
         const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
-
         const totalHRValue = getNum('totalPresent');
 
         const payload = {
@@ -794,14 +962,12 @@
             materialMBShortage: getNum('materialMBShortage'),
             overStockWIP: getNum('overStockWIP'),
             accessoriesShort: getNum('accessoriesShort'),
-            
             totalHR: totalHRValue,
             totalMP: totalHRValue,
             'Total HR': totalHRValue,
             totalPresent: totalHRValue,
             leaveEmployee: getNum('leaveEmployee'),
             absentEmployee: getNum('absentEmployee'),
-            
             exportMC: getNum('exportMC'),
             domesticMC: getNum('domesticMC'),
             singleMC: getNum('singleMC'),
@@ -832,7 +998,7 @@
         console.log('📤 পাঠানো ডেটা:', payload);
 
         try {
-            await fetch(APP_SCRIPT_URL, {
+            const response = await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
@@ -840,11 +1006,15 @@
             });
 
             localStorage.setItem(key, 'submitted');
-
             status.className = 'success';
-            status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে! Google Sheet চেক করুন।';
+            status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে!';
 
-            // 🔥 সেভ হওয়ার পর সব ফিল্ড রিসেট করি
+            // 🔥 রসিদ দেখান
+            showReceipt(payload);
+
+            // কাউন্টার আপডেট
+            updateEntryCounter();
+
             resetForm();
 
         } catch (error) {
@@ -853,6 +1023,105 @@
             console.error('Error details:', error);
         }
     });
+
+    // ============================================================
+    // ৯. রসিদ দেখানো
+    // ============================================================
+    function showReceipt(data) {
+        const modal = document.getElementById('receiptModal');
+        const body = document.getElementById('receiptBody');
+
+        // গুরুত্বপূর্ণ ফিল্ডগুলো নির্বাচন
+        const fields = [
+            { label: '📅 তারিখ', key: 'entryDate' },
+            { label: '🕒 শিফট', key: 'shift' },
+            { label: '🏢 ডিপার্টমেন্ট', key: 'department' },
+            { label: '👤 আইসি নাম', key: 'icName' },
+            { label: '👷 Total Present', key: 'totalPresent' },
+            { label: '📤 Leave', key: 'leaveEmployee' },
+            { label: '❌ Absent', key: 'absentEmployee' },
+            { label: '⚙️ Total MC', key: 'totalMC' },
+            { label: '🏃 MC Running', key: 'mcRunning' },
+            { label: '🛑 MC Stopped', key: 'mcStopped' },
+            { label: '📈 Run %', key: 'pctRunning' },
+            { label: '📉 Stop %', key: 'pctStopped' },
+            { label: 'MP Short', key: 'mpShort' },
+            { label: 'Mold Problem', key: 'moldProblem' },
+            { label: 'Mold Change', key: 'moldChange' },
+            { label: 'Sample', key: 'underSample' },
+            { label: 'MC Problem', key: 'mcProblem' },
+            { label: 'Preventive', key: 'preventiveMaintenance' },
+            { label: 'No Demand', key: 'noDemandQty' },
+            { label: 'Material Short', key: 'materialMBShortage' },
+            { label: 'Over Stock', key: 'overStockWIP' },
+            { label: 'Acc Short', key: 'accessoriesShort' },
+            { label: 'Export MC', key: 'exportMC' },
+            { label: 'Domestic MC', key: 'domesticMC' },
+            { label: 'Single MC', key: 'singleMC' },
+            { label: 'Double MC', key: 'doubleMC' },
+            { label: 'Prod IC', key: 'prodIC' },
+            { label: 'SIC', key: 'sic' },
+            { label: 'MC Operator', key: 'mcOperator' },
+            { label: 'Packaging Op', key: 'packagingOperator' },
+            { label: 'Foreman', key: 'foreman' },
+            { label: 'Senior Operator', key: 'seniorOperator' },
+            { label: 'Shrink-wrap Op', key: 'shrinkOperator' },
+            { label: 'Printing Op', key: 'printingOperator' },
+            { label: 'Mold Change Op', key: 'moldChangeOperator' },
+            { label: 'Mix/Recycle', key: 'mixRecycle' },
+            { label: 'Sub Store', key: 'subStore' },
+            { label: 'Inventory Op', key: 'inventoryOperator' },
+            { label: 'FG Delivery', key: 'fgDelivery' },
+            { label: 'Sharp Tools', key: 'sharpTools' },
+            { label: 'PSI', key: 'psi' },
+            { label: 'ERP', key: 'erp' },
+            { label: 'Floor Housekeeping', key: 'floorHousekeeping' },
+            { label: 'Rework', key: 'rework' },
+            { label: 'Welding', key: 'welding' },
+            { label: 'HR Transfer', key: 'hrTransfer' }
+        ];
+
+        let html = '<div class="receipt-grid">';
+        fields.forEach(f => {
+            const val = data[f.key] !== undefined && data[f.key] !== null && data[f.key] !== '' ? data[f.key] : '';
+            if (val !== '' && val !== 0) {
+                html += `<div class="receipt-item"><span class="label">${f.label}</span><span class="value">${val}</span></div>`;
+            }
+        });
+        html += '</div>';
+
+        // সময় যোগ
+        const now = new Date().toLocaleString('bn-BD');
+        html += `<p style="margin-top:12px; font-size:13px; color:var(--label-color); text-align:right;">📅 জমা: ${now}</p>`;
+
+        body.innerHTML = html;
+        modal.classList.add('active');
+    }
+
+    function closeReceipt() {
+        document.getElementById('receiptModal').classList.remove('active');
+    }
+
+    function printReceipt() {
+        window.print();
+    }
+
+    // ক্লোজ বাটন
+    document.querySelector('.btn-close-receipt').addEventListener('click', closeReceipt);
+    // মোডালের বাইরে ক্লিক করলে বন্ধ
+    document.getElementById('receiptModal').addEventListener('click', function(e) {
+        if (e.target === this) closeReceipt();
+    });
+
+    // ============================================================
+    // ১০. অতিরিক্ত: কাউন্টার ম্যানুয়াল রিফ্রেশ (যদি চান)
+    // ============================================================
+    // কাউন্টার বক্সে ক্লিক করলে রিফ্রেশ হবে
+    document.getElementById('counterBox').addEventListener('click', function() {
+        updateEntryCounter();
+        this.querySelector('#counterStatus').textContent = '🔄 রিফ্রেশ...';
+    });
+
 </script>
 </body>
 </html>
