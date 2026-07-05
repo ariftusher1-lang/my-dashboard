@@ -116,6 +116,56 @@
             position: relative;
         }
 
+        /* ----- ডিজিটাল ঘড়ি (শীর্ষে) ----- */
+        .top-clock {
+            text-align: center;
+            background: #1a1a2e;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #e53935;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .top-clock .clock-label {
+            font-size: 14px;
+            color: #ffb74d;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .top-clock .clock-time {
+            font-size: 42px;
+            font-weight: 700;
+            color: #ff1744;
+            text-shadow: 0 0 20px rgba(255, 23, 68, 0.6);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            background: #0d0d1a;
+            padding: 6px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 4px;
+            border: 1px solid #e53935;
+        }
+        .top-clock .clock-time .seconds {
+            font-size: 28px;
+            color: #ff6f00;
+        }
+        .top-clock .clock-date {
+            font-size: 16px;
+            color: #ffb74d;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+        @media (max-width: 600px) {
+            .top-clock .clock-time {
+                font-size: 28px;
+                padding: 4px 12px;
+            }
+            .top-clock .clock-time .seconds {
+                font-size: 20px;
+            }
+        }
+
         h2 {
             color: var(--header-color);
             border-bottom: 2px solid #007bff;
@@ -435,6 +485,15 @@
 
 <div class="container">
 
+    <!-- ===== ডিজিটাল ঘড়ি (শীর্ষে) ===== -->
+    <div class="top-clock">
+        <div class="clock-label">🇧🇩 বাংলাদেশ সময়</div>
+        <div class="clock-time" id="topClock">
+            <span id="topHours">00</span>:<span id="topMinutes">00</span>:<span id="topSeconds" class="seconds">00</span>
+        </div>
+        <div class="clock-date" id="topDate">শনিবার, ০১ জানুয়ারি ২০২৬</div>
+    </div>
+
     <!-- ===== হেডার ===== -->
     <h2>
         📋 প্রতিদিনের প্রতি শিফটের ম্যানপাওয়ার এলোকেশন এবং মেশিন রানিং মনিটরিং
@@ -694,6 +753,10 @@
         // কাউন্টার আপডেট
         updateEntryCounter();
         setInterval(updateEntryCounter, 30000);
+
+        // ঘড়ি শুরু করুন
+        updateTopClock();
+        setInterval(updateTopClock, 1000);
     });
 
     // ============================================================
@@ -1149,6 +1212,20 @@
         updateEntryCounter();
         this.querySelector('#counterStatus').textContent = '🔄 রিফ্রেশ...';
     });
+
+    // ============================================================
+    // ১১. 🕒 শীর্ষের ডিজিটাল ঘড়ি (বাংলাদেশ সময়)
+    // ============================================================
+    function updateTopClock() {
+        const now = new Date();
+        // বাংলাদেশ সময় = UTC+6
+        const bdTime = new Date(now.getTime() + (6 * 60 * 60 * 1000));
+        document.getElementById('topHours').textContent = String(bdTime.getUTCHours()).padStart(2, '0');
+        document.getElementById('topMinutes').textContent = String(bdTime.getUTCMinutes()).padStart(2, '0');
+        document.getElementById('topSeconds').textContent = String(bdTime.getUTCSeconds()).padStart(2, '0');
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dhaka' };
+        document.getElementById('topDate').textContent = new Date().toLocaleDateString('bn-BD', dateOptions);
+    }
 
 </script>
 </body>
