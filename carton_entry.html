@@ -41,6 +41,56 @@
         .util-pct { font-size: 12px; color: #0d47a1; font-weight: 600; display: block; margin-top: 2px; }
         .alert-box { background: #fff3cd; border-left: 6px solid #ffc107; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px; color: #856404; font-weight: 500; display: none; }
         .alert-box.show { display: block; }
+
+        /* ===== লাইভ ডিজিটাল ঘড়ি (বাংলাদেশ সময়) ===== */
+        .live-clock {
+            text-align: center;
+            padding: 20px 10px;
+            margin-top: 25px;
+            background: #1a1a2e;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 2px solid #e53935;
+        }
+        .live-clock .clock-label {
+            font-size: 18px;
+            color: #ffb74d;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        .live-clock .clock-time {
+            font-size: 48px;
+            font-weight: 700;
+            color: #ff1744;
+            text-shadow: 0 0 20px rgba(255, 23, 68, 0.6);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 4px;
+            background: #0d0d1a;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            border: 1px solid #e53935;
+        }
+        .live-clock .clock-time .seconds {
+            font-size: 32px;
+            color: #ff6f00;
+        }
+        .live-clock .clock-date {
+            font-size: 18px;
+            color: #ffb74d;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        @media (max-width: 600px) {
+            .live-clock .clock-time {
+                font-size: 32px;
+                padding: 6px 12px;
+            }
+            .live-clock .clock-time .seconds {
+                font-size: 22px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -114,6 +164,15 @@
     <div class="card">
         <h2>📋 এন্ট্রি লগ</h2>
         <div id="entryLogContainer"><div class="empty-msg">কোনো এন্ট্রি নেই</div></div>
+    </div>
+
+    <!-- ===== লাইভ ডিজিটাল ঘড়ি (বাংলাদেশ সময়) ===== -->
+    <div class="live-clock">
+        <div class="clock-label">🇧🇩 বাংলাদেশ সময়</div>
+        <div class="clock-time" id="bdClock">
+            <span id="clockHours">00</span>:<span id="clockMinutes">00</span>:<span id="clockSeconds" class="seconds">00</span>
+        </div>
+        <div class="clock-date" id="clockDate">শনিবার, ০১ জানুয়ারি ২০২৬</div>
     </div>
 
 </div>
@@ -197,15 +256,12 @@
     // ================================================================
     function getFemaleVoice() {
         const voices = window.speechSynthesis.getVoices();
-        // ১. বাংলা Female
         for (let v of voices) {
             if (v.lang.startsWith('bn') && v.name.toLowerCase().includes('female')) return v;
         }
-        // ২. যেকোনো বাংলা
         for (let v of voices) {
             if (v.lang.startsWith('bn')) return v;
         }
-        // ৩. যেকোনো Female ইংরেজি
         for (let v of voices) {
             if (v.name.toLowerCase().includes('female')) return v;
         }
@@ -222,7 +278,6 @@
         msg.volume = 1;
         const voice = getFemaleVoice();
         if (voice) msg.voice = voice;
-        // ভয়েস লোড না হলে অপেক্ষা
         if (window.speechSynthesis.getVoices().length === 0) {
             window.speechSynthesis.onvoiceschanged = function() {
                 const v2 = getFemaleVoice();
@@ -234,19 +289,17 @@
         }
     }
 
-    // অ্যালার্টের জন্য ভয়েস
     function speakAlert(alertText) {
         speakText(alertText, 1.1, 0.85);
     }
 
-    // সফল এন্ট্রির জন্য ভয়েস
     function speakSuccess() {
         const msg = 'আপনার তথ্য সঠিকভাবে জমা হয়েছে। আপনি যদি এন্ট্রি দেওয়ার সময় কোনো ভুল করে থাকেন, তাহলে দ্রুত সাইফুদ্দিন অথবা সায়েম ভাইয়ের সাথে যোগাযোগ করুন। তারা রিপোর্টটি সংশোধন করতে সাহায্য করবেন।';
         speakText(msg, 1.2, 0.85);
     }
 
     // ================================================================
-    // 🔥 আপডেটেড অ্যাড এন্ট্রি (আপনার চাওয়া মেসেজ + ভয়েস)
+    // 🔥 অ্যাড এন্ট্রি (আপনার চাওয়া মেসেজ + ভয়েস)
     // ================================================================
     function addEntry() {
         const alertBox = document.getElementById('alertMessage');
@@ -272,13 +325,10 @@
         if (dayHr <= 0) { alert('Day HR অবশ্যই ০-এর বেশি হতে হবে!'); return; }
 
         const entries = getEntries();
-
-        // --- STEP 1: চেক করা আগের Day Shift এন্ট্রি আছে কিনা ---
         const existingDayEntries = entries.filter(e => 
             e.entryDate === entryDate && e.shift === 'Day' && e.dept === dept
         );
 
-        // যদি ইউজার Day Shift দিতে চায়
         if (shift === 'Day') {
             if (existingDayEntries.length > 0) {
                 const icNameExisting = existingDayEntries[0].icName;
@@ -290,11 +340,9 @@
             }
         }
 
-        // --- STEP 2: Night Shift দিতে চাইলে Day Shift-এর Output চেক ---
         if (shift === 'Night') {
             if (existingDayEntries.length === 0) {
                 const nameToUse = (icName !== '-') ? icName : prodIC;
-                // ✅ আপনার চাওয়া মেসেজ এখানে বসানো হয়েছে
                 const alertMsg = `মিস্টার ${nameToUse}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখে কোনো Day Shift এন্ট্রি নেই! আগে Day Shift-এর পেকেজিং এর Cartoon Output সহ এন্ট্রি সম্পূর্ণ করুন তা না হলে রাতের সিফট এর এইচ আর বা আপনার অপারেটর ইনপুট দিতে পারবেন না!!!`;
                 alertBox.innerText = `⚠️ ${alertMsg}`;
                 alertBox.classList.add('show');
@@ -302,7 +350,6 @@
                 return;
             }
 
-            // Day Entry আছে, কিন্তু তার Output ০ কিনা চেক করি
             const dayEntry = existingDayEntries[0];
             if (!dayEntry.output || dayEntry.output === 0) {
                 const icNameExisting = dayEntry.icName;
@@ -312,10 +359,8 @@
                 speakAlert(alertMsg);
                 return;
             }
-            // সব ঠিক থাকলে নিচে এগোবে
         }
 
-        // --- STEP 3: এন্ট্রি তৈরি ও সেভ ---
         const entry = {
             id: Date.now(),
             dept,
@@ -336,7 +381,6 @@
         renderLog();
         clearForm();
 
-        // সফল বার্তা + ভয়েস
         alertBox.style.borderLeftColor = '#28a745';
         alertBox.style.background = '#d4edda';
         alertBox.style.color = '#155724';
@@ -450,6 +494,31 @@
     }
 
     // ================================================================
+    // 🕒 লাইভ ডিজিটাল ঘড়ি – বাংলাদেশ সময় (UTC+6)
+    // ================================================================
+    function updateClock() {
+        const now = new Date();
+        // বাংলাদেশ সময় (UTC+6)
+        const bdTime = new Date(now.getTime() + (6 * 60 * 60 * 1000));
+        const hours = String(bdTime.getUTCHours()).padStart(2, '0');
+        const minutes = String(bdTime.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(bdTime.getUTCSeconds()).padStart(2, '0');
+
+        document.getElementById('clockHours').textContent = hours;
+        document.getElementById('clockMinutes').textContent = minutes;
+        document.getElementById('clockSeconds').textContent = seconds;
+
+        // বাংলা তারিখ
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dhaka' };
+        const bdDate = new Date().toLocaleDateString('bn-BD', dateOptions);
+        document.getElementById('clockDate').textContent = bdDate;
+    }
+
+    // প্রতি সেকেন্ডে ঘড়ি আপডেট
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ================================================================
     // INIT
     // ================================================================
     populateDeptDropdown();
@@ -458,7 +527,6 @@
     renderLog();
     document.getElementById('currentDate').innerText = new Date().toLocaleString('bn-BD');
 
-    // ভয়েস প্রি-লোড
     if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
         window.speechSynthesis.onvoiceschanged = function() {
