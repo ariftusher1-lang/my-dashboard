@@ -374,6 +374,7 @@
                 alertBox.innerText = `⚠️ ${alertMsg}`;
                 alertBox.classList.add('show');
                 speakAlert(alertMsg);
+                renderLog();
                 return;
             }
 
@@ -384,7 +385,7 @@
                 alertBox.innerText = `⚠️ ${alertMsg}`;
                 alertBox.classList.add('show');
                 speakAlert(alertMsg);
-                renderLog(); // রি-রেন্ডার করে বাটন দেখান
+                renderLog();
                 return;
             }
         }
@@ -436,6 +437,8 @@
         document.getElementById('utilDisplay').innerHTML = 'Utilisation: 0%';
         const today = new Date().toISOString().slice(0,10);
         document.getElementById('entryDate').value = today;
+        // অটো শিফট সিলেক্ট (তারিখ বদলালে শিফট রিফ্রেশ)
+        autoSelectShift();
         updateProdIC();
     }
 
@@ -457,12 +460,10 @@
     // ✏️ Output Update ফিচার (HR ReadOnly)
     // ================================================================
     function showOutputUpdateForm(id) {
-        // সব ফর্ম লুকান
         document.querySelectorAll('.output-update-form').forEach(el => el.classList.remove('show'));
         const form = document.getElementById(`edit-form-${id}`);
         if (form) {
             form.classList.toggle('show');
-            // ফোকাস
             const input = form.querySelector('input[type="number"]');
             if (input) setTimeout(() => input.focus(), 100);
         }
@@ -480,9 +481,7 @@
         const index = entries.findIndex(e => e.id === id);
         if (index === -1) { alert('এন্ট্রি পাওয়া যায়নি!'); return; }
 
-        // শুধু Output আপডেট করি, HR অপরিবর্তিত থাকবে
         entries[index].output = newOutput;
-        // Per HR ও Utilisation রি-ক্যালকুলেট
         const dayHr = entries[index].dayHr || 0;
         const perHr = dayHr > 0 ? newOutput / dayHr : 0;
         entries[index].perHr = perHr;
@@ -491,7 +490,6 @@
         saveEntries(entries);
         renderLog();
 
-        // সফল বার্তা
         const alertBox = document.getElementById('alertMessage');
         alertBox.style.borderLeftColor = '#28a745';
         alertBox.style.background = '#d4edda';
@@ -499,6 +497,22 @@
         alertBox.innerText = `✅ Output সফলভাবে আপডেট হয়েছে! নতুন Output: ${newOutput}`;
         alertBox.classList.add('show');
         setTimeout(() => alertBox.classList.remove('show'), 4000);
+    }
+
+    // ================================================================
+    // 🕒 অটো শিফট সিলেক্ট (সময় অনুযায়ী)
+    // ================================================================
+    function autoSelectShift() {
+        const now = new Date();
+        const hours = now.getHours();
+        // সকাল ৮টা থেকে রাত ৮টা পর্যন্ত = Day
+        // রাত ৮টা থেকে সকাল ৮টা পর্যন্ত = Night
+        const shift = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
+        const shiftSelect = document.getElementById('shiftSelect');
+        if (shiftSelect) {
+            shiftSelect.value = shift;
+        }
+        return shift;
     }
 
     // ================================================================
@@ -572,12 +586,10 @@
         html += `</tbody></table></div>`;
         container.innerHTML = html;
 
-        // প্রতিটি আপডেট ফর্মের জন্য রো শো/হাইড কন্ট্রোল
         document.querySelectorAll('.output-update-form').forEach(form => {
             const id = form.id.replace('edit-form-', '');
             const row = document.getElementById(`edit-row-${id}`);
             if (row) {
-                // যখন ফর্ম শো হয়, রো দেখাও
                 const observer = new MutationObserver(() => {
                     if (form.classList.contains('show')) {
                         row.style.display = 'table-row';
@@ -586,7 +598,6 @@
                     }
                 });
                 observer.observe(form, { attributes: true, attributeFilter: ['class'] });
-                // ইনিশিয়াল স্টেট
                 if (form.classList.contains('show')) {
                     row.style.display = 'table-row';
                 } else {
@@ -638,18 +649,33 @@
     // ================================================================
     // INIT
     // ================================================================
-    populateDeptDropdown();
-    const today = new Date().toISOString().slice(0,10);
-    document.getElementById('entryDate').value = today;
-    renderLog();
-    document.getElementById('currentDate').innerText = new Date().toLocaleString('bn-BD');
+    document.addEventListener('DOMContentLoaded', function() {
+        populateDeptDropdown();
+        const today = new Date().toISOString().slice(0,10);
+        document.getElementById('entryDate').value = today;
+        renderLog();
+        document.getElementById('currentDate').innerText = new Date().toLocaleString('bn-BD');
 
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.getVoices();
-        window.speechSynthesis.onvoiceschanged = function() {
+        // ⭐ অটো শিফট সিলেক্ট
+        autoSelectShift();
+
+        // 📅 তারিখ বদলালে শিফট রিফ্রেশ
+        const entryDate = document.getElementById('entryDate');
+        if (entryDate) {
+            entryDate.addEventListener('change', autoSelectShift);
+        }
+
+        // 🗣️ ভয়েস প্রি-লোড
+        if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices();
-        };
-    }
+            window.speechSynthesis.onvoiceschanged = function() {
+                window.speechSynthesis.getVoices();
+            };
+        }
+    });
+
+    // `DOMContentLoaded` এর বাইরে থাকা ফাংশনগুলোর জন্য (যেমন `addEntry` কল করে)
+    // এগুলো ইতিমধ্যেই গ্লোবাল স্কোপে আছে।
 </script>
 </body>
 </html>
