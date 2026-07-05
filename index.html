@@ -337,6 +337,15 @@
             display: inline-block;
             transition: background 0.3s, color 0.3s, border 0.3s;
         }
+
+        /* অটো-ডার্ক মোড ইন্ডিকেটর */
+        .auto-dark-indicator {
+            font-size: 12px;
+            color: var(--label-color);
+            opacity: 0.7;
+            margin-left: 8px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -346,7 +355,10 @@
     <!-- ===== হেডার ===== -->
     <h2>
         📋 প্রতিদিনের প্রতি শিফটের ম্যানপাওয়ার এলোকেশন এবং মেশিন রানিং মনিটরিং
-        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
+        <span style="display:flex; align-items:center; gap:6px;">
+            <span class="auto-dark-indicator" id="autoDarkIndicator">🌙 অটো</span>
+            <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
+        </span>
     </h2>
 
     <!-- ===== রিয়েল-টাইম কাউন্টার ===== -->
@@ -565,27 +577,66 @@
         const dept = document.getElementById('department').value;
         toggleMcFields(dept);
 
-        // ডার্ক মোড রিস্টোর
-        const darkMode = localStorage.getItem('darkMode') === 'true';
-        if (darkMode) {
-            document.body.classList.add('dark-mode');
-            document.getElementById('darkModeToggle').textContent = '☀️';
-        }
+        // ⭐ অটো ডার্ক মোড চালু করুন
+        applyAutoDarkMode();
+
+        // প্রতি ১ মিনিট অন্তর অটো ডার্ক মোড চেক করুন
+        setInterval(applyAutoDarkMode, 60000);
+
+        // ডার্ক মোড টগল ইভেন্ট (ইউজার ম্যানুয়ালি পরিবর্তন করলে অটো ফ্ল্যাগ রিসেট)
+        document.getElementById('darkModeToggle').addEventListener('click', function() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+            this.textContent = isDark ? '☀️' : '🌙';
+            // অটো ফ্ল্যাগ রিসেট (ইউজার ম্যানুয়ালি পরিবর্তন করলে অটো ডিজেবল)
+            localStorage.setItem('autoDarkMode', 'false');
+            document.getElementById('autoDarkIndicator').textContent = '🔒 ম্যানুয়াল';
+        });
 
         // কাউন্টার আপডেট
         updateEntryCounter();
-        // প্রতি ৩০ সেকেন্ড পর পর আপডেট
         setInterval(updateEntryCounter, 30000);
     });
 
     // ============================================================
-    // ৩. ডার্ক মোড টগল
+    // ৩. অটো ডার্ক মোড ফাংশন
     // ============================================================
-    document.getElementById('darkModeToggle').addEventListener('click', function() {
-        const isDark = document.body.classList.toggle('dark-mode');
-        localStorage.setItem('darkMode', isDark);
-        this.textContent = isDark ? '☀️' : '🌙';
-    });
+    function applyAutoDarkMode() {
+        // যদি ইউজার ম্যানুয়ালি পরিবর্তন করে থাকে, তাহলে অটো ডিসেবল
+        if (localStorage.getItem('autoDarkMode') === 'false') {
+            return;
+        }
+
+        const now = new Date();
+        const hours = now.getHours();
+        // সন্ধ্যা ৭টা (১৯) থেকে সকাল ৭টা (৭) পর্যন্ত ডার্ক মোড
+        const isDarkTime = (hours >= 19 || hours < 7);
+
+        // বর্তমান স্টেট চেক
+        const currentDark = document.body.classList.contains('dark-mode');
+
+        if (isDarkTime && !currentDark) {
+            // ডার্ক মোড চালু
+            document.body.classList.add('dark-mode');
+            document.getElementById('darkModeToggle').textContent = '☀️';
+            localStorage.setItem('darkMode', 'true');
+            document.getElementById('autoDarkIndicator').textContent = '🌙 অটো (রাত)';
+        } else if (!isDarkTime && currentDark) {
+            // লাইট মোড চালু
+            document.body.classList.remove('dark-mode');
+            document.getElementById('darkModeToggle').textContent = '🌙';
+            localStorage.setItem('darkMode', 'false');
+            document.getElementById('autoDarkIndicator').textContent = '☀️ অটো (দিন)';
+        } else {
+            // সময় অনুযায়ী সঠিক মোডে আছে
+            const indicator = document.getElementById('autoDarkIndicator');
+            if (isDarkTime) {
+                indicator.textContent = '🌙 অটো (রাত)';
+            } else {
+                indicator.textContent = '☀️ অটো (দিন)';
+            }
+        }
+    }
 
     // ============================================================
     // ৪. ডিপার্টমেন্ট পপুলেট
