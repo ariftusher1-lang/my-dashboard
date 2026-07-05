@@ -224,10 +224,12 @@
         }
         #status {
             margin-top: 15px;
-            padding: 10px;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border-radius: 8px;
             text-align: center;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 15px;
+            line-height: 1.6;
             transition: background 0.3s, color 0.3s;
         }
         .success { background: var(--status-success-bg); color: var(--status-success-text); }
@@ -732,7 +734,7 @@
         document.getElementById('hrTransfer').value = '';
         document.getElementById('duplicateAlert').style.display = 'none';
         document.getElementById('status').className = '';
-        document.getElementById('status').innerText = '';
+        document.getElementById('status').innerHTML = '';
         toggleMcFields('');
     }
 
@@ -770,15 +772,15 @@
     }
 
     // ============================================================
-    // ৮. 🗣️ ভয়েস ফাংশন (সাফল্য বার্তা – নতুন)
+    // ৮. 🗣️ ভয়েস ফাংশন (ডিপার্টমেন্টের নাম সহ)
     // ============================================================
-    function speakSuccess() {
+    function speakSuccess(departmentName) {
         if ('speechSynthesis' in window) {
-            // আগের কোনো কথা বলা বন্ধ করি
             window.speechSynthesis.cancel();
-
+            // ডিপার্টমেন্টের নাম যোগ করি
+            const deptName = departmentName || 'আপনার';
             const msg = new SpeechSynthesisUtterance(
-                'আপনার তথ্য সঠিকভাবে জমা হয়েছে। আপনি যদি এন্ট্রি দেওয়ার সময় কোনো ভুল করে থাকেন, তাহলে দ্রুত সাইফুদ্দিন অথবা সায়েম ভাইয়ের সাথে যোগাযোগ করুন। তারা রিপোর্টটি সংশোধন করতে সাহায্য করবেন।'
+                deptName + ' আপনার তথ্য সঠিকভাবে জমা হয়েছে। আপনি যদি এন্ট্রি দেওয়ার সময় কোনো ভুল করে থাকেন, তাহলে দ্রুত সাইফুদ্দিন অথবা সায়েম ভাইয়ের সাথে যোগাযোগ করুন। তারা রিপোর্টটি সংশোধন করতে সাহায্য করবেন।'
             );
             msg.lang = 'bn-BD';
             msg.rate = 0.85;
@@ -789,7 +791,7 @@
     }
 
     // ============================================================
-    // ৯. ফর্ম সাবমিট (সেভ + ভয়েস – রসিদ বাদ)
+    // ৯. ফর্ম সাবমিট (সেভ + ভয়েস + সবুজ বক্সে বার্তা)
     // ============================================================
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -798,7 +800,7 @@
         const duplicateAlert = document.getElementById('duplicateAlert');
         duplicateAlert.style.display = 'none';
         status.className = '';
-        status.innerText = '⏳ চেক করা হচ্ছে...';
+        status.innerHTML = '⏳ চেক করা হচ্ছে...';
 
         const date = document.getElementById('entryDate').value;
         const shift = document.getElementById('shift').value;
@@ -808,7 +810,7 @@
 
         if (!date || !shift || !dept || !icName || !totalPresent) {
             status.className = 'error';
-            status.innerText = '❌ দয়া করে সব * চিহ্নিত ফিল্ড পূরণ করুন!';
+            status.innerHTML = '❌ দয়া করে সব * চিহ্নিত ফিল্ড পূরণ করুন!';
             return;
         }
 
@@ -816,11 +818,11 @@
         if (localStorage.getItem(key) === 'submitted') {
             duplicateAlert.style.display = 'block';
             status.className = 'error';
-            status.innerText = '❌ ডুপ্লিকেট এন্ট্রি অনুমোদিত নয়!';
+            status.innerHTML = '❌ ডুপ্লিকেট এন্ট্রি অনুমোদিত নয়!';
             return;
         }
 
-        status.innerText = '⏳ সেভ হচ্ছে...';
+        status.innerHTML = '⏳ সেভ হচ্ছে...';
         const getVal = (id) => document.getElementById(id).value;
         const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
         const totalHRValue = getNum('totalPresent');
@@ -894,11 +896,18 @@
             });
 
             localStorage.setItem(key, 'submitted');
+            
+            // ✅ সবুজ বক্সে লম্বা বার্তা দেখান
             status.className = 'success';
-            status.innerText = '✅ ডেটা সফলভাবে পাঠানো হয়েছে!';
+            status.innerHTML = `
+                ✅ আপনার তথ্য সঠিকভাবে জমা হয়েছে।<br><br>
+                আপনি যদি এন্ট্রি দেওয়ার সময় কোনো ভুল করে থাকেন, তাহলে দ্রুত 
+                <strong>Saifuddin</strong> অথবা <strong>Sayem</strong> ভাইয়ের সাথে যোগাযোগ করুন।<br>
+                তারা রিপোর্টটি সংশোধন করতে সাহায্য করবেন।
+            `;
 
-            // 🔥 ভয়েস বলুন (রসিদ বাদ)
-            speakSuccess();
+            // 🗣️ ভয়েস বলুন (ডিপার্টমেন্টের নাম সহ)
+            speakSuccess(dept);
 
             // কাউন্টার আপডেট
             updateEntryCounter();
@@ -907,7 +916,7 @@
 
         } catch (error) {
             status.className = 'error';
-            status.innerText = '❌ সেভ করতে ব্যর্থ! নেটওয়ার্ক চেক করুন।';
+            status.innerHTML = '❌ সেভ করতে ব্যর্থ! নেটওয়ার্ক চেক করুন।';
             console.error('Error details:', error);
         }
     });
