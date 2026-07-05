@@ -772,20 +772,76 @@
     }
 
     // ============================================================
-    // ৮. 🗣️ ভয়েস ফাংশন (ডিপার্টমেন্টের নাম সহ)
+    // ৮. 🗣️ ভয়েস ফাংশন (Female Voice - সুন্দর কণ্ঠে)
     // ============================================================
-    function speakSuccess(departmentName) {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            // ডিপার্টমেন্টের নাম যোগ করি
-            const deptName = departmentName || 'আপনার';
-            const msg = new SpeechSynthesisUtterance(
-                deptName + ' আপনার তথ্য সঠিকভাবে জমা হয়েছে। আপনি যদি এন্ট্রি দেওয়ার সময় কোনো ভুল করে থাকেন, তাহলে দ্রুত সাইফুদ্দিন অথবা সায়েম ভাইয়ের সাথে যোগাযোগ করুন। তারা রিপোর্টটি সংশোধন করতে সাহায্য করবেন।'
-            );
-            msg.lang = 'bn-BD';
-            msg.rate = 0.85;
-            msg.pitch = 1.1;
-            msg.volume = 1;
+    function speakSuccess() {
+        if (!('speechSynthesis' in window)) {
+            console.warn('Speech Synthesis not supported');
+            return;
+        }
+
+        // আগের কোনো কথা বন্ধ করি
+        window.speechSynthesis.cancel();
+
+        const msg = new SpeechSynthesisUtterance(
+            'আপনার তথ্য সঠিকভাবে জমা হয়েছে। আপনি যদি এন্ট্রি দেওয়ার সময় কোনো ভুল করে থাকেন, তাহলে দ্রুত সাইফুদ্দিন অথবা সায়েম ভাইয়ের সাথে যোগাযোগ করুন। তারা রিপোর্টটি সংশোধন করতে সাহায্য করবেন।'
+        );
+        msg.lang = 'bn-BD';
+        msg.rate = 0.85;
+        msg.pitch = 1.2;  // একটু উঁচু পিচ (Female-সুলভ)
+        msg.volume = 1;
+
+        // Female ভয়েস খুঁজে বের করা
+        const voices = window.speechSynthesis.getVoices();
+        let selectedVoice = null;
+
+        // ১. প্রথমে বাংলা Female ভয়েস খোঁজ
+        for (let voice of voices) {
+            if (voice.lang.startsWith('bn') && voice.name.toLowerCase().includes('female')) {
+                selectedVoice = voice;
+                break;
+            }
+        }
+
+        // ২. না পেলে যেকোনো বাংলা ভয়েস
+        if (!selectedVoice) {
+            for (let voice of voices) {
+                if (voice.lang.startsWith('bn')) {
+                    selectedVoice = voice;
+                    break;
+                }
+            }
+        }
+
+        // ৩. না পেলে যেকোনো Female ইংরেজি ভয়েস
+        if (!selectedVoice) {
+            for (let voice of voices) {
+                if (voice.name.toLowerCase().includes('female')) {
+                    selectedVoice = voice;
+                    break;
+                }
+            }
+        }
+
+        // ৪. সব শেষে ডিফল্ট ভয়েস
+        if (selectedVoice) {
+            msg.voice = selectedVoice;
+            console.log('✅ ভয়েস সিলেক্টেড:', selectedVoice.name, selectedVoice.lang);
+        }
+
+        // ভয়েস লোড হওয়ার জন্য অপেক্ষা (যদি আগে না লোড হয়)
+        if (window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.onvoiceschanged = function() {
+                const voices2 = window.speechSynthesis.getVoices();
+                for (let voice of voices2) {
+                    if (voice.lang.startsWith('bn') && voice.name.toLowerCase().includes('female')) {
+                        msg.voice = voice;
+                        break;
+                    }
+                }
+                window.speechSynthesis.speak(msg);
+            };
+        } else {
             window.speechSynthesis.speak(msg);
         }
     }
@@ -906,8 +962,8 @@
                 তারা রিপোর্টটি সংশোধন করতে সাহায্য করবেন।
             `;
 
-            // 🗣️ ভয়েস বলুন (ডিপার্টমেন্টের নাম সহ)
-            speakSuccess(dept);
+            // 🗣️ ভয়েস বলুন (Female Voice)
+            speakSuccess();
 
             // কাউন্টার আপডেট
             updateEntryCounter();
