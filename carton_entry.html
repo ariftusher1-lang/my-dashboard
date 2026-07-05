@@ -27,10 +27,11 @@
         .btn-danger:hover { background: #bd2130; }
         .btn-warning { background: #ffc107; color: #333; }
         .btn-warning:hover { background: #e0a800; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
         .table-wrap { overflow-x: auto; margin-top: 15px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { background: #e3eef9; color: #0d47a1; padding: 10px 8px; border-bottom: 2px solid #1976d2; white-space: nowrap; text-align: center; }
-        td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #eee; }
+        td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #eee; vertical-align: middle; }
         tr:hover { background: #f5f9ff; }
         .total-row { background: #d4e4f7 !important; font-weight: 700; }
         .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
@@ -42,7 +43,35 @@
         .alert-box { background: #fff3cd; border-left: 6px solid #ffc107; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px; color: #856404; font-weight: 500; display: none; }
         .alert-box.show { display: block; }
 
-        /* ===== লাইভ ডিজিটাল ঘড়ি (বাংলাদেশ সময়) ===== */
+        /* Output Update Form - ইনলাইন */
+        .output-update-form {
+            display: none;
+            background: #e8f0fe;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-top: 8px;
+            border: 1px solid #1976d2;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .output-update-form.show {
+            display: flex;
+        }
+        .output-update-form .form-group {
+            min-width: 140px;
+            flex: 1;
+        }
+        .output-update-form .form-group input {
+            padding: 6px 10px;
+        }
+        .output-update-form .btn {
+            padding: 6px 18px;
+            font-size: 13px;
+            margin-top: 0;
+        }
+
+        /* লাইভ ঘড়ি */
         .live-clock {
             text-align: center;
             padding: 20px 10px;
@@ -154,11 +183,9 @@
         </div>
     </div>
 
-    <!-- অ্যাকশন বার – রিপোর্ট লিংকটি সরানো হয়েছে -->
     <div class="action-bar">
         <button class="btn btn-warning" onclick="exportCSV()">⬇️ CSV ডাউনলোড</button>
         <button class="btn btn-danger" onclick="clearAll()">🗑️ সব ডেটা মুছুন</button>
-        <!-- "📊 রিপোর্ট দেখুন" বাটনটি সরানো হয়েছে -->
     </div>
 
     <div class="card">
@@ -166,7 +193,7 @@
         <div id="entryLogContainer"><div class="empty-msg">কোনো এন্ট্রি নেই</div></div>
     </div>
 
-    <!-- ===== লাইভ ডিজিটাল ঘড়ি (বাংলাদেশ সময়) ===== -->
+    <!-- লাইভ ঘড়ি -->
     <div class="live-clock">
         <div class="clock-label">🇧🇩 বাংলাদেশ সময়</div>
         <div class="clock-time" id="bdClock">
@@ -252,7 +279,7 @@
     }
 
     // ================================================================
-    // 🗣️ ভয়েস ফাংশন (Female Voice - অ্যালার্ট ও সফলতার জন্য)
+    // 🗣️ ভয়েস ফাংশন (Female Voice)
     // ================================================================
     function getFemaleVoice() {
         const voices = window.speechSynthesis.getVoices();
@@ -299,7 +326,7 @@
     }
 
     // ================================================================
-    // 🔥 অ্যাড এন্ট্রি (আপনার চাওয়া মেসেজ + ভয়েস)
+    // 🔥 অ্যাড এন্ট্রি
     // ================================================================
     function addEntry() {
         const alertBox = document.getElementById('alertMessage');
@@ -353,14 +380,16 @@
             const dayEntry = existingDayEntries[0];
             if (!dayEntry.output || dayEntry.output === 0) {
                 const icNameExisting = dayEntry.icName;
-                const alertMsg = `মিস্টার ${icNameExisting}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখের Day Shift-এর পেকেজিং এর Cartoon Output (বর্তমানে ${dayEntry.output}) দেওয়া হয়নি! আগে Day Shift-এর Cartoon Output আপডেট করুন (০-এর বেশি), তারপর Night Shift HR এর Data Entry দিন।`;
+                const alertMsg = `মিস্টার ${icNameExisting}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখের Day Shift-এর পেকেজিং এর Cartoon Output (বর্তমানে ${dayEntry.output}) দেওয়া হয়নি! দয়া করে নিচের লগ টেবিলে গিয়ে "Output দিন" বাটনে ক্লিক করে Output আপডেট করুন, তারপর Night Shift দিন।`;
                 alertBox.innerText = `⚠️ ${alertMsg}`;
                 alertBox.classList.add('show');
                 speakAlert(alertMsg);
+                renderLog(); // রি-রেন্ডার করে বাটন দেখান
                 return;
             }
         }
 
+        // এন্ট্রি সেভ
         const entry = {
             id: Date.now(),
             dept,
@@ -424,6 +453,57 @@
         renderLog();
     }
 
+    // ================================================================
+    // ✏️ Output Update ফিচার (HR ReadOnly)
+    // ================================================================
+    function showOutputUpdateForm(id) {
+        // সব ফর্ম লুকান
+        document.querySelectorAll('.output-update-form').forEach(el => el.classList.remove('show'));
+        const form = document.getElementById(`edit-form-${id}`);
+        if (form) {
+            form.classList.toggle('show');
+            // ফোকাস
+            const input = form.querySelector('input[type="number"]');
+            if (input) setTimeout(() => input.focus(), 100);
+        }
+    }
+
+    function updateOutput(id) {
+        const input = document.getElementById(`edit-output-${id}`);
+        const newOutput = parseFloat(input.value) || 0;
+        if (newOutput < 0) {
+            alert('Output ০ বা তার বেশি হতে হবে!');
+            return;
+        }
+
+        let entries = getEntries();
+        const index = entries.findIndex(e => e.id === id);
+        if (index === -1) { alert('এন্ট্রি পাওয়া যায়নি!'); return; }
+
+        // শুধু Output আপডেট করি, HR অপরিবর্তিত থাকবে
+        entries[index].output = newOutput;
+        // Per HR ও Utilisation রি-ক্যালকুলেট
+        const dayHr = entries[index].dayHr || 0;
+        const perHr = dayHr > 0 ? newOutput / dayHr : 0;
+        entries[index].perHr = perHr;
+        entries[index].utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
+
+        saveEntries(entries);
+        renderLog();
+
+        // সফল বার্তা
+        const alertBox = document.getElementById('alertMessage');
+        alertBox.style.borderLeftColor = '#28a745';
+        alertBox.style.background = '#d4edda';
+        alertBox.style.color = '#155724';
+        alertBox.innerText = `✅ Output সফলভাবে আপডেট হয়েছে! নতুন Output: ${newOutput}`;
+        alertBox.classList.add('show');
+        setTimeout(() => alertBox.classList.remove('show'), 4000);
+    }
+
+    // ================================================================
+    // রেন্ডার লগ (Output Update বাটন সহ)
+    // ================================================================
     function renderLog() {
         const container = document.getElementById('entryLogContainer');
         const entries = getEntries();
@@ -451,6 +531,8 @@
 
         entries.forEach((e, idx) => {
             const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-mc' : 'badge-pack';
+            const isDayWithZeroOutput = (e.shift === 'Day' && (e.output === 0 || !e.output));
+
             html += `<tr>
                 <td>${idx + 1}</td>
                 <td><span class="badge ${badgeClass}">${e.dept}</span></td>
@@ -464,14 +546,59 @@
                 <td>${e.utilPct ? e.utilPct.toFixed(1) + '%' : '0%'}</td>
                 <td>${e.entryDate}</td>
                 <td>${e.timestamp}</td>
-                <td><button class="btn btn-danger" style="padding:4px 10px; font-size:12px;" onclick="deleteEntry(${e.id})">🗑️</button></td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="deleteEntry(${e.id})">🗑️</button>
+                    ${isDayWithZeroOutput ? ` <button class="btn btn-warning btn-sm" onclick="showOutputUpdateForm(${e.id})">✏️ Output দিন</button>` : ''}
+                </td>
+            </tr>
+            <tr id="edit-row-${e.id}" style="display: none;">
+                <td colspan="13">
+                    <div id="edit-form-${e.id}" class="output-update-form">
+                        <div class="form-group">
+                            <label>Day HR (Read Only)</label>
+                            <input type="number" value="${e.dayHr}" readonly class="readonly">
+                        </div>
+                        <div class="form-group">
+                            <label>📦 নতুন CTN Output</label>
+                            <input type="number" id="edit-output-${e.id}" value="${e.output}" step="1" min="0" placeholder="Output দিন">
+                        </div>
+                        <button class="btn btn-success" onclick="updateOutput(${e.id})">✅ আপডেট করুন</button>
+                        <button class="btn btn-danger" onclick="document.getElementById('edit-form-${e.id}').classList.remove('show')">বাতিল</button>
+                    </div>
+                </td>
             </tr>`;
         });
 
         html += `</tbody></table></div>`;
         container.innerHTML = html;
+
+        // প্রতিটি আপডেট ফর্মের জন্য রো শো/হাইড কন্ট্রোল
+        document.querySelectorAll('.output-update-form').forEach(form => {
+            const id = form.id.replace('edit-form-', '');
+            const row = document.getElementById(`edit-row-${id}`);
+            if (row) {
+                // যখন ফর্ম শো হয়, রো দেখাও
+                const observer = new MutationObserver(() => {
+                    if (form.classList.contains('show')) {
+                        row.style.display = 'table-row';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                observer.observe(form, { attributes: true, attributeFilter: ['class'] });
+                // ইনিশিয়াল স্টেট
+                if (form.classList.contains('show')) {
+                    row.style.display = 'table-row';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
     }
 
+    // ================================================================
+    // CSV এক্সপোর্ট
+    // ================================================================
     function exportCSV() {
         const entries = getEntries();
         if (entries.length === 0) { alert('কোনো ডেটা নেই!'); return; }
@@ -494,27 +621,17 @@
     }
 
     // ================================================================
-    // 🕒 লাইভ ডিজিটাল ঘড়ি – বাংলাদেশ সময় (UTC+6)
+    // 🕒 লাইভ ডিজিটাল ঘড়ি
     // ================================================================
     function updateClock() {
         const now = new Date();
-        // বাংলাদেশ সময় (UTC+6)
         const bdTime = new Date(now.getTime() + (6 * 60 * 60 * 1000));
-        const hours = String(bdTime.getUTCHours()).padStart(2, '0');
-        const minutes = String(bdTime.getUTCMinutes()).padStart(2, '0');
-        const seconds = String(bdTime.getUTCSeconds()).padStart(2, '0');
-
-        document.getElementById('clockHours').textContent = hours;
-        document.getElementById('clockMinutes').textContent = minutes;
-        document.getElementById('clockSeconds').textContent = seconds;
-
-        // বাংলা তারিখ
+        document.getElementById('clockHours').textContent = String(bdTime.getUTCHours()).padStart(2, '0');
+        document.getElementById('clockMinutes').textContent = String(bdTime.getUTCMinutes()).padStart(2, '0');
+        document.getElementById('clockSeconds').textContent = String(bdTime.getUTCSeconds()).padStart(2, '0');
         const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dhaka' };
-        const bdDate = new Date().toLocaleDateString('bn-BD', dateOptions);
-        document.getElementById('clockDate').textContent = bdDate;
+        document.getElementById('clockDate').textContent = new Date().toLocaleDateString('bn-BD', dateOptions);
     }
-
-    // প্রতি সেকেন্ডে ঘড়ি আপডেট
     setInterval(updateClock, 1000);
     updateClock();
 
