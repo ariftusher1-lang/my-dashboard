@@ -41,7 +41,6 @@
         .util-pct { font-size: 12px; color: #0d47a1; font-weight: 600; display: block; margin-top: 2px; }
         .link-back { margin-top: 20px; display: inline-block; background: #6c757d; color: white; padding: 8px 18px; border-radius: 6px; text-decoration: none; font-weight: 600; }
         .link-back:hover { background: #5a6268; }
-        /* নতুন সতর্কতা স্টাইল */
         .alert-box { background: #fff3cd; border-left: 6px solid #ffc107; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px; color: #856404; font-weight: 500; display: none; }
         .alert-box.show { display: block; }
     </style>
@@ -54,10 +53,8 @@
         <span>📅 <span id="currentDate"></span></span>
     </div>
 
-    <!-- সতর্কতা বার্তা দেখানোর জন্য -->
     <div id="alertMessage" class="alert-box"></div>
 
-    <!-- এন্ট্রি ফর্ম -->
     <div class="card">
         <h2>➕ নতুন এন্ট্রি</h2>
         <div class="form-grid" id="entryForm">
@@ -109,14 +106,12 @@
         </div>
     </div>
 
-    <!-- অ্যাকশন বার -->
     <div class="action-bar">
         <button class="btn btn-warning" onclick="exportCSV()">⬇️ CSV ডাউনলোড</button>
         <button class="btn btn-danger" onclick="clearAll()">🗑️ সব ডেটা মুছুন</button>
         <a href="carton_report.html" target="_blank" class="btn btn-primary">📊 রিপোর্ট দেখুন</a>
     </div>
 
-    <!-- এন্ট্রি লগ -->
     <div class="card">
         <h2>📋 এন্ট্রি লগ</h2>
         <div id="entryLogContainer"><div class="empty-msg">কোনো এন্ট্রি নেই</div></div>
@@ -158,9 +153,6 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
     }
 
-    // ================================================================
-    // UI ফাংশন
-    // ================================================================
     function populateDeptDropdown() {
         const select = document.getElementById('deptSelect');
         select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
@@ -202,12 +194,15 @@
     }
 
     // ================================================================
-    // 🔥 মূল ফাংশন: এন্ট্রি যোগ করা (নতুন লজিক যোগ হয়েছে)
+    // 🔥 আপডেটেড অ্যাড এন্ট্রি (শক্তিশালী ভ্যালিডেশন)
     // ================================================================
     function addEntry() {
         const alertBox = document.getElementById('alertMessage');
         alertBox.classList.remove('show');
         alertBox.innerText = '';
+        alertBox.style.borderLeftColor = '#ffc107';
+        alertBox.style.background = '#fff3cd';
+        alertBox.style.color = '#856404';
 
         const dept = document.getElementById('deptSelect').value;
         const prodIC = document.getElementById('prodIC').value;
@@ -220,34 +215,45 @@
         const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
 
         const entryDate = document.getElementById('entryDate').value;
-        if (!entryDate) {
-            alert('দয়া করে একটি তারিখ নির্বাচন করুন!');
-            return;
-        }
+        if (!entryDate) { alert('দয়া করে একটি তারিখ নির্বাচন করুন!'); return; }
         if (!dept) { alert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!'); return; }
         if (dayHr <= 0) { alert('Day HR অবশ্যই ০-এর বেশি হতে হবে!'); return; }
 
-        // ===== নতুন চেক: Night Shift এন্ট্রির জন্য Day Shift-এর Output থাকা আবশ্যক =====
-        if (shift === 'Night') {
-            const entries = getEntries();
-            // আজকের তারিখে Day Shift-এর কোনো এন্ট্রি আছে কিনা চেক করি
-            const dayEntry = entries.find(e => e.entryDate === entryDate && e.shift === 'Day' && e.dept === dept);
-            
-            if (!dayEntry) {
-                // Day Shift-এর এন্ট্রি-ই নেই
-                alertBox.innerText = '⚠️ আজকের Day Shift-এর কোনো এন্ট্রি নেই! দয়া করে আগে Day Shift-এর এন্ট্রি সম্পূর্ণ করুন, তারপর Night Shift-এর জন্য চেষ্টা করুন।';
+        const entries = getEntries();
+
+        // --- STEP 1: চেক করা আগের Day Shift এন্ট্রি আছে কিনা ---
+        const existingDayEntries = entries.filter(e => 
+            e.entryDate === entryDate && e.shift === 'Day' && e.dept === dept
+        );
+
+        // যদি ইউজার Day Shift দিতে চায়
+        if (shift === 'Day') {
+            if (existingDayEntries.length > 0) {
+                alertBox.innerText = `⚠️ আজকের "${dept}" ডিপার্টমেন্টে ইতিমধ্যে একটি Day Shift এন্ট্রি আছে! (IC: ${existingDayEntries[0].icName})।\nদয়া করে আগের এন্ট্রি ডিলিট করে নতুন করুন, অথবা শুধুমাত্র Night Shift দিন।`;
                 alertBox.classList.add('show');
                 return;
-            } else if (dayEntry.output === 0 || !dayEntry.output) {
-                // Day Shift-এর এন্ট্রি আছে কিন্তু Output দেওয়া হয়নি
-                alertBox.innerText = `⚠️ আপনি Day Shift-এর জন্য Output Entry দেননি (বর্তমান Output: ${dayEntry.output})! দয়া করে আগে Day Shift-এর Output সম্পূর্ণ করুন, তারপর Night Shift-এর Entry দিন।`;
+            }
+        }
+
+        // --- STEP 2: Night Shift দিতে চাইলে Day Shift-এর Output চেক ---
+        if (shift === 'Night') {
+            if (existingDayEntries.length === 0) {
+                alertBox.innerText = `⚠️ আজকের "${dept}" ডিপার্টমেন্টে কোনো Day Shift এন্ট্রি নেই! আগে Day Shift-এর CTN Output সহ এন্ট্রি সম্পূর্ণ করুন।`;
+                alertBox.classList.add('show');
+                return;
+            }
+
+            // Day Entry আছে, কিন্তু তার Output ০ কিনা চেক করি
+            const dayEntry = existingDayEntries[0]; // যেহেতু একাধিক থাকা উচিত নয়, প্রথমটি নিচ্ছি
+            if (!dayEntry.output || dayEntry.output === 0) {
+                alertBox.innerText = `⚠️ "${dept}" ডিপার্টমেন্টের Day Shift-এর CTN Output (বর্তমানে ${dayEntry.output}) দেওয়া হয়নি!\nআগে Day Shift-এর CTN Output আপডেট করুন (০-এর বেশি), তারপর Night Shift দিন।`;
                 alertBox.classList.add('show');
                 return;
             }
             // সব ঠিক থাকলে নিচে এগোবে
         }
 
-        // ===== এন্ট্রি তৈরি =====
+        // --- STEP 3: এন্ট্রি তৈরি ও সেভ ---
         const entry = {
             id: Date.now(),
             dept,
@@ -263,7 +269,6 @@
             timestamp: new Date().toLocaleString('bn-BD')
         };
 
-        const entries = getEntries();
         entries.push(entry);
         saveEntries(entries);
         renderLog();
@@ -273,16 +278,15 @@
         alertBox.style.borderLeftColor = '#28a745';
         alertBox.style.background = '#d4edda';
         alertBox.style.color = '#155724';
-        alertBox.innerText = `✅ ${shift} Shift-এর এন্ট্রি সফলভাবে যোগ হয়েছে!`;
+        alertBox.innerText = `✅ ${shift} Shift-এর এন্ট্রি সফলভাবে যোগ হয়েছে! (CTN: ${output})`;
         alertBox.classList.add('show');
 
-        // ৩ সেকেন্ড পর বার্তা মুছে ফেলা
         setTimeout(() => {
             alertBox.classList.remove('show');
             alertBox.style.borderLeftColor = '#ffc107';
             alertBox.style.background = '#fff3cd';
             alertBox.style.color = '#856404';
-        }, 4000);
+        }, 5000);
     }
 
     function clearForm() {
@@ -313,9 +317,6 @@
         renderLog();
     }
 
-    // ================================================================
-    // রেন্ডার লগ
-    // ================================================================
     function renderLog() {
         const container = document.getElementById('entryLogContainer');
         const entries = getEntries();
@@ -364,9 +365,6 @@
         container.innerHTML = html;
     }
 
-    // ================================================================
-    // CSV এক্সপোর্ট
-    // ================================================================
     function exportCSV() {
         const entries = getEntries();
         if (entries.length === 0) { alert('কোনো ডেটা নেই!'); return; }
