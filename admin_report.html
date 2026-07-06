@@ -218,6 +218,117 @@
             padding: 14px;
             border-bottom: 2px solid #ffb300;
         }
+
+        /* ===== পারফরম্যান্স স্কোরকার্ড ===== */
+        .scorecard-wrap {
+            background: white;
+            border-radius: 12px;
+            padding: 18px 22px;
+            margin: 15px 0 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-left: 6px solid #ff6f00;
+        }
+        .scorecard-wrap .scorecard-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e65100;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #ffe0b2;
+            padding-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .scorecard-wrap .scorecard-header .btn-group-sm {
+            display: flex;
+            gap: 8px;
+        }
+        .scorecard-wrap .scorecard-header .btn-group-sm button {
+            padding: 4px 14px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .scorecard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .scorecard-table th {
+            background: #1a237e;
+            color: white;
+            padding: 10px 8px;
+            font-weight: 700;
+            font-size: 12px;
+            text-align: center;
+            border-bottom: 3px solid #0d47a1;
+            white-space: nowrap;
+        }
+        .scorecard-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #e8ecf1;
+            vertical-align: middle;
+        }
+        .scorecard-table tr:nth-child(even) {
+            background: #f8faff;
+        }
+        .scorecard-table tr:hover {
+            background: #e3edfb !important;
+        }
+        .scorecard-table .dept-name {
+            font-weight: 600;
+            color: #1a3a5c;
+            text-align: left;
+            padding-left: 15px;
+        }
+        .scorecard-table .total-row td {
+            background: #d4e4f7 !important;
+            font-weight: 700;
+            border-top: 2px solid #1976d2;
+            border-bottom: 2px solid #1976d2;
+        }
+        .grade-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 16px;
+            min-width: 40px;
+        }
+        .grade-A { background: #1b5e20; color: white; }
+        .grade-B { background: #e65100; color: white; }
+        .grade-C { background: #f57f17; color: white; }
+        .grade-D { background: #b71c1c; color: white; }
+        .score-bar-bg {
+            width: 80px;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+        .score-bar-fill.green { background: #43a047; }
+        .score-bar-fill.yellow { background: #fb8c00; }
+        .score-bar-fill.orange { background: #f57f17; }
+        .score-bar-fill.red { background: #c62828; }
+        .score-text {
+            font-weight: 700;
+            font-size: 14px;
+            min-width: 40px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -265,7 +376,7 @@
         <span id="countdownDisplay">পরবর্তী আপডেট: ১০s</span>
     </div>
 
-    <!-- ===== নতুন: টেবিল আকারে সারাংশ (কপি-পেস্ট উপযোগী) ===== -->
+    <!-- ===== টেবিল আকারে সারাংশ (কপি-পেস্ট উপযোগী) ===== -->
     <div class="summary-table-wrap" id="summaryTableWrap">
         <div class="summary-header-text">
             <span>📌 Current Date &amp; Shift Summery Report</span>
@@ -275,7 +386,6 @@
             </div>
         </div>
         <div id="summaryTableContainer">
-            <!-- ডেটা এখানে রেন্ডার হবে -->
             <table class="summary-data-table" id="summaryDataTable">
                 <tbody>
                     <tr class="greeting-row"><td colspan="2">Dear @ DPL DGM Sir, Below is Current Date &amp; Shift Summery Report. You Can Check The report</td></tr>
@@ -286,6 +396,7 @@
                     <tr><td class="label-cell">📊 Total No Demand</td><td class="value-cell" id="sumNoDemand">0</td></tr>
                     <tr><td class="label-cell">🔧 Total Mold Change QTY</td><td class="value-cell" id="sumMoldChange">0</td></tr>
                     <tr><td class="label-cell">⛔ MC Stop (Manpower)</td><td class="value-cell" id="sumMCStopManpower">0</td></tr>
+                    <tr><td class="label-cell">⛔ MC Stop (No Demand)</td><td class="value-cell" id="sumMCStopNoDemand">0</td></tr>
                 </tbody>
             </table>
         </div>
@@ -303,6 +414,18 @@
         </div>
     </div>
     <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+
+    <!-- ===== নতুন: পারফরম্যান্স স্কোরকার্ড (শুধু MC ডিপার্টমেন্ট) ===== -->
+    <div class="scorecard-wrap" id="scorecardWrap">
+        <div class="scorecard-header">
+            <span>🏆 পারফরম্যান্স স্কোরকার্ড (MC ডিপার্টমেন্ট)</span>
+            <div class="btn-group-sm">
+                <button class="btn-sm-image" onclick="downloadScorecardImage()">📷 ইমেজ</button>
+                <button class="btn-sm-excel" onclick="downloadScorecardExcel()">⬇️ Excel</button>
+            </div>
+        </div>
+        <div id="scorecardContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+    </div>
 
     <div class="section-title clearfix">
         <span class="mc-badge" style="font-size:18px;">🟦 মেশিন ডিপার্টমেন্ট (MC Department) - ভিজুয়াল রিপোর্ট</span>
@@ -478,12 +601,10 @@
         updateCountdownDisplay();
 
         autoRefreshInterval = setInterval(function() {
-            // রিপোর্ট সেকশন খোলা থাকলেই রিলোড করি (পেজ রিলোড নয়, শুধু ডেটা)
             if (document.getElementById('reportSection') && document.getElementById('reportSection').style.display === 'block') {
                 console.log('🔄 অটো-রিফ্রেশ: ডেটা রিলোড করা হচ্ছে...');
-                loadData(); // সম্পূর্ণ ডেটা রিলোড করে আবার ফিল্টার অ্যাপ্লাই করবে
+                loadData();
             } else {
-                // রিপোর্ট সেকশন না খোলা থাকলেও ডেটা রিফ্রেশ রাখি (ব্যাকগ্রাউন্ডে)
                 loadData();
             }
             secondsLeft = 10;
@@ -524,7 +645,6 @@
             }
         });
 
-        // ডিফল্টভাবে চালু
         if (toggle.checked) {
             startAutoRefresh();
         }
@@ -534,7 +654,6 @@
     function getCurrentShift() {
         const now = new Date();
         const hours = now.getHours();
-        // Day Shift: 8:00 AM (8) to 7:59 PM (19)
         if (hours >= 8 && hours < 20) {
             return 'Day';
         } else {
@@ -550,7 +669,6 @@
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const year = d.getFullYear();
-        // দিনের নাম বের করি
         const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayName = weekdays[d.getDay()];
         return `${day}-${month}-${year} ( ${dayName} )`;
@@ -578,7 +696,6 @@
             allData = json.data || [];
             console.log('📦 মোট ডেটা:', allData.length);
             populateDeptFilter();
-            // ফিল্টার অ্যাপ্লাই করি – এতে আজকের তারিখ ও ডিফল্ট শিফট সেট থাকবে
             applyFilters();
             renderWeeklySummaryFromData();
             document.getElementById('currentTime').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
@@ -642,9 +759,10 @@
     }
 
     function renderDashboard(data) {
-        renderCurrentSummary(data);  // নতুন টেবিল রেন্ডার
+        renderCurrentSummary(data);
         renderStats(data);
         renderSaifuddinTable(data);
+        renderScorecard(data);          // <-- নতুন স্কোরকার্ড
         renderMcSummaryTable(data);
         renderGroupTable(data, 'groupATable', 'A');
         renderGroupTable(data, 'groupBTable', 'B');
@@ -653,7 +771,7 @@
         renderRawData(data);
     }
 
-    // ===== বর্তমান তারিখ ও শিফটের সারাংশ – টেবিল আকারে =====
+    // ===== বর্তমান তারিখ ও শিফটের সারাংশ =====
     function renderCurrentSummary(data) {
         let totalPresent = 0, totalAbsent = 0, totalNoDemand = 0;
         let mcStopManpower = 0, mcStopNoDemand = 0;
@@ -675,7 +793,6 @@
         document.getElementById('sumMCStopNoDemand').innerText = mcStopNoDemand;
         document.getElementById('sumMoldChange').innerText = totalMoldChange;
 
-        // তারিখ ও শিফট আপডেট (ফরম্যাট করা তারিখ সহ)
         const date = document.getElementById('filterDate').value;
         const shift = document.getElementById('filterShift').value;
         const displayDate = date ? formatDate(date) : 'সব তারিখ';
@@ -684,11 +801,205 @@
         document.getElementById('sumShift').innerText = displayShift;
     }
 
+    // ===== পারফরম্যান্স স্কোরকার্ড (শুধু MC ডিপার্টমেন্ট) =====
+    function renderScorecard(data) {
+        const container = document.getElementById('scorecardContainer');
+        const mcData = data.filter(row => {
+            const dept = getVal(row, ['Department', 'department']);
+            return MC_DEPARTMENTS.includes(dept);
+        });
+
+        if (mcData.length === 0) {
+            container.innerHTML = `<div class="no-data">কোনো MC ডিপার্টমেন্টের ডেটা নেই</div>`;
+            return;
+        }
+
+        // গ্রুপ ডেটা ডিপার্টমেন্ট অনুযায়ী
+        const deptMap = {};
+        mcData.forEach(row => {
+            const dept = getVal(row, ['Department', 'department']);
+            if (!dept) return;
+            if (!deptMap[dept]) {
+                deptMap[dept] = {
+                    totalPresent: 0,
+                    totalAbsent: 0,
+                    totalLeave: 0,
+                    totalMC: 0,
+                    mcRunning: 0,
+                    icName: getVal(row, ['IC Name', 'icName'])
+                };
+            }
+            const d = deptMap[dept];
+            d.totalPresent += getNum(row, ['Total HR', 'totalHR']);
+            d.totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
+            d.totalLeave += getNum(row, ['Leave Employee', 'leaveEmployee']);
+            d.totalMC += getNum(row, ['Total MC', 'totalMC']);
+            d.mcRunning += getNum(row, ['MC Running', 'mcRunning']);
+        });
+
+        // প্রতিটি ডিপার্টমেন্টের স্কোর বের করি
+        const scoreData = [];
+        Object.keys(deptMap).forEach(dept => {
+            const d = deptMap[dept];
+            const totalHR = d.totalPresent + d.totalAbsent + d.totalLeave;
+            const mcRunPct = d.totalMC > 0 ? (d.mcRunning / d.totalMC) * 100 : 0;
+            const presentPct = totalHR > 0 ? (d.totalPresent / totalHR) * 100 : 0;
+            const absencePct = totalHR > 0 ? ((d.totalAbsent + d.totalLeave) / totalHR) * 100 : 0;
+            // স্কোর = (MC Run % * 0.4) + (Present % * 0.3) + ((100 - Absence %) * 0.3)
+            const score = (mcRunPct * 0.4) + (presentPct * 0.3) + ((100 - absencePct) * 0.3);
+            const finalScore = Math.min(Math.max(score, 0), 100);
+
+            let grade = 'D';
+            let gradeClass = 'grade-D';
+            if (finalScore >= 80) { grade = 'A'; gradeClass = 'grade-A'; }
+            else if (finalScore >= 60) { grade = 'B'; gradeClass = 'grade-B'; }
+            else if (finalScore >= 40) { grade = 'C'; gradeClass = 'grade-C'; }
+
+            scoreData.push({
+                dept,
+                icName: d.icName || '-',
+                totalHR,
+                totalPresent: d.totalPresent,
+                totalAbsent: d.totalAbsent,
+                totalLeave: d.totalLeave,
+                totalMC: d.totalMC,
+                mcRunning: d.mcRunning,
+                mcRunPct,
+                presentPct,
+                absencePct,
+                score: finalScore,
+                grade,
+                gradeClass
+            });
+        });
+
+        // স্কোর অনুযায়ী সাজাই (উচ্চ থেকে নিম্ন)
+        scoreData.sort((a, b) => b.score - a.score);
+
+        // মোট/গড় বের করি
+        let avgScore = 0, avgMCRun = 0, avgPresent = 0, avgAbsence = 0;
+        scoreData.forEach(d => {
+            avgScore += d.score;
+            avgMCRun += d.mcRunPct;
+            avgPresent += d.presentPct;
+            avgAbsence += d.absencePct;
+        });
+        const count = scoreData.length;
+        avgScore = count > 0 ? avgScore / count : 0;
+        avgMCRun = count > 0 ? avgMCRun / count : 0;
+        avgPresent = count > 0 ? avgPresent / count : 0;
+        avgAbsence = count > 0 ? avgAbsence / count : 0;
+
+        let html = `<table class="scorecard-table"><thead><tr>
+            <th>#</th>
+            <th>ডিপার্টমেন্ট</th>
+            <th>Prod IC</th>
+            <th>Total HR</th>
+            <th>Present</th>
+            <th>Absent</th>
+            <th>Leave</th>
+            <th>Total MC</th>
+            <th>MC Run</th>
+            <th>MC Run %</th>
+            <th>Present %</th>
+            <th>Absent %</th>
+            <th>Score</th>
+            <th>Grade</th>
+        </tr></thead><tbody>`;
+
+        scoreData.forEach((d, idx) => {
+            const barColor = d.score >= 80 ? 'green' : (d.score >= 60 ? 'yellow' : (d.score >= 40 ? 'orange' : 'red'));
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td class="dept-name"><strong>${d.dept}</strong></td>
+                <td>${d.icName}</td>
+                <td>${d.totalHR}</td>
+                <td>${d.totalPresent}</td>
+                <td>${d.totalAbsent}</td>
+                <td>${d.totalLeave}</td>
+                <td>${d.totalMC}</td>
+                <td>${d.mcRunning}</td>
+                <td>${d.mcRunPct.toFixed(1)}%</td>
+                <td>${d.presentPct.toFixed(1)}%</td>
+                <td>${d.absencePct.toFixed(1)}%</td>
+                <td>
+                    <div class="score-bar-bg">
+                        <div class="score-bar-fill ${barColor}" style="width: ${d.score}%;"></div>
+                    </div>
+                    <span class="score-text">${d.score.toFixed(1)}</span>
+                </td>
+                <td><span class="grade-badge ${d.gradeClass}">${d.grade}</span></td>
+            </tr>`;
+        });
+
+        // মোট/গড় রো
+        html += `<tr class="total-row">
+            <td><strong>📌</strong></td>
+            <td><strong>গড় (Average)</strong></td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td><strong>${avgMCRun.toFixed(1)}%</strong></td>
+            <td><strong>${avgPresent.toFixed(1)}%</strong></td>
+            <td><strong>${avgAbsence.toFixed(1)}%</strong></td>
+            <td><strong>${avgScore.toFixed(1)}</strong></td>
+            <td><span class="grade-badge ${avgScore >= 80 ? 'grade-A' : (avgScore >= 60 ? 'grade-B' : (avgScore >= 40 ? 'grade-C' : 'grade-D'))}">${avgScore >= 80 ? 'A' : (avgScore >= 60 ? 'B' : (avgScore >= 40 ? 'C' : 'D'))}</span></td>
+        </tr>`;
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        window._scorecardData = scoreData;
+    }
+
+    // ===== স্কোরকার্ড ইমেজ ডাউনলোড =====
+    function downloadScorecardImage() {
+        const container = document.getElementById('scorecardWrap');
+        if (!container) return;
+        const btn = document.querySelector('.scorecard-header .btn-sm-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Scorecard_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerText = '📷 ইমেজ';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                btn.innerText = '📷 ইমেজ';
+                btn.disabled = false;
+            });
+    }
+
+    // ===== স্কোরকার্ড Excel ডাউনলোড =====
+    function downloadScorecardExcel() {
+        const data = window._scorecardData || [];
+        if (data.length === 0) { alert('ডেটা নেই!'); return; }
+        const headers = ['#', 'Department', 'Prod IC', 'Total HR', 'Present', 'Absent', 'Leave', 'Total MC', 'MC Run', 'MC Run %', 'Present %', 'Absent %', 'Score', 'Grade'];
+        const rows = data.map((d, idx) => [
+            idx + 1, d.dept, d.icName, d.totalHR, d.totalPresent, d.totalAbsent, d.totalLeave,
+            d.totalMC, d.mcRunning, d.mcRunPct.toFixed(1) + '%', d.presentPct.toFixed(1) + '%',
+            d.absencePct.toFixed(1) + '%', d.score.toFixed(1), d.grade
+        ]);
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        XLSX.utils.book_append_sheet(wb, ws, 'Scorecard');
+        XLSX.writeFile(wb, `Scorecard_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
     // ===== সামারি ইমেজ ডাউনলোড =====
     function downloadSummaryImage() {
         const container = document.getElementById('summaryTableWrap');
         if (!container) return;
-        const btn = document.querySelector('.btn-sm-image');
+        const btn = document.querySelector('.summary-header-text .btn-sm-image');
         btn.innerText = '⏳...';
         btn.disabled = true;
         html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
@@ -1898,22 +2209,14 @@
 
     // ===== পেজ লোড হলে অটো-ফিল্টার + অটো-রিফ্রেশ শুরু =====
     window.onload = function() {
-        // আজকের তারিখ সেট করুন
         const today = new Date();
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         document.getElementById('filterDate').value = `${year}-${month}-${day}`;
-        
-        // বর্তমান সময় অনুযায়ী শিফট সেট করুন
         const shift = getCurrentShift();
         document.getElementById('filterShift').value = shift;
-        
-        // ডেটা লোড ও ফিল্টার অ্যাপ্লাই
         loadData();
-        
-        // অটো-রিফ্রেশ টগল চালু থাকলে শুরু (ইতিমধ্যে DOMContentLoaded-এ শুরু হয়েছে)
-        // তবে আমরা নিশ্চিত করি যে startAutoRefresh যেন কল হয়
         const toggle = document.getElementById('autoRefreshToggle');
         if (toggle.checked) {
             startAutoRefresh();
