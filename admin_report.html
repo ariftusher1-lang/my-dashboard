@@ -329,6 +329,32 @@
             min-width: 40px;
             display: inline-block;
         }
+
+        /* ===== হোয়াটসঅ্যাপ মেসেজ বক্স ===== */
+        #whatsappMessageBox {
+            border-left-color: #25D366 !important;
+        }
+        #whatsappMessageBox .summary-header-text {
+            color: #075E54;
+        }
+        #whatsappMessageBox .btn-sm-excel {
+            background: #25D366;
+            color: white;
+        }
+        #whatsappMessageBox .btn-sm-excel:hover {
+            background: #1da851;
+        }
+        #whatsappMessageContent {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-size: 15px;
+            line-height: 1.8;
+            padding: 10px 0;
+            white-space: pre-wrap;
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+        }
     </style>
 </head>
 <body>
@@ -376,6 +402,19 @@
         <span id="countdownDisplay">পরবর্তী আপডেট: ১০s</span>
     </div>
 
+    <!-- ===== হোয়াটসঅ্যাপ মেসেজ বক্স (নতুন) ===== -->
+    <div class="summary-table-wrap" id="whatsappMessageBox">
+        <div class="summary-header-text">
+            <span>💬 হোয়াটসঅ্যাপ মেসেজ (কপি করে পাঠান)</span>
+            <div class="btn-group-sm">
+                <button class="btn-sm-excel" onclick="copyWhatsAppMessage()">📋 কপি করুন</button>
+            </div>
+        </div>
+        <div id="whatsappMessageContent">
+            <!-- ডায়নামিক কন্টেন্ট এখানে আসবে -->
+        </div>
+    </div>
+
     <!-- ===== টেবিল আকারে সারাংশ (কপি-পেস্ট উপযোগী) ===== -->
     <div class="summary-table-wrap" id="summaryTableWrap">
         <div class="summary-header-text">
@@ -415,7 +454,7 @@
     </div>
     <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
-    <!-- ===== নতুন: পারফরম্যান্স স্কোরকার্ড (শুধু MC ডিপার্টমেন্ট) ===== -->
+    <!-- ===== পারফরম্যান্স স্কোরকার্ড (শুধু MC ডিপার্টমেন্ট) ===== -->
     <div class="scorecard-wrap" id="scorecardWrap">
         <div class="scorecard-header">
             <span>🏆 পারফরম্যান্স স্কোরকার্ড (MC ডিপার্টমেন্ট)</span>
@@ -601,12 +640,8 @@
         updateCountdownDisplay();
 
         autoRefreshInterval = setInterval(function() {
-            if (document.getElementById('reportSection') && document.getElementById('reportSection').style.display === 'block') {
-                console.log('🔄 অটো-রিফ্রেশ: ডেটা রিলোড করা হচ্ছে...');
-                loadData();
-            } else {
-                loadData();
-            }
+            console.log('🔄 অটো-রিফ্রেশ: ডেটা রিলোড করা হচ্ছে...');
+            loadData();
             secondsLeft = 10;
             updateCountdownDisplay();
         }, 10000);
@@ -699,6 +734,8 @@
             applyFilters();
             renderWeeklySummaryFromData();
             document.getElementById('currentTime').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
+            // মেসেজ আপডেট (নতুন)
+            setTimeout(updateWhatsAppMessage, 300);
         } catch (e) {
             console.error('❌ লোড ব্যর্থ:', e);
             document.getElementById('currentTime').innerText = '❌ লোড ব্যর্থ!';
@@ -748,6 +785,8 @@
         document.getElementById('filterStatus').innerHTML = `📌 ফিল্টার প্রয়োগ করা হয়েছে: ${filteredData.length} টি এন্ট্রি পাওয়া গেছে।`;
         updateSummaryHeader();
         renderDashboard(filteredData);
+        // মেসেজ আপডেট (নতুন)
+        setTimeout(updateWhatsAppMessage, 200);
     }
 
     function updateSummaryHeader() {
@@ -762,7 +801,7 @@
         renderCurrentSummary(data);
         renderStats(data);
         renderSaifuddinTable(data);
-        renderScorecard(data);          // <-- নতুন স্কোরকার্ড
+        renderScorecard(data);
         renderMcSummaryTable(data);
         renderGroupTable(data, 'groupATable', 'A');
         renderGroupTable(data, 'groupBTable', 'B');
@@ -814,7 +853,6 @@
             return;
         }
 
-        // গ্রুপ ডেটা ডিপার্টমেন্ট অনুযায়ী
         const deptMap = {};
         mcData.forEach(row => {
             const dept = getVal(row, ['Department', 'department']);
@@ -837,7 +875,6 @@
             d.mcRunning += getNum(row, ['MC Running', 'mcRunning']);
         });
 
-        // প্রতিটি ডিপার্টমেন্টের স্কোর বের করি
         const scoreData = [];
         Object.keys(deptMap).forEach(dept => {
             const d = deptMap[dept];
@@ -845,7 +882,6 @@
             const mcRunPct = d.totalMC > 0 ? (d.mcRunning / d.totalMC) * 100 : 0;
             const presentPct = totalHR > 0 ? (d.totalPresent / totalHR) * 100 : 0;
             const absencePct = totalHR > 0 ? ((d.totalAbsent + d.totalLeave) / totalHR) * 100 : 0;
-            // স্কোর = (MC Run % * 0.4) + (Present % * 0.3) + ((100 - Absence %) * 0.3)
             const score = (mcRunPct * 0.4) + (presentPct * 0.3) + ((100 - absencePct) * 0.3);
             const finalScore = Math.min(Math.max(score, 0), 100);
 
@@ -873,10 +909,8 @@
             });
         });
 
-        // স্কোর অনুযায়ী সাজাই (উচ্চ থেকে নিম্ন)
         scoreData.sort((a, b) => b.score - a.score);
 
-        // মোট/গড় বের করি
         let avgScore = 0, avgMCRun = 0, avgPresent = 0, avgAbsence = 0;
         scoreData.forEach(d => {
             avgScore += d.score;
@@ -932,7 +966,6 @@
             </tr>`;
         });
 
-        // মোট/গড় রো
         html += `<tr class="total-row">
             <td><strong>📌</strong></td>
             <td><strong>গড় (Average)</strong></td>
@@ -2207,6 +2240,92 @@
         document.getElementById('rawDataTable').innerHTML = `<div class="no-data">${msg}</div>`;
     }
 
+    // ===== হোয়াটসঅ্যাপ মেসেজ জেনারেট ও কপি (নতুন) =====
+    function updateWhatsAppMessage() {
+        const container = document.getElementById('whatsappMessageContent');
+        if (!container) return;
+
+        const dateVal = document.getElementById('filterDate').value;
+        const shiftVal = document.getElementById('filterShift').value;
+        const displayDate = dateVal ? formatDate(dateVal) : 'সব তারিখ';
+        const displayShift = shiftVal !== 'All' ? shiftVal : 'সব শিফট';
+
+        const greeting = (displayShift === 'Day') ? 'Good Morning' : 'Good Night';
+
+        const totalPresent = document.getElementById('sumPresent').innerText || '0';
+        const totalAbsent = document.getElementById('sumAbsent').innerText || '0';
+        const totalNoDemand = document.getElementById('sumNoDemand').innerText || '0';
+        const totalMoldChange = document.getElementById('sumMoldChange').innerText || '0';
+        const mcStopManpower = document.getElementById('sumMCStopManpower').innerText || '0';
+
+        // গ্রুপ অনুযায়ী Present বের করা
+        let prodPresent = 0, packPresent = 0, commonPresent = 0;
+        if (filteredData && filteredData.length > 0) {
+            const prodDepts = [
+                'RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1',
+                'RIP> DPL> Plastic-6.2', 'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2',
+                'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4', 'Silicon Project'
+            ];
+            const packDepts = ['Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03'];
+            const commonDepts = [
+                'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
+                'Corporate sales Production.', 'Plastics-Recycle & Silo',
+                'Product Development & Mold Change', 'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
+            ];
+            filteredData.forEach(row => {
+                const dept = getVal(row, ['Department', 'department']);
+                const hr = getNum(row, ['Total HR', 'totalHR']);
+                if (prodDepts.includes(dept)) prodPresent += hr;
+                else if (packDepts.includes(dept)) packPresent += hr;
+                else if (commonDepts.includes(dept)) commonPresent += hr;
+            });
+        }
+
+        let moldProb = 0, mcProb = 0, doubleMC = 0, packagingOperator = 0;
+        filteredData.forEach(row => {
+            moldProb += getNum(row, ['moldProblem']);
+            mcProb += getNum(row, ['mcProblem']);
+            doubleMC += getNum(row, ['doubleMC']);
+            packagingOperator += getNum(row, ['packagingOperator']);
+        });
+
+        const message = `Dear @ DPL DGM Sir, 
+Asslamualaikum , 
+${displayShift} Shift Hole ${greeting} !!!
+Below is Current Date & Shift Summery Report. You Can Check The report. 
+
+📅 Date\t${displayDate}
+🕒 Shift\t${displayShift}
+👥 Total Present\t${totalPresent} (Breakdown Prod Team ${prodPresent} , Packaging Team ${packPresent}, Common Team ${commonPresent})
+❌ Total Absent\t${totalAbsent}
+📊 Total No Demand\t${totalNoDemand}
+🔧 Total Mold Change QTY\t${totalMoldChange}
+⛔ MC Stop (Manpower)\t${mcStopManpower}
+Mold Prob -\t${moldProb}
+MC Prob -\t${mcProb}
+Double MC -\t${doubleMC}
+Packaging Operator -\t${packagingOperator}`;
+
+        container.innerText = message;
+    }
+
+    function copyWhatsAppMessage() {
+        const content = document.getElementById('whatsappMessageContent');
+        if (!content) return;
+        const text = content.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            alert('✅ মেসেজ কপি হয়েছে! এখন হোয়াটসঅ্যাপে পেস্ট করুন।');
+        }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('✅ মেসেজ কপি হয়েছে!');
+        });
+    }
+
     // ===== পেজ লোড হলে অটো-ফিল্টার + অটো-রিফ্রেশ শুরু =====
     window.onload = function() {
         const today = new Date();
@@ -2221,6 +2340,8 @@
         if (toggle.checked) {
             startAutoRefresh();
         }
+        // মেসেজ আপডেট (প্রথম লোডের জন্য)
+        setTimeout(updateWhatsAppMessage, 500);
     };
 </script>
 </body>
