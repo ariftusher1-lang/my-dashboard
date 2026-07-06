@@ -2217,3 +2217,611 @@
             html += `</tr>`;
             sumHR += row.totalHR; sumLeave += row.leave; sumAbsent += row.absent;
             if (isGroupA) {
+                sumMC += row.totalMC; sumRunning += row.running; sumStopped += row.stopped;
+            }
+        });
+
+        const totalPresent = sumHR;
+        const totalRunPct = sumMC > 0 ? ((sumRunning / sumMC) * 100) : 0;
+        const totalStopPct = sumMC > 0 ? ((sumStopped / sumMC) * 100) : 0;
+
+        html += `<tr class="total-row"><td><strong>📌 মোট (Group ${groupType})</strong></td><td>-</td><td>-</td>`;
+        html += `<td><strong>${sumHR}</strong></td><td>${sumLeave}</td><td>${sumAbsent}</td><td><strong>${totalPresent}</strong></td>`;
+        if (isGroupA) {
+            html += `<td><strong>${sumMC}</strong></td><td><strong>${sumRunning}</strong></td><td><strong>${sumStopped}</strong></td>`;
+            html += `<td><strong>${totalRunPct.toFixed(1)}%</strong></td><td><strong>${totalStopPct.toFixed(1)}%</strong></td>`;
+        }
+        html += `</tr></tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    // ===== বাকি ফাংশন (Overall, Missing, Raw Data, Excel) =====
+    function renderOverall(data) {
+        const container = document.getElementById('overallTable');
+        let totalHR = 0, leave = 0, absent = 0;
+        data.forEach(r => {
+            totalHR += getNum(r, ['Total HR', 'totalHR']);
+            leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
+            absent += getNum(r, ['Absent Employee', 'absentEmployee']);
+        });
+        const present = totalHR;
+        const pctPresent = totalHR > 0 ? ((present / totalHR) * 100) : 0;
+        const pctAbsent = totalHR > 0 ? ((absent / totalHR) * 100) : 0;
+        let rawDate = data.length > 0 ? getVal(data[0], ['entryDate', 'Date']) : '-';
+        const date = formatDate(rawDate);
+        const shift = data.length > 0 ? getVal(data[0], ['Shift', 'shift']) : '-';
+        if (data.length === 0) {
+            container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
+            return;
+        }
+        container.innerHTML = `<table>
+            <thead><tr><th>Date</th><th>Shift</th><th>Total HR</th><th>Total Present</th><th>Total Absent</th><th>% Present</th><th>% Absent</th></tr></thead>
+            <tbody><tr><td>${date}</td><td>${shift}</td><td><strong>${totalHR}</strong></td><td><strong>${present}</strong></td><td>${absent}</td>
+                <td>${pctPresent.toFixed(1)}%</td><td>${pctAbsent.toFixed(1)}%</td></tr></tbody>
+        </table>`;
+    }
+
+    function renderMissing(data) {
+        const container = document.getElementById('missingContainer');
+        const presentDepts = new Set(data.map(r => getVal(r, ['Department', 'department'])).filter(Boolean));
+        const missing = MASTER_DEPARTMENTS.filter(d => !presentDepts.has(d));
+        if (missing.length === 0) {
+            container.innerHTML = `<div class="no-data" style="color:green;">✅ সব ডিপার্টমেন্টেই এন্ট্রি আছে!</div>`;
+            return;
+        }
+        let html = `<div><strong>🔴 ${missing.length} টি ডিপার্টমেন্টে ফিল্টার অনুযায়ী কোনো এন্ট্রি নেই (মোট ${MASTER_DEPARTMENTS.length} টির মধ্যে)</strong></div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">`;
+        missing.forEach(d => html += `<span class="missing-item">❌ ${d}</span>`);
+        html += `</div>`;
+        container.innerHTML = html;
+    }
+
+    function renderRawData(data) {
+        const container = document.getElementById('rawDataTable');
+        if (data.length === 0) {
+            container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
+            return;
+        }
+        const headers = [
+            '#', 'Time', 'Date', 'Shift', 'Department', 'IC Name',
+            'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped',
+            'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem',
+            'Preventive Maintenance', 'No Demand (QTY)', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short',
+            'Total HR', 'Leave Employee', 'Absent Employee',
+            'Export MC', 'Domestic MC', 'Single MC', 'Double MC', 'No Demand (M)',
+            'Prod IC', 'SIC', 'MC Operator', 'Packaging Operator', 'Foreman', 'Senior Operator',
+            'Shrink-wrap Op', 'Printing Op', 'Mold Change Op', 'Mix/Recycle/Crush',
+            'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP',
+            'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'
+        ];
+        const keys = [
+            'timestamp', 'entryDate', 'shift', 'department', 'icName',
+            'totalMC', 'mcRunning', 'mcStopped', 'pctRunning', 'pctStopped',
+            'mpShort', 'moldProblem', 'moldChange', 'underSample', 'mcProblem',
+            'preventiveMaintenance', 'noDemandQty', 'materialMBShortage', 'overStockWIP', 'accessoriesShort',
+            'totalHR', 'leaveEmployee', 'absentEmployee',
+            'exportMC', 'domesticMC', 'singleMC', 'doubleMC', 'noDemand',
+            'prodIC', 'sic', 'mcOperator', 'packagingOperator', 'foreman', 'seniorOperator',
+            'shrinkOperator', 'printingOperator', 'moldChangeOperator', 'mixRecycle',
+            'subStore', 'inventoryOperator', 'fgDelivery', 'sharpTools', 'psi', 'erp',
+            'floorHousekeeping', 'rework', 'welding', 'hrTransfer'
+        ];
+        let html = `<table><thead><tr>`;
+        headers.forEach(h => html += `<th>${h}</th>`);
+        html += `</tr></thead><tbody>`;
+        data.forEach((row, idx) => {
+            html += `<tr><td>${idx + 1}</td>`;
+            const rawTimestamp = row.timestamp || '';
+            html += `<td>${formatTime(rawTimestamp)}</td>`;
+            const rawDate = row.entryDate || '';
+            html += `<td>${formatDate(rawDate)}</td>`;
+            for (let i = 2; i < keys.length; i++) {
+                const k = keys[i];
+                let val = row[k] !== undefined && row[k] !== null ? row[k] : '';
+                html += `<td>${val}</td>`;
+            }
+            html += `</tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    function formatTime(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'Asia/Dhaka'
+        });
+    }
+
+    // ===== ডাউনলোড ফাংশন =====
+    function downloadMCImage() {
+        const container = document.getElementById('mcSummaryTable');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `MC_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadMCExcel() {
+        const data = window._mcTableData;
+        if (!data) { alert('ডেটা নেই!'); return; }
+        const headers = ['Department', 'Prod IC', 'Total Present', 'Total MC', 'MC Operator', 'Packaging Operator',
+            'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'
+        ];
+        data.activeCauseKeys.forEach(c => { headers.push(c.label); });
+
+        const rows = [];
+        Object.entries(data.rows).forEach(([dept, d]) => {
+            const totalPresent = d.totalHR;
+            const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
+            const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
+            const rowData = [dept, d.icName || '-', totalPresent, d.totalMC, d.mcOperator, d.packagingOperator,
+                d.running, d.stopped, runPct + '%', stopPct + '%'
+            ];
+            data.activeCauseKeys.forEach(c => {
+                rowData.push(d.causes[c.key] || 0);
+            });
+            rows.push(rowData);
+        });
+
+        const totalRow = ['📌 মোট', '-', data.grandTotalPresent, data.grandTotalMC, data.grandMCOp, data.grandPackOp,
+            data.grandRunning, data.grandStopped,
+            data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%'
+        ];
+        data.activeCauseKeys.forEach(c => {
+            totalRow.push(data.grandCauses[c.key] || 0);
+        });
+        rows.push(totalRow);
+
+        const wbData = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wbData);
+        XLSX.utils.book_append_sheet(wb, ws, "MC Summary");
+        XLSX.writeFile(wb, `MC_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadMCPDF() {
+        const container = document.getElementById('mcSummaryTable');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-pdf');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`MC_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ PDF তৈরি ব্যর্থ!');
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadSaifuddinImage() {
+        const container = document.getElementById('saifuddinTableContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        const clone = container.cloneNode(true);
+        clone.querySelectorAll('td, th').forEach(el => {
+            el.style.whiteSpace = 'nowrap';
+        });
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `
+            width: 2400px; 
+            padding: 25px; 
+            background: white; 
+            border: 4px solid #0d47a1; 
+            border-radius: 16px; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            margin: 0 auto; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        `;
+        const title = document.createElement('h2');
+        title.style.cssText = `
+            color: #0d47a1; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-bottom: 3px solid #1976d2; 
+            padding-bottom: 12px;
+            font-size: 24px;
+        `;
+        title.innerText = '📊 Summery Table For Mr. Saifuddin';
+        wrapper.appendChild(title);
+        wrapper.appendChild(clone);
+        const footer = document.createElement('p');
+        footer.style.cssText = `
+            text-align: right; 
+            color: #555; 
+            font-size: 13px; 
+            margin-top: 18px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        `;
+        footer.innerText = `📅 Generated: ${new Date().toLocaleString('bn-BD')}`;
+        wrapper.appendChild(footer);
+        document.body.appendChild(wrapper);
+        html2canvas(wrapper, {
+            scale: 2.5,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true,
+            allowTaint: true
+        })
+        .then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            document.body.removeChild(wrapper);
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        })
+        .catch(err => {
+            console.error(err);
+            if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+            alert('❌ ইমেজ তৈরি ব্যর্থ!');
+            btn.innerText = '📷 ইমেজ ডাউনলোড';
+            btn.disabled = false;
+        });
+    }
+
+    function downloadSaifuddinExcel() {
+        const rows = window._saifuddinRows || [];
+        const headers = window._saifuddinHeaders || [];
+        if (rows.length === 0 || headers.length === 0) { alert('ডেটা নেই!'); return; }
+        const data = [headers];
+        rows.forEach(row => {
+            const showDash = (!row.hasData && !row.isFixed);
+            if (showDash) {
+                data.push(Array(headers.length).fill('-'));
+                return;
+            }
+            const isNoMC = ((row.sn >= 11 && row.sn <= 13) ||
+                            (row.sn >= 15 && row.sn <= 23));
+            const rowData = [
+                row.sn,
+                row.dept,
+                row.totalMP,
+                row.totalPresent,
+                row.absent,
+                row.leave,
+                isNoMC ? '-' : row.totalMC,
+                isNoMC ? '-' : row.targetRun,
+                isNoMC ? '-' : row.runPct.toFixed(1) + '%',
+                isNoMC ? '-' : row.mcWillOff,
+                isNoMC ? '-' : row.doubleMC,
+                isNoMC ? '-' : row.packagingOperator,
+                isNoMC ? '-' : row.mpShort,
+                isNoMC ? '-' : row.moldProb,
+                isNoMC ? '-' : row.moldChange,
+                isNoMC ? '-' : row.sample,
+                isNoMC ? '-' : row.mcProb,
+                isNoMC ? '-' : row.preventive,
+                isNoMC ? '-' : row.noDemand,
+                isNoMC ? '-' : row.materialShort,
+                isNoMC ? '-' : row.overStock,
+                isNoMC ? '-' : row.accShort
+            ];
+            data.push(rowData);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; R++) {
+            const snCell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
+            if (!snCell) continue;
+            const sn = snCell.v;
+            let fillColor = null, fontColor = null;
+            if (sn === 10) fillColor = 'D4EDDA';
+            else if (sn === 14) fillColor = 'FFF3CD';
+            else if (sn === 24) fillColor = 'CCE5FF';
+            else if (sn === 25) { fillColor = '1A237E'; fontColor = 'FFFFFF'; }
+            if (fillColor) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellRef]) ws[cellRef] = { v: '' };
+                    if (!ws[cellRef].s) ws[cellRef].s = {};
+                    ws[cellRef].s.fill = { fgColor: { rgb: fillColor } };
+                    if (fontColor) {
+                        ws[cellRef].s.font = { color: { rgb: fontColor }, bold: true };
+                    } else {
+                        if (!ws[cellRef].s.font) ws[cellRef].s.font = {};
+                        ws[cellRef].s.font.bold = true;
+                    }
+                }
+            }
+        }
+        XLSX.utils.book_append_sheet(wb, ws, "Saifuddin Summary");
+        XLSX.writeFile(wb, `Saifuddin_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadSaifuddinPDF() {
+        const container = document.getElementById('saifuddinTableContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-pdf');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Saifuddin_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ PDF তৈরি ব্যর্থ!');
+                btn.innerText = '📄 PDF ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadWeeklyImage() {
+        const container = document.getElementById('weeklySummaryContainer');
+        if (container.innerText.includes('পর্যাপ্ত ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            alert('⚠️ ডেটা নেই!');
+            return;
+        }
+        const btn = document.querySelector('.btn-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2.5, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                const days = document.getElementById('weeklyDaysFilter').value;
+                link.download = `Weekly_Summary_${days}days_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                btn.innerText = '📷 ইমেজ ডাউনলোড';
+                btn.disabled = false;
+            });
+    }
+
+    function downloadWeeklyExcel() {
+        const data = window._currentWeeklyData;
+        if (!data || data.rows.length === 0) { alert('ডেটা নেই!'); return; }
+        const headers = ['SN', 'Department', 'Prod IC', 'Fixed MC QTY', `Avg Present (Last ${data.days} Days)`, `Avg MC Run (Last ${data.days} Days)`, 'Entries Count'];
+        const rows = data.rows.map(row => [row.sn, row.dept, row.icName || '-', row.fixedMC, row.avgPresent.toFixed(1), row.avgRun.toFixed(1), row.count]);
+        rows.push(['📌', 'Total / Average', '-', data.totalFixedMC, data.overallAvgPresent.toFixed(1), data.overallAvgRun.toFixed(1), data.totalCount]);
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        XLSX.utils.book_append_sheet(wb, ws, `Weekly ${data.days} Days`);
+        XLSX.writeFile(wb, `Weekly_Summary_${data.days}days_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function downloadExcel() {
+        if (filteredData.length === 0) { alert('ডেটা নেই!'); return; }
+        const headers = [
+            '#', 'Time', 'Date', 'Shift', 'Department', 'IC Name',
+            'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped',
+            'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem',
+            'Preventive Maintenance', 'No Demand (QTY)', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short',
+            'Total HR', 'Leave Employee', 'Absent Employee',
+            'Export MC', 'Domestic MC', 'Single MC', 'Double MC', 'No Demand (M)',
+            'Prod IC', 'SIC', 'MC Operator', 'Packaging Operator', 'Foreman', 'Senior Operator',
+            'Shrink-wrap Op', 'Printing Op', 'Mold Change Op', 'Mix/Recycle/Crush',
+            'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP',
+            'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'
+        ];
+        const keys = [
+            'timestamp', 'entryDate', 'shift', 'department', 'icName',
+            'totalMC', 'mcRunning', 'mcStopped', 'pctRunning', 'pctStopped',
+            'mpShort', 'moldProblem', 'moldChange', 'underSample', 'mcProblem',
+            'preventiveMaintenance', 'noDemandQty', 'materialMBShortage', 'overStockWIP', 'accessoriesShort',
+            'totalHR', 'leaveEmployee', 'absentEmployee',
+            'exportMC', 'domesticMC', 'singleMC', 'doubleMC', 'noDemand',
+            'prodIC', 'sic', 'mcOperator', 'packagingOperator', 'foreman', 'seniorOperator',
+            'shrinkOperator', 'printingOperator', 'moldChangeOperator', 'mixRecycle',
+            'subStore', 'inventoryOperator', 'fgDelivery', 'sharpTools', 'psi', 'erp',
+            'floorHousekeeping', 'rework', 'welding', 'hrTransfer'
+        ];
+        let csv = headers.join(',') + '\n';
+        filteredData.forEach((row, idx) => {
+            const line = [idx + 1];
+            const rawTimestamp = row.timestamp || '';
+            line.push(formatTime(rawTimestamp));
+            const rawDate = row.entryDate || '';
+            line.push(formatDate(rawDate));
+            for (let i = 2; i < keys.length; i++) {
+                const k = keys[i];
+                let val = row[k] !== undefined && row[k] !== null ? row[k] : '';
+                if (typeof val === 'string' && val.includes(',')) val = '"' + val + '"';
+                line.push(val);
+            }
+            csv += line.join(',') + '\n';
+        });
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `DPL_Report_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    function showError(msg) {
+        document.getElementById('saifuddinTableContainer').innerHTML = `<div class="no-data">${msg}</div>`;
+        document.getElementById('mcSummaryTable').innerHTML = `<div class="no-data">${msg}</div>`;
+        document.getElementById('weeklySummaryContainer').innerHTML = `<div class="no-data">${msg}</div>`;
+        document.getElementById('groupATable').innerHTML = `<div class="no-data">${msg}</div>`;
+        document.getElementById('groupBTable').innerHTML = `<div class="no-data">${msg}</div>`;
+        document.getElementById('overallTable').innerHTML = `<div class="no-data">${msg}</div>`;
+        document.getElementById('missingContainer').innerHTML = `<div class="no-data">${msg}</div>`;
+        document.getElementById('rawDataTable').innerHTML = `<div class="no-data">${msg}</div>`;
+    }
+
+    // ===== হোয়াটসঅ্যাপ মেসেজ জেনারেট ও কপি (জাহিদ স্যার এর জন্য) =====
+    function updateWhatsAppMessage() {
+        const container = document.getElementById('whatsappMessageContent');
+        if (!container) return;
+
+        // ফিল্টার থেকে তারিখ ও শিফট নেওয়া (ডিফল্ট)
+        const dateVal = document.getElementById('filterDate').value;
+        const shiftVal = document.getElementById('filterShift').value;
+        // যদি ফিল্টার ফাঁকা থাকে, তাহলে ডিফল্ট মান বসানো
+        let displayDate = dateVal ? formatDate(dateVal) : '06-07-2026 ( Monday )';
+        let displayShift = (shiftVal !== 'All' && shiftVal !== '') ? shiftVal : 'Day';
+
+        // গ্রিটিং: "Good Day !!!"
+        const greeting = 'Good Day !!!';
+
+        // সারাংশের মান (ইতিমধ্যে renderCurrentSummary এ আপডেট হয়)
+        const totalPresent = document.getElementById('sumPresent').innerText || '831';
+        const totalAbsent = document.getElementById('sumAbsent').innerText || '58';
+        const totalNoDemand = document.getElementById('sumNoDemand').innerText || '45';
+        const totalMoldChange = document.getElementById('sumMoldChange').innerText || '34';
+        const mcStopManpower = document.getElementById('sumMCStopManpower').innerText || '90';
+
+        // গ্রুপ অনুযায়ী Present বের করা
+        let prodPresent = 0, packPresent = 0, commonPresent = 0;
+        if (filteredData && filteredData.length > 0) {
+            const prodDepts = [
+                'RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1',
+                'RIP> DPL> Plastic-6.2', 'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2',
+                'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4', 'Silicon Project'
+            ];
+            const packDepts = ['Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03'];
+            const commonDepts = [
+                'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
+                'Corporate sales Production.', 'Plastics-Recycle & Silo',
+                'Product Development & Mold Change', 'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
+            ];
+            filteredData.forEach(row => {
+                const dept = getVal(row, ['Department', 'department']);
+                const hr = getNum(row, ['Total HR', 'totalHR']);
+                if (prodDepts.includes(dept)) prodPresent += hr;
+                else if (packDepts.includes(dept)) packPresent += hr;
+                else if (commonDepts.includes(dept)) commonPresent += hr;
+            });
+        } else {
+            // ডিফল্ট মান (উদাহরণ)
+            prodPresent = 495;
+            packPresent = 115;
+            commonPresent = 221;
+        }
+
+        let moldProb = 0, mcProb = 0, doubleMC = 0, packagingOperator = 0;
+        if (filteredData && filteredData.length > 0) {
+            filteredData.forEach(row => {
+                moldProb += getNum(row, ['moldProblem']);
+                mcProb += getNum(row, ['mcProblem']);
+                doubleMC += getNum(row, ['doubleMC']);
+                packagingOperator += getNum(row, ['packagingOperator']);
+            });
+        } else {
+            // ডিফল্ট মান (উদাহরণ)
+            moldProb = 9;
+            mcProb = 7;
+            doubleMC = 48;
+            packagingOperator = 73;
+        }
+
+        // মেসেজ তৈরি (ঠিক যেমনটি দেখাতে চান)
+        const message = `Dear @ DPL DGM Sir, 
+Asslamualaikum ,
+${greeting} 
+Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Report. You Can Check The report. 
+
+📅 Date\t${displayDate}
+🕒 Shift\t${displayShift}
+👥 Total Present\t${totalPresent} (Breakdown Prod Team ${prodPresent} , Packaging Team ${packPresent}, Common Team ${commonPresent})
+❌ Total Absent\t${totalAbsent}
+📊 Total No Demand\t${totalNoDemand}
+🔧 Total Mold Change QTY\t${totalMoldChange}
+⛔ MC Stop (Manpower)\t${mcStopManpower}
+❌ Mold Prob -\t${moldProb}
+❌ MC Prob -\t${mcProb}
+👥 Double MC -\t${doubleMC}
+👥 Packaging Operator -\t${packagingOperator}`;
+
+        container.innerText = message;
+    }
+
+    function copyWhatsAppMessage() {
+        const content = document.getElementById('whatsappMessageContent');
+        if (!content) return;
+        const text = content.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            alert('✅ মেসেজ কপি হয়েছে! এখন হোয়াটসঅ্যাপে পেস্ট করুন।');
+        }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('✅ মেসেজ কপি হয়েছে!');
+        });
+    }
+
+    // ===== পেজ লোড হলে অটো-ফিল্টার + অটো-রিফ্রেশ শুরু =====
+    window.onload = function() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        document.getElementById('filterDate').value = `${year}-${month}-${day}`;
+        const shift = getCurrentShift();
+        document.getElementById('filterShift').value = shift;
+        loadData();
+        const toggle = document.getElementById('autoRefreshToggle');
+        if (toggle.checked) {
+            startAutoRefresh();
+        }
+        setTimeout(updateWhatsAppMessage, 500);
+    };
+</script>
+</body>
+</html>
