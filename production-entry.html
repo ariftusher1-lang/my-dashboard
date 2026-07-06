@@ -391,7 +391,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
-            min-width: 800px;
+            min-width: 900px;
         }
         table th {
             background: #eaf3fe;
@@ -470,6 +470,8 @@
             .asof-table-wrap { padding: 12px; }
             .asof-table { font-size: 12px; }
             .asof-table th, .asof-table td { padding: 6px 4px; }
+            table { min-width: 600px; font-size: 12px; }
+            table th, table td { padding: 6px 4px; }
         }
     </style>
 </head>
@@ -544,6 +546,11 @@
                 <div class="form-group full-width">
                     <label for="goodQtyInput">✅ Good Production QTY <span class="req">*</span></label>
                     <input type="number" id="goodQtyInput" class="form-control" placeholder="উৎপাদিত ভালো পণ্যের সংখ্যা" step="1" min="0" required />
+                </div>
+                <!-- NEW: Cause of less Production -->
+                <div class="form-group full-width">
+                    <label for="causeInput">⚠️ Cause of less Production <span class="hint">(যদি প্রযোজ্য হয়)</span></label>
+                    <input type="text" id="causeInput" class="form-control" placeholder="যেমন: মেশিন ব্রেকডাউন, পাওয়ার কাট, মানসম্মত নয় ইত্যাদি" />
                 </div>
                 <div class="form-group full-width">
                     <div class="highlight-box">
@@ -659,6 +666,7 @@
     const cavityInput = document.getElementById('cavityInput');
     const capacityDisplay = document.getElementById('capacityDisplay');
     const goodQtyInput = document.getElementById('goodQtyInput');
+    const causeInput = document.getElementById('causeInput');
     const utilizationDisplay = document.getElementById('utilizationDisplay');
     const submitBtn = document.getElementById('submitBtn');
     const form = document.getElementById('entryForm');
@@ -765,6 +773,7 @@
         const cavity = cavityInput.value;
         const capacity = capacityDisplay.textContent;
         const goodQty = goodQtyInput.value;
+        const cause = causeInput.value.trim() || ''; // নতুন ফিল্ড
         const utilization = utilizationDisplay.textContent;
         if (!date || !shift || !ic || !code || !ct || parseFloat(ct) <= 0 || !cavity || parseInt(cavity) <= 0 || goodQty === '' || parseFloat(goodQty) < 0 || capacity === '—') {
             alert('সব ফিল্ড সঠিকভাবে পূরণ করুন।');
@@ -782,6 +791,7 @@
             cavity: parseInt(cavity),
             capacity: parseFloat(capacity.replace(/,/g, '')),
             goodQty: parseFloat(goodQty),
+            cause: cause,
             utilization: parseFloat(utilization)
         };
         const entries = getProdEntries();
@@ -789,6 +799,7 @@
         saveProdEntries(entries);
         alert('✅ প্রোডাকশন এন্ট্রি সংরক্ষণ করা হয়েছে!');
         goodQtyInput.value = '';
+        causeInput.value = '';
         utilizationDisplay.textContent = '—';
         utilizationDisplay.className = 'value';
         goodQtyInput.focus();
@@ -871,10 +882,29 @@
         if (filteredProd.length === 0) {
             container.innerHTML = `<div class="no-data">📭 কোনো প্রোডাকশন এন্ট্রি পাওয়া যায়নি।</div>`;
         } else {
-            let html = `<table><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>ইনচার্জ</th><th>কোড</th><th>আইটেম</th><th>রঙ</th><th>CT</th><th>Cavity</th><th>Capacity</th><th>Good QTY</th><th>Utilization</th></tr></thead><tbody>`;
+            let html = `<table><thead><tr>
+                <th>#</th><th>তারিখ</th><th>শিফট</th><th>ইনচার্জ</th>
+                <th>কোড</th><th>আইটেম</th><th>রঙ</th>
+                <th>CT</th><th>Cavity</th><th>Capacity</th>
+                <th>Good QTY</th><th>Cause</th><th>Utilization</th>
+            </tr></thead><tbody>`;
             filteredProd.forEach((e, idx) => {
                 const utilClass = e.utilization >= 85 ? 'high' : (e.utilization >= 60 ? 'medium' : 'low');
-                html += `<tr><td>${idx+1}</td><td>${e.date}</td><td>${e.shift}</td><td>${e.icName}</td><td>${e.productCode}</td><td>${e.itemName}</td><td>${e.colorName}</td><td>${e.ct}</td><td>${e.cavity}</td><td>${e.capacity.toLocaleString()}</td><td>${e.goodQty}</td><td><span class="util-badge ${utilClass}">${e.utilization.toFixed(1)}%</span></td></tr>`;
+                html += `<tr>
+                    <td>${idx+1}</td>
+                    <td>${e.date}</td>
+                    <td>${e.shift}</td>
+                    <td>${e.icName}</td>
+                    <td>${e.productCode}</td>
+                    <td>${e.itemName}</td>
+                    <td>${e.colorName}</td>
+                    <td>${e.ct}</td>
+                    <td>${e.cavity}</td>
+                    <td>${e.capacity.toLocaleString()}</td>
+                    <td>${e.goodQty}</td>
+                    <td>${e.cause || '—'}</td>
+                    <td><span class="util-badge ${utilClass}">${e.utilization.toFixed(1)}%</span></td>
+                </tr>`;
             });
             html += `</tbody></table>`;
             container.innerHTML = html;
@@ -975,7 +1005,7 @@
     cavityInput.value = '';
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
-    console.log('✅ Production + Delivery Entry with As-of Table ready.');
+    console.log('✅ Production + Delivery Entry with Cause field ready.');
 </script>
 </body>
 </html>
