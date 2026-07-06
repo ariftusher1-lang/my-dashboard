@@ -2,26 +2,565 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
     <title>প্রোডাকশন + ডেলিভারি ম্যানেজমেন্ট</title>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <style>
-        /* আপনার আগের CSS ঠিক আছে, কোনো পরিবর্তন নেই */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Hind Siliguri', sans-serif; background: #f0f4f9; padding: 30px 15px; }
-        .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,20,40,0.10); padding: 30px 35px 45px; }
-        /* ... বাকি CSS আপনার আগের মতোই থাকবে ... */
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background: #f0f4f9;
+            padding: 12px 8px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,20,40,0.08);
+            padding: 18px 16px 30px;
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0b2b44;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 14px;
+            font-weight: 400;
+            color: #5f7d9c;
+        }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin: 18px 0 16px;
+            border-bottom: 2px solid #e2eaf2;
+            padding-bottom: 4px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Hind Siliguri', sans-serif;
+            border: none;
+            background: transparent;
+            color: #5f7d9c;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: 0.2s;
+            flex: 1 1 auto;
+            text-align: center;
+            min-width: 80px;
+        }
+        .tab-btn.active {
+            color: #0b2b44;
+            background: #eaf3fe;
+            border-bottom: 3px solid #2a7de1;
+        }
+        .tab-btn:hover {
+            background: #eef4fa;
+        }
+        .tab-content {
+            display: none;
+            animation: fade 0.25s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fade {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        /* ===== FORM ===== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .form-group.full-width {
+            grid-column: 1;
+        }
+        .form-group label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a3a57;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .form-group label .req {
+            color: #e34f4f;
+            font-weight: 700;
+        }
+        .form-group label .hint {
+            font-weight: 400;
+            color: #7a94b0;
+            font-size: 12px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 17px;
+            font-family: 'Hind Siliguri', sans-serif;
+            border: 1.5px solid #dce4ec;
+            border-radius: 12px;
+            background: #fafcff;
+            transition: border 0.2s, box-shadow 0.2s;
+            color: #0b2b44;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .form-control:focus {
+            border-color: #2a7de1;
+            box-shadow: 0 0 0 4px rgba(42,125,225,0.12);
+            background: #ffffff;
+        }
+        .form-control:disabled,
+        .form-control[readonly] {
+            background: #f0f4fa;
+            color: #1f3d5a;
+            border-color: #dce4ec;
+        }
+        select.form-control {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%235f7d9c' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 44px;
+        }
+        .inline-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .inline-row .form-group {
+            flex: 1;
+            min-width: 100px;
+        }
+        .readonly-box {
+            background: #f2f6fc;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 17px;
+            color: #0b2b44;
+            border: 1.5px solid #e2eaf2;
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            word-break: break-word;
+        }
+        .readonly-box .empty-hint {
+            color: #a9bccf;
+            font-weight: 300;
+        }
+        .highlight-box {
+            background: #eaf3fe;
+            border-radius: 14px;
+            padding: 14px 18px;
+            border: 1.5px solid #c7ddf7;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .highlight-box .label {
+            font-weight: 600;
+            color: #1a3a57;
+            font-size: 15px;
+        }
+        .highlight-box .value {
+            font-weight: 700;
+            font-size: 22px;
+            color: #0b2b44;
+            background: #ffffff;
+            padding: 6px 18px;
+            border-radius: 10px;
+            border: 1px solid #c7ddf7;
+            min-width: 100px;
+            text-align: center;
+        }
+        .highlight-box .value.util-green {
+            color: #1a8a4a;
+            border-color: #b3dfc7;
+            background: #edfaf2;
+        }
+        .highlight-box .value.util-amber {
+            color: #b0721a;
+            border-color: #f0d6a8;
+            background: #fef9ed;
+        }
+        .highlight-box .value.util-red {
+            color: #b33636;
+            border-color: #f0c8c8;
+            background: #fdf0f0;
+        }
+        .btn-submit {
+            grid-column: 1;
+            padding: 16px 20px;
+            font-size: 20px;
+            font-weight: 600;
+            font-family: 'Hind Siliguri', sans-serif;
+            background: #0b2b44;
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-submit:hover {
+            background: #1a3f5e;
+        }
+        .btn-submit:active {
+            transform: scale(0.97);
+        }
+        .btn-danger {
+            background: #b33636;
+        }
+        .btn-danger:hover {
+            background: #8f2a2a;
+        }
+
+        /* ===== REPORT ===== */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: #f6faff;
+            border-radius: 16px;
+            padding: 16px 18px;
+            border: 1px solid #dce8f5;
+        }
+        .summary-card h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a3a57;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .summary-card .date-tag {
+            font-weight: 400;
+            font-size: 13px;
+            color: #5f7d9c;
+        }
+        .summary-card .stat-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            margin-top: 4px;
+        }
+        .summary-card .stat-item {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 15px;
+            color: #1f3d5a;
+        }
+        .summary-card .stat-item strong {
+            font-size: 19px;
+            color: #0b2b44;
+            font-weight: 700;
+        }
+
+        .asof-table-wrap {
+            background: #f6faff;
+            border-radius: 16px;
+            padding: 14px 14px;
+            border: 1px solid #dce8f5;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .asof-table-wrap h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0b2b44;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .asof-table-wrap h4 .sub {
+            font-weight: 400;
+            font-size: 13px;
+            color: #5f7d9c;
+        }
+        .asof-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 500px;
+        }
+        .asof-table th {
+            background: #dce8f5;
+            color: #0b2b44;
+            font-weight: 600;
+            padding: 8px 6px;
+            border: 1px solid #c7d8ea;
+            text-align: center;
+            font-size: 12px;
+        }
+        .asof-table td {
+            padding: 8px 6px;
+            border: 1px solid #c7d8ea;
+            text-align: center;
+            vertical-align: middle;
+            background: #fff;
+            font-size: 13px;
+        }
+        .asof-table tr:nth-child(even) td {
+            background: #f9fcff;
+        }
+        .asof-table .total-row td {
+            font-weight: 700;
+            background: #eaf3fe !important;
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+            background: #f6faff;
+            padding: 14px 16px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+            border: 1px solid #dce8f5;
+        }
+        .filter-row .form-group {
+            flex: 1 1 100%;
+            min-width: 100%;
+        }
+        .filter-row .form-group label {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .filter-row .btn-filter {
+            padding: 12px 20px;
+            background: #2a7de1;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Hind Siliguri', sans-serif;
+            transition: 0.2s;
+            font-size: 16px;
+            flex: 1 1 45%;
+            min-width: 80px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .filter-row .btn-filter:hover {
+            background: #1a5fb0;
+        }
+        .filter-row .btn-filter:active {
+            transform: scale(0.97);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 700px;
+        }
+        table th {
+            background: #eaf3fe;
+            color: #0b2b44;
+            font-weight: 600;
+            padding: 8px 6px;
+            border: 1px solid #d4e0ec;
+            text-align: center;
+            white-space: nowrap;
+            font-size: 11px;
+        }
+        table td {
+            padding: 8px 6px;
+            border: 1px solid #d4e0ec;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 12px;
+        }
+        table tr:nth-child(even) {
+            background: #f9fcff;
+        }
+        .util-badge {
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 11px;
+            display: inline-block;
+            min-width: 50px;
+        }
+        .util-badge.high {
+            background: #e0f5e8;
+            color: #1a6e3a;
+        }
+        .util-badge.medium {
+            background: #fef3d6;
+            color: #8a6d1b;
+        }
+        .util-badge.low {
+            background: #fde8e8;
+            color: #a33434;
+        }
+        .no-data {
+            text-align: center;
+            padding: 30px 10px;
+            color: #7a94b0;
+            font-size: 16px;
+        }
+        .summary-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 30px;
+            background: #f6faff;
+            padding: 14px 18px;
+            border-radius: 14px;
+            border: 1px solid #dce8f5;
+            margin-top: 16px;
+        }
+        .summary-item {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 14px;
+        }
+        .summary-item strong {
+            font-size: 17px;
+            color: #0b2b44;
+        }
+
+        /* ===== TABLET & DESKTOP ===== */
+        @media (min-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 18px 24px;
+            }
+            .form-group.full-width {
+                grid-column: 1 / -1;
+            }
+            .summary-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .filter-row .form-group {
+                flex: 1 1 150px;
+                min-width: 120px;
+            }
+            .filter-row .btn-filter {
+                flex: 0 1 auto;
+                min-width: 100px;
+            }
+            body {
+                padding: 30px 20px;
+            }
+            .container {
+                padding: 30px 35px 45px;
+            }
+            h1 {
+                font-size: 28px;
+            }
+            .tab-btn {
+                padding: 10px 22px;
+                font-size: 15px;
+                flex: 0 1 auto;
+            }
+            .asof-table {
+                font-size: 14px;
+                min-width: auto;
+            }
+            table {
+                font-size: 14px;
+                min-width: 800px;
+            }
+            table th {
+                font-size: 13px;
+                padding: 12px 10px;
+            }
+            table td {
+                font-size: 13px;
+                padding: 10px 10px;
+            }
+            .btn-submit {
+                grid-column: 1 / -1;
+                width: auto;
+                padding: 14px 30px;
+                font-size: 18px;
+            }
+            .filter-row .form-group {
+                flex: 1 1 150px;
+            }
+        }
+
+        @media (min-width: 900px) {
+            .container {
+                padding: 35px 45px 50px;
+            }
+            .asof-table th,
+            .asof-table td {
+                padding: 10px 14px;
+            }
+        }
+
+        /* ===== TOUCH FRIENDLY ===== */
+        select.form-control,
+        input.form-control {
+            font-size: 17px;
+        }
+        .btn-filter,
+        .btn-submit {
+            touch-action: manipulation;
+        }
+        .tab-btn {
+            touch-action: manipulation;
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🏭 প্রোডাকশন + ডেলিভারি ম্যানেজমেন্ট <small>Entry & Report</small></h1>
+    <h1>🏭 প্রোডাকশন + ডেলিভারি <small>Entry & Report</small></h1>
     <div class="tabs">
-        <button class="tab-btn active" data-tab="tabForm">📝 প্রোডাকশন এন্ট্রি</button>
-        <button class="tab-btn" data-tab="tabDelivery">🚚 ডেলিভারি এন্ট্রি</button>
+        <button class="tab-btn active" data-tab="tabForm">📝 প্রোডাকশন</button>
+        <button class="tab-btn" data-tab="tabDelivery">🚚 ডেলিভারি</button>
         <button class="tab-btn" data-tab="tabReport">📊 রিপোর্ট</button>
     </div>
-    <!-- PRODUCTION ENTRY TAB -->
+
+    <!-- ===== PRODUCTION ENTRY ===== -->
     <div id="tabForm" class="tab-content active">
         <form id="entryForm" autocomplete="off">
             <div class="form-grid">
@@ -32,15 +571,15 @@
                 <div class="form-group">
                     <label for="shiftSelect">⏰ শিফট <span class="req">*</span></label>
                     <select id="shiftSelect" class="form-control" required>
-                        <option value="">— নির্বাচন করুন —</option>
+                        <option value="">— নির্বাচন —</option>
                         <option value="Day">Day Shift</option>
                         <option value="Night">Night Shift</option>
                     </select>
                 </div>
                 <div class="form-group full-width">
-                    <label for="icName">👤 ইনচার্জের নাম (IC Name) <span class="req">*</span></label>
+                    <label for="icName">👤 ইনচার্জ <span class="req">*</span></label>
                     <select id="icName" class="form-control" required>
-                        <option value="">— ইনচার্জ নির্বাচন করুন —</option>
+                        <option value="">— নির্বাচন —</option>
                         <option value="Mr. Bipul">Mr. Bipul</option>
                         <option value="Mr. Roni">Mr. Roni</option>
                         <option value="Mr. Babul">Mr. Babul</option>
@@ -50,13 +589,13 @@
                     </select>
                 </div>
                 <div class="form-group full-width">
-                    <label for="productCode">🔖 পণ্যের কোড <span class="req">*</span> <span class="hint">(Select Code → Auto-fill Name & Color)</span></label>
+                    <label for="productCode">🔖 কোড <span class="req">*</span> <span class="hint">(Select → Auto-fill)</span></label>
                     <select id="productCode" class="form-control" required>
-                        <option value="">— কোড নির্বাচন করুন —</option>
+                        <option value="">— কোড নির্বাচন —</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="itemName">📦 আইটেমের নাম</label>
+                    <label for="itemName">📦 আইটেম</label>
                     <div class="readonly-box" id="itemName"><span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span></div>
                 </div>
                 <div class="form-group">
@@ -66,7 +605,7 @@
                 <div class="form-group full-width">
                     <div class="inline-row">
                         <div class="form-group">
-                            <label for="ctInput">⏱️ CT (সেকেন্ড) <span class="req">*</span></label>
+                            <label for="ctInput">⏱️ CT (sec) <span class="req">*</span></label>
                             <input type="number" id="ctInput" class="form-control" placeholder="যেমন 45" step="0.1" min="0.1" required />
                         </div>
                         <div class="form-group">
@@ -82,25 +621,25 @@
                     </div>
                 </div>
                 <div class="form-group full-width">
-                    <label for="goodQtyInput">✅ Good Production QTY <span class="req">*</span></label>
-                    <input type="number" id="goodQtyInput" class="form-control" placeholder="উৎপাদিত ভালো পণ্যের সংখ্যা" step="1" min="0" required />
+                    <label for="goodQtyInput">✅ Good QTY <span class="req">*</span></label>
+                    <input type="number" id="goodQtyInput" class="form-control" placeholder="উৎপাদিত ভালো পণ্য" step="1" min="0" required />
                 </div>
-                <!-- Cause of less Production -->
                 <div class="form-group full-width">
-                    <label for="causeInput">⚠️ Cause of less Production <span class="hint">(যদি প্রযোজ্য হয়)</span></label>
-                    <input type="text" id="causeInput" class="form-control" placeholder="যেমন: মেশিন ব্রেকডাউন, পাওয়ার কাট, মানসম্মত নয়" />
+                    <label for="causeInput">⚠️ কারণ (ঐচ্ছিক)</label>
+                    <input type="text" id="causeInput" class="form-control" placeholder="যেমন: মেশিন ব্রেকডাউন, পাওয়ার কাট" />
                 </div>
                 <div class="form-group full-width">
                     <div class="highlight-box">
-                        <span class="label">📊 Utilization <span style="font-weight:400;font-size:13px;color:#3d6382;">(Good QTY / Capacity × 100)</span></span>
+                        <span class="label">📊 Utilization <span style="font-weight:400;font-size:13px;color:#3d6382;">(Good / Capacity × 100)</span></span>
                         <span class="value" id="utilizationDisplay">—</span>
                     </div>
                 </div>
-                <button type="submit" class="btn-submit" id="submitBtn">💾 এন্ট্রি সংরক্ষণ করুন</button>
+                <button type="submit" class="btn-submit" id="submitBtn">💾 সংরক্ষণ করুন</button>
             </div>
         </form>
     </div>
-    <!-- DELIVERY ENTRY TAB (আগের মতো) -->
+
+    <!-- ===== DELIVERY ENTRY ===== -->
     <div id="tabDelivery" class="tab-content">
         <form id="deliveryForm" autocomplete="off">
             <div class="form-grid">
@@ -109,13 +648,13 @@
                     <input type="date" id="deliveryDate" class="form-control" required />
                 </div>
                 <div class="form-group">
-                    <label for="deliveryCode">🔖 পণ্যের কোড <span class="req">*</span> <span class="hint">(Select Code → Auto-fill Name & Color)</span></label>
+                    <label for="deliveryCode">🔖 কোড <span class="req">*</span> <span class="hint">(Select → Auto-fill)</span></label>
                     <select id="deliveryCode" class="form-control" required>
-                        <option value="">— কোড নির্বাচন করুন —</option>
+                        <option value="">— কোড নির্বাচন —</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="deliveryItemName">📦 আইটেমের নাম</label>
+                    <label for="deliveryItemName">📦 আইটেম</label>
                     <div class="readonly-box" id="deliveryItemName"><span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span></div>
                 </div>
                 <div class="form-group">
@@ -126,18 +665,21 @@
                     <label for="deliveryQty">📦 ডেলিভারি QTY <span class="req">*</span></label>
                     <input type="number" id="deliveryQty" class="form-control" placeholder="ডেলিভারি পণ্যের সংখ্যা" step="1" min="1" required />
                 </div>
-                <button type="submit" class="btn-submit" id="deliverySubmitBtn">🚚 ডেলিভারি সংরক্ষণ করুন</button>
+                <button type="submit" class="btn-submit" id="deliverySubmitBtn">🚚 সংরক্ষণ করুন</button>
             </div>
         </form>
     </div>
-    <!-- REPORT TAB -->
+
+    <!-- ===== REPORT ===== -->
     <div id="tabReport" class="tab-content">
-        <h3 style="margin-bottom:12px; color:#0b2b44;">📋 Executive Summary & এন্ট্রি লিস্ট</h3>
+        <h3 style="margin-bottom:10px; font-size:18px; color:#0b2b44;">📋 Executive Summary</h3>
         <div class="summary-grid" id="executiveSummary"></div>
-        <div class="asof-table-wrap" id="asofTableWrap">
-            <h4>📊 As of Production & Delivery <span class="sub">(এ পর্যন্ত মোট)</span></h4>
+
+        <div class="asof-table-wrap">
+            <h4>📊 As of Production & Delivery <span class="sub">(সর্বমোট)</span></h4>
             <div id="asofTableContainer"></div>
         </div>
+
         <div class="filter-row">
             <div class="form-group">
                 <label for="filterDateFrom">তারিখ (থেকে)</label>
@@ -167,18 +709,21 @@
                     <option value="Mr. Sakib">Mr. Sakib</option>
                 </select>
             </div>
-            <button class="btn-filter" id="applyFilterBtn">🔍 ফিল্টার প্রয়োগ</button>
+            <button class="btn-filter" id="applyFilterBtn">🔍 ফিল্টার</button>
             <button class="btn-filter" style="background:#6c7a8d;" id="clearFilterBtn">❌ রিসেট</button>
         </div>
+
         <div class="table-responsive" id="reportTableContainer"></div>
         <div class="summary-box" id="reportSummary"></div>
-        <button class="btn-submit btn-danger" id="deleteAllBtn" style="grid-column:unset; max-width:240px; margin-top:20px;">🗑️ সব ডেটা মুছুন</button>
+
+        <button class="btn-submit btn-danger" id="deleteAllBtn" style="margin-top:16px;">🗑️ সব ডেটা মুছুন</button>
     </div>
 </div>
+
 <script>
-    // ============================================================
-    // PRODUCT DATA
-    // ============================================================
+    // ================================================================
+    //  PRODUCT DATA
+    // ================================================================
     const productData = [
         { code: '88709', item: 'Decorate Chair (Diamond) - Rose Wood', color: 'Rose Wood' },
         { code: '88706', item: 'Decorate Chair (Diamond) - SM Blue', color: 'SM Blue' },
@@ -191,28 +736,21 @@
         { code: '86107', item: 'Plastic Chair W/O Arm (Stick) - Rose Wood', color: 'Rose Wood' }
     ];
 
-    // ============================================================
-    // STORAGE
-    // ============================================================
+    // ================================================================
+    //  STORAGE
+    // ================================================================
     const PROD_STORAGE_KEY = 'productionEntries';
     const DELIVERY_STORAGE_KEY = 'deliveryEntries';
 
-    function getProdEntries() {
-        try { return JSON.parse(localStorage.getItem(PROD_STORAGE_KEY)) || []; } catch { return []; }
-    }
+    function getProdEntries() { try { return JSON.parse(localStorage.getItem(PROD_STORAGE_KEY)) || []; } catch { return []; } }
     function saveProdEntries(entries) { localStorage.setItem(PROD_STORAGE_KEY, JSON.stringify(entries)); }
-    function getDeliveryEntries() {
-        try { return JSON.parse(localStorage.getItem(DELIVERY_STORAGE_KEY)) || []; } catch { return []; }
-    }
+    function getDeliveryEntries() { try { return JSON.parse(localStorage.getItem(DELIVERY_STORAGE_KEY)) || []; } catch { return []; } }
     function saveDeliveryEntries(entries) { localStorage.setItem(DELIVERY_STORAGE_KEY, JSON.stringify(entries)); }
-    function deleteAllData() {
-        localStorage.removeItem(PROD_STORAGE_KEY);
-        localStorage.removeItem(DELIVERY_STORAGE_KEY);
-    }
+    function deleteAllData() { localStorage.removeItem(PROD_STORAGE_KEY); localStorage.removeItem(DELIVERY_STORAGE_KEY); }
 
-    // ============================================================
-    // DOM REFS
-    // ============================================================
+    // ================================================================
+    //  DOM REFS
+    // ================================================================
     const dateInput = document.getElementById('entryDate');
     const shiftSelect = document.getElementById('shiftSelect');
     const icName = document.getElementById('icName');
@@ -223,7 +761,7 @@
     const cavityInput = document.getElementById('cavityInput');
     const capacityDisplay = document.getElementById('capacityDisplay');
     const goodQtyInput = document.getElementById('goodQtyInput');
-    const causeInput = document.getElementById('causeInput'); // Cause field
+    const causeInput = document.getElementById('causeInput');
     const utilizationDisplay = document.getElementById('utilizationDisplay');
     const submitBtn = document.getElementById('submitBtn');
     const form = document.getElementById('entryForm');
@@ -236,9 +774,9 @@
     const deliveryForm = document.getElementById('deliveryForm');
     const deliverySubmitBtn = document.getElementById('deliverySubmitBtn');
 
-    // ============================================================
-    // POPULATE DROPDOWNS
-    // ============================================================
+    // ================================================================
+    //  POPULATE DROPDOWNS
+    // ================================================================
     function populateDropdowns() {
         [productCode, deliveryCode].forEach(sel => {
             sel.innerHTML = '<option value="">— কোড নির্বাচন করুন —</option>';
@@ -252,9 +790,9 @@
     }
     populateDropdowns();
 
-    // ============================================================
-    // SET DATES
-    // ============================================================
+    // ================================================================
+    //  SET DATES
+    // ================================================================
     function setDates() {
         const today = new Date();
         const y = today.getFullYear();
@@ -266,9 +804,9 @@
     }
     setDates();
 
-    // ============================================================
-    // AUTO-FILL PRODUCT NAME & COLOR
-    // ============================================================
+    // ================================================================
+    //  AUTO-FILL (Production)
+    // ================================================================
     productCode.addEventListener('change', function() {
         const code = this.value;
         const found = productData.find(p => p.code === code);
@@ -282,6 +820,9 @@
         calculateAll();
     });
 
+    // ================================================================
+    //  AUTO-FILL (Delivery)
+    // ================================================================
     deliveryCode.addEventListener('change', function() {
         const code = this.value;
         const found = productData.find(p => p.code === code);
@@ -294,9 +835,9 @@
         }
     });
 
-    // ============================================================
-    // CAPACITY & UTILIZATION
-    // ============================================================
+    // ================================================================
+    //  CAPACITY & UTILIZATION
+    // ================================================================
     function calculateCapacity() {
         const ct = parseFloat(ctInput.value);
         const cavity = parseInt(cavityInput.value);
@@ -340,12 +881,11 @@
     cavityInput.addEventListener('input', calculateAll);
     goodQtyInput.addEventListener('input', calculateUtilization);
 
-    // ============================================================
-    // PRODUCTION FORM SUBMIT (WITH CAUSE)
-    // ============================================================
+    // ================================================================
+    //  PRODUCTION SUBMIT
+    // ================================================================
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-
         const date = dateInput.value;
         const shift = shiftSelect.value;
         const ic = icName.value;
@@ -356,7 +896,7 @@
         const cavity = cavityInput.value;
         const capacity = capacityDisplay.textContent;
         const goodQty = goodQtyInput.value;
-        const cause = causeInput.value.trim(); // Cause value
+        const cause = causeInput.value.trim() || '';
         const utilization = utilizationDisplay.textContent;
 
         if (!date || !shift || !ic || !code || !ct || parseFloat(ct) <= 0 || !cavity || parseInt(cavity) <= 0 || goodQty === '' || parseFloat(goodQty) < 0 || capacity === '—') {
@@ -376,7 +916,7 @@
             cavity: parseInt(cavity),
             capacity: parseFloat(capacity.replace(/,/g, '')),
             goodQty: parseFloat(goodQty),
-            cause: cause, // Save cause
+            cause: cause,
             utilization: parseFloat(utilization)
         };
 
@@ -385,7 +925,6 @@
         saveProdEntries(entries);
         alert('✅ প্রোডাকশন এন্ট্রি সংরক্ষণ করা হয়েছে!');
 
-        // Clear fields
         goodQtyInput.value = '';
         causeInput.value = '';
         utilizationDisplay.textContent = '—';
@@ -399,12 +938,11 @@
         if (e.key === 'Enter') { e.preventDefault(); submitBtn.click(); }
     });
 
-    // ============================================================
-    // DELIVERY FORM SUBMIT
-    // ============================================================
+    // ================================================================
+    //  DELIVERY SUBMIT
+    // ================================================================
     deliveryForm.addEventListener('submit', function(e) {
         e.preventDefault();
-
         const date = deliveryDate.value;
         const code = deliveryCode.value;
         const item = deliveryItemName.textContent;
@@ -440,9 +978,9 @@
         if (e.key === 'Enter') { e.preventDefault(); deliverySubmitBtn.click(); }
     });
 
-    // ============================================================
-    // TABS
-    // ============================================================
+    // ================================================================
+    //  TABS
+    // ================================================================
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = {
         tabForm: document.getElementById('tabForm'),
@@ -465,13 +1003,12 @@
         });
     });
 
-    // ============================================================
-    // RENDER REPORT (WITH CAUSE COLUMN)
-    // ============================================================
+    // ================================================================
+    //  RENDER REPORT
+    // ================================================================
     function renderReport() {
         const prodEntries = getProdEntries();
         const deliveryEntries = getDeliveryEntries();
-
         const container = document.getElementById('reportTableContainer');
         const summaryBox = document.getElementById('reportSummary');
         const execSummary = document.getElementById('executiveSummary');
@@ -501,7 +1038,7 @@
                 <th>#</th><th>তারিখ</th><th>শিফট</th><th>ইনচার্জ</th>
                 <th>কোড</th><th>আইটেম</th><th>রঙ</th>
                 <th>CT</th><th>Cavity</th><th>Capacity</th>
-                <th>Good QTY</th><th>Cause</th><th>Utilization</th>
+                <th>Good QTY</th><th>কারণ</th><th>Utilization</th>
             </tr></thead><tbody>`;
             filteredProd.forEach((e, idx) => {
                 const utilClass = e.utilization >= 85 ? 'high' : (e.utilization >= 60 ? 'medium' : 'low');
@@ -529,15 +1066,15 @@
         const totalGoodQty = filteredProd.reduce((s, e) => s + e.goodQty, 0);
         const avgUtil = totalEntries > 0 ? (filteredProd.reduce((s, e) => s + e.utilization, 0) / totalEntries) : 0;
         summaryBox.innerHTML = `
-            <div class="summary-item">📌 মোট প্রোডাকশন এন্ট্রি: <strong>${totalEntries}</strong></div>
+            <div class="summary-item">📌 মোট এন্ট্রি: <strong>${totalEntries}</strong></div>
             <div class="summary-item">✅ মোট Good QTY: <strong>${totalGoodQty.toLocaleString()}</strong></div>
             <div class="summary-item">📊 গড় Utilization: <strong>${avgUtil.toFixed(1)}%</strong></div>
         `;
     }
 
-    // ============================================================
-    // BUILD EXECUTIVE SUMMARY
-    // ============================================================
+    // ================================================================
+    //  EXECUTIVE SUMMARY
+    // ================================================================
     function buildExecutiveSummary(prodEntries, deliveryEntries) {
         const today = new Date();
         const yesterday = new Date(today);
@@ -559,29 +1096,32 @@
         const formatNum = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
         if (prodEntries.length === 0 && deliveryEntries.length === 0) {
-            return `<div class="summary-card" style="grid-column:1/-1; text-align:center; color:#7a94b0; padding:30px;">📭 এখনো কোনো এন্ট্রি নেই। এন্ট্রি ফর্ম থেকে ডেটা দিন।</div>`;
+            return `<div class="summary-card" style="grid-column:1/-1; text-align:center; color:#7a94b0; padding:30px;">📭 এখনো কোনো এন্ট্রি নেই।</div>`;
         }
+
         return `
-            <div class="summary-card"><h4>📆 গতকাল (${yStr}) <span class="date-tag">Production & Delivery</span></h4>
+            <div class="summary-card">
+                <h4>📆 গতকাল (${yStr}) <span class="date-tag">Production & Delivery</span></h4>
                 <div class="stat-row">
-                    <div class="stat-item">⚙️ Prod Cap: <strong>${formatNum(yProdCap)}</strong></div>
-                    <div class="stat-item">✅ Prod QTY: <strong>${formatNum(yProdQty)}</strong></div>
-                    <div class="stat-item">🚚 Delivery QTY: <strong>${formatNum(yDelQty)}</strong></div>
+                    <div class="stat-item">⚙️ Cap: <strong>${formatNum(yProdCap)}</strong></div>
+                    <div class="stat-item">✅ Prod: <strong>${formatNum(yProdQty)}</strong></div>
+                    <div class="stat-item">🚚 Del: <strong>${formatNum(yDelQty)}</strong></div>
                 </div>
             </div>
-            <div class="summary-card"><h4>📌 আজ (${tStr}) <span class="date-tag">As of Production & Delivery</span></h4>
+            <div class="summary-card">
+                <h4>📌 আজ (${tStr}) <span class="date-tag">As of Production & Delivery</span></h4>
                 <div class="stat-row">
-                    <div class="stat-item">⚙️ Prod Cap: <strong>${formatNum(tProdCap)}</strong></div>
-                    <div class="stat-item">✅ Prod QTY: <strong>${formatNum(tProdQty)}</strong></div>
-                    <div class="stat-item">🚚 Delivery QTY: <strong>${formatNum(tDelQty)}</strong></div>
+                    <div class="stat-item">⚙️ Cap: <strong>${formatNum(tProdCap)}</strong></div>
+                    <div class="stat-item">✅ Prod: <strong>${formatNum(tProdQty)}</strong></div>
+                    <div class="stat-item">🚚 Del: <strong>${formatNum(tDelQty)}</strong></div>
                 </div>
             </div>
         `;
     }
 
-    // ============================================================
-    // BUILD AS OF TABLE
-    // ============================================================
+    // ================================================================
+    //  AS OF TABLE
+    // ================================================================
     function buildAsOfTable(prodEntries, deliveryEntries) {
         if (prodEntries.length === 0 && deliveryEntries.length === 0) {
             return `<div class="no-data" style="padding:20px;">📭 এখনো কোনো ডেটা নেই।</div>`;
@@ -597,35 +1137,48 @@
         allCodes.forEach(code => {
             const product = productData.find(p => p.code === code);
             if (!product) return;
-
             const prodItems = prodEntries.filter(e => e.productCode === code);
             const delItems = deliveryEntries.filter(e => e.productCode === code);
-
             const capSum = prodItems.reduce((s, e) => s + e.capacity, 0);
             const prodSum = prodItems.reduce((s, e) => s + e.goodQty, 0);
             const delSum = delItems.reduce((s, e) => s + e.qty, 0);
-
             totalCap += capSum;
             totalProd += prodSum;
             totalDel += delSum;
-
             rows.push({ code: product.code, item: product.item, color: product.color, capacity: capSum, production: prodSum, delivery: delSum });
         });
 
         rows.sort((a, b) => a.code.localeCompare(b.code));
 
-        let html = `<table class="asof-table"><thead><tr><th>Code</th><th>Item Name</th><th>Color</th><th>As of Capacity</th><th>As of Production</th><th>As of Delivery</th></tr></thead><tbody>`;
+        let html = `<table class="asof-table"><thead><tr>
+            <th>Code</th><th>Item Name</th><th>Color</th>
+            <th>As of Capacity</th><th>As of Production</th><th>As of Delivery</th>
+        </tr></thead><tbody>`;
+
         rows.forEach(r => {
-            html += `<tr><td>${r.code}</td><td>${r.item}</td><td>${r.color}</td><td>${r.capacity.toLocaleString()}</td><td>${r.production.toLocaleString()}</td><td>${r.delivery.toLocaleString()}</td></tr>`;
+            html += `<tr>
+                <td>${r.code}</td>
+                <td>${r.item}</td>
+                <td>${r.color}</td>
+                <td>${r.capacity.toLocaleString()}</td>
+                <td>${r.production.toLocaleString()}</td>
+                <td>${r.delivery.toLocaleString()}</td>
+            </tr>`;
         });
-        html += `<tr class="total-row"><td colspan="3"><strong>মোট</strong></td><td><strong>${totalCap.toLocaleString()}</strong></td><td><strong>${totalProd.toLocaleString()}</strong></td><td><strong>${totalDel.toLocaleString()}</strong></td></tr>`;
+
+        html += `<tr class="total-row">
+            <td colspan="3"><strong>মোট</strong></td>
+            <td><strong>${totalCap.toLocaleString()}</strong></td>
+            <td><strong>${totalProd.toLocaleString()}</strong></td>
+            <td><strong>${totalDel.toLocaleString()}</strong></td>
+        </tr>`;
         html += `</tbody></table>`;
         return html;
     }
 
-    // ============================================================
-    // FILTER & DELETE
-    // ============================================================
+    // ================================================================
+    //  FILTER & DELETE
+    // ================================================================
     document.getElementById('applyFilterBtn').addEventListener('click', renderReport);
     document.getElementById('clearFilterBtn').addEventListener('click', function() {
         document.getElementById('filterDateFrom').value = '';
@@ -643,15 +1196,15 @@
         }
     });
 
-    // ============================================================
-    // INIT
-    // ============================================================
+    // ================================================================
+    //  INIT
+    // ================================================================
     ctInput.value = '';
     cavityInput.value = '';
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with Cause field ready.');
+    console.log('✅ Production + Delivery Entry ready (Mobile Friendly).');
 </script>
 </body>
 </html>
