@@ -136,8 +136,8 @@
         .auto-status.off { color: #b71c1c; }
         #countdownDisplay { font-size: 14px; font-weight: 600; color: #0d47a1; min-width: 120px; }
 
-        /* ----- নতুন সারাংশ সেকশন ----- */
-        .summary-box {
+        /* ----- নতুন: টেবিল আকারে সারাংশ (কপি-পেস্ট উপযোগী) ----- */
+        .summary-table-wrap {
             background: white;
             border-radius: 12px;
             padding: 18px 22px;
@@ -145,39 +145,78 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             border-left: 6px solid #0d47a1;
         }
-        .summary-header-text {
+        .summary-table-wrap .summary-header-text {
             font-size: 18px;
             font-weight: 700;
             color: #0d47a1;
             margin-bottom: 12px;
             border-bottom: 2px solid #e3eef9;
             padding-bottom: 6px;
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-        }
-        .summary-item {
             display: flex;
-            flex-direction: column;
-            background: #f8fafc;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border-left: 3px solid #1976d2;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
-        .summary-label {
-            font-size: 12px;
-            color: #666;
+        .summary-table-wrap .summary-header-text .btn-group-sm {
+            display: flex;
+            gap: 8px;
+        }
+        .summary-table-wrap .summary-header-text .btn-group-sm button {
+            padding: 4px 14px;
+            border: none;
+            border-radius: 6px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
         }
-        .summary-value {
-            font-size: 20px;
+        .btn-sm-image { background: #6c757d; color: white; }
+        .btn-sm-image:hover { background: #5a6268; }
+        .btn-sm-excel { background: #1e7e34; color: white; }
+        .btn-sm-excel:hover { background: #136b2a; }
+
+        /* টেবিলের জন্য কাস্টম স্টাইল – কপি করার সুবিধার জন্য */
+        .summary-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #fafcff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .summary-data-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #e8ecf1;
+            vertical-align: middle;
+        }
+        .summary-data-table .label-cell {
+            font-weight: 600;
+            color: #1a3a5c;
+            width: 40%;
+            background: #f0f5fe;
+            white-space: nowrap;
+        }
+        .summary-data-table .value-cell {
             font-weight: 700;
             color: #0d47a1;
-            margin-top: 2px;
+            width: 60%;
+            background: #ffffff;
+        }
+        .summary-data-table tr:last-child td {
+            border-bottom: none;
+        }
+        .summary-data-table .highlight-row td {
+            background: #e3f2fd;
+        }
+        .summary-data-table .greeting-row td {
+            background: #fff8e1;
+            font-weight: 700;
+            color: #e65100;
+            text-align: center;
+            font-size: 16px;
+            padding: 14px;
+            border-bottom: 2px solid #ffb300;
         }
     </style>
 </head>
@@ -226,17 +265,30 @@
         <span id="countdownDisplay">পরবর্তী আপডেট: ১০s</span>
     </div>
 
-    <!-- ===== নতুন সারাংশ সেকশন ===== -->
-    <div class="summary-box" id="currentSummaryBox">
-        <div class="summary-header-text">📌 বর্তমান তারিখ ও শিফটের সারাংশ</div>
-        <div class="summary-grid">
-            <div class="summary-item"><span class="summary-label">📅 তারিখ</span><span class="summary-value" id="sumDate">-</span></div>
-            <div class="summary-item"><span class="summary-label">🕒 শিফট</span><span class="summary-value" id="sumShift">-</span></div>
-            <div class="summary-item"><span class="summary-label">👥 Total Present</span><span class="summary-value" id="sumPresent">0</span></div>
-            <div class="summary-item"><span class="summary-label">❌ Total Absent</span><span class="summary-value" id="sumAbsent">0</span></div>
-            <div class="summary-item"><span class="summary-label">📊 Total No Demand</span><span class="summary-value" id="sumNoDemand">0</span></div>
-            <div class="summary-item"><span class="summary-label">⛔ MC Stop (Manpower)</span><span class="summary-value" id="sumMCStopManpower">0</span></div>
-            <div class="summary-item"><span class="summary-label">⛔ MC Stop (No Demand)</span><span class="summary-value" id="sumMCStopNoDemand">0</span></div>
+    <!-- ===== নতুন: টেবিল আকারে সারাংশ (কপি-পেস্ট উপযোগী) ===== -->
+    <div class="summary-table-wrap" id="summaryTableWrap">
+        <div class="summary-header-text">
+            <span>📌 Current Date &amp; Shift Summery Report</span>
+            <div class="btn-group-sm">
+                <button class="btn-sm-image" onclick="downloadSummaryImage()">📷 ইমেজ</button>
+                <button class="btn-sm-excel" onclick="downloadSummaryExcel()">⬇️ Excel</button>
+            </div>
+        </div>
+        <div id="summaryTableContainer">
+            <!-- ডেটা এখানে রেন্ডার হবে -->
+            <table class="summary-data-table" id="summaryDataTable">
+                <tbody>
+                    <tr class="greeting-row"><td colspan="2">Dear @ DPL DGM Sir, Below is Current Date &amp; Shift Summery Report. You Can Check The report</td></tr>
+                    <tr><td class="label-cell">📅 Date</td><td class="value-cell" id="sumDate">-</td></tr>
+                    <tr><td class="label-cell">🕒 Shift</td><td class="value-cell" id="sumShift">-</td></tr>
+                    <tr><td class="label-cell">👥 Total Present</td><td class="value-cell" id="sumPresent">0</td></tr>
+                    <tr><td class="label-cell">❌ Total Absent</td><td class="value-cell" id="sumAbsent">0</td></tr>
+                    <tr><td class="label-cell">📊 Total No Demand</td><td class="value-cell" id="sumNoDemand">0</td></tr>
+                    <tr><td class="label-cell">🔧 Total Mold Change QTY</td><td class="value-cell" id="sumMoldChange">0</td></tr>
+                    <tr><td class="label-cell">⛔ MC Stop (Manpower)</td><td class="value-cell" id="sumMCStopManpower">0</td></tr>
+                    <tr><td class="label-cell">⛔ MC Stop (No Demand)</td><td class="value-cell" id="sumMCStopNoDemand">0</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -499,7 +551,10 @@
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const year = d.getFullYear();
-        return `${day}-${month}-${year}`;
+        // দিনের নাম বের করি
+        const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayName = weekdays[d.getDay()];
+        return `${day}-${month}-${year} ( ${dayName} )`;
     }
 
     function getVal(row, keys) {
@@ -588,7 +643,7 @@
     }
 
     function renderDashboard(data) {
-        renderCurrentSummary(data);  // <-- নতুন সেকশন রেন্ডার
+        renderCurrentSummary(data);  // নতুন টেবিল রেন্ডার
         renderStats(data);
         renderSaifuddinTable(data);
         renderMcSummaryTable(data);
@@ -599,10 +654,11 @@
         renderRawData(data);
     }
 
-    // ===== বর্তমান তারিখ ও শিফটের সারাংশ রেন্ডার =====
+    // ===== বর্তমান তারিখ ও শিফটের সারাংশ – টেবিল আকারে =====
     function renderCurrentSummary(data) {
         let totalPresent = 0, totalAbsent = 0, totalNoDemand = 0;
         let mcStopManpower = 0, mcStopNoDemand = 0;
+        let totalMoldChange = 0;
 
         data.forEach(row => {
             totalPresent += getNum(row, ['Total HR', 'totalHR']);
@@ -610,6 +666,7 @@
             totalNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
             mcStopManpower += getNum(row, ['MP Short', 'mpShort']);
             mcStopNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
+            totalMoldChange += getNum(row, ['Mold Change', 'moldChange']);
         });
 
         document.getElementById('sumPresent').innerText = totalPresent;
@@ -617,12 +674,68 @@
         document.getElementById('sumNoDemand').innerText = totalNoDemand;
         document.getElementById('sumMCStopManpower').innerText = mcStopManpower;
         document.getElementById('sumMCStopNoDemand').innerText = mcStopNoDemand;
+        document.getElementById('sumMoldChange').innerText = totalMoldChange;
 
-        // তারিখ ও শিফট আপডেট
+        // তারিখ ও শিফট আপডেট (ফরম্যাট করা তারিখ সহ)
         const date = document.getElementById('filterDate').value;
         const shift = document.getElementById('filterShift').value;
-        document.getElementById('sumDate').innerText = date ? formatDate(date) : 'সব তারিখ';
-        document.getElementById('sumShift').innerText = shift !== 'All' ? shift : 'সব শিফট';
+        const displayDate = date ? formatDate(date) : 'সব তারিখ';
+        const displayShift = shift !== 'All' ? shift : 'সব শিফট';
+        document.getElementById('sumDate').innerText = displayDate;
+        document.getElementById('sumShift').innerText = displayShift;
+    }
+
+    // ===== সামারি ইমেজ ডাউনলোড =====
+    function downloadSummaryImage() {
+        const container = document.getElementById('summaryTableWrap');
+        if (!container) return;
+        const btn = document.querySelector('.btn-sm-image');
+        btn.innerText = '⏳...';
+        btn.disabled = true;
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Summary_Report_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerText = '📷 ইমেজ';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                btn.innerText = '📷 ইমেজ';
+                btn.disabled = false;
+            });
+    }
+
+    // ===== সামারি Excel ডাউনলোড =====
+    function downloadSummaryExcel() {
+        const date = document.getElementById('sumDate').innerText;
+        const shift = document.getElementById('sumShift').innerText;
+        const present = document.getElementById('sumPresent').innerText;
+        const absent = document.getElementById('sumAbsent').innerText;
+        const noDemand = document.getElementById('sumNoDemand').innerText;
+        const moldChange = document.getElementById('sumMoldChange').innerText;
+        const stopManpower = document.getElementById('sumMCStopManpower').innerText;
+        const stopNoDemand = document.getElementById('sumMCStopNoDemand').innerText;
+
+        const headers = ['Description', 'Value'];
+        const rows = [
+            ['Date', date],
+            ['Shift', shift],
+            ['Total Present', present],
+            ['Total Absent', absent],
+            ['Total No Demand', noDemand],
+            ['Total Mold Change QTY', moldChange],
+            ['MC Stop (Manpower)', stopManpower],
+            ['MC Stop (No Demand)', stopNoDemand]
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+        XLSX.writeFile(wb, `Summary_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
 
     // ===== স্ট্যাটস =====
