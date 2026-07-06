@@ -950,7 +950,7 @@
         document.getElementById('sumShift').innerText = displayShift;
     }
 
-    // ===== নতুন: MC ডিপার্টমেন্ট সারাংশ (টেক্সট আকারে কপি করার জন্য) =====
+    // ===== নতুন: MC ডিপার্টমেন্ট সারাংশ (টেক্সট আকারে কপি করার জন্য) - কলাম ক্রম ঠিক করা =====
     function renderMcDeptSummary(data) {
         const container = document.getElementById('mcDeptSummaryContainer');
         // শুধু MC ডিপার্টমেন্ট ফিল্টার
@@ -980,25 +980,33 @@
             deptMap[dept].rows.push(row);
         });
 
-        // টেবিল তৈরি
-        let html = `<table class="mc-dept-table"><thead><tr>
-            <th>Department</th><th>Date</th><th>Shift</th><th>IC Name</th>
-            <th>Total MC</th><th>MC Running</th><th>MC Stopped</th><th>% Running</th><th>% Stopped</th>
-            <th>MP Short</th><th>Mold Problem</th><th>Mold Change</th><th>Under Sample</th><th>MC Problem</th>
-            <th>Preventive Maintenance</th><th>No Demand</th><th>Material & MB Shortage</th><th>Over Stock (WIP)</th><th>Accessories Short</th>
-            <th>Total HR</th><th>Leave Employee</th><th>Absent Employee</th>
-            <th>Export MC</th><th>Domestic MC</th><th>Single MC</th><th>Double MC</th><th>No Demand (M)</th>
-            <th>Prod IC</th><th>SIC</th><th>MC Operator</th><th>Packaging Operator</th><th>Foreman</th><th>Senior Operator</th>
-            <th>Shrink-wrap Op</th><th>Printing Op</th><th>Mold Change Op</th><th>Mix/Recycle/Crush</th>
-            <th>Sub Store</th><th>Inventory Op</th><th>FG Delivery</th><th>Sharp Tools</th><th>PSI</th><th>ERP</th>
-            <th>Floor Housekeeping</th><th>Rework</th><th>Welding</th><th>HR Transfer</th>
-        </tr></thead><tbody>`;
+        // কলামের ক্রম (ইউজারের চাওয়া অনুযায়ী)
+        const colOrder = [
+            'Department', 'Date', 'Shift', 'IC Name',
+            'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped',
+            'Total HR', 'Leave Employee', 'Absent Employee',
+            'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem',
+            'Preventive Maintenance', 'No Demand', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short',
+            'Export MC', 'Domestic MC', 'Single MC', 'Double MC', 'No Demand (M)',
+            'Prod IC', 'SIC', 'MC Operator', 'Packaging Operator', 'Foreman', 'Senior Operator',
+            'Shrink-wrap Op', 'Printing Op', 'Mold Change Op', 'Mix/Recycle/Crush',
+            'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP',
+            'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'
+        ];
 
+        // টেবিল হেডার তৈরি
+        let html = `<table class="mc-dept-table"><thead><tr>`;
+        colOrder.forEach(col => {
+            html += `<th>${col}</th>`;
+        });
+        html += `</tr></thead><tbody>`;
+
+        // গ্র্যান্ড টোটালের জন্য অবজেক্ট
         let grandTotal = {
             totalMC: 0, mcRunning: 0, mcStopped: 0,
+            totalHR: 0, leaveEmployee: 0, absentEmployee: 0,
             mpShort: 0, moldProblem: 0, moldChange: 0, underSample: 0, mcProblem: 0,
             preventiveMaintenance: 0, noDemandQty: 0, materialMBShortage: 0, overStockWIP: 0, accessoriesShort: 0,
-            totalHR: 0, leaveEmployee: 0, absentEmployee: 0,
             exportMC: 0, domesticMC: 0, singleMC: 0, doubleMC: 0, noDemand: 0,
             prodIC: 0, sic: 0, mcOperator: 0, packagingOperator: 0, foreman: 0, seniorOperator: 0,
             shrinkOperator: 0, printingOperator: 0, moldChangeOperator: 0, mixRecycle: 0,
@@ -1012,9 +1020,9 @@
             // প্রতিটি ডিপার্টমেন্টের জন্য একটি সারি (সব এন্ট্রির যোগফল)
             let sum = {
                 totalMC: 0, mcRunning: 0, mcStopped: 0,
+                totalHR: 0, leaveEmployee: 0, absentEmployee: 0,
                 mpShort: 0, moldProblem: 0, moldChange: 0, underSample: 0, mcProblem: 0,
                 preventiveMaintenance: 0, noDemandQty: 0, materialMBShortage: 0, overStockWIP: 0, accessoriesShort: 0,
-                totalHR: 0, leaveEmployee: 0, absentEmployee: 0,
                 exportMC: 0, domesticMC: 0, singleMC: 0, doubleMC: 0, noDemand: 0,
                 prodIC: 0, sic: 0, mcOperator: 0, packagingOperator: 0, foreman: 0, seniorOperator: 0,
                 shrinkOperator: 0, printingOperator: 0, moldChangeOperator: 0, mixRecycle: 0,
@@ -1026,6 +1034,9 @@
                 sum.totalMC += getNum(r, ['Total MC', 'totalMC']);
                 sum.mcRunning += getNum(r, ['MC Running', 'mcRunning']);
                 sum.mcStopped += getNum(r, ['MC Stopped', 'mcStopped']);
+                sum.totalHR += getNum(r, ['Total HR', 'totalHR']);
+                sum.leaveEmployee += getNum(r, ['Leave Employee', 'leaveEmployee']);
+                sum.absentEmployee += getNum(r, ['Absent Employee', 'absentEmployee']);
                 sum.mpShort += getNum(r, ['MP Short', 'mpShort']);
                 sum.moldProblem += getNum(r, ['Mold Problem', 'moldProblem']);
                 sum.moldChange += getNum(r, ['Mold Change', 'moldChange']);
@@ -1036,9 +1047,6 @@
                 sum.materialMBShortage += getNum(r, ['Material & MB Shortage', 'materialMBShortage']);
                 sum.overStockWIP += getNum(r, ['Over Stock (WIP)', 'overStockWIP']);
                 sum.accessoriesShort += getNum(r, ['Accessories Short', 'accessoriesShort']);
-                sum.totalHR += getNum(r, ['Total HR', 'totalHR']);
-                sum.leaveEmployee += getNum(r, ['Leave Employee', 'leaveEmployee']);
-                sum.absentEmployee += getNum(r, ['Absent Employee', 'absentEmployee']);
                 sum.exportMC += getNum(r, ['Export MC', 'exportMC']);
                 sum.domesticMC += getNum(r, ['Domestic MC', 'domesticMC']);
                 sum.singleMC += getNum(r, ['Single MC', 'singleMC']);
@@ -1072,7 +1080,6 @@
                     grandTotal[key] += sum[key];
                 }
             });
-            // totalMC, mcRunning, mcStopped আলাদা
             grandTotal.totalMC += sum.totalMC;
             grandTotal.mcRunning += sum.mcRunning;
             grandTotal.mcStopped += sum.mcStopped;
@@ -1081,62 +1088,40 @@
             const stopPct = sum.totalMC > 0 ? (sum.mcStopped / sum.totalMC) * 100 : 0;
             let pctClass = runPct >= 80 ? 'green' : (runPct >= 50 ? 'yellow' : 'red');
 
-            // তারিখ ও শিফট (প্রথম সারি থেকে)
             const dateDisplay = group.date ? formatDate(group.date) : '-';
             const shiftDisplay = group.shift || '-';
 
-            html += `<tr>
-                <td class="dept-name"><strong>${dept}</strong></td>
-                <td>${dateDisplay}</td>
-                <td>${shiftDisplay}</td>
-                <td>${group.icName || '-'}</td>
-                <td class="highlight-number">${sum.totalMC}</td>
-                <td>${sum.mcRunning}</td>
-                <td>${sum.mcStopped}</td>
-                <td>
-                    <span class="run-pct-text ${pctClass}">${runPct.toFixed(1)}%</span>
-                    <div class="bar-container"><div class="bar-fill ${pctClass}" style="width:${Math.min(runPct,100)}%;"></div></div>
-                </td>
-                <td>${stopPct.toFixed(1)}%</td>
-                <td>${sum.mpShort}</td>
-                <td>${sum.moldProblem}</td>
-                <td>${sum.moldChange}</td>
-                <td>${sum.underSample}</td>
-                <td>${sum.mcProblem}</td>
-                <td>${sum.preventiveMaintenance}</td>
-                <td>${sum.noDemandQty}</td>
-                <td>${sum.materialMBShortage}</td>
-                <td>${sum.overStockWIP}</td>
-                <td>${sum.accessoriesShort}</td>
-                <td>${sum.totalHR}</td>
-                <td>${sum.leaveEmployee}</td>
-                <td>${sum.absentEmployee}</td>
-                <td>${sum.exportMC}</td>
-                <td>${sum.domesticMC}</td>
-                <td>${sum.singleMC}</td>
-                <td>${sum.doubleMC}</td>
-                <td>${sum.noDemand}</td>
-                <td>${sum.prodIC}</td>
-                <td>${sum.sic}</td>
-                <td>${sum.mcOperator}</td>
-                <td>${sum.packagingOperator}</td>
-                <td>${sum.foreman}</td>
-                <td>${sum.seniorOperator}</td>
-                <td>${sum.shrinkOperator}</td>
-                <td>${sum.printingOperator}</td>
-                <td>${sum.moldChangeOperator}</td>
-                <td>${sum.mixRecycle}</td>
-                <td>${sum.subStore}</td>
-                <td>${sum.inventoryOperator}</td>
-                <td>${sum.fgDelivery}</td>
-                <td>${sum.sharpTools}</td>
-                <td>${sum.psi}</td>
-                <td>${sum.erp}</td>
-                <td>${sum.floorHousekeeping}</td>
-                <td>${sum.rework}</td>
-                <td>${sum.welding}</td>
-                <td>${sum.hrTransfer}</td>
-            </tr>`;
+            // এখন colOrder অনুযায়ী ডাটা পুশ
+            const rowData = [
+                dept, dateDisplay, shiftDisplay, group.icName || '-',
+                sum.totalMC, sum.mcRunning, sum.mcStopped,
+                runPct.toFixed(1) + '%', stopPct.toFixed(1) + '%',
+                sum.totalHR, sum.leaveEmployee, sum.absentEmployee,
+                sum.mpShort, sum.moldProblem, sum.moldChange, sum.underSample, sum.mcProblem,
+                sum.preventiveMaintenance, sum.noDemandQty, sum.materialMBShortage, sum.overStockWIP, sum.accessoriesShort,
+                sum.exportMC, sum.domesticMC, sum.singleMC, sum.doubleMC, sum.noDemand,
+                sum.prodIC, sum.sic, sum.mcOperator, sum.packagingOperator, sum.foreman, sum.seniorOperator,
+                sum.shrinkOperator, sum.printingOperator, sum.moldChangeOperator, sum.mixRecycle,
+                sum.subStore, sum.inventoryOperator, sum.fgDelivery, sum.sharpTools, sum.psi, sum.erp,
+                sum.floorHousekeeping, sum.rework, sum.welding, sum.hrTransfer
+            ];
+
+            html += `<tr>`;
+            rowData.forEach((val, idx) => {
+                if (idx === 0) {
+                    html += `<td class="dept-name"><strong>${val}</strong></td>`;
+                } else if (idx === 7 || idx === 8) { // % Running / % Stopped
+                    const cls = (idx === 7) ? pctClass : '';
+                    html += `<td><span class="run-pct-text ${cls}">${val}</span>`;
+                    if (idx === 7) {
+                        html += `<div class="bar-container"><div class="bar-fill ${pctClass}" style="width:${Math.min(parseFloat(val),100)}%;"></div></div>`;
+                    }
+                    html += `</td>`;
+                } else {
+                    html += `<td>${val}</td>`;
+                }
+            });
+            html += `</tr>`;
         });
 
         // মোট সারি
@@ -1144,62 +1129,42 @@
         const totalStopPct = grandTotal.totalMC > 0 ? (grandTotal.mcStopped / grandTotal.totalMC) * 100 : 0;
         let totalPctClass = totalRunPct >= 80 ? 'green' : (totalRunPct >= 50 ? 'yellow' : 'red');
 
-        html += `<tr class="total-row">
-            <td><strong>📌 মোট</strong></td>
-            <td>-</td><td>-</td><td>-</td>
-            <td><strong>${grandTotal.totalMC}</strong></td>
-            <td><strong>${grandTotal.mcRunning}</strong></td>
-            <td><strong>${grandTotal.mcStopped}</strong></td>
-            <td>
-                <span class="run-pct-text ${totalPctClass}">${totalRunPct.toFixed(1)}%</span>
-                <div class="bar-container"><div class="bar-fill ${totalPctClass}" style="width:${Math.min(totalRunPct,100)}%;"></div></div>
-            </td>
-            <td>${totalStopPct.toFixed(1)}%</td>
-            <td>${grandTotal.mpShort}</td>
-            <td>${grandTotal.moldProblem}</td>
-            <td>${grandTotal.moldChange}</td>
-            <td>${grandTotal.underSample}</td>
-            <td>${grandTotal.mcProblem}</td>
-            <td>${grandTotal.preventiveMaintenance}</td>
-            <td>${grandTotal.noDemandQty}</td>
-            <td>${grandTotal.materialMBShortage}</td>
-            <td>${grandTotal.overStockWIP}</td>
-            <td>${grandTotal.accessoriesShort}</td>
-            <td>${grandTotal.totalHR}</td>
-            <td>${grandTotal.leaveEmployee}</td>
-            <td>${grandTotal.absentEmployee}</td>
-            <td>${grandTotal.exportMC}</td>
-            <td>${grandTotal.domesticMC}</td>
-            <td>${grandTotal.singleMC}</td>
-            <td>${grandTotal.doubleMC}</td>
-            <td>${grandTotal.noDemand}</td>
-            <td>${grandTotal.prodIC}</td>
-            <td>${grandTotal.sic}</td>
-            <td>${grandTotal.mcOperator}</td>
-            <td>${grandTotal.packagingOperator}</td>
-            <td>${grandTotal.foreman}</td>
-            <td>${grandTotal.seniorOperator}</td>
-            <td>${grandTotal.shrinkOperator}</td>
-            <td>${grandTotal.printingOperator}</td>
-            <td>${grandTotal.moldChangeOperator}</td>
-            <td>${grandTotal.mixRecycle}</td>
-            <td>${grandTotal.subStore}</td>
-            <td>${grandTotal.inventoryOperator}</td>
-            <td>${grandTotal.fgDelivery}</td>
-            <td>${grandTotal.sharpTools}</td>
-            <td>${grandTotal.psi}</td>
-            <td>${grandTotal.erp}</td>
-            <td>${grandTotal.floorHousekeeping}</td>
-            <td>${grandTotal.rework}</td>
-            <td>${grandTotal.welding}</td>
-            <td>${grandTotal.hrTransfer}</td>
-        </tr>`;
+        const totalRowData = [
+            '📌 মোট', '-', '-', '-',
+            grandTotal.totalMC, grandTotal.mcRunning, grandTotal.mcStopped,
+            totalRunPct.toFixed(1) + '%', totalStopPct.toFixed(1) + '%',
+            grandTotal.totalHR, grandTotal.leaveEmployee, grandTotal.absentEmployee,
+            grandTotal.mpShort, grandTotal.moldProblem, grandTotal.moldChange, grandTotal.underSample, grandTotal.mcProblem,
+            grandTotal.preventiveMaintenance, grandTotal.noDemandQty, grandTotal.materialMBShortage, grandTotal.overStockWIP, grandTotal.accessoriesShort,
+            grandTotal.exportMC, grandTotal.domesticMC, grandTotal.singleMC, grandTotal.doubleMC, grandTotal.noDemand,
+            grandTotal.prodIC, grandTotal.sic, grandTotal.mcOperator, grandTotal.packagingOperator, grandTotal.foreman, grandTotal.seniorOperator,
+            grandTotal.shrinkOperator, grandTotal.printingOperator, grandTotal.moldChangeOperator, grandTotal.mixRecycle,
+            grandTotal.subStore, grandTotal.inventoryOperator, grandTotal.fgDelivery, grandTotal.sharpTools, grandTotal.psi, grandTotal.erp,
+            grandTotal.floorHousekeeping, grandTotal.rework, grandTotal.welding, grandTotal.hrTransfer
+        ];
+
+        html += `<tr class="total-row">`;
+        totalRowData.forEach((val, idx) => {
+            if (idx === 0) {
+                html += `<td><strong>${val}</strong></td>`;
+            } else if (idx === 7 || idx === 8) {
+                const cls = (idx === 7) ? totalPctClass : '';
+                html += `<td><strong><span class="run-pct-text ${cls}">${val}</span>`;
+                if (idx === 7) {
+                    html += `<div class="bar-container"><div class="bar-fill ${totalPctClass}" style="width:${Math.min(parseFloat(val),100)}%;"></div></div>`;
+                }
+                html += `</strong></td>`;
+            } else {
+                html += `<td><strong>${val}</strong></td>`;
+            }
+        });
+        html += `</tr>`;
 
         html += `</tbody></table>`;
         container.innerHTML = html;
 
         // ডেটা সংরক্ষণ (Excel ডাউনলোডের জন্য)
-        window._mcDeptData = { deptMap, grandTotal };
+        window._mcDeptData = { deptMap, grandTotal, colOrder };
     }
 
     // ===== MC ডিপার্টমেন্ট ইমেজ ডাউনলোড =====
@@ -1226,31 +1191,21 @@
             });
     }
 
-    // ===== MC ডিপার্টমেন্ট Excel ডাউনলোড =====
+    // ===== MC ডিপার্টমেন্ট Excel ডাউনলোড (কলাম ক্রম ঠিক করা) =====
     function downloadMcDeptExcel() {
         const data = window._mcDeptData;
         if (!data) { alert('ডেটা নেই!'); return; }
-        // কলাম হেডার
-        const headers = ['Department', 'Date', 'Shift', 'IC Name',
-            'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped',
-            'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem',
-            'Preventive Maintenance', 'No Demand', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short',
-            'Total HR', 'Leave Employee', 'Absent Employee',
-            'Export MC', 'Domestic MC', 'Single MC', 'Double MC', 'No Demand (M)',
-            'Prod IC', 'SIC', 'MC Operator', 'Packaging Operator', 'Foreman', 'Senior Operator',
-            'Shrink-wrap Op', 'Printing Op', 'Mold Change Op', 'Mix/Recycle/Crush',
-            'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP',
-            'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'
-        ];
+        // কলাম হেডার (data.colOrder থেকে)
+        const headers = data.colOrder;
 
         const rows = [];
         Object.keys(data.deptMap).forEach(dept => {
             const group = data.deptMap[dept];
             const sum = {
                 totalMC: 0, mcRunning: 0, mcStopped: 0,
+                totalHR: 0, leaveEmployee: 0, absentEmployee: 0,
                 mpShort: 0, moldProblem: 0, moldChange: 0, underSample: 0, mcProblem: 0,
                 preventiveMaintenance: 0, noDemandQty: 0, materialMBShortage: 0, overStockWIP: 0, accessoriesShort: 0,
-                totalHR: 0, leaveEmployee: 0, absentEmployee: 0,
                 exportMC: 0, domesticMC: 0, singleMC: 0, doubleMC: 0, noDemand: 0,
                 prodIC: 0, sic: 0, mcOperator: 0, packagingOperator: 0, foreman: 0, seniorOperator: 0,
                 shrinkOperator: 0, printingOperator: 0, moldChangeOperator: 0, mixRecycle: 0,
@@ -1261,6 +1216,9 @@
                 sum.totalMC += getNum(r, ['Total MC', 'totalMC']);
                 sum.mcRunning += getNum(r, ['MC Running', 'mcRunning']);
                 sum.mcStopped += getNum(r, ['MC Stopped', 'mcStopped']);
+                sum.totalHR += getNum(r, ['Total HR', 'totalHR']);
+                sum.leaveEmployee += getNum(r, ['Leave Employee', 'leaveEmployee']);
+                sum.absentEmployee += getNum(r, ['Absent Employee', 'absentEmployee']);
                 sum.mpShort += getNum(r, ['MP Short', 'mpShort']);
                 sum.moldProblem += getNum(r, ['Mold Problem', 'moldProblem']);
                 sum.moldChange += getNum(r, ['Mold Change', 'moldChange']);
@@ -1271,9 +1229,6 @@
                 sum.materialMBShortage += getNum(r, ['Material & MB Shortage', 'materialMBShortage']);
                 sum.overStockWIP += getNum(r, ['Over Stock (WIP)', 'overStockWIP']);
                 sum.accessoriesShort += getNum(r, ['Accessories Short', 'accessoriesShort']);
-                sum.totalHR += getNum(r, ['Total HR', 'totalHR']);
-                sum.leaveEmployee += getNum(r, ['Leave Employee', 'leaveEmployee']);
-                sum.absentEmployee += getNum(r, ['Absent Employee', 'absentEmployee']);
                 sum.exportMC += getNum(r, ['Export MC', 'exportMC']);
                 sum.domesticMC += getNum(r, ['Domestic MC', 'domesticMC']);
                 sum.singleMC += getNum(r, ['Single MC', 'singleMC']);
@@ -1304,38 +1259,41 @@
             const stopPct = sum.totalMC > 0 ? (sum.mcStopped / sum.totalMC) * 100 : 0;
             const dateDisplay = group.date ? formatDate(group.date) : '-';
             const shiftDisplay = group.shift || '-';
-            rows.push([
+
+            const rowData = [
                 dept, dateDisplay, shiftDisplay, group.icName || '-',
                 sum.totalMC, sum.mcRunning, sum.mcStopped,
                 runPct.toFixed(1) + '%', stopPct.toFixed(1) + '%',
+                sum.totalHR, sum.leaveEmployee, sum.absentEmployee,
                 sum.mpShort, sum.moldProblem, sum.moldChange, sum.underSample, sum.mcProblem,
                 sum.preventiveMaintenance, sum.noDemandQty, sum.materialMBShortage, sum.overStockWIP, sum.accessoriesShort,
-                sum.totalHR, sum.leaveEmployee, sum.absentEmployee,
                 sum.exportMC, sum.domesticMC, sum.singleMC, sum.doubleMC, sum.noDemand,
                 sum.prodIC, sum.sic, sum.mcOperator, sum.packagingOperator, sum.foreman, sum.seniorOperator,
                 sum.shrinkOperator, sum.printingOperator, sum.moldChangeOperator, sum.mixRecycle,
                 sum.subStore, sum.inventoryOperator, sum.fgDelivery, sum.sharpTools, sum.psi, sum.erp,
                 sum.floorHousekeeping, sum.rework, sum.welding, sum.hrTransfer
-            ]);
+            ];
+            rows.push(rowData);
         });
 
         // মোট সারি
         const g = data.grandTotal;
         const totalRunPct = g.totalMC > 0 ? (g.mcRunning / g.totalMC) * 100 : 0;
         const totalStopPct = g.totalMC > 0 ? (g.mcStopped / g.totalMC) * 100 : 0;
-        rows.push([
+        const totalRowData = [
             '📌 মোট', '-', '-', '-',
             g.totalMC, g.mcRunning, g.mcStopped,
             totalRunPct.toFixed(1) + '%', totalStopPct.toFixed(1) + '%',
+            g.totalHR, g.leaveEmployee, g.absentEmployee,
             g.mpShort, g.moldProblem, g.moldChange, g.underSample, g.mcProblem,
             g.preventiveMaintenance, g.noDemandQty, g.materialMBShortage, g.overStockWIP, g.accessoriesShort,
-            g.totalHR, g.leaveEmployee, g.absentEmployee,
             g.exportMC, g.domesticMC, g.singleMC, g.doubleMC, g.noDemand,
             g.prodIC, g.sic, g.mcOperator, g.packagingOperator, g.foreman, g.seniorOperator,
             g.shrinkOperator, g.printingOperator, g.moldChangeOperator, g.mixRecycle,
             g.subStore, g.inventoryOperator, g.fgDelivery, g.sharpTools, g.psi, g.erp,
             g.floorHousekeeping, g.rework, g.welding, g.hrTransfer
-        ]);
+        ];
+        rows.push(totalRowData);
 
         const wbData = [headers, ...rows];
         const wb = XLSX.utils.book_new();
@@ -2259,611 +2217,3 @@
             html += `</tr>`;
             sumHR += row.totalHR; sumLeave += row.leave; sumAbsent += row.absent;
             if (isGroupA) {
-                sumMC += row.totalMC; sumRunning += row.running; sumStopped += row.stopped;
-            }
-        });
-
-        const totalPresent = sumHR;
-        const totalRunPct = sumMC > 0 ? ((sumRunning / sumMC) * 100) : 0;
-        const totalStopPct = sumMC > 0 ? ((sumStopped / sumMC) * 100) : 0;
-
-        html += `<tr class="total-row"><td><strong>📌 মোট (Group ${groupType})</strong></td><td>-</td><td>-</td>`;
-        html += `<td><strong>${sumHR}</strong></td><td>${sumLeave}</td><td>${sumAbsent}</td><td><strong>${totalPresent}</strong></td>`;
-        if (isGroupA) {
-            html += `<td><strong>${sumMC}</strong></td><td><strong>${sumRunning}</strong></td><td><strong>${sumStopped}</strong></td>`;
-            html += `<td><strong>${totalRunPct.toFixed(1)}%</strong></td><td><strong>${totalStopPct.toFixed(1)}%</strong></td>`;
-        }
-        html += `</tr></tbody></table>`;
-        container.innerHTML = html;
-    }
-
-    // ===== বাকি ফাংশন (Overall, Missing, Raw Data, Excel) =====
-    function renderOverall(data) {
-        const container = document.getElementById('overallTable');
-        let totalHR = 0, leave = 0, absent = 0;
-        data.forEach(r => {
-            totalHR += getNum(r, ['Total HR', 'totalHR']);
-            leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
-            absent += getNum(r, ['Absent Employee', 'absentEmployee']);
-        });
-        const present = totalHR;
-        const pctPresent = totalHR > 0 ? ((present / totalHR) * 100) : 0;
-        const pctAbsent = totalHR > 0 ? ((absent / totalHR) * 100) : 0;
-        let rawDate = data.length > 0 ? getVal(data[0], ['entryDate', 'Date']) : '-';
-        const date = formatDate(rawDate);
-        const shift = data.length > 0 ? getVal(data[0], ['Shift', 'shift']) : '-';
-        if (data.length === 0) {
-            container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
-            return;
-        }
-        container.innerHTML = `<table>
-            <thead><tr><th>Date</th><th>Shift</th><th>Total HR</th><th>Total Present</th><th>Total Absent</th><th>% Present</th><th>% Absent</th></tr></thead>
-            <tbody><tr><td>${date}</td><td>${shift}</td><td><strong>${totalHR}</strong></td><td><strong>${present}</strong></td><td>${absent}</td>
-                <td>${pctPresent.toFixed(1)}%</td><td>${pctAbsent.toFixed(1)}%</td></tr></tbody>
-        </table>`;
-    }
-
-    function renderMissing(data) {
-        const container = document.getElementById('missingContainer');
-        const presentDepts = new Set(data.map(r => getVal(r, ['Department', 'department'])).filter(Boolean));
-        const missing = MASTER_DEPARTMENTS.filter(d => !presentDepts.has(d));
-        if (missing.length === 0) {
-            container.innerHTML = `<div class="no-data" style="color:green;">✅ সব ডিপার্টমেন্টেই এন্ট্রি আছে!</div>`;
-            return;
-        }
-        let html = `<div><strong>🔴 ${missing.length} টি ডিপার্টমেন্টে ফিল্টার অনুযায়ী কোনো এন্ট্রি নেই (মোট ${MASTER_DEPARTMENTS.length} টির মধ্যে)</strong></div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">`;
-        missing.forEach(d => html += `<span class="missing-item">❌ ${d}</span>`);
-        html += `</div>`;
-        container.innerHTML = html;
-    }
-
-    function renderRawData(data) {
-        const container = document.getElementById('rawDataTable');
-        if (data.length === 0) {
-            container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
-            return;
-        }
-        const headers = [
-            '#', 'Time', 'Date', 'Shift', 'Department', 'IC Name',
-            'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped',
-            'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem',
-            'Preventive Maintenance', 'No Demand (QTY)', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short',
-            'Total HR', 'Leave Employee', 'Absent Employee',
-            'Export MC', 'Domestic MC', 'Single MC', 'Double MC', 'No Demand (M)',
-            'Prod IC', 'SIC', 'MC Operator', 'Packaging Operator', 'Foreman', 'Senior Operator',
-            'Shrink-wrap Op', 'Printing Op', 'Mold Change Op', 'Mix/Recycle/Crush',
-            'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP',
-            'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'
-        ];
-        const keys = [
-            'timestamp', 'entryDate', 'shift', 'department', 'icName',
-            'totalMC', 'mcRunning', 'mcStopped', 'pctRunning', 'pctStopped',
-            'mpShort', 'moldProblem', 'moldChange', 'underSample', 'mcProblem',
-            'preventiveMaintenance', 'noDemandQty', 'materialMBShortage', 'overStockWIP', 'accessoriesShort',
-            'totalHR', 'leaveEmployee', 'absentEmployee',
-            'exportMC', 'domesticMC', 'singleMC', 'doubleMC', 'noDemand',
-            'prodIC', 'sic', 'mcOperator', 'packagingOperator', 'foreman', 'seniorOperator',
-            'shrinkOperator', 'printingOperator', 'moldChangeOperator', 'mixRecycle',
-            'subStore', 'inventoryOperator', 'fgDelivery', 'sharpTools', 'psi', 'erp',
-            'floorHousekeeping', 'rework', 'welding', 'hrTransfer'
-        ];
-        let html = `<table><thead><tr>`;
-        headers.forEach(h => html += `<th>${h}</th>`);
-        html += `</tr></thead><tbody>`;
-        data.forEach((row, idx) => {
-            html += `<tr><td>${idx + 1}</td>`;
-            const rawTimestamp = row.timestamp || '';
-            html += `<td>${formatTime(rawTimestamp)}</td>`;
-            const rawDate = row.entryDate || '';
-            html += `<td>${formatDate(rawDate)}</td>`;
-            for (let i = 2; i < keys.length; i++) {
-                const k = keys[i];
-                let val = row[k] !== undefined && row[k] !== null ? row[k] : '';
-                html += `<td>${val}</td>`;
-            }
-            html += `</tr>`;
-        });
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-    }
-
-    function formatTime(dateStr) {
-        if (!dateStr) return '-';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        return d.toLocaleString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-            timeZone: 'Asia/Dhaka'
-        });
-    }
-
-    // ===== ডাউনলোড ফাংশন =====
-    function downloadMCImage() {
-        const container = document.getElementById('mcSummaryTable');
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-        const btn = document.querySelector('.btn-image');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-            .then(canvas => {
-                const link = document.createElement('a');
-                link.download = `MC_Summary_${new Date().toISOString().slice(0,10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            });
-    }
-
-    function downloadMCExcel() {
-        const data = window._mcTableData;
-        if (!data) { alert('ডেটা নেই!'); return; }
-        const headers = ['Department', 'Prod IC', 'Total Present', 'Total MC', 'MC Operator', 'Packaging Operator',
-            'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'
-        ];
-        data.activeCauseKeys.forEach(c => { headers.push(c.label); });
-
-        const rows = [];
-        Object.entries(data.rows).forEach(([dept, d]) => {
-            const totalPresent = d.totalHR;
-            const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
-            const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
-            const rowData = [dept, d.icName || '-', totalPresent, d.totalMC, d.mcOperator, d.packagingOperator,
-                d.running, d.stopped, runPct + '%', stopPct + '%'
-            ];
-            data.activeCauseKeys.forEach(c => {
-                rowData.push(d.causes[c.key] || 0);
-            });
-            rows.push(rowData);
-        });
-
-        const totalRow = ['📌 মোট', '-', data.grandTotalPresent, data.grandTotalMC, data.grandMCOp, data.grandPackOp,
-            data.grandRunning, data.grandStopped,
-            data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%'
-        ];
-        data.activeCauseKeys.forEach(c => {
-            totalRow.push(data.grandCauses[c.key] || 0);
-        });
-        rows.push(totalRow);
-
-        const wbData = [headers, ...rows];
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(wbData);
-        XLSX.utils.book_append_sheet(wb, ws, "MC Summary");
-        XLSX.writeFile(wb, `MC_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
-    }
-
-    function downloadMCPDF() {
-        const container = document.getElementById('mcSummaryTable');
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-        const btn = document.querySelector('.btn-pdf');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-            .then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('l', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`MC_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
-                btn.innerText = '📄 PDF ডাউনলোড';
-                btn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert('❌ PDF তৈরি ব্যর্থ!');
-                btn.innerText = '📄 PDF ডাউনলোড';
-                btn.disabled = false;
-            });
-    }
-
-    function downloadSaifuddinImage() {
-        const container = document.getElementById('saifuddinTableContainer');
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-        const btn = document.querySelector('.btn-image');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-        const clone = container.cloneNode(true);
-        clone.querySelectorAll('td, th').forEach(el => {
-            el.style.whiteSpace = 'nowrap';
-        });
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = `
-            width: 2400px; 
-            padding: 25px; 
-            background: white; 
-            border: 4px solid #0d47a1; 
-            border-radius: 16px; 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
-            margin: 0 auto; 
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        `;
-        const title = document.createElement('h2');
-        title.style.cssText = `
-            color: #0d47a1; 
-            text-align: center; 
-            margin-bottom: 20px; 
-            border-bottom: 3px solid #1976d2; 
-            padding-bottom: 12px;
-            font-size: 24px;
-        `;
-        title.innerText = '📊 Summery Table For Mr. Saifuddin';
-        wrapper.appendChild(title);
-        wrapper.appendChild(clone);
-        const footer = document.createElement('p');
-        footer.style.cssText = `
-            text-align: right; 
-            color: #555; 
-            font-size: 13px; 
-            margin-top: 18px;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-        `;
-        footer.innerText = `📅 Generated: ${new Date().toLocaleString('bn-BD')}`;
-        wrapper.appendChild(footer);
-        document.body.appendChild(wrapper);
-        html2canvas(wrapper, {
-            scale: 2.5,
-            backgroundColor: '#ffffff',
-            logging: false,
-            useCORS: true,
-            allowTaint: true
-        })
-        .then(canvas => {
-            const link = document.createElement('a');
-            link.download = `Saifuddin_Report_${new Date().toISOString().slice(0,10)}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            document.body.removeChild(wrapper);
-            btn.innerText = '📷 ইমেজ ডাউনলোড';
-            btn.disabled = false;
-        })
-        .catch(err => {
-            console.error(err);
-            if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
-            alert('❌ ইমেজ তৈরি ব্যর্থ!');
-            btn.innerText = '📷 ইমেজ ডাউনলোড';
-            btn.disabled = false;
-        });
-    }
-
-    function downloadSaifuddinExcel() {
-        const rows = window._saifuddinRows || [];
-        const headers = window._saifuddinHeaders || [];
-        if (rows.length === 0 || headers.length === 0) { alert('ডেটা নেই!'); return; }
-        const data = [headers];
-        rows.forEach(row => {
-            const showDash = (!row.hasData && !row.isFixed);
-            if (showDash) {
-                data.push(Array(headers.length).fill('-'));
-                return;
-            }
-            const isNoMC = ((row.sn >= 11 && row.sn <= 13) ||
-                            (row.sn >= 15 && row.sn <= 23));
-            const rowData = [
-                row.sn,
-                row.dept,
-                row.totalMP,
-                row.totalPresent,
-                row.absent,
-                row.leave,
-                isNoMC ? '-' : row.totalMC,
-                isNoMC ? '-' : row.targetRun,
-                isNoMC ? '-' : row.runPct.toFixed(1) + '%',
-                isNoMC ? '-' : row.mcWillOff,
-                isNoMC ? '-' : row.doubleMC,
-                isNoMC ? '-' : row.packagingOperator,
-                isNoMC ? '-' : row.mpShort,
-                isNoMC ? '-' : row.moldProb,
-                isNoMC ? '-' : row.moldChange,
-                isNoMC ? '-' : row.sample,
-                isNoMC ? '-' : row.mcProb,
-                isNoMC ? '-' : row.preventive,
-                isNoMC ? '-' : row.noDemand,
-                isNoMC ? '-' : row.materialShort,
-                isNoMC ? '-' : row.overStock,
-                isNoMC ? '-' : row.accShort
-            ];
-            data.push(rowData);
-        });
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(data);
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        for (let R = range.s.r; R <= range.e.r; R++) {
-            const snCell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
-            if (!snCell) continue;
-            const sn = snCell.v;
-            let fillColor = null, fontColor = null;
-            if (sn === 10) fillColor = 'D4EDDA';
-            else if (sn === 14) fillColor = 'FFF3CD';
-            else if (sn === 24) fillColor = 'CCE5FF';
-            else if (sn === 25) { fillColor = '1A237E'; fontColor = 'FFFFFF'; }
-            if (fillColor) {
-                for (let C = range.s.c; C <= range.e.c; C++) {
-                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-                    if (!ws[cellRef]) ws[cellRef] = { v: '' };
-                    if (!ws[cellRef].s) ws[cellRef].s = {};
-                    ws[cellRef].s.fill = { fgColor: { rgb: fillColor } };
-                    if (fontColor) {
-                        ws[cellRef].s.font = { color: { rgb: fontColor }, bold: true };
-                    } else {
-                        if (!ws[cellRef].s.font) ws[cellRef].s.font = {};
-                        ws[cellRef].s.font.bold = true;
-                    }
-                }
-            }
-        }
-        XLSX.utils.book_append_sheet(wb, ws, "Saifuddin Summary");
-        XLSX.writeFile(wb, `Saifuddin_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
-    }
-
-    function downloadSaifuddinPDF() {
-        const container = document.getElementById('saifuddinTableContainer');
-        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-        const btn = document.querySelector('.btn-pdf');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-            .then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('l', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`Saifuddin_Report_${new Date().toISOString().slice(0,10)}.pdf`);
-                btn.innerText = '📄 PDF ডাউনলোড';
-                btn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert('❌ PDF তৈরি ব্যর্থ!');
-                btn.innerText = '📄 PDF ডাউনলোড';
-                btn.disabled = false;
-            });
-    }
-
-    function downloadWeeklyImage() {
-        const container = document.getElementById('weeklySummaryContainer');
-        if (container.innerText.includes('পর্যাপ্ত ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-            alert('⚠️ ডেটা নেই!');
-            return;
-        }
-        const btn = document.querySelector('.btn-image');
-        btn.innerText = '⏳...';
-        btn.disabled = true;
-        html2canvas(container, { scale: 2.5, backgroundColor: '#ffffff', logging: false })
-            .then(canvas => {
-                const link = document.createElement('a');
-                const days = document.getElementById('weeklyDaysFilter').value;
-                link.download = `Weekly_Summary_${days}days_${new Date().toISOString().slice(0,10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                btn.innerText = '📷 ইমেজ ডাউনলোড';
-                btn.disabled = false;
-            });
-    }
-
-    function downloadWeeklyExcel() {
-        const data = window._currentWeeklyData;
-        if (!data || data.rows.length === 0) { alert('ডেটা নেই!'); return; }
-        const headers = ['SN', 'Department', 'Prod IC', 'Fixed MC QTY', `Avg Present (Last ${data.days} Days)`, `Avg MC Run (Last ${data.days} Days)`, 'Entries Count'];
-        const rows = data.rows.map(row => [row.sn, row.dept, row.icName || '-', row.fixedMC, row.avgPresent.toFixed(1), row.avgRun.toFixed(1), row.count]);
-        rows.push(['📌', 'Total / Average', '-', data.totalFixedMC, data.overallAvgPresent.toFixed(1), data.overallAvgRun.toFixed(1), data.totalCount]);
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-        XLSX.utils.book_append_sheet(wb, ws, `Weekly ${data.days} Days`);
-        XLSX.writeFile(wb, `Weekly_Summary_${data.days}days_${new Date().toISOString().slice(0,10)}.xlsx`);
-    }
-
-    function downloadExcel() {
-        if (filteredData.length === 0) { alert('ডেটা নেই!'); return; }
-        const headers = [
-            '#', 'Time', 'Date', 'Shift', 'Department', 'IC Name',
-            'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped',
-            'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem',
-            'Preventive Maintenance', 'No Demand (QTY)', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short',
-            'Total HR', 'Leave Employee', 'Absent Employee',
-            'Export MC', 'Domestic MC', 'Single MC', 'Double MC', 'No Demand (M)',
-            'Prod IC', 'SIC', 'MC Operator', 'Packaging Operator', 'Foreman', 'Senior Operator',
-            'Shrink-wrap Op', 'Printing Op', 'Mold Change Op', 'Mix/Recycle/Crush',
-            'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP',
-            'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'
-        ];
-        const keys = [
-            'timestamp', 'entryDate', 'shift', 'department', 'icName',
-            'totalMC', 'mcRunning', 'mcStopped', 'pctRunning', 'pctStopped',
-            'mpShort', 'moldProblem', 'moldChange', 'underSample', 'mcProblem',
-            'preventiveMaintenance', 'noDemandQty', 'materialMBShortage', 'overStockWIP', 'accessoriesShort',
-            'totalHR', 'leaveEmployee', 'absentEmployee',
-            'exportMC', 'domesticMC', 'singleMC', 'doubleMC', 'noDemand',
-            'prodIC', 'sic', 'mcOperator', 'packagingOperator', 'foreman', 'seniorOperator',
-            'shrinkOperator', 'printingOperator', 'moldChangeOperator', 'mixRecycle',
-            'subStore', 'inventoryOperator', 'fgDelivery', 'sharpTools', 'psi', 'erp',
-            'floorHousekeeping', 'rework', 'welding', 'hrTransfer'
-        ];
-        let csv = headers.join(',') + '\n';
-        filteredData.forEach((row, idx) => {
-            const line = [idx + 1];
-            const rawTimestamp = row.timestamp || '';
-            line.push(formatTime(rawTimestamp));
-            const rawDate = row.entryDate || '';
-            line.push(formatDate(rawDate));
-            for (let i = 2; i < keys.length; i++) {
-                const k = keys[i];
-                let val = row[k] !== undefined && row[k] !== null ? row[k] : '';
-                if (typeof val === 'string' && val.includes(',')) val = '"' + val + '"';
-                line.push(val);
-            }
-            csv += line.join(',') + '\n';
-        });
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `DPL_Report_${new Date().toISOString().slice(0,10)}.csv`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-    }
-
-    function showError(msg) {
-        document.getElementById('saifuddinTableContainer').innerHTML = `<div class="no-data">${msg}</div>`;
-        document.getElementById('mcSummaryTable').innerHTML = `<div class="no-data">${msg}</div>`;
-        document.getElementById('weeklySummaryContainer').innerHTML = `<div class="no-data">${msg}</div>`;
-        document.getElementById('groupATable').innerHTML = `<div class="no-data">${msg}</div>`;
-        document.getElementById('groupBTable').innerHTML = `<div class="no-data">${msg}</div>`;
-        document.getElementById('overallTable').innerHTML = `<div class="no-data">${msg}</div>`;
-        document.getElementById('missingContainer').innerHTML = `<div class="no-data">${msg}</div>`;
-        document.getElementById('rawDataTable').innerHTML = `<div class="no-data">${msg}</div>`;
-    }
-
-    // ===== হোয়াটসঅ্যাপ মেসেজ জেনারেট ও কপি (জাহিদ স্যার এর জন্য) =====
-    function updateWhatsAppMessage() {
-        const container = document.getElementById('whatsappMessageContent');
-        if (!container) return;
-
-        // ফিল্টার থেকে তারিখ ও শিফট নেওয়া (ডিফল্ট)
-        const dateVal = document.getElementById('filterDate').value;
-        const shiftVal = document.getElementById('filterShift').value;
-        // যদি ফিল্টার ফাঁকা থাকে, তাহলে ডিফল্ট মান বসানো
-        let displayDate = dateVal ? formatDate(dateVal) : '06-07-2026 ( Monday )';
-        let displayShift = (shiftVal !== 'All' && shiftVal !== '') ? shiftVal : 'Day';
-
-        // গ্রিটিং: "Good Day !!!"
-        const greeting = 'Good Day !!!';
-
-        // সারাংশের মান (ইতিমধ্যে renderCurrentSummary এ আপডেট হয়)
-        const totalPresent = document.getElementById('sumPresent').innerText || '831';
-        const totalAbsent = document.getElementById('sumAbsent').innerText || '58';
-        const totalNoDemand = document.getElementById('sumNoDemand').innerText || '45';
-        const totalMoldChange = document.getElementById('sumMoldChange').innerText || '34';
-        const mcStopManpower = document.getElementById('sumMCStopManpower').innerText || '90';
-
-        // গ্রুপ অনুযায়ী Present বের করা
-        let prodPresent = 0, packPresent = 0, commonPresent = 0;
-        if (filteredData && filteredData.length > 0) {
-            const prodDepts = [
-                'RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1',
-                'RIP> DPL> Plastic-6.2', 'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2',
-                'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4', 'Silicon Project'
-            ];
-            const packDepts = ['Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03'];
-            const commonDepts = [
-                'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
-                'Corporate sales Production.', 'Plastics-Recycle & Silo',
-                'Product Development & Mold Change', 'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
-            ];
-            filteredData.forEach(row => {
-                const dept = getVal(row, ['Department', 'department']);
-                const hr = getNum(row, ['Total HR', 'totalHR']);
-                if (prodDepts.includes(dept)) prodPresent += hr;
-                else if (packDepts.includes(dept)) packPresent += hr;
-                else if (commonDepts.includes(dept)) commonPresent += hr;
-            });
-        } else {
-            // ডিফল্ট মান (উদাহরণ)
-            prodPresent = 495;
-            packPresent = 115;
-            commonPresent = 221;
-        }
-
-        let moldProb = 0, mcProb = 0, doubleMC = 0, packagingOperator = 0;
-        if (filteredData && filteredData.length > 0) {
-            filteredData.forEach(row => {
-                moldProb += getNum(row, ['moldProblem']);
-                mcProb += getNum(row, ['mcProblem']);
-                doubleMC += getNum(row, ['doubleMC']);
-                packagingOperator += getNum(row, ['packagingOperator']);
-            });
-        } else {
-            // ডিফল্ট মান (উদাহরণ)
-            moldProb = 9;
-            mcProb = 7;
-            doubleMC = 48;
-            packagingOperator = 73;
-        }
-
-        // মেসেজ তৈরি (ঠিক যেমনটি দেখাতে চান)
-        const message = `Dear @ DPL DGM Sir, 
-Asslamualaikum ,
-${greeting} 
-Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Report. You Can Check The report. 
-
-📅 Date\t${displayDate}
-🕒 Shift\t${displayShift}
-👥 Total Present\t${totalPresent} (Breakdown Prod Team ${prodPresent} , Packaging Team ${packPresent}, Common Team ${commonPresent})
-❌ Total Absent\t${totalAbsent}
-📊 Total No Demand\t${totalNoDemand}
-🔧 Total Mold Change QTY\t${totalMoldChange}
-⛔ MC Stop (Manpower)\t${mcStopManpower}
-❌ Mold Prob -\t${moldProb}
-❌ MC Prob -\t${mcProb}
-👥 Double MC -\t${doubleMC}
-👥 Packaging Operator -\t${packagingOperator}`;
-
-        container.innerText = message;
-    }
-
-    function copyWhatsAppMessage() {
-        const content = document.getElementById('whatsappMessageContent');
-        if (!content) return;
-        const text = content.innerText;
-        navigator.clipboard.writeText(text).then(() => {
-            alert('✅ মেসেজ কপি হয়েছে! এখন হোয়াটসঅ্যাপে পেস্ট করুন।');
-        }).catch(() => {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            alert('✅ মেসেজ কপি হয়েছে!');
-        });
-    }
-
-    // ===== পেজ লোড হলে অটো-ফিল্টার + অটো-রিফ্রেশ শুরু =====
-    window.onload = function() {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        document.getElementById('filterDate').value = `${year}-${month}-${day}`;
-        const shift = getCurrentShift();
-        document.getElementById('filterShift').value = shift;
-        loadData();
-        const toggle = document.getElementById('autoRefreshToggle');
-        if (toggle.checked) {
-            startAutoRefresh();
-        }
-        setTimeout(updateWhatsAppMessage, 500);
-    };
-</script>
-</body>
-</html>
