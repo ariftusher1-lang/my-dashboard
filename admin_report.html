@@ -356,7 +356,7 @@
             border: 1px solid #e2e8f0;
         }
 
-        /* ===== নতুন MC ডিপার্টমেন্ট সারাংশ সেকশন ===== */
+        /* ===== নতুন MC ডিপার্টমেন্ট সারাংশ সেকশন (কলাম ক্রম ঠিক করা) ===== */
         .mc-dept-summary-wrap {
             background: white;
             border-radius: 12px;
@@ -553,7 +553,7 @@
     </div>
     <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
-    <!-- ===== নতুন: MC ডিপার্টমেন্ট সারাংশ (কপি করার জন্য) ===== -->
+    <!-- ===== নতুন: MC ডিপার্টমেন্ট সারাংশ (কপি করার জন্য) – সঠিক কলাম ক্রম ===== -->
     <div class="mc-dept-summary-wrap" id="mcDeptSummaryWrap">
         <div class="mc-dept-header">
             <span>🖨️ MC ডিপার্টমেন্ট সারাংশ (কপি করার জন্য)</span>
@@ -950,7 +950,7 @@
         document.getElementById('sumShift').innerText = displayShift;
     }
 
-    // ===== নতুন: MC ডিপার্টমেন্ট সারাংশ (টেক্সট আকারে কপি করার জন্য) - কলাম ক্রম ঠিক করা =====
+    // ===== নতুন: MC ডিপার্টমেন্ট সারাংশ – সঠিক কলাম ক্রম (Date, Shift, Department, IC Name, ...) =====
     function renderMcDeptSummary(data) {
         const container = document.getElementById('mcDeptSummaryContainer');
         // শুধু MC ডিপার্টমেন্ট ফিল্টার
@@ -980,9 +980,9 @@
             deptMap[dept].rows.push(row);
         });
 
-        // কলামের ক্রম (ইউজারের চাওয়া অনুযায়ী)
+        // কলামের ক্রম (ইউজারের চাওয়া অনুযায়ী – প্রথমে Date, Shift, Department, IC Name)
         const colOrder = [
-            'Department', 'Date', 'Shift', 'IC Name',
+            'Date', 'Shift', 'Department', 'IC Name',
             'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped',
             'Total HR', 'Leave Employee', 'Absent Employee',
             'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem',
@@ -1091,9 +1091,10 @@
             const dateDisplay = group.date ? formatDate(group.date) : '-';
             const shiftDisplay = group.shift || '-';
 
-            // এখন colOrder অনুযায়ী ডাটা পুশ
+            // এখন colOrder অনুযায়ী ডাটা তৈরি
+            // colOrder: Date, Shift, Department, IC Name, Total MC, MC Running, MC Stopped, % Running, % Stopped, ...
             const rowData = [
-                dept, dateDisplay, shiftDisplay, group.icName || '-',
+                dateDisplay, shiftDisplay, dept, group.icName || '-',
                 sum.totalMC, sum.mcRunning, sum.mcStopped,
                 runPct.toFixed(1) + '%', stopPct.toFixed(1) + '%',
                 sum.totalHR, sum.leaveEmployee, sum.absentEmployee,
@@ -1108,7 +1109,8 @@
 
             html += `<tr>`;
             rowData.forEach((val, idx) => {
-                if (idx === 0) {
+                // idx 0 = Date, 1 = Shift, 2 = Department, 3 = IC Name, 4 = Total MC, 5 = MC Running, 6 = MC Stopped, 7 = % Running, 8 = % Stopped
+                if (idx === 2) { // Department
                     html += `<td class="dept-name"><strong>${val}</strong></td>`;
                 } else if (idx === 7 || idx === 8) { // % Running / % Stopped
                     const cls = (idx === 7) ? pctClass : '';
@@ -1130,7 +1132,7 @@
         let totalPctClass = totalRunPct >= 80 ? 'green' : (totalRunPct >= 50 ? 'yellow' : 'red');
 
         const totalRowData = [
-            '📌 মোট', '-', '-', '-',
+            '-', '-', '📌 মোট', '-',
             grandTotal.totalMC, grandTotal.mcRunning, grandTotal.mcStopped,
             totalRunPct.toFixed(1) + '%', totalStopPct.toFixed(1) + '%',
             grandTotal.totalHR, grandTotal.leaveEmployee, grandTotal.absentEmployee,
@@ -1145,7 +1147,7 @@
 
         html += `<tr class="total-row">`;
         totalRowData.forEach((val, idx) => {
-            if (idx === 0) {
+            if (idx === 2) { // Department column er jaygay "📌 মোট"
                 html += `<td><strong>${val}</strong></td>`;
             } else if (idx === 7 || idx === 8) {
                 const cls = (idx === 7) ? totalPctClass : '';
@@ -1191,7 +1193,7 @@
             });
     }
 
-    // ===== MC ডিপার্টমেন্ট Excel ডাউনলোড (কলাম ক্রম ঠিক করা) =====
+    // ===== MC ডিপার্টমেন্ট Excel ডাউনলোড (কলাম ক্রম ঠিক) =====
     function downloadMcDeptExcel() {
         const data = window._mcDeptData;
         if (!data) { alert('ডেটা নেই!'); return; }
@@ -1261,7 +1263,7 @@
             const shiftDisplay = group.shift || '-';
 
             const rowData = [
-                dept, dateDisplay, shiftDisplay, group.icName || '-',
+                dateDisplay, shiftDisplay, dept, group.icName || '-',
                 sum.totalMC, sum.mcRunning, sum.mcStopped,
                 runPct.toFixed(1) + '%', stopPct.toFixed(1) + '%',
                 sum.totalHR, sum.leaveEmployee, sum.absentEmployee,
@@ -1281,7 +1283,7 @@
         const totalRunPct = g.totalMC > 0 ? (g.mcRunning / g.totalMC) * 100 : 0;
         const totalStopPct = g.totalMC > 0 ? (g.mcStopped / g.totalMC) * 100 : 0;
         const totalRowData = [
-            '📌 মোট', '-', '-', '-',
+            '-', '-', '📌 মোট', '-',
             g.totalMC, g.mcRunning, g.mcStopped,
             totalRunPct.toFixed(1) + '%', totalStopPct.toFixed(1) + '%',
             g.totalHR, g.leaveEmployee, g.absentEmployee,
