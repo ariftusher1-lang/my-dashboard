@@ -135,6 +135,50 @@
         .auto-status { font-size: 14px; font-weight: 600; color: #1b5e20; }
         .auto-status.off { color: #b71c1c; }
         #countdownDisplay { font-size: 14px; font-weight: 600; color: #0d47a1; min-width: 120px; }
+
+        /* ----- নতুন সারাংশ সেকশন ----- */
+        .summary-box {
+            background: white;
+            border-radius: 12px;
+            padding: 18px 22px;
+            margin: 15px 0 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-left: 6px solid #0d47a1;
+        }
+        .summary-header-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0d47a1;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #e3eef9;
+            padding-bottom: 6px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border-left: 3px solid #1976d2;
+        }
+        .summary-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .summary-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0d47a1;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -180,6 +224,20 @@
             <span id="autoStatusText" class="auto-status">চালু</span>
         </div>
         <span id="countdownDisplay">পরবর্তী আপডেট: ১০s</span>
+    </div>
+
+    <!-- ===== নতুন সারাংশ সেকশন ===== -->
+    <div class="summary-box" id="currentSummaryBox">
+        <div class="summary-header-text">📌 বর্তমান তারিখ ও শিফটের সারাংশ</div>
+        <div class="summary-grid">
+            <div class="summary-item"><span class="summary-label">📅 তারিখ</span><span class="summary-value" id="sumDate">-</span></div>
+            <div class="summary-item"><span class="summary-label">🕒 শিফট</span><span class="summary-value" id="sumShift">-</span></div>
+            <div class="summary-item"><span class="summary-label">👥 Total Present</span><span class="summary-value" id="sumPresent">0</span></div>
+            <div class="summary-item"><span class="summary-label">❌ Total Absent</span><span class="summary-value" id="sumAbsent">0</span></div>
+            <div class="summary-item"><span class="summary-label">📊 Total No Demand</span><span class="summary-value" id="sumNoDemand">0</span></div>
+            <div class="summary-item"><span class="summary-label">⛔ MC Stop (Manpower)</span><span class="summary-value" id="sumMCStopManpower">0</span></div>
+            <div class="summary-item"><span class="summary-label">⛔ MC Stop (No Demand)</span><span class="summary-value" id="sumMCStopNoDemand">0</span></div>
+        </div>
     </div>
 
     <div id="filterStatus" class="filter-status">⏳ ডেটা লোড হচ্ছে...</div>
@@ -530,6 +588,7 @@
     }
 
     function renderDashboard(data) {
+        renderCurrentSummary(data);  // <-- নতুন সেকশন রেন্ডার
         renderStats(data);
         renderSaifuddinTable(data);
         renderMcSummaryTable(data);
@@ -538,6 +597,32 @@
         renderOverall(data);
         renderMissing(data);
         renderRawData(data);
+    }
+
+    // ===== বর্তমান তারিখ ও শিফটের সারাংশ রেন্ডার =====
+    function renderCurrentSummary(data) {
+        let totalPresent = 0, totalAbsent = 0, totalNoDemand = 0;
+        let mcStopManpower = 0, mcStopNoDemand = 0;
+
+        data.forEach(row => {
+            totalPresent += getNum(row, ['Total HR', 'totalHR']);
+            totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
+            totalNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
+            mcStopManpower += getNum(row, ['MP Short', 'mpShort']);
+            mcStopNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
+        });
+
+        document.getElementById('sumPresent').innerText = totalPresent;
+        document.getElementById('sumAbsent').innerText = totalAbsent;
+        document.getElementById('sumNoDemand').innerText = totalNoDemand;
+        document.getElementById('sumMCStopManpower').innerText = mcStopManpower;
+        document.getElementById('sumMCStopNoDemand').innerText = mcStopNoDemand;
+
+        // তারিখ ও শিফট আপডেট
+        const date = document.getElementById('filterDate').value;
+        const shift = document.getElementById('filterShift').value;
+        document.getElementById('sumDate').innerText = date ? formatDate(date) : 'সব তারিখ';
+        document.getElementById('sumShift').innerText = shift !== 'All' ? shift : 'সব শিফট';
     }
 
     // ===== স্ট্যাটস =====
