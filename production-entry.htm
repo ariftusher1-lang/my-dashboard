@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>প্রোডাকশন + ডেলিভারি ম্যানেজমেন্ট</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Hind Siliguri', sans-serif; background: #f0f4f9; padding: 30px 15px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,20,40,0.10); padding: 30px 35px 45px; }
+        h1 { font-size: 28px; font-weight: 700; color: #0b2b44; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+        h1 small { font-size: 16px; font-weight: 400; color: #5f7d9c; }
+        .tabs { display: flex; gap: 6px; margin: 25px 0 20px; border-bottom: 2px solid #e2eaf2; padding-bottom: 6px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 22px; font-size: 15px; font-weight: 600; font-family: 'Hind Siliguri', sans-serif; border: none; background: transparent; color: #5f7d9c; border-radius: 8px 8px 0 0; cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { color: #0b2b44; background: #eaf3fe; border-bottom: 3px solid #2a7de1; }
+        .tab-btn:hover { background: #eef4fa; }
+        .tab-content { display: none; animation: fade 0.25s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fade { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group.full-width { grid-column: 1 / -1; }
+        .form-group label { font-size: 14px; font-weight: 600; color: #1a3a57; display: flex; align-items: center; gap: 6px; }
+        .form-group label .req { color: #e34f4f; font-weight: 700; }
+        .form-group label .hint { font-weight: 400; color: #7a94b0; font-size: 12px; }
+        .form-control { width: 100%; padding: 11px 14px; font-size: 15px; font-family: 'Hind Siliguri', sans-serif; border: 1.5px solid #dce4ec; border-radius: 10px; background: #fafcff; transition: border 0.2s, box-shadow 0.2s; color: #0b2b44; outline: none; }
+        .form-control:focus { border-color: #2a7de1; box-shadow: 0 0 0 4px rgba(42,125,225,0.12); background: #ffffff; }
+        .form-control:disabled, .form-control[readonly] { background: #f0f4fa; color: #1f3d5a; border-color: #dce4ec; }
+        select.form-control { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235f7d9c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px; }
+        .inline-row { display: flex; gap: 18px; flex-wrap: wrap; }
+        .inline-row .form-group { flex: 1; min-width: 120px; }
+        .readonly-box { background: #f2f6fc; border-radius: 10px; padding: 11px 14px; font-size: 15px; color: #0b2b44; border: 1.5px solid #e2eaf2; min-height: 46px; display: flex; align-items: center; word-break: break-word; }
+        .readonly-box .empty-hint { color: #a9bccf; font-weight: 300; }
+        .highlight-box { background: #eaf3fe; border-radius: 12px; padding: 12px 18px; border: 1.5px solid #c7ddf7; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .highlight-box .label { font-weight: 600; color: #1a3a57; font-size: 14px; }
+        .highlight-box .value { font-weight: 700; font-size: 20px; color: #0b2b44; background: #ffffff; padding: 4px 16px; border-radius: 8px; border: 1px solid #c7ddf7; min-width: 100px; text-align: center; }
+        .highlight-box .value.util-green { color: #1a8a4a; border-color: #b3dfc7; background: #edfaf2; }
+        .highlight-box .value.util-amber { color: #b0721a; border-color: #f0d6a8; background: #fef9ed; }
+        .highlight-box .value.util-red { color: #b33636; border-color: #f0c8c8; background: #fdf0f0; }
+        .btn-submit { grid-column: 1 / -1; padding: 14px 30px; font-size: 18px; font-weight: 600; font-family: 'Hind Siliguri', sans-serif; background: #0b2b44; color: #fff; border: none; border-radius: 12px; cursor: pointer; transition: 0.2s; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-submit:hover { background: #1a3f5e; }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-danger { background: #b33636; margin-top: 10px; }
+        .btn-danger:hover { background: #8f2a2a; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 30px; }
+        .summary-card { background: #f6faff; border-radius: 16px; padding: 20px 24px; border: 1px solid #dce8f5; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .summary-card h4 { font-size: 16px; font-weight: 600; color: #1a3a57; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .summary-card .date-tag { font-weight: 400; font-size: 14px; color: #5f7d9c; }
+        .summary-card .stat-row { display: flex; flex-wrap: wrap; gap: 16px 30px; margin-top: 6px; }
+        .summary-card .stat-item { display: flex; align-items: baseline; gap: 6px; font-size: 15px; color: #1f3d5a; }
+        .summary-card .stat-item strong { font-size: 20px; color: #0b2b44; font-weight: 700; }
+        .summary-card .stat-divider { border-top: 1px dashed #c7d8ea; margin: 10px 0 8px; }
+        .summary-card .shift-breakdown { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 6px; font-size: 14px; }
+        .summary-card .shift-breakdown .shift-item { display: flex; align-items: center; gap: 6px; }
+        .summary-card .shift-breakdown .shift-item .label { font-weight: 500; color: #3d6382; }
+        .filter-row { display: flex; flex-wrap: wrap; gap: 16px 20px; align-items: flex-end; background: #f6faff; padding: 16px 20px; border-radius: 14px; margin-bottom: 25px; border: 1px solid #dce8f5; }
+        .filter-row .form-group { min-width: 150px; flex: 1 0 auto; }
+        .filter-row .form-group label { font-size: 13px; font-weight: 500; }
+        .filter-row .btn-filter { padding: 9px 24px; background: #2a7de1; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: 'Hind Siliguri', sans-serif; transition: 0.2s; align-self: center; height: 44px; }
+        .filter-row .btn-filter:hover { background: #1a5fb0; }
+        .table-responsive { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 800px; }
+        table th { background: #eaf3fe; color: #0b2b44; font-weight: 600; padding: 12px 10px; border: 1px solid #d4e0ec; text-align: center; white-space: nowrap; }
+        table td { padding: 10px 10px; border: 1px solid #d4e0ec; text-align: center; vertical-align: middle; }
+        table tr:nth-child(even) { background: #f9fcff; }
+        .util-badge { padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 13px; display: inline-block; min-width: 60px; }
+        .util-badge.high { background: #e0f5e8; color: #1a6e3a; }
+        .util-badge.medium { background: #fef3d6; color: #8a6d1b; }
+        .util-badge.low { background: #fde8e8; color: #a33434; }
+        .no-data { text-align: center; padding: 40px 10px; color: #7a94b0; font-size: 16px; }
+        .summary-box { display: flex; flex-wrap: wrap; gap: 30px 50px; background: #f6faff; padding: 18px 24px; border-radius: 14px; border: 1px solid #dce8f5; margin-top: 20px; }
+        .summary-item { display: flex; align-items: baseline; gap: 8px; font-size: 15px; }
+        .summary-item strong { font-size: 18px; color: #0b2b44; }
+        .as-of-table { margin-top: 25px; }
+        .as-of-table h4 { font-size: 18px; color: #0b2b44; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        @media (max-width: 700px) {
+            .summary-grid { grid-template-columns: 1fr; }
+            .container { padding: 20px 15px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group.full-width { grid-column: 1; }
+            .inline-row { flex-direction: column; }
+            .filter-row { flex-direction: column; align-items: stretch; }
+            .filter-row .form-group { min-width: unset; }
+            .tabs { flex-wrap: wrap; }
+            .tab-btn { flex: 1; text-align: center; padding: 10px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>
+        🏭 প্রোডাকশন + ডেলিভারি ম্যানেজমেন্ট
+        <small>Entry & Report</small>
+    </h1>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="tabForm">📝 প্রোডাকশন এন্ট্রি</button>
+        <button class="tab-btn" data-tab="tabDelivery">🚚 ডেলিভারি এন্ট্রি</button>
+        <button class="tab-btn" data-tab="tabReport">📊 রিপোর্ট</button>
+    </div>
+
+    <!-- ===== TAB 1: PRODUCTION ENTRY ===== -->
+    <div id="tabForm" class="tab-content active">
+        <form id="entryForm" autocomplete="off">
+            <div class="form-grid">
+                <div class="form-group"><label for="entryDate">📅 তারিখ <span class="req">*</span></label><input type="date" id="entryDate" class="form-control" required /></div>
+                <div class="form-group"><label for="shiftSelect">⏰ শিফট <span class="req">*</span></label>
+                    <select id="shiftSelect" class="form-control" required>
+                        <option value="">— নির্বাচন করুন —</option>
+                        <option value="Day">Day Shift</option>
+                        <option value="Night">Night Shift</option>
+                    </select>
+                </div>
+                <div class="form-group full-width"><label for="icName">👤 ইনচার্জের নাম (IC Name) <span class="req">*</span></label>
+                    <select id="icName" class="form-control" required>
+                        <option value="">— ইনচার্জ নির্বাচন করুন —</option>
+                        <option value="Mr. Bipul">Mr. Bipul</option>
+                        <option value="Mr. Roni">Mr. Roni</option>
+                        <option value="Mr. Babul">Mr. Babul</option>
+                        <option value="Mr. Roton">Mr. Roton</option>
+                        <option value="Mr. Suruj">Mr. Suruj</option>
+                        <option value="Mr. Sakib">Mr. Sakib</option>
+                    </select>
+                </div>
+                <div class="form-group full-width"><label for="productCode">🔖 পণ্যের কোড <span class="req">*</span> <span class="hint">(Select Code → Auto-fill Name & Color)</span></label>
+                    <select id="productCode" class="form-control" required><option value="">— কোড নির্বাচন করুন —</option></select>
+                </div>
+                <div class="form-group"><label for="itemName">📦 আইটেমের নাম</label><div class="readonly-box" id="itemName"><span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span></div></div>
+                <div class="form-group"><label for="colorName">🎨 রঙ</label><div class="readonly-box" id="colorName"><span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span></div></div>
+                <div class="form-group full-width">
+                    <div class="inline-row">
+                        <div class="form-group"><label for="ctInput">⏱️ CT (সেকেন্ড) <span class="req">*</span></label><input type="number" id="ctInput" class="form-control" placeholder="যেমন 45" step="0.1" min="0.1" required /></div>
+                        <div class="form-group"><label for="cavityInput">🧩 Cavity <span class="req">*</span></label><input type="number" id="cavityInput" class="form-control" placeholder="যেমন 2" step="1" min="1" required /></div>
+                    </div>
+                </div>
+                <div class="form-group full-width">
+                    <div class="highlight-box"><span class="label">⚙️ Capacity <span style="font-weight:400;font-size:13px;color:#3d6382;">(3600/CT × Cavity × 24h)</span></span><span class="value" id="capacityDisplay">—</span></div>
+                </div>
+                <div class="form-group full-width"><label for="goodQtyInput">✅ Good Production QTY <span class="req">*</span></label><input type="number" id="goodQtyInput" class="form-control" placeholder="উৎপাদিত ভালো পণ্যের সংখ্যা" step="1" min="0" required /></div>
+                <div class="form-group full-width">
+                    <div class="highlight-box"><span class="label">📊 Utilization <span style="font-weight:400;font-size:13px;color:#3d6382;">(Good QTY / Capacity × 100)</span></span><span class="value" id="utilizationDisplay">—</span></div>
+                </div>
+                <button type="submit" class="btn-submit" id="submitBtn">💾 এন্ট্রি সংরক্ষণ করুন</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== TAB 2: DELIVERY ENTRY ===== -->
+    <div id="tabDelivery" class="tab-content">
+        <form id="deliveryForm" autocomplete="off">
+            <div class="form-grid">
+                <div class="form-group"><label for="deliveryDate">📅 তারিখ <span class="req">*</span></label><input type="date" id="deliveryDate" class="form-control" required /></div>
+                <div class="form-group"><label for="deliveryCode">🔖 পণ্যের কোড <span class="req">*</span> <span class="hint">(Select Code → Auto-fill Name & Color)</span></label>
+                    <select id="deliveryCode" class="form-control" required><option value="">— কোড নির্বাচন করুন —</option></select>
+                </div>
+                <div class="form-group"><label for="deliveryItemName">📦 আইটেমের নাম</label><div class="readonly-box" id="deliveryItemName"><span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span></div></div>
+                <div class="form-group"><label for="deliveryColorName">🎨 রঙ</label><div class="readonly-box" id="deliveryColorName"><span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span></div></div>
+                <div class="form-group full-width"><label for="deliveryQty">📦 ডেলিভারি QTY <span class="req">*</span></label><input type="number" id="deliveryQty" class="form-control" placeholder="ডেলিভারি পণ্যের সংখ্যা" step="1" min="1" required /></div>
+                <button type="submit" class="btn-submit" id="deliverySubmitBtn">🚚 ডেলিভারি সংরক্ষণ করুন</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== TAB 3: REPORT ===== -->
+    <div id="tabReport" class="tab-content">
+        <h3 style="margin-bottom:12px; color:#0b2b44;">📋 Executive Summary & এন্ট্রি লিস্ট</h3>
+
+        <div class="summary-grid" id="executiveSummary"></div>
+
+        <!-- === NEW: As of Production & Delivery Summary Table === -->
+        <div class="as-of-table">
+            <h4>📊 As of Production & Delivery Summary (সকল ডেটা)</h4>
+            <div class="table-responsive" id="asOfTableContainer">
+                <!-- dynamically filled -->
+            </div>
+        </div>
+
+        <!-- FILTER -->
+        <div class="filter-row">
+            <div class="form-group"><label for="filterDateFrom">তারিখ (থেকে)</label><input type="date" id="filterDateFrom" class="form-control" /></div>
+            <div class="form-group"><label for="filterDateTo">তারিখ (পর্যন্ত)</label><input type="date" id="filterDateTo" class="form-control" /></div>
+            <div class="form-group"><label for="filterShift">শিফট</label>
+                <select id="filterShift" class="form-control"><option value="">সব</option><option value="Day">Day</option><option value="Night">Night</option></select>
+            </div>
+            <div class="form-group"><label for="filterIC">ইনচার্জ</label>
+                <select id="filterIC" class="form-control"><option value="">সব</option><option value="Mr. Bipul">Mr. Bipul</option><option value="Mr. Roni">Mr. Roni</option><option value="Mr. Babul">Mr. Babul</option><option value="Mr. Roton">Mr. Roton</option><option value="Mr. Suruj">Mr. Suruj</option><option value="Mr. Sakib">Mr. Sakib</option></select>
+            </div>
+            <button class="btn-filter" id="applyFilterBtn">🔍 ফিল্টার প্রয়োগ</button>
+            <button class="btn-filter" style="background:#6c7a8d;" id="clearFilterBtn">❌ রিসেট</button>
+        </div>
+
+        <div class="table-responsive" id="reportTableContainer"></div>
+        <div class="summary-box" id="reportSummary"></div>
+
+        <button class="btn-submit btn-danger" id="deleteAllBtn" style="grid-column:unset; max-width:240px; margin-top:20px;">🗑️ সব ডেটা মুছুন</button>
+    </div>
+
+</div>
+
+<script>
+    // ================================================================
+    //  PRODUCT DATA
+    // ================================================================
+    const productData = [
+        { code: '88709', item: 'Decorate Chair (Diamond) - Rose Wood', color: 'Rose Wood' },
+        { code: '88706', item: 'Decorate Chair (Diamond) - SM Blue', color: 'SM Blue' },
+        { code: '88705', item: 'Decorate Chair (Diamond) - Red', color: 'Red' },
+        { code: '86140', item: 'Garden Chair (Net Flower) - Sandal Wood', color: 'Sandal Wood' },
+        { code: '86141', item: 'Garden Chair (Net Flower) - SM Blue', color: 'SM Blue' },
+        { code: '88704', item: 'Plastic Chair W/O Arm (Pati) - Sandal Wood', color: 'Sandal Wood' },
+        { code: '95633', item: 'Plastic Chair W/O Arm (Pati) - Rose Wood', color: 'Rose Wood' },
+        { code: '86117', item: 'Plastic Chair W/O Arm (Stick) - Sandal Wood', color: 'Sandal Wood' },
+        { code: '86107', item: 'Plastic Chair W/O Arm (Stick) - Rose Wood', color: 'Rose Wood' }
+    ];
+
+    // ================================================================
+    //  STORAGE KEYS
+    // ================================================================
+    const PROD_STORAGE_KEY = 'productionEntries';
+    const DELIVERY_STORAGE_KEY = 'deliveryEntries';
+
+    function getProdEntries() { try { return JSON.parse(localStorage.getItem(PROD_STORAGE_KEY)) || []; } catch { return []; } }
+    function saveProdEntries(entries) { localStorage.setItem(PROD_STORAGE_KEY, JSON.stringify(entries)); }
+    function getDeliveryEntries() { try { return JSON.parse(localStorage.getItem(DELIVERY_STORAGE_KEY)) || []; } catch { return []; } }
+    function saveDeliveryEntries(entries) { localStorage.setItem(DELIVERY_STORAGE_KEY, JSON.stringify(entries)); }
+    function deleteAllData() { localStorage.removeItem(PROD_STORAGE_KEY); localStorage.removeItem(DELIVERY_STORAGE_KEY); }
+
+    // ================================================================
+    //  DOM REFS (Production)
+    // ================================================================
+    const dateInput = document.getElementById('entryDate');
+    const shiftSelect = document.getElementById('shiftSelect');
+    const icName = document.getElementById('icName');
+    const productCode = document.getElementById('productCode');
+    const itemNameEl = document.getElementById('itemName');
+    const colorNameEl = document.getElementById('colorName');
+    const ctInput = document.getElementById('ctInput');
+    const cavityInput = document.getElementById('cavityInput');
+    const capacityDisplay = document.getElementById('capacityDisplay');
+    const goodQtyInput = document.getElementById('goodQtyInput');
+    const utilizationDisplay = document.getElementById('utilizationDisplay');
+    const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('entryForm');
+
+    // ================================================================
+    //  DOM REFS (Delivery)
+    // ================================================================
+    const deliveryDate = document.getElementById('deliveryDate');
+    const deliveryCode = document.getElementById('deliveryCode');
+    const deliveryItemName = document.getElementById('deliveryItemName');
+    const deliveryColorName = document.getElementById('deliveryColorName');
+    const deliveryQty = document.getElementById('deliveryQty');
+    const deliveryForm = document.getElementById('deliveryForm');
+    const deliverySubmitBtn = document.getElementById('deliverySubmitBtn');
+
+    // ================================================================
+    //  POPULATE DROPDOWNS
+    // ================================================================
+    function populateDropdowns() {
+        [productCode, deliveryCode].forEach(sel => {
+            sel.innerHTML = '<option value="">— কোড নির্বাচন করুন —</option>';
+            productData.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.code;
+                opt.textContent = `${p.code}  |  ${p.item}`;
+                sel.appendChild(opt);
+            });
+        });
+    }
+    populateDropdowns();
+
+    function setDates() {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        const val = `${y}-${m}-${d}`;
+        dateInput.value = val;
+        deliveryDate.value = val;
+    }
+    setDates();
+
+    // ---- Auto-fill (Production) ----
+    productCode.addEventListener('change', function() {
+        const found = productData.find(p => p.code === this.value);
+        if (found) { itemNameEl.textContent = found.item; colorNameEl.textContent = found.color; }
+        else { itemNameEl.innerHTML = '<span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span>'; colorNameEl.innerHTML = '<span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span>'; }
+        calculateAll();
+    });
+
+    // ---- Auto-fill (Delivery) ----
+    deliveryCode.addEventListener('change', function() {
+        const found = productData.find(p => p.code === this.value);
+        if (found) { deliveryItemName.textContent = found.item; deliveryColorName.textContent = found.color; }
+        else { deliveryItemName.innerHTML = '<span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span>'; deliveryColorName.innerHTML = '<span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span>'; }
+    });
+
+    // ---- Capacity & Utilization ----
+    function calculateCapacity() {
+        const ct = parseFloat(ctInput.value);
+        const cavity = parseInt(cavityInput.value);
+        if (!ct || ct <= 0 || !cavity || cavity <= 0) { capacityDisplay.textContent = '—'; return null; }
+        const capacity = (3600 / ct) * cavity * 24;
+        const rounded = Math.round(capacity * 100) / 100;
+        capacityDisplay.textContent = rounded.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        return rounded;
+    }
+    function calculateUtilization() {
+        const capacity = parseFloat(capacityDisplay.textContent.replace(/,/g, ''));
+        const goodQty = parseFloat(goodQtyInput.value);
+        if (!capacity || capacity <= 0 || !goodQty || goodQty < 0) { utilizationDisplay.textContent = '—'; utilizationDisplay.className = 'value'; return; }
+        const util = (goodQty / capacity) * 100;
+        const rounded = Math.round(util * 100) / 100;
+        utilizationDisplay.textContent = rounded.toFixed(1) + '%';
+        utilizationDisplay.className = 'value';
+        if (rounded >= 85) utilizationDisplay.classList.add('util-green');
+        else if (rounded >= 60) utilizationDisplay.classList.add('util-amber');
+        else utilizationDisplay.classList.add('util-red');
+    }
+    function calculateAll() {
+        const cap = calculateCapacity();
+        if (cap !== null) calculateUtilization();
+        else { utilizationDisplay.textContent = '—'; utilizationDisplay.className = 'value'; }
+    }
+    ctInput.addEventListener('input', calculateAll);
+    cavityInput.addEventListener('input', calculateAll);
+    goodQtyInput.addEventListener('input', calculateUtilization);
+
+    // ---- Submit Production ----
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const date = dateInput.value, shift = shiftSelect.value, ic = icName.value, code = productCode.value;
+        const item = itemNameEl.textContent, color = colorNameEl.textContent, ct = ctInput.value, cavity = cavityInput.value;
+        const capacity = capacityDisplay.textContent, goodQty = goodQtyInput.value, utilization = utilizationDisplay.textContent;
+        if (!date || !shift || !ic || !code || !ct || parseFloat(ct)<=0 || !cavity || parseInt(cavity)<=0 || goodQty==='' || parseFloat(goodQty)<0 || capacity==='—') {
+            alert('সব ফিল্ড সঠিকভাবে পূরণ করুন।'); return;
+        }
+        const entry = { id: Date.now(), date, shift, icName: ic, productCode: code, itemName: item, colorName: color, ct: parseFloat(ct), cavity: parseInt(cavity), capacity: parseFloat(capacity.replace(/,/g,'')), goodQty: parseFloat(goodQty), utilization: parseFloat(utilization) };
+        const entries = getProdEntries(); entries.push(entry); saveProdEntries(entries);
+        alert('✅ প্রোডাকশন এন্ট্রি সংরক্ষণ করা হয়েছে!');
+        goodQtyInput.value = ''; utilizationDisplay.textContent = '—'; utilizationDisplay.className = 'value'; goodQtyInput.focus();
+        if (document.getElementById('tabReport').classList.contains('active')) renderReport();
+    });
+    goodQtyInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); submitBtn.click(); } });
+
+    // ---- Submit Delivery ----
+    deliveryForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const date = deliveryDate.value, code = deliveryCode.value, item = deliveryItemName.textContent, color = deliveryColorName.textContent, qty = deliveryQty.value;
+        if (!date || !code || !qty || parseFloat(qty) <= 0) { alert('দয়া করে তারিখ, কোড এবং সঠিক QTY দিন।'); return; }
+        const deliveryEntry = { id: Date.now(), date, productCode: code, itemName: item, colorName: color, qty: parseFloat(qty) };
+        const deliveries = getDeliveryEntries(); deliveries.push(deliveryEntry); saveDeliveryEntries(deliveries);
+        alert('✅ ডেলিভারি এন্ট্রি সংরক্ষণ করা হয়েছে!');
+        deliveryQty.value = ''; deliveryQty.focus();
+        if (document.getElementById('tabReport').classList.contains('active')) renderReport();
+    });
+    deliveryQty.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); deliverySubmitBtn.click(); } });
+
+    // ================================================================
+    //  TABS
+    // ================================================================
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = { tabForm: document.getElementById('tabForm'), tabDelivery: document.getElementById('tabDelivery'), tabReport: document.getElementById('tabReport') };
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            Object.values(tabContents).forEach(c => c.classList.remove('active'));
+            const target = this.dataset.tab;
+            if (tabContents[target]) tabContents[target].classList.add('active');
+            if (target === 'tabReport') renderReport();
+        });
+    });
+
+    // ================================================================
+    //  RENDER REPORT
+    // ================================================================
+    function renderReport() {
+        const prodEntries = getProdEntries();
+        const deliveryEntries = getDeliveryEntries();
+
+        // ---- Executive Summary (cards) ----
+        document.getElementById('executiveSummary').innerHTML = buildExecutiveSummary(prodEntries, deliveryEntries);
+
+        // ---- As of Table (all data, no filter) ----
+        renderAsOfTable(prodEntries, deliveryEntries);
+
+        // ---- Filtered Production Table ----
+        const dateFrom = document.getElementById('filterDateFrom').value;
+        const dateTo = document.getElementById('filterDateTo').value;
+        const shiftFilter = document.getElementById('filterShift').value;
+        const icFilter = document.getElementById('filterIC').value;
+
+        let filtered = prodEntries.filter(e => {
+            if (dateFrom && e.date < dateFrom) return false;
+            if (dateTo && e.date > dateTo) return false;
+            if (shiftFilter && e.shift !== shiftFilter) return false;
+            if (icFilter && e.icName !== icFilter) return false;
+            return true;
+        });
+        filtered.sort((a, b) => (a.date < b.date ? 1 : -1));
+
+        const container = document.getElementById('reportTableContainer');
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="no-data">📭 কোনো প্রোডাকশন এন্ট্রি পাওয়া যায়নি।</div>`;
+        } else {
+            let html = `<table><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>ইনচার্জ</th><th>কোড</th><th>আইটেম</th><th>রঙ</th><th>CT</th><th>Cavity</th><th>Capacity</th><th>Good QTY</th><th>Utilization</th></tr></thead><tbody>`;
+            filtered.forEach((e, idx) => {
+                const utilClass = e.utilization >= 85 ? 'high' : (e.utilization >= 60 ? 'medium' : 'low');
+                html += `<tr><td>${idx+1}</td><td>${e.date}</td><td>${e.shift}</td><td>${e.icName}</td><td>${e.productCode}</td><td>${e.itemName}</td><td>${e.colorName}</td><td>${e.ct}</td><td>${e.cavity}</td><td>${e.capacity.toLocaleString()}</td><td>${e.goodQty}</td><td><span class="util-badge ${utilClass}">${e.utilization.toFixed(1)}%</span></td></tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        const totalEntries = filtered.length;
+        const totalGoodQty = filtered.reduce((s, e) => s + e.goodQty, 0);
+        const avgUtil = totalEntries > 0 ? (filtered.reduce((s, e) => s + e.utilization, 0) / totalEntries) : 0;
+        document.getElementById('reportSummary').innerHTML = `
+            <div class="summary-item">📌 মোট প্রোডাকশন এন্ট্রি: <strong>${totalEntries}</strong></div>
+            <div class="summary-item">✅ মোট Good QTY: <strong>${totalGoodQty.toLocaleString()}</strong></div>
+            <div class="summary-item">📊 গড় Utilization: <strong>${avgUtil.toFixed(1)}%</strong></div>
+        `;
+    }
+
+    // ================================================================
+    //  AS OF TABLE (Production + Delivery combined by product)
+    // ================================================================
+    function renderAsOfTable(prodEntries, deliveryEntries) {
+        const container = document.getElementById('asOfTableContainer');
+        if (prodEntries.length === 0 && deliveryEntries.length === 0) {
+            container.innerHTML = `<div class="no-data">📭 এখনো কোনো এন্ট্রি নেই।</div>`;
+            return;
+        }
+
+        // Aggregate by product code
+        const map = new Map();
+        productData.forEach(p => {
+            map.set(p.code, {
+                code: p.code,
+                item: p.item,
+                color: p.color,
+                totalCapacity: 0,
+                totalProdQty: 0,
+                totalDeliveryQty: 0
+            });
+        });
+
+        // Add production data
+        prodEntries.forEach(e => {
+            if (map.has(e.productCode)) {
+                const rec = map.get(e.productCode);
+                rec.totalCapacity += e.capacity;
+                rec.totalProdQty += e.goodQty;
+            }
+        });
+
+        // Add delivery data
+        deliveryEntries.forEach(e => {
+            if (map.has(e.productCode)) {
+                const rec = map.get(e.productCode);
+                rec.totalDeliveryQty += e.qty;
+            }
+        });
+
+        // Build table
+        let html = `<table>
+            <thead><tr>
+                <th>কোড</th><th>আইটেমের নাম</th><th>রঙ</th>
+                <th>As of Capacity</th><th>As of Production</th><th>As of Delivery</th>
+            </tr></thead><tbody>`;
+
+        let grandCap = 0, grandProd = 0, grandDel = 0;
+        map.forEach(rec => {
+            if (rec.totalCapacity > 0 || rec.totalProdQty > 0 || rec.totalDeliveryQty > 0) {
+                html += `<tr>
+                    <td>${rec.code}</td>
+                    <td>${rec.item}</td>
+                    <td>${rec.color}</td>
+                    <td>${rec.totalCapacity.toLocaleString()}</td>
+                    <td>${rec.totalProdQty.toLocaleString()}</td>
+                    <td>${rec.totalDeliveryQty.toLocaleString()}</td>
+                </tr>`;
+                grandCap += rec.totalCapacity;
+                grandProd += rec.totalProdQty;
+                grandDel += rec.totalDeliveryQty;
+            }
+        });
+
+        // Grand total row
+        html += `<tr style="font-weight:700; background:#eaf3fe;">
+            <td colspan="3">সর্বমোট (Grand Total)</td>
+            <td>${grandCap.toLocaleString()}</td>
+            <td>${grandProd.toLocaleString()}</td>
+            <td>${grandDel.toLocaleString()}</td>
+        </tr>`;
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    // ================================================================
+    //  EXECUTIVE SUMMARY (cards)
+    // ================================================================
+    function buildExecutiveSummary(prodEntries, deliveryEntries) {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const yStr = yesterday.toISOString().split('T')[0];
+        const tStr = today.toISOString().split('T')[0];
+
+        const yProd = prodEntries.filter(e => e.date === yStr);
+        const tProd = prodEntries.filter(e => e.date === tStr);
+        const yProdCap = yProd.reduce((s, e) => s + e.capacity, 0);
+        const yProdQty = yProd.reduce((s, e) => s + e.goodQty, 0);
+        const tProdCap = tProd.reduce((s, e) => s + e.capacity, 0);
+        const tProdQty = tProd.reduce((s, e) => s + e.goodQty, 0);
+
+        const yDel = deliveryEntries.filter(e => e.date === yStr);
+        const tDel = deliveryEntries.filter(e => e.date === tStr);
+        const yDelQty = yDel.reduce((s, e) => s + e.qty, 0);
+        const tDelQty = tDel.reduce((s, e) => s + e.qty, 0);
+
+        const formatNum = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+        if (prodEntries.length === 0 && deliveryEntries.length === 0) {
+            return `<div class="summary-card" style="grid-column:1/-1; text-align:center; color:#7a94b0; padding:30px;">
+                        📭 এখনো কোনো এন্ট্রি নেই। এন্ট্রি ফর্ম থেকে ডেটা দিন।
+                    </div>`;
+        }
+
+        return `
+            <div class="summary-card">
+                <h4>📆 গতকাল (${yStr}) <span class="date-tag">Production & Delivery</span></h4>
+                <div class="stat-row">
+                    <div class="stat-item">⚙️ Prod Cap: <strong>${formatNum(yProdCap)}</strong></div>
+                    <div class="stat-item">✅ Prod QTY: <strong>${formatNum(yProdQty)}</strong></div>
+                    <div class="stat-item">🚚 Delivery QTY: <strong>${formatNum(yDelQty)}</strong></div>
+                </div>
+            </div>
+            <div class="summary-card">
+                <h4>📌 আজ (${tStr}) <span class="date-tag">As of Production & Delivery</span></h4>
+                <div class="stat-row">
+                    <div class="stat-item">⚙️ Prod Cap: <strong>${formatNum(tProdCap)}</strong></div>
+                    <div class="stat-item">✅ Prod QTY: <strong>${formatNum(tProdQty)}</strong></div>
+                    <div class="stat-item">🚚 Delivery QTY: <strong>${formatNum(tDelQty)}</strong></div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ================================================================
+    //  FILTER BUTTONS & DELETE ALL
+    // ================================================================
+    document.getElementById('applyFilterBtn').addEventListener('click', renderReport);
+    document.getElementById('clearFilterBtn').addEventListener('click', function() {
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        document.getElementById('filterShift').value = '';
+        document.getElementById('filterIC').value = '';
+        renderReport();
+    });
+    document.getElementById('deleteAllBtn').addEventListener('click', function() {
+        if (confirm('⚠️ সব প্রোডাকশন ও ডেলিভারি ডেটা মুছে ফেলতে চান?')) { deleteAllData(); renderReport(); alert('সব ডেটা মুছে ফেলা হয়েছে।'); }
+    });
+
+    // ================================================================
+    //  INIT
+    // ================================================================
+    ctInput.value = ''; cavityInput.value = ''; capacityDisplay.textContent = '—'; utilizationDisplay.textContent = '—';
+    console.log('✅ Production + Delivery Entry with As-of Table ready.');
+</script>
+
+</body>
+</html>
