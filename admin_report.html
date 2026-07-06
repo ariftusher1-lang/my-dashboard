@@ -11,7 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
     </script>
     <style>
-        /* ===== সম্পূর্ণ স্টাইল (আগের মতোই) ===== */
+        /* ===== সম্পূর্ণ স্টাইল ===== */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -27,6 +27,29 @@
             margin: 0 auto;
             padding: 0 10px;
         }
+
+        /* ----- ডিজিটাল ঘড়ি (লাল) ----- */
+        #clockContainer {
+            text-align: center;
+            background: #000;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 2px solid #ff0000;
+        }
+        #digitalClock {
+            color: #ff0000;
+            font-size: 3.2rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
+        }
+        @media (max-width: 600px) {
+            #digitalClock { font-size: 2.2rem; }
+        }
+
         .header {
             background: linear-gradient(135deg, #0d47a1, #1976d2);
             color: white;
@@ -1009,6 +1032,16 @@
             border-top: 1px solid rgba(255, 255, 255, 0.3);
             padding-top: 2px;
         }
+        /* সাব-হেডার (📊 Metric) এর জন্য আলাদা স্টাইল */
+        .mc-horizontal-table thead .sub-header-metric {
+            font-weight: 400;
+            font-size: 11px;
+            opacity: 0.85;
+            display: block;
+            padding: 2px 0;
+            background: #0d47a1;
+            color: #fff;
+        }
         .mc-horizontal-table tbody td {
             padding: 5px 6px;
             border-bottom: 1px solid #e8ecf1;
@@ -1121,6 +1154,12 @@
 </head>
 <body>
     <div class="container" id="app">
+
+        <!-- ===== ডিজিটাল ঘড়ি (সবার উপরে) ===== -->
+        <div id="clockContainer">
+            <span id="digitalClock">00:00:00</span>
+        </div>
+
         <!-- ===== হেডার ===== -->
         <div class="header">
             <h1>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</h1>
@@ -1217,7 +1256,7 @@
         </div>
         <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
-        <!-- ===== MC ডিপার্টমেন্ট হরাইজন্টাল সারাংশ (দুই-লাইন হেডার) ===== -->
+        <!-- ===== MC ডিপার্টমেন্ট হরাইজন্টাল সারাংশ (তিন-লাইন হেডার) ===== -->
         <div class="mc-dept-summary-wrap" id="mcDeptSummaryWrap">
             <div class="mc-dept-header">
                 <span>🖨️ MC ডিপার্টমেন্ট সারাংশ (হরাইজন্টাল – কপি করার জন্য)</span>
@@ -1417,6 +1456,17 @@
         let autoRefreshInterval = null;
         let countdownInterval = null;
         let secondsLeft = 10;
+
+        // ============================================================
+        // DIGITAL CLOCK
+        // ============================================================
+        function updateDigitalClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+            document.getElementById('digitalClock').textContent = timeStr;
+        }
+        setInterval(updateDigitalClock, 1000);
+        updateDigitalClock();
 
         // ============================================================
         // AUTO-REFRESH
@@ -1918,7 +1968,7 @@
             window._saifuddinHeaders = headers;
         }
 
-        // ---- MC Department Horizontal Summary (Two-line Header) ----
+        // ---- MC Department Horizontal Summary (Three-line Header) ----
         function renderMcDeptSummary(data) {
             const container = document.getElementById('mcDeptSummaryContainer');
             const mcData = data.filter(row => {
@@ -2095,24 +2145,39 @@
                 { key: 'hrTransfer', label: 'HR Transfer' }
             ];
 
+            // তিন-লাইন হেডার তৈরি
             let html = `<div class="mc-horizontal-scroll">`;
             html += `<table class="mc-horizontal-table">`;
             html += `<thead>`;
-            // সারি ১: Metric + Department Names + Grand Total
+            
+            // সারি 1: "📊 Metric" – শুধু প্রথম কলামে সাব-হেডার হিসেবে, বাকি কলাম ফাঁকা
             html += `<tr>`;
-            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1;" rowspan="2">📊 Metric</th>`;
+            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center;" class="sub-header-metric">📊 Metric</th>`;
+            depts.forEach(() => {
+                html += `<th style="background:#0d47a1; color:white; font-weight:400; font-size:10px;"></th>`;
+            });
+            html += `<th style="background:#1a237e; color:white; font-weight:400; font-size:10px;"></th>`;
+            html += `</tr>`;
+            
+            // সারি 2: ডিপার্টমেন্টের নাম (সংক্ষিপ্ত) + Grand Total
+            html += `<tr>`;
+            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center; font-weight:700; font-size:12px;">Department</th>`;
             depts.forEach(dept => {
                 const shortName = dept.replace('RIP> DPL> ', '').replace('Plastic-', 'P-');
-                html += `<th style="min-width:90px;" class="dept-header" colspan="1">${shortName}</th>`;
+                html += `<th style="min-width:90px;" class="dept-header">${shortName}</th>`;
             });
-            html += `<th style="min-width:90px;background:#1a237e;color:white;" rowspan="2">📌 Grand Total</th>`;
+            html += `<th style="min-width:90px;background:#1a237e;color:white; font-weight:700; font-size:12px;">📌 Grand Total</th>`;
             html += `</tr>`;
-            // সারি ২: "Entry Output" সাব-হেডার
+            
+            // সারি 3: "Entry Output" সাব-হেডার
             html += `<tr>`;
+            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; font-weight:400; font-size:10px; color:white; border-top:1px solid rgba(255,255,255,0.3); text-align:center;">&nbsp;</th>`;
             depts.forEach(() => {
                 html += `<th style="font-weight:400; font-size:10px; background:#0d47a1; color:white; border-top:1px solid rgba(255,255,255,0.3);">Entry Output</th>`;
             });
+            html += `<th style="font-weight:400; font-size:10px; background:#1a237e; color:white; border-top:1px solid rgba(255,255,255,0.3);">Total</th>`;
             html += `</tr>`;
+            
             html += `</thead>`;
             html += `<tbody>`;
 
