@@ -662,15 +662,16 @@
 
 <script>
     // ================================================================
-    //  🔥 FIREBASE CONFIGURATION (YOUR config from screenshot)
+    //  🔥 FIREBASE CONFIGURATION (EXACTLY FROM YOUR SCREENSHOT)
     // ================================================================
     const firebaseConfig = {
-        apiKey: "AIzaSyCVGfaUooJfTzfpfyMLI7DV14MGfJZ1G9o",
+        apiKey: "AIzaSyCV6Fal0oJfTzfpFyMLl7DV14MGfJZ1G9o",
         authDomain: "production-app-78f2a.firebaseapp.com",
         projectId: "production-app-78f2a",
-        storageBucket: "production-app-78f2a.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        storageBucket: "production-app-78f2a.firebasestorage.app",
+        messagingSenderId: "414146713826",
+        appId: "1:414146713826:web:6e2b70a7d692b954ab26bb",
+        measurementId: "G-ETYYEFFJN7"
     };
 
     // Initialize Firebase
@@ -719,6 +720,7 @@
             const docRef = await db.collection('production').add(entry);
             return { success: true, id: docRef.id };
         } catch (error) {
+            console.error('Add error:', error);
             return { success: false, error: error.message };
         }
     }
@@ -728,6 +730,7 @@
             await db.collection('production').doc(id).update(data);
             return { success: true };
         } catch (error) {
+            console.error('Update error:', error);
             return { success: false, error: error.message };
         }
     }
@@ -742,6 +745,7 @@
             await batch.commit();
             return { success: true };
         } catch (error) {
+            console.error('Delete all error:', error);
             return { success: false, error: error.message };
         }
     }
@@ -766,6 +770,7 @@
             const docRef = await db.collection('delivery').add(entry);
             return { success: true, id: docRef.id };
         } catch (error) {
+            console.error('Add delivery error:', error);
             return { success: false, error: error.message };
         }
     }
@@ -780,6 +785,7 @@
             await batch.commit();
             return { success: true };
         } catch (error) {
+            console.error('Delete all delivery error:', error);
             return { success: false, error: error.message };
         }
     }
@@ -796,7 +802,7 @@
     const DELETE_PASSWORD = 'arif';
 
     // ================================================================
-    //  DOM REFS (same as before)
+    //  DOM REFS
     // ================================================================
     const formTitle = document.getElementById('formTitle');
     const editId = document.getElementById('editId');
@@ -989,7 +995,7 @@
     });
 
     // ================================================================
-    //  PRODUCTION SUBMIT (Firebase version with better error handling)
+    //  PRODUCTION SUBMIT (Firebase version)
     // ================================================================
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1042,20 +1048,17 @@
             
             if (result.success) {
                 alert(editIdValue ? '✅ এন্ট্রি আপডেট করা হয়েছে!' : '✅ প্রোডাকশন এন্ট্রি সংরক্ষণ করা হয়েছে!');
-                resetForm();
                 if (!editIdValue) {
                     goodQtyInput.value = '';
                     causeInput.value = '';
                     utilizationDisplay.textContent = '—';
                     utilizationDisplay.className = 'value';
                     goodQtyInput.focus();
-                }
-                if (document.getElementById('tabReport').classList.contains('active')) {
-                    renderReport();
                 } else {
-                    // যদি রিপোর্ট ট্যাব না খোলা থাকে, তবুও ডেটা রিফ্রেশ করুন
-                    renderReport();
+                    resetForm();
                 }
+                // Always re-render report to show updated data
+                renderReport();
             } else {
                 alert('❌ সংরক্ষণ ব্যর্থ: ' + result.error);
             }
@@ -1100,7 +1103,7 @@
                 alert('✅ ডেলিভারি এন্ট্রি সংরক্ষণ করা হয়েছে!');
                 deliveryQty.value = '';
                 deliveryQty.focus();
-                if (document.getElementById('tabReport').classList.contains('active')) renderReport();
+                renderReport();
             } else {
                 alert('❌ সংরক্ষণ ব্যর্থ: ' + result.error);
             }
@@ -1356,7 +1359,7 @@
     });
 
     // ================================================================
-    //  DOWNLOAD FUNCTIONS (same as before)
+    //  DOWNLOAD FUNCTIONS
     // ================================================================
     document.getElementById('downloadPdfBtn').addEventListener('click', function() {
         const element = document.getElementById('reportContent');
