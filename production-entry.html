@@ -354,6 +354,20 @@
         }
         .btn-filter.details:hover { background: #0f7a3a; }
         .btn-filter.details:active { transform: scale(0.94); }
+        .btn-filter.download-sm {
+            padding: 6px 14px;
+            font-size: 13px;
+            background: #1a8a4a;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: 'Hind Siliguri', sans-serif;
+        }
+        .btn-filter.download-sm:hover { background: #0f7a3a; }
+        .btn-filter.download-sm:active { transform: scale(0.94); }
 
         /* ===== FILTER ROW – ONE LINE ===== */
         .filter-row {
@@ -927,10 +941,13 @@
                 <div class="summary-grid" id="executiveSummary"></div>
             </div>
 
-            <!-- Last Production Execution Summary (Latest Date) -->
+            <!-- Last Production Execution Summary (Latest Date) with Download Image -->
             <div class="card" style="padding-bottom:16px;">
                 <div class="card-title">📋 Last Production Execution Summary <span class="badge">Latest Date</span></div>
                 <div class="table-wrap" id="lastExecutionContainer"></div>
+                <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-filter download-sm" id="downloadLastExecImage">🖼️ Image Download</button>
+                </div>
             </div>
 
             <!-- As of Production Vs GRN QTY (with GREEN Details + Download inside card) -->
@@ -1225,10 +1242,10 @@
     const DELETE_PASSWORD = 'arif';
 
     // ================================================================
-    //  PAGINATION STATE (10 items per page)
+    //  PAGINATION STATE (6 items per page)
     // ================================================================
     let currentPage = 1;
-    const itemsPerPage = 10;  // Show 10 entries per page
+    const itemsPerPage = 6;
     let currentFilteredData = [];
 
     // ================================================================
@@ -1576,6 +1593,40 @@
     });
 
     // ================================================================
+    //  DOWNLOAD Last Execution Summary as IMAGE
+    // ================================================================
+    document.getElementById('downloadLastExecImage').addEventListener('click', function() {
+        const container = document.getElementById('lastExecutionContainer');
+        // If no data, show alert
+        if (!container.querySelector('table')) {
+            alert('ডাউনলোড করার মতো ডেটা নেই।');
+            return;
+        }
+        // Temporarily remove the border-radius of table-wrap to avoid clipping
+        const wrap = container.closest('.table-wrap');
+        const originalBorderRadius = wrap.style.borderRadius;
+        wrap.style.borderRadius = '0';
+        html2canvas(container, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            width: container.scrollWidth,
+            height: container.scrollHeight
+        }).then(canvas => {
+            wrap.style.borderRadius = originalBorderRadius;
+            const link = document.createElement('a');
+            link.download = `Last_Production_Summary_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(err => {
+            wrap.style.borderRadius = originalBorderRadius;
+            alert('Image তৈরি করতে সমস্যা হয়েছে।');
+            console.error(err);
+        });
+    });
+
+    // ================================================================
     //  MODAL FUNCTIONS (for Delivery Details from Prod Vs GRN only)
     // ================================================================
     let currentModalData = [];
@@ -1752,7 +1803,7 @@
     }
 
     // ================================================================
-    //  RENDER PAGINATED PRODUCTION LIST (10 per page)
+    //  RENDER PAGINATED PRODUCTION LIST (6 per page)
     // ================================================================
     function renderPaginatedTable(data, containerId) {
         const container = document.getElementById(containerId);
@@ -2101,7 +2152,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with 10 items/page and filter row in one line.');
+    console.log('✅ Production + Delivery Entry with Last Execution Image Download.');
     renderReport();
 </script>
 </body>
