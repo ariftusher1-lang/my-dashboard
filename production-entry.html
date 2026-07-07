@@ -327,8 +327,20 @@
         .btn-filter.gray { background: #6c7a8d; }
         .btn-filter.download { background: #1a8a4a; }
         .btn-filter.download:active { background: #0f6b36; }
-        .btn-filter.details { background: #b0721a; }
-        .btn-filter.details:active { background: #8a5f14; }
+        .btn-filter.details {
+            background: #b0721a;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Hind Siliguri', sans-serif;
+            cursor: pointer;
+            transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-filter.details:active { transform: scale(0.94); }
 
         .filter-row {
             background: #f6faff;
@@ -702,6 +714,7 @@
                 <div class="card-title" id="formTitle">📋 Chair Prod Entry <span class="badge">New</span></div>
                 <input type="hidden" id="editId" value="" />
                 <div class="form-grid">
+                    <!-- Same as before -->
                     <div class="form-group">
                         <label for="entryDate" class="label-blue">📅 Date <span class="req">*</span></label>
                         <input type="date" id="entryDate" class="form-control" required />
@@ -869,7 +882,7 @@
                 <div class="table-wrap" id="asof15DaysContainer"></div>
             </div>
 
-            <!-- As of Production Vs GRN QTY -->
+            <!-- As of Production Vs GRN QTY (with Details button) -->
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">📊 As of Production Vs GRN QTY <span class="badge">Up to Today</span></div>
                 <div class="table-wrap" id="prodVsGrnContainer"></div>
@@ -932,7 +945,7 @@
         <button class="btn-submit danger" id="deleteAllBtn">🗑️ সব ডেটা মুছুন</button>
     </div>
 
-    <!-- ===== MODAL ===== -->
+    <!-- ===== MODAL (for Delivery Details) ===== -->
     <div class="modal-overlay" id="deliveryModal">
         <div class="modal-box">
             <div class="modal-header">
@@ -1507,18 +1520,20 @@
     });
 
     // ================================================================
-    //  MODAL FUNCTIONS
+    //  MODAL FUNCTIONS (for Delivery Details)
     // ================================================================
-    function openModal(itemCode, itemName) {
+    function openDeliveryModal(itemCode, itemName) {
         const modal = document.getElementById('deliveryModal');
         const title = document.getElementById('modalTitle');
         const body = document.getElementById('modalBody');
         title.textContent = `📦 ডেলিভারি ডিটেইলস - ${itemCode} (${itemName})`;
-        // Show loading
         body.innerHTML = '<div style="text-align:center; padding:20px;">⏳ লোড হচ্ছে...</div>';
         modal.classList.add('show');
 
-        // Fetch delivery entries for this item code
+        // Find product info for color
+        const product = productData.find(p => p.code === itemCode);
+        const color = product ? product.color : '—';
+
         db.collection('delivery')
             .where('productCode', '==', itemCode)
             .orderBy('date', 'desc')
@@ -1530,7 +1545,7 @@
                 }
                 let html = `<table>
                     <thead><tr>
-                        <th>#</th><th>তারিখ</th><th>QTY</th>
+                        <th>#</th><th>তারিখ</th><th>Code</th><th>Item</th><th>Color</th><th>GRN/Delivery QTY</th>
                     </tr></thead><tbody>`;
                 let idx = 1;
                 snapshot.forEach(doc => {
@@ -1538,6 +1553,9 @@
                     html += `<tr>
                         <td>${idx++}</td>
                         <td>${data.date || '—'}</td>
+                        <td>${data.productCode || itemCode}</td>
+                        <td>${data.itemName || itemName}</td>
+                        <td>${data.colorName || color}</td>
                         <td>${data.qty || 0}</td>
                     </tr>`;
                 });
@@ -1553,7 +1571,6 @@
         document.getElementById('deliveryModal').classList.remove('show');
     }
 
-    // Close modal on overlay click
     document.getElementById('deliveryModal').addEventListener('click', function(e) {
         if (e.target === this) closeModal();
     });
@@ -1625,7 +1642,7 @@
     }
 
     // ================================================================
-    //  BUILD: As of Production Vs GRN QTY (Up to Today)
+    //  BUILD: As of Production Vs GRN QTY (with Details button)
     // ================================================================
     function buildProdVsGrn(prodEntries, deliveryEntries) {
         const allCodes = new Set();
@@ -1652,17 +1669,22 @@
 
         let html = `<table class="asof-table"><thead><tr>
             <th>Code</th><th>Item Name</th><th>Color</th>
-            <th>Up to Prod</th><th>Up to GRN/Delivery</th><th>Gap (Prod - Del)</th>
+            <th>Up to Prod</th>
+            <th>Up to GRN/Delivery</th>
+            <th>Gap (Prod - Del)</th>
+            <th>Details</th>
         </tr></thead><tbody>`;
 
         rows.forEach(r => {
+            const gapColor = r.gap >= 0 ? '#1a8a4a' : '#b33636';
             html += `<tr>
                 <td>${r.code}</td>
                 <td>${r.item}</td>
                 <td>${r.color}</td>
                 <td>${r.production.toLocaleString()}</td>
                 <td>${r.delivery.toLocaleString()}</td>
-                <td style="font-weight:600; color: ${r.gap >= 0 ? '#1a8a4a' : '#b33636'};">${r.gap.toLocaleString()}</td>
+                <td style="font-weight:700; color:${gapColor};">${r.gap.toLocaleString()}</td>
+                <td><button class="btn-filter details" data-code="${r.code}" data-name="${r.item}" style="padding:4px 10px; font-size:11px; border-radius:6px;">📋 Details</button></td>
             </tr>`;
         });
 
@@ -1696,7 +1718,6 @@
         const end = Math.min(start + itemsPerPage, totalItems);
         const pageData = data.slice(start, end);
 
-        // Build table
         let html = `<table><thead><tr>
             <th>#</th><th>তারিখ</th><th>শিফট</th><th>MC No</th><th>ইনচার্জ</th>
             <th>কোড</th><th>আইটেম</th><th>রঙ</th>
@@ -1740,12 +1761,12 @@
             });
         });
 
-        // Attach details events
+        // Attach delivery details events
         container.querySelectorAll('.btn-filter.details').forEach(btn => {
             btn.addEventListener('click', function() {
                 const code = this.dataset.code;
                 const name = this.dataset.name;
-                openModal(code, name);
+                openDeliveryModal(code, name);
             });
         });
 
@@ -1778,14 +1799,13 @@
     }
 
     // ================================================================
-    //  RENDER REPORT (updated with pagination)
+    //  RENDER REPORT
     // ================================================================
     async function renderReport() {
         try {
             const prodEntries = await getProdEntries();
             const deliveryEntries = await getDeliveryEntries();
 
-            // Containers
             const execSummary = document.getElementById('executiveSummary');
             const lastExecContainer = document.getElementById('lastExecutionContainer');
             const asof3Days = document.getElementById('asof3DaysContainer');
@@ -1798,7 +1818,7 @@
             // 1. Executive Summary
             execSummary.innerHTML = buildExecutiveSummary(prodEntries, deliveryEntries);
 
-            // 2. Last Production Execution Summary (Latest Date)
+            // 2. Last Production Execution Summary
             if (prodEntries.length === 0) {
                 lastExecContainer.innerHTML = `<div class="no-data" style="padding:12px;">📭 কোনো প্রোডাকশন এন্ট্রি নেই।</div>`;
             } else {
@@ -1828,18 +1848,26 @@
                 lastExecContainer.innerHTML = html;
             }
 
-            // 3. As of Production & Delivery (3,7,15 days)
+            // 3. As of 3,7,15 days
             asof3Days.innerHTML = buildSummaryForRange(prodEntries, deliveryEntries, 3);
             asof7Days.innerHTML = buildSummaryForRange(prodEntries, deliveryEntries, 7);
             asof15Days.innerHTML = buildSummaryForRange(prodEntries, deliveryEntries, 15);
 
-            // 4. As of Production Vs GRN QTY
+            // 4. As of Production Vs GRN QTY (with Details)
             prodVsGrn.innerHTML = buildProdVsGrn(prodEntries, deliveryEntries);
+            // Attach details events for this table
+            document.querySelectorAll('#prodVsGrnContainer .btn-filter.details').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const code = this.dataset.code;
+                    const name = this.dataset.name;
+                    openDeliveryModal(code, name);
+                });
+            });
 
-            // 5. As of Production & Delivery (All-time)
+            // 5. As of All-time
             asofAll.innerHTML = buildAsOfTable(prodEntries, deliveryEntries);
 
-            // 6. Filtered Production List (for pagination)
+            // 6. Filtered Production List (paginated)
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo = document.getElementById('filterDateTo').value;
             const shiftFilter = document.getElementById('filterShift').value;
@@ -1853,11 +1881,9 @@
                 return true;
             });
 
-            // Reset to page 1 when filter changes
             currentPage = 1;
             renderPaginatedTable(filteredProd, 'reportTableContainer');
 
-            // Summary box (below table)
             const totalEntries = filteredProd.length;
             const totalGoodQty = filteredProd.reduce((s, e) => s + e.goodQty, 0);
             const avgUtil = totalEntries > 0 ? (filteredProd.reduce((s, e) => s + e.utilization, 0) / totalEntries) : 0;
@@ -1873,7 +1899,7 @@
     }
 
     // ================================================================
-    //  BUILD EXECUTIVE SUMMARY (Month-to-Date)
+    //  BUILD EXECUTIVE SUMMARY
     // ================================================================
     function buildExecutiveSummary(prodEntries, deliveryEntries) {
         const today = new Date();
@@ -2085,7 +2111,7 @@
 
             const wb = XLSX.utils.book_new();
 
-            // ---- Sheet 1: All Production Details ----
+            // Sheet 1: All Production Details
             const prodData = prodEntries.map((e, idx) => ({
                 'SL': idx + 1,
                 'Date': e.date,
@@ -2105,7 +2131,7 @@
             const ws1 = XLSX.utils.json_to_sheet(prodData);
             XLSX.utils.book_append_sheet(wb, ws1, 'Production');
 
-            // ---- Sheet 2: Last Execution (Latest Date) ----
+            // Sheet 2: Last Execution
             if (prodEntries.length > 0) {
                 const latestDate = prodEntries[0].date;
                 const latestEntries = prodEntries.filter(e => e.date === latestDate);
@@ -2125,35 +2151,35 @@
                 XLSX.utils.book_append_sheet(wb, ws2, 'Last Execution');
             }
 
-            // ---- Sheet 3: As of 3 Days ----
+            // Sheet 3: As of 3 Days
             const threeDays = buildDataForRange(prodEntries, deliveryEntries, 3);
             if (threeDays.length > 0) {
                 const ws3 = XLSX.utils.json_to_sheet(threeDays);
                 XLSX.utils.book_append_sheet(wb, ws3, 'As of 3 Days');
             }
 
-            // ---- Sheet 4: As of 7 Days ----
+            // Sheet 4: As of 7 Days
             const sevenDays = buildDataForRange(prodEntries, deliveryEntries, 7);
             if (sevenDays.length > 0) {
                 const ws4 = XLSX.utils.json_to_sheet(sevenDays);
                 XLSX.utils.book_append_sheet(wb, ws4, 'As of 7 Days');
             }
 
-            // ---- Sheet 5: As of 15 Days ----
+            // Sheet 5: As of 15 Days
             const fifteenDays = buildDataForRange(prodEntries, deliveryEntries, 15);
             if (fifteenDays.length > 0) {
                 const ws5 = XLSX.utils.json_to_sheet(fifteenDays);
                 XLSX.utils.book_append_sheet(wb, ws5, 'As of 15 Days');
             }
 
-            // ---- Sheet 6: Production Vs GRN ----
+            // Sheet 6: Production Vs GRN
             const prodVsGrnData = buildProdVsGrnData(prodEntries, deliveryEntries);
             if (prodVsGrnData.length > 0) {
                 const ws6 = XLSX.utils.json_to_sheet(prodVsGrnData);
                 XLSX.utils.book_append_sheet(wb, ws6, 'Prod Vs GRN');
             }
 
-            // ---- Sheet 7: As of Summary (All-time) ----
+            // Sheet 7: As of All-time
             const allCodes = new Set();
             prodEntries.forEach(e => allCodes.add(e.productCode));
             deliveryEntries.forEach(e => allCodes.add(e.productCode));
@@ -2238,7 +2264,6 @@
                 'As of Delivery': delSum
             });
         });
-        // add total row
         const totalCap = rows.reduce((s, r) => s + r['As of Capacity'], 0);
         const totalProd = rows.reduce((s, r) => s + r['As of Production'], 0);
         const totalDel = rows.reduce((s, r) => s + r['As of Delivery'], 0);
@@ -2286,7 +2311,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with Pagination & Delivery Details Modal ready.');
+    console.log('✅ Production + Delivery Entry with Prod Vs GRN Details Button ready.');
     renderReport();
 </script>
 </body>
