@@ -534,6 +534,7 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            margin-top: 14px;
         }
         .download-row .btn-filter {
             flex: 1;
@@ -861,15 +862,10 @@
 
     <!-- ===== REPORT ===== -->
     <div id="tabReport" class="tab-content">
-        <!-- Download & Auto Refresh -->
+        <!-- Auto Refresh (Top) -->
         <div class="card" style="padding-bottom:16px;">
-            <div class="card-title">📥 Download Report</div>
-            <div class="download-row">
-                <button class="btn-filter download" id="downloadPdfBtn">📄 PDF</button>
-                <button class="btn-filter download" id="downloadImageBtn">🖼️ Image (PNG)</button>
-                <button class="btn-filter download" id="downloadExcelBtn">📊 Excel</button>
-            </div>
-            <div class="toggle-container" style="margin-top:12px;">
+            <div class="card-title">🔄 Auto Refresh</div>
+            <div class="toggle-container" style="margin-top:4px;">
                 <input type="checkbox" id="autoRefresh" checked />
                 <label for="autoRefresh" style="font-weight:600; cursor:pointer;">Auto Refresh (5s)</label>
                 <span class="status on" id="refreshStatus">ON</span>
@@ -889,13 +885,19 @@
                 <div class="table-wrap" id="lastExecutionContainer"></div>
             </div>
 
-            <!-- As of Production Vs GRN QTY (with GREEN Details button) -->
+            <!-- As of Production Vs GRN QTY (with GREEN Details + Download inside card) -->
             <div class="card" style="padding-bottom:16px;">
                 <div class="card-title">📊 As of Production Vs GRN QTY <span class="badge">Up to Today</span></div>
                 <div class="table-wrap" id="prodVsGrnContainer"></div>
+                <!-- Download options placed right below the table, inside the same card -->
+                <div class="download-row">
+                    <button class="btn-filter download" id="downloadProdVsGrnPdf">📄 PDF</button>
+                    <button class="btn-filter download" id="downloadProdVsGrnImage">🖼️ Image (PNG)</button>
+                    <button class="btn-filter download" id="downloadProdVsGrnExcel">📊 Excel</button>
+                </div>
             </div>
 
-            <!-- Filter & Production List with Pagination (Edit only, no Delivery details) -->
+            <!-- Filter & Production List with Pagination (Edit only) -->
             <div class="card" style="padding-bottom:16px;">
                 <div class="card-title">🔍 ফিল্টার</div>
                 <div class="filter-row">
@@ -1630,7 +1632,7 @@
     }
 
     // ================================================================
-    //  RENDER PAGINATED PRODUCTION LIST (Edit only, no Delivery details)
+    //  RENDER PAGINATED PRODUCTION LIST (Edit only)
     // ================================================================
     function renderPaginatedTable(data, containerId) {
         const container = document.getElementById(containerId);
@@ -1722,6 +1724,92 @@
         if (page < 1 || page > total) return;
         currentPage = page;
         renderPaginatedTable(currentFilteredData, 'reportTableContainer');
+    }
+
+    // ================================================================
+    //  DOWNLOAD FUNCTIONS for Prod Vs GRN table only
+    // ================================================================
+    function downloadProdVsGrn(format) {
+        const container = document.getElementById('prodVsGrnContainer');
+        const table = container.querySelector('table');
+        if (!table) {
+            alert('ডাউনলোড করার মতো ডেটা নেই।');
+            return;
+        }
+
+        if (format === 'pdf') {
+            html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgWidth = 210;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                pdf.save('ProdVsGRN_Report.pdf');
+            }).catch(err => {
+                alert('PDF তৈরি করতে সমস্যা হয়েছে।');
+                console.error(err);
+            });
+        } else if (format === 'image') {
+            html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'ProdVsGRN_Report.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                alert('Image তৈরি করতে সমস্যা হয়েছে।');
+                console.error(err);
+            });
+        } else if (format === 'excel') {
+            // Build data from the table
+            const rows = [];
+            const ths = table.querySelectorAll('thead th');
+            const headers = [];
+            ths.forEach(th => {
+                let h = th.textContent.trim();
+                if (h === 'Details') return; // skip Details column
+                headers.push(h);
+            });
+            rows.push(headers);
+
+            const trs = table.querySelectorAll('tbody tr');
+            trs.forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                const row = [];
+                tds.forEach((td, idx) => {
+                    // skip last column (Details button)
+                    if (idx === tds.length - 1) return;
+                    let val = td.textContent.trim();
+                    // if it's the gap column, we want the number without color
+                    if (idx === 5) {
+                        val = val.replace(/[^\d-]/g, '');
+                    }
+                    row.push(val);
+                });
+                rows.push(row);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, 'ProdVsGRN');
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'ProdVsGRN_Report.xlsx';
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
     }
 
     // ================================================================
@@ -1897,165 +1985,17 @@
     });
 
     // ================================================================
-    //  DOWNLOAD FUNCTIONS (PDF, Image, Excel)
+    //  DOWNLOAD BUTTONS (Prod Vs GRN only)
     // ================================================================
-    document.getElementById('downloadPdfBtn').addEventListener('click', function() {
-        const element = document.getElementById('reportContent');
-        this.textContent = '⏳ Generating...';
-        this.disabled = true;
-
-        html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff'
-        }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgWidth = 210;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            pdf.save('Production_Report.pdf');
-            this.textContent = '📄 PDF';
-            this.disabled = false;
-        }).catch(err => {
-            alert('PDF তৈরি করতে সমস্যা হয়েছে।');
-            console.error(err);
-            this.textContent = '📄 PDF';
-            this.disabled = false;
-        });
+    document.getElementById('downloadProdVsGrnPdf').addEventListener('click', function() {
+        downloadProdVsGrn('pdf');
     });
-
-    document.getElementById('downloadImageBtn').addEventListener('click', function() {
-        const element = document.getElementById('reportContent');
-        this.textContent = '⏳ Generating...';
-        this.disabled = true;
-
-        html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff'
-        }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'Production_Report.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            this.textContent = '🖼️ Image (PNG)';
-            this.disabled = false;
-        }).catch(err => {
-            alert('Image তৈরি করতে সমস্যা হয়েছে।');
-            console.error(err);
-            this.textContent = '🖼️ Image (PNG)';
-            this.disabled = false;
-        });
+    document.getElementById('downloadProdVsGrnImage').addEventListener('click', function() {
+        downloadProdVsGrn('image');
     });
-
-    document.getElementById('downloadExcelBtn').addEventListener('click', async function() {
-        try {
-            const prodEntries = await getProdEntries();
-            const deliveryEntries = await getDeliveryEntries();
-
-            if (prodEntries.length === 0 && deliveryEntries.length === 0) {
-                alert('ডাউনলোড করার মতো কোনো ডেটা নেই।');
-                return;
-            }
-
-            this.textContent = '⏳ Generating...';
-            this.disabled = true;
-
-            const wb = XLSX.utils.book_new();
-
-            // Sheet 1: All Production Details
-            const prodData = prodEntries.map((e, idx) => ({
-                'SL': idx + 1,
-                'Date': e.date,
-                'Shift': e.shift,
-                'MC No': e.mcNo || '',
-                'IC Name': e.icName,
-                'Item Code': e.productCode,
-                'Item Name': e.itemName,
-                'Color': e.colorName,
-                'CT': e.ct,
-                'Cavity': e.cavity,
-                'Capacity': e.capacity,
-                'Good QTY': e.goodQty,
-                'Cause': e.cause || '',
-                'Utilization %': e.utilization ? e.utilization.toFixed(1) : ''
-            }));
-            const ws1 = XLSX.utils.json_to_sheet(prodData);
-            XLSX.utils.book_append_sheet(wb, ws1, 'Production');
-
-            // Sheet 2: Last Execution
-            if (prodEntries.length > 0) {
-                const latestDate = prodEntries[0].date;
-                const latestEntries = prodEntries.filter(e => e.date === latestDate);
-                const lastExecData = latestEntries.map((e, idx) => ({
-                    'SL': idx + 1,
-                    'Date': e.date,
-                    'Shift': e.shift,
-                    'Item Code': e.productCode,
-                    'Item Name': e.itemName,
-                    'Color': e.colorName,
-                    'Capacity': e.capacity,
-                    'Production': e.goodQty,
-                    'Utilization %': e.utilization ? e.utilization.toFixed(1) : '',
-                    'Cause': e.cause || ''
-                }));
-                const ws2 = XLSX.utils.json_to_sheet(lastExecData);
-                XLSX.utils.book_append_sheet(wb, ws2, 'Last Execution');
-            }
-
-            // Sheet 3: Production Vs GRN
-            const prodVsGrnData = buildProdVsGrnData(prodEntries, deliveryEntries);
-            if (prodVsGrnData.length > 0) {
-                const ws3 = XLSX.utils.json_to_sheet(prodVsGrnData);
-                XLSX.utils.book_append_sheet(wb, ws3, 'Prod Vs GRN');
-            }
-
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([wbout], { type: 'application/octet-stream' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'Production_Report.xlsx';
-            link.click();
-            URL.revokeObjectURL(link.href);
-
-            this.textContent = '📊 Excel';
-            this.disabled = false;
-        } catch (err) {
-            alert('Excel তৈরি করতে সমস্যা হয়েছে।');
-            console.error(err);
-            this.textContent = '📊 Excel';
-            this.disabled = false;
-        }
+    document.getElementById('downloadProdVsGrnExcel').addEventListener('click', function() {
+        downloadProdVsGrn('excel');
     });
-
-    // Helper: build data for Prod Vs GRN (Excel)
-    function buildProdVsGrnData(prodEntries, deliveryEntries) {
-        const allCodes = new Set();
-        prodEntries.forEach(e => allCodes.add(e.productCode));
-        deliveryEntries.forEach(e => allCodes.add(e.productCode));
-        const rows = [];
-        allCodes.forEach(code => {
-            const product = productData.find(p => p.code === code);
-            if (!product) return;
-            const prodItems = prodEntries.filter(e => e.productCode === code);
-            const delItems = deliveryEntries.filter(e => e.productCode === code);
-            const prodSum = prodItems.reduce((s, e) => s + e.goodQty, 0);
-            const delSum = delItems.reduce((s, e) => s + e.qty, 0);
-            rows.push({
-                'Code': code,
-                'Item Name': product.item,
-                'Color': product.color,
-                'Up to Prod': prodSum,
-                'Up to GRN/Delivery': delSum,
-                'Gap (Prod - Del)': prodSum - delSum
-            });
-        });
-        return rows;
-    }
 
     // ================================================================
     //  INIT
@@ -2065,7 +2005,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with all requested features ready.');
+    console.log('✅ Production + Delivery Entry with ProdVsGRN download ready.');
     renderReport();
 </script>
 </body>
