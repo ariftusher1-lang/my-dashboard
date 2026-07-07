@@ -17,15 +17,34 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Hind Siliguri', sans-serif; background: #eef2f7; padding: 10px 8px 30px; }
         .app-container { max-width: 480px; margin: 0 auto; }
+
+        /* ===== HEADER WITH CLOCK ===== */
         .app-header {
             background: #0b2b44;
             color: #fff;
             padding: 16px 18px;
             border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
         .app-header h1 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
         .app-header h1 small { font-size: 13px; font-weight: 400; color: #9bb7d4; }
         .app-header .sub { font-size: 13px; color: #9bb7d4; margin-top: 2px; }
+        .clock {
+            font-size: 18px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.1);
+            padding: 6px 12px;
+            border-radius: 8px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        @media (max-width: 420px) {
+            .app-header { flex-direction: column; align-items: stretch; gap: 6px; }
+            .clock { text-align: right; font-size: 16px; }
+        }
 
         /* ===== ERROR BAR ===== */
         #errorBar {
@@ -167,6 +186,7 @@
             font-weight: 500;
         }
 
+        /* ===== FORM ===== */
         .form-group {
             display: flex;
             flex-direction: column;
@@ -424,50 +444,6 @@
         }
         .summary-card .stat-item strong { font-size: 17px; color: #0b2b44; font-weight: 700; }
 
-        /* ---- NEW: 3,7,15 Days Summary Cards ---- */
-        .period-summary-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-        .period-summary-card {
-            background: #f6faff;
-            border-radius: 14px;
-            padding: 12px 10px;
-            border: 1px solid #dce8f5;
-            text-align: center;
-        }
-        .period-summary-card h4 {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1a3a57;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            flex-wrap: wrap;
-        }
-        .period-summary-card .stat-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px 8px;
-            justify-content: center;
-        }
-        .period-summary-card .stat-item {
-            display: flex;
-            align-items: baseline;
-            gap: 2px;
-            font-size: 11px;
-            color: #1f3d5a;
-        }
-        .period-summary-card .stat-item strong {
-            font-size: 14px;
-            color: #0b2b44;
-            font-weight: 700;
-        }
-
         .summary-box {
             display: flex;
             flex-wrap: wrap;
@@ -555,20 +531,17 @@
             }
         }
 
+        /* ===== RESPONSIVE ===== */
         @media (min-width: 480px) {
             body { padding: 20px 16px; }
             .app-container { max-width: 600px; }
             .filter-row .form-group { flex: 1 1 45%; }
             .filter-row .btn-group { flex: 1 1 100%; }
             .summary-grid { grid-template-columns: 1fr 1fr; }
-            .period-summary-grid { grid-template-columns: 1fr 1fr 1fr; }
             .last-execution-table { font-size: 12px; }
             .last-execution-table th { font-size: 11px; }
             .last-execution-table td { font-size: 11px; }
             .last-execution-table .util-badge-sm { font-size: 10px; min-width: 40px; }
-            .period-summary-card .stat-item { font-size: 12px; }
-            .period-summary-card .stat-item strong { font-size: 15px; }
-            .period-summary-card h4 { font-size: 14px; }
         }
         @media (min-width: 768px) {
             .app-container { max-width: 800px; }
@@ -580,9 +553,6 @@
             .last-execution-table th { font-size: 12px; }
             .last-execution-table td { font-size: 12px; }
             .last-execution-table .util-badge-sm { font-size: 11px; min-width: 44px; }
-            .period-summary-card .stat-item { font-size: 13px; }
-            .period-summary-card .stat-item strong { font-size: 16px; }
-            .period-summary-card h4 { font-size: 15px; }
         }
         .form-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
         .form-group.full-width { grid-column: 1; }
@@ -595,9 +565,13 @@
 <body>
 <div class="app-container">
 
+    <!-- ===== HEADER WITH CLOCK ===== -->
     <div class="app-header">
-        <h1>🏭 প্রোডাকশন + ডেলিভারি <small>Entry & Report</small></h1>
-        <div class="sub">দৈনিক উৎপাদন ও ডেলিভারি লগ</div>
+        <div>
+            <h1>🏭 প্রোডাকশন + ডেলিভারি <small>Entry & Report</small></h1>
+            <div class="sub">দৈনিক উৎপাদন ও ডেলিভারি লগ</div>
+        </div>
+        <div class="clock" id="digitalClock">--:--:--</div>
     </div>
 
     <!-- ERROR BAR -->
@@ -751,37 +725,54 @@
             <div class="toggle-container" style="margin-top:10px;">
                 <input type="checkbox" id="autoRefresh" />
                 <label for="autoRefresh" style="font-weight:600; cursor:pointer;">Auto Refresh (5s)</label>
-                <span class="status off" id="refreshStatus">ON</span>
+                <span class="status off" id="refreshStatus">OFF</span>
             </div>
         </div>
 
         <div id="reportContent">
+            <!-- Executive Summary -->
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">📊 Executive Summary</div>
                 <div class="summary-grid" id="executiveSummary"></div>
             </div>
 
-            <!-- ===== NEW: 3,7,15 Days Summary Cards ===== -->
-            <div class="card" style="padding-bottom:14px;">
-                <div class="card-title">📊 As of Production & Delivery <span class="badge">Period Summary</span></div>
-                <div class="period-summary-grid" id="periodSummaryContainer">
-                    <!-- dynamically filled -->
-                </div>
-            </div>
-
-            <!-- ===== Last Production Execution Summary (Only Latest Date) ===== -->
+            <!-- Last Production Execution Summary (Latest Date) -->
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">📋 Last Production Execution Summary <span class="badge">Latest Date</span></div>
-                <div class="table-wrap" id="lastExecutionContainer">
-                    <!-- dynamically filled -->
-                </div>
+                <div class="table-wrap" id="lastExecutionContainer"></div>
             </div>
 
+            <!-- NEW: As of Production & Delivery (3 Days) -->
+            <div class="card" style="padding-bottom:14px;">
+                <div class="card-title">📊 As of Production & Delivery <span class="badge">Last 3 Days</span></div>
+                <div class="table-wrap" id="asof3DaysContainer"></div>
+            </div>
+
+            <!-- NEW: As of Production & Delivery (7 Days) -->
+            <div class="card" style="padding-bottom:14px;">
+                <div class="card-title">📊 As of Production & Delivery <span class="badge">Last 7 Days</span></div>
+                <div class="table-wrap" id="asof7DaysContainer"></div>
+            </div>
+
+            <!-- NEW: As of Production & Delivery (15 Days) -->
+            <div class="card" style="padding-bottom:14px;">
+                <div class="card-title">📊 As of Production & Delivery <span class="badge">Last 15 Days</span></div>
+                <div class="table-wrap" id="asof15DaysContainer"></div>
+            </div>
+
+            <!-- NEW: As of Production Vs GRN QTY -->
+            <div class="card" style="padding-bottom:14px;">
+                <div class="card-title">📊 As of Production Vs GRN QTY <span class="badge">Up to Today</span></div>
+                <div class="table-wrap" id="prodVsGrnContainer"></div>
+            </div>
+
+            <!-- As of Production & Delivery (All-time) -->
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">📊 As of Production & Delivery <span class="badge">সর্বমোট</span></div>
                 <div class="table-wrap" id="asofTableContainer"></div>
             </div>
 
+            <!-- Filter & Production List (existing) -->
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">🔍 ফিল্টার</div>
                 <div class="filter-row">
@@ -820,6 +811,7 @@
                 </div>
             </div>
 
+            <!-- Production List (filterable) -->
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">📋 প্রোডাকশন লিস্ট</div>
                 <div class="table-wrap" id="reportTableContainer"></div>
@@ -834,7 +826,18 @@
 
 <script>
     // ================================================================
-    //  SHOW ERROR ON SCREEN (SAFE VERSION – NO RECURSION)
+    //  DIGITAL CLOCK
+    // ================================================================
+    function updateClock() {
+        const now = new Date();
+        const time = now.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('digitalClock').textContent = time;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ================================================================
+    //  SHOW ERROR ON SCREEN (SAFE VERSION)
     // ================================================================
     function showError(msg) {
         const bar = document.getElementById('errorBar');
@@ -1030,7 +1033,7 @@
     const DELETE_PASSWORD = 'arif';
 
     // ================================================================
-    //  DOM REFS
+    //  DOM REFS (existing)
     // ================================================================
     const formTitle = document.getElementById('formTitle');
     const editId = document.getElementById('editId');
@@ -1222,7 +1225,7 @@
     });
 
     // ================================================================
-    //  PRODUCTION SUBMIT
+    //  PRODUCTION SUBMIT (unchanged)
     // ================================================================
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1300,7 +1303,7 @@
     });
 
     // ================================================================
-    //  DELIVERY SUBMIT
+    //  DELIVERY SUBMIT (unchanged)
     // ================================================================
     deliveryForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1374,88 +1377,143 @@
     });
 
     // ================================================================
-    //  BUILD PERIOD SUMMARY (3,7,15 days)
+    //  HELPER: Build summary table for a given date range
     // ================================================================
-    function buildPeriodSummary(prodEntries, deliveryEntries) {
+    function buildSummaryForRange(prodEntries, deliveryEntries, days) {
+        // days: number of days to include (e.g., 3, 7, 15)
+        // Returns HTML table string
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
-        const periods = [
-            { label: '3 Days', days: 3 },
-            { label: '7 Days', days: 7 },
-            { label: '15 Days', days: 15 }
-        ];
+        const cutoff = new Date(today);
+        cutoff.setDate(today.getDate() - days + 1); // include today
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+        const tStr = today.toISOString().split('T')[0];
 
-        // Create a date string for N days ago (excluding today, so we go back N days from today-1)
-        // Example: for 3 days, we want (today-3) to (today-1) i.e., last 3 full days.
-        const getDateRange = (days) => {
-            const end = new Date(today);
-            end.setDate(today.getDate() - 1);
-            const start = new Date(end);
-            start.setDate(end.getDate() - days + 1);
-            return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
-        };
+        const filteredProd = prodEntries.filter(e => e.date >= cutoffStr && e.date <= tStr);
+        const filteredDel = deliveryEntries.filter(e => e.date >= cutoffStr && e.date <= tStr);
 
-        let html = '';
-        periods.forEach(p => {
-            const range = getDateRange(p.days);
-            const filteredProd = prodEntries.filter(e => e.date >= range.start && e.date <= range.end);
-            const filteredDel = deliveryEntries.filter(e => e.date >= range.start && e.date <= range.end);
-            const cap = filteredProd.reduce((s, e) => s + e.capacity, 0);
-            const prod = filteredProd.reduce((s, e) => s + e.goodQty, 0);
-            const del = filteredDel.reduce((s, e) => s + e.qty, 0);
-            const formatNum = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-            html += `
-                <div class="period-summary-card">
-                    <h4>📊 ${p.label}</h4>
-                    <div class="stat-row">
-                        <div class="stat-item">⚙️ <strong>${formatNum(cap)}</strong></div>
-                        <div class="stat-item">✅ <strong>${formatNum(prod)}</strong></div>
-                        <div class="stat-item">🚚 <strong>${formatNum(del)}</strong></div>
-                    </div>
-                </div>
-            `;
+        // Group by product code
+        const allCodes = new Set();
+        filteredProd.forEach(e => allCodes.add(e.productCode));
+        filteredDel.forEach(e => allCodes.add(e.productCode));
+
+        if (allCodes.size === 0) {
+            return `<div class="no-data" style="padding:12px;">📭 এই সময়সীমায় কোনো ডেটা নেই।</div>`;
+        }
+
+        let rows = [];
+        let totalCap = 0, totalProd = 0, totalDel = 0;
+
+        allCodes.forEach(code => {
+            const product = productData.find(p => p.code === code);
+            if (!product) return;
+            const prodItems = filteredProd.filter(e => e.productCode === code);
+            const delItems = filteredDel.filter(e => e.productCode === code);
+            const capSum = prodItems.reduce((s, e) => s + e.capacity, 0);
+            const prodSum = prodItems.reduce((s, e) => s + e.goodQty, 0);
+            const delSum = delItems.reduce((s, e) => s + e.qty, 0);
+            totalCap += capSum;
+            totalProd += prodSum;
+            totalDel += delSum;
+            rows.push({ code, item: product.item, color: product.color, capacity: capSum, production: prodSum, delivery: delSum });
         });
+
+        rows.sort((a, b) => a.code.localeCompare(b.code));
+
+        let html = `<table class="asof-table"><thead><tr>
+            <th>Code</th><th>Item Name</th><th>Color</th>
+            <th>As of Capacity</th><th>As of Production</th><th>As of Delivery</th>
+        </tr></thead><tbody>`;
+
+        rows.forEach(r => {
+            html += `<tr>
+                <td>${r.code}</td>
+                <td>${r.item}</td>
+                <td>${r.color}</td>
+                <td>${r.capacity.toLocaleString()}</td>
+                <td>${r.production.toLocaleString()}</td>
+                <td>${r.delivery.toLocaleString()}</td>
+            </tr>`;
+        });
+
+        html += `<tr class="total-row">
+            <td colspan="3"><strong>মোট</strong></td>
+            <td><strong>${totalCap.toLocaleString()}</strong></td>
+            <td><strong>${totalProd.toLocaleString()}</strong></td>
+            <td><strong>${totalDel.toLocaleString()}</strong></td>
+        </tr>`;
+        html += `</tbody></table>`;
         return html;
     }
 
     // ================================================================
-    //  RENDER REPORT
+    //  BUILD: As of Production Vs GRN QTY (Up to Today)
+    // ================================================================
+    function buildProdVsGrn(prodEntries, deliveryEntries) {
+        const allCodes = new Set();
+        prodEntries.forEach(e => allCodes.add(e.productCode));
+        deliveryEntries.forEach(e => allCodes.add(e.productCode));
+
+        if (allCodes.size === 0) {
+            return `<div class="no-data" style="padding:12px;">📭 কোনো ডেটা নেই।</div>`;
+        }
+
+        let rows = [];
+        allCodes.forEach(code => {
+            const product = productData.find(p => p.code === code);
+            if (!product) return;
+            const prodItems = prodEntries.filter(e => e.productCode === code);
+            const delItems = deliveryEntries.filter(e => e.productCode === code);
+            const prodSum = prodItems.reduce((s, e) => s + e.goodQty, 0);
+            const delSum = delItems.reduce((s, e) => s + e.qty, 0);
+            const gap = prodSum - delSum;
+            rows.push({ code, item: product.item, color: product.color, production: prodSum, delivery: delSum, gap });
+        });
+
+        rows.sort((a, b) => a.code.localeCompare(b.code));
+
+        let html = `<table class="asof-table"><thead><tr>
+            <th>Code</th><th>Item Name</th><th>Color</th>
+            <th>Up to Prod</th><th>Up to GRN/Delivery</th><th>Gap (Prod - Del)</th>
+        </tr></thead><tbody>`;
+
+        rows.forEach(r => {
+            html += `<tr>
+                <td>${r.code}</td>
+                <td>${r.item}</td>
+                <td>${r.color}</td>
+                <td>${r.production.toLocaleString()}</td>
+                <td>${r.delivery.toLocaleString()}</td>
+                <td style="font-weight:600; color: ${r.gap >= 0 ? '#1a8a4a' : '#b33636'};">${r.gap.toLocaleString()}</td>
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+        return html;
+    }
+
+    // ================================================================
+    //  RENDER REPORT (updated with new sections)
     // ================================================================
     async function renderReport() {
         try {
             const prodEntries = await getProdEntries();
             const deliveryEntries = await getDeliveryEntries();
 
+            // Containers
+            const execSummary = document.getElementById('executiveSummary');
+            const lastExecContainer = document.getElementById('lastExecutionContainer');
+            const asof3Days = document.getElementById('asof3DaysContainer');
+            const asof7Days = document.getElementById('asof7DaysContainer');
+            const asof15Days = document.getElementById('asof15DaysContainer');
+            const prodVsGrn = document.getElementById('prodVsGrnContainer');
+            const asofAll = document.getElementById('asofTableContainer');
             const container = document.getElementById('reportTableContainer');
             const summaryBox = document.getElementById('reportSummary');
-            const execSummary = document.getElementById('executiveSummary');
-            const asofContainer = document.getElementById('asofTableContainer');
-            const lastExecContainer = document.getElementById('lastExecutionContainer');
-            const periodContainer = document.getElementById('periodSummaryContainer');
 
-            const dateFrom = document.getElementById('filterDateFrom').value;
-            const dateTo = document.getElementById('filterDateTo').value;
-            const shiftFilter = document.getElementById('filterShift').value;
-            const icFilter = document.getElementById('filterIC').value;
-
-            let filteredProd = prodEntries.filter(e => {
-                if (dateFrom && e.date < dateFrom) return false;
-                if (dateTo && e.date > dateTo) return false;
-                if (shiftFilter && e.shift !== shiftFilter) return false;
-                if (icFilter && e.icName !== icFilter) return false;
-                return true;
-            });
-
-            // ---- Executive Summary ----
+            // 1. Executive Summary
             execSummary.innerHTML = buildExecutiveSummary(prodEntries, deliveryEntries);
 
-            // ---- Period Summary (3,7,15 Days) ----
-            periodContainer.innerHTML = buildPeriodSummary(prodEntries, deliveryEntries);
-
-            // ---- As of Table ----
-            asofContainer.innerHTML = buildAsOfTable(prodEntries, deliveryEntries);
-
-            // ---- Last Production Execution Summary (Only Latest Date) ----
+            // 2. Last Production Execution Summary (Latest Date)
             if (prodEntries.length === 0) {
                 lastExecContainer.innerHTML = `<div class="no-data" style="padding:12px;">📭 কোনো প্রোডাকশন এন্ট্রি নেই।</div>`;
             } else {
@@ -1485,7 +1543,31 @@
                 lastExecContainer.innerHTML = html;
             }
 
-            // ---- Filtered Production List ----
+            // 3. As of Production & Delivery (3,7,15 days)
+            asof3Days.innerHTML = buildSummaryForRange(prodEntries, deliveryEntries, 3);
+            asof7Days.innerHTML = buildSummaryForRange(prodEntries, deliveryEntries, 7);
+            asof15Days.innerHTML = buildSummaryForRange(prodEntries, deliveryEntries, 15);
+
+            // 4. As of Production Vs GRN QTY
+            prodVsGrn.innerHTML = buildProdVsGrn(prodEntries, deliveryEntries);
+
+            // 5. As of Production & Delivery (All-time)
+            asofAll.innerHTML = buildAsOfTable(prodEntries, deliveryEntries);
+
+            // 6. Filtered Production List (existing logic)
+            const dateFrom = document.getElementById('filterDateFrom').value;
+            const dateTo = document.getElementById('filterDateTo').value;
+            const shiftFilter = document.getElementById('filterShift').value;
+            const icFilter = document.getElementById('filterIC').value;
+
+            let filteredProd = prodEntries.filter(e => {
+                if (dateFrom && e.date < dateFrom) return false;
+                if (dateTo && e.date > dateTo) return false;
+                if (shiftFilter && e.shift !== shiftFilter) return false;
+                if (icFilter && e.icName !== icFilter) return false;
+                return true;
+            });
+
             if (filteredProd.length === 0) {
                 container.innerHTML = `<div class="no-data">📭 কোনো প্রোডাকশন এন্ট্রি পাওয়া যায়নি।</div>`;
             } else {
@@ -1542,7 +1624,7 @@
     }
 
     // ================================================================
-    //  BUILD EXECUTIVE SUMMARY (Month-to-Date for "Today" card)
+    //  BUILD EXECUTIVE SUMMARY (Month-to-Date)
     // ================================================================
     function buildExecutiveSummary(prodEntries, deliveryEntries) {
         const today = new Date();
@@ -1588,7 +1670,7 @@
     }
 
     // ================================================================
-    //  BUILD AS OF TABLE
+    //  BUILD AS OF TABLE (All-time)
     // ================================================================
     function buildAsOfTable(prodEntries, deliveryEntries) {
         if (prodEntries.length === 0 && deliveryEntries.length === 0) {
@@ -1684,7 +1766,7 @@
     });
 
     // ================================================================
-    //  DOWNLOAD FUNCTIONS (with Period Summary in Excel)
+    //  DOWNLOAD FUNCTIONS (PDF, Image, Excel)
     // ================================================================
     document.getElementById('downloadPdfBtn').addEventListener('click', function() {
         const element = document.getElementById('reportContent');
@@ -1754,7 +1836,7 @@
 
             const wb = XLSX.utils.book_new();
 
-            // ---- Sheet 1: Production Details ----
+            // ---- Sheet 1: All Production Details ----
             const prodData = prodEntries.map((e, idx) => ({
                 'SL': idx + 1,
                 'Date': e.date,
@@ -1774,7 +1856,7 @@
             const ws1 = XLSX.utils.json_to_sheet(prodData);
             XLSX.utils.book_append_sheet(wb, ws1, 'Production');
 
-            // ---- Sheet 2: Last Execution Summary ----
+            // ---- Sheet 2: Last Execution (Latest Date) ----
             if (prodEntries.length > 0) {
                 const latestDate = prodEntries[0].date;
                 const latestEntries = prodEntries.filter(e => e.date === latestDate);
@@ -1794,43 +1876,38 @@
                 XLSX.utils.book_append_sheet(wb, ws2, 'Last Execution');
             }
 
-            // ---- Sheet 3: Period Summary (3,7,15 days) ----
-            const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
-            const periodData = [
-                { label: '3 Days', days: 3 },
-                { label: '7 Days', days: 7 },
-                { label: '15 Days', days: 15 }
-            ];
-            const periodRows = periodData.map(p => {
-                const end = new Date(today);
-                end.setDate(today.getDate() - 1);
-                const start = new Date(end);
-                start.setDate(end.getDate() - p.days + 1);
-                const s = start.toISOString().split('T')[0];
-                const e = end.toISOString().split('T')[0];
-                const filteredProd = prodEntries.filter(entry => entry.date >= s && entry.date <= e);
-                const filteredDel = deliveryEntries.filter(entry => entry.date >= s && entry.date <= e);
-                const cap = filteredProd.reduce((sum, entry) => sum + entry.capacity, 0);
-                const prod = filteredProd.reduce((sum, entry) => sum + entry.goodQty, 0);
-                const del = filteredDel.reduce((sum, entry) => sum + entry.qty, 0);
-                return {
-                    'Period': p.label,
-                    'Start Date': s,
-                    'End Date': e,
-                    'Capacity': cap,
-                    'Production': prod,
-                    'Delivery': del
-                };
-            });
-            const ws3 = XLSX.utils.json_to_sheet(periodRows);
-            XLSX.utils.book_append_sheet(wb, ws3, 'Period Summary');
+            // ---- Sheet 3: As of 3 Days ----
+            const threeDays = buildDataForRange(prodEntries, deliveryEntries, 3);
+            if (threeDays.length > 0) {
+                const ws3 = XLSX.utils.json_to_sheet(threeDays);
+                XLSX.utils.book_append_sheet(wb, ws3, 'As of 3 Days');
+            }
 
-            // ---- Sheet 4: As of Summary ----
+            // ---- Sheet 4: As of 7 Days ----
+            const sevenDays = buildDataForRange(prodEntries, deliveryEntries, 7);
+            if (sevenDays.length > 0) {
+                const ws4 = XLSX.utils.json_to_sheet(sevenDays);
+                XLSX.utils.book_append_sheet(wb, ws4, 'As of 7 Days');
+            }
+
+            // ---- Sheet 5: As of 15 Days ----
+            const fifteenDays = buildDataForRange(prodEntries, deliveryEntries, 15);
+            if (fifteenDays.length > 0) {
+                const ws5 = XLSX.utils.json_to_sheet(fifteenDays);
+                XLSX.utils.book_append_sheet(wb, ws5, 'As of 15 Days');
+            }
+
+            // ---- Sheet 6: Production Vs GRN ----
+            const prodVsGrnData = buildProdVsGrnData(prodEntries, deliveryEntries);
+            if (prodVsGrnData.length > 0) {
+                const ws6 = XLSX.utils.json_to_sheet(prodVsGrnData);
+                XLSX.utils.book_append_sheet(wb, ws6, 'Prod Vs GRN');
+            }
+
+            // ---- Sheet 7: As of Summary (All-time) ----
             const allCodes = new Set();
             prodEntries.forEach(e => allCodes.add(e.productCode));
             deliveryEntries.forEach(e => allCodes.add(e.productCode));
-
             const asofRows = [];
             let totalCap = 0, totalProd = 0, totalDel = 0;
             allCodes.forEach(code => {
@@ -1861,9 +1938,8 @@
                 'As of Production': totalProd,
                 'As of Delivery': totalDel
             });
-
-            const ws4 = XLSX.utils.json_to_sheet(asofRows);
-            XLSX.utils.book_append_sheet(wb, ws4, 'As of Summary');
+            const ws7 = XLSX.utils.json_to_sheet(asofRows);
+            XLSX.utils.book_append_sheet(wb, ws7, 'As of All-time');
 
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
@@ -1883,6 +1959,76 @@
         }
     });
 
+    // Helper: build data array for a given range (for Excel)
+    function buildDataForRange(prodEntries, deliveryEntries, days) {
+        const today = new Date();
+        const cutoff = new Date(today);
+        cutoff.setDate(today.getDate() - days + 1);
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+        const tStr = today.toISOString().split('T')[0];
+        const filteredProd = prodEntries.filter(e => e.date >= cutoffStr && e.date <= tStr);
+        const filteredDel = deliveryEntries.filter(e => e.date >= cutoffStr && e.date <= tStr);
+        const allCodes = new Set();
+        filteredProd.forEach(e => allCodes.add(e.productCode));
+        filteredDel.forEach(e => allCodes.add(e.productCode));
+        const rows = [];
+        allCodes.forEach(code => {
+            const product = productData.find(p => p.code === code);
+            if (!product) return;
+            const prodItems = filteredProd.filter(e => e.productCode === code);
+            const delItems = filteredDel.filter(e => e.productCode === code);
+            const capSum = prodItems.reduce((s, e) => s + e.capacity, 0);
+            const prodSum = prodItems.reduce((s, e) => s + e.goodQty, 0);
+            const delSum = delItems.reduce((s, e) => s + e.qty, 0);
+            rows.push({
+                'Code': code,
+                'Item Name': product.item,
+                'Color': product.color,
+                'As of Capacity': capSum,
+                'As of Production': prodSum,
+                'As of Delivery': delSum
+            });
+        });
+        // add total row
+        const totalCap = rows.reduce((s, r) => s + r['As of Capacity'], 0);
+        const totalProd = rows.reduce((s, r) => s + r['As of Production'], 0);
+        const totalDel = rows.reduce((s, r) => s + r['As of Delivery'], 0);
+        rows.push({
+            'Code': 'মোট',
+            'Item Name': '',
+            'Color': '',
+            'As of Capacity': totalCap,
+            'As of Production': totalProd,
+            'As of Delivery': totalDel
+        });
+        return rows;
+    }
+
+    // Helper: build data for Prod Vs GRN (Excel)
+    function buildProdVsGrnData(prodEntries, deliveryEntries) {
+        const allCodes = new Set();
+        prodEntries.forEach(e => allCodes.add(e.productCode));
+        deliveryEntries.forEach(e => allCodes.add(e.productCode));
+        const rows = [];
+        allCodes.forEach(code => {
+            const product = productData.find(p => p.code === code);
+            if (!product) return;
+            const prodItems = prodEntries.filter(e => e.productCode === code);
+            const delItems = deliveryEntries.filter(e => e.productCode === code);
+            const prodSum = prodItems.reduce((s, e) => s + e.goodQty, 0);
+            const delSum = delItems.reduce((s, e) => s + e.qty, 0);
+            rows.push({
+                'Code': code,
+                'Item Name': product.item,
+                'Color': product.color,
+                'Up to Prod': prodSum,
+                'Up to GRN/Delivery': delSum,
+                'Gap (Prod - Del)': prodSum - delSum
+            });
+        });
+        return rows;
+    }
+
     // ================================================================
     //  INIT
     // ================================================================
@@ -1891,7 +2037,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with 3,7,15 Day Period Summary ready.');
+    console.log('✅ Production + Delivery Entry with all requested features ready.');
     renderReport();
 </script>
 </body>
