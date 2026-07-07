@@ -443,6 +443,43 @@
         .summary-item strong { font-size: 16px; color: #0b2b44; }
 
         .no-data { text-align: center; padding: 24px 10px; color: #7a94b0; font-size: 15px; }
+
+        /* ===== LAST EXECUTION SUMMARY TABLE ===== */
+        .last-execution-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .last-execution-table th {
+            background: #dce8f5;
+            color: #0b2b44;
+            font-weight: 600;
+            padding: 6px 4px;
+            border: 1px solid #c7d8ea;
+            text-align: center;
+            font-size: 10px;
+        }
+        .last-execution-table td {
+            padding: 6px 4px;
+            border: 1px solid #c7d8ea;
+            text-align: center;
+            vertical-align: middle;
+            background: #fff;
+            font-size: 10px;
+        }
+        .last-execution-table tr:nth-child(even) td { background: #f9fcff; }
+        .last-execution-table .util-badge-sm {
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 9px;
+            display: inline-block;
+            min-width: 36px;
+        }
+        .last-execution-table .util-badge-sm.high { background: #e0f5e8; color: #1a6e3a; }
+        .last-execution-table .util-badge-sm.medium { background: #fef3d6; color: #8a6d1b; }
+        .last-execution-table .util-badge-sm.low { background: #fde8e8; color: #a33434; }
+
         .edit-btn {
             background: #2a7de1;
             color: #fff;
@@ -480,6 +517,10 @@
             .filter-row .form-group { flex: 1 1 45%; }
             .filter-row .btn-group { flex: 1 1 100%; }
             .summary-grid { grid-template-columns: 1fr 1fr; }
+            .last-execution-table { font-size: 12px; }
+            .last-execution-table th { font-size: 11px; }
+            .last-execution-table td { font-size: 11px; }
+            .last-execution-table .util-badge-sm { font-size: 10px; min-width: 40px; }
         }
         @media (min-width: 768px) {
             .app-container { max-width: 800px; }
@@ -487,6 +528,10 @@
             .form-group.full-width { grid-column: 1 / -1; }
             table { font-size: 14px; min-width: auto; }
             .asof-table { font-size: 14px; }
+            .last-execution-table { font-size: 13px; }
+            .last-execution-table th { font-size: 12px; }
+            .last-execution-table td { font-size: 12px; }
+            .last-execution-table .util-badge-sm { font-size: 11px; min-width: 44px; }
         }
         .form-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
         .form-group.full-width { grid-column: 1; }
@@ -523,7 +568,6 @@
                 <div class="card-title" id="formTitle">📋 Chair Prod Entry <span class="badge">New</span></div>
                 <input type="hidden" id="editId" value="" />
                 <div class="form-grid">
-                    <!-- same fields as before -->
                     <div class="form-group">
                         <label for="entryDate" class="label-blue">📅 Date <span class="req">*</span></label>
                         <input type="date" id="entryDate" class="form-control" required />
@@ -653,7 +697,6 @@
                 <button class="btn-filter download" id="downloadImageBtn">🖼️ Image (PNG)</button>
                 <button class="btn-filter download" id="downloadExcelBtn">📊 Excel</button>
             </div>
-            <!-- Auto Refresh Toggle -->
             <div class="toggle-container" style="margin-top:10px;">
                 <input type="checkbox" id="autoRefresh" />
                 <label for="autoRefresh" style="font-weight:600; cursor:pointer;">Auto Refresh (5s)</label>
@@ -665,6 +708,14 @@
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">📊 Executive Summary</div>
                 <div class="summary-grid" id="executiveSummary"></div>
+            </div>
+
+            <!-- ===== NEW: Last Production Execution Summary (Only Latest Date) ===== -->
+            <div class="card" style="padding-bottom:14px;">
+                <div class="card-title">📋 Last Production Execution Summary <span class="badge">Latest Date</span></div>
+                <div class="table-wrap" id="lastExecutionContainer">
+                    <!-- dynamically filled -->
+                </div>
             </div>
 
             <div class="card" style="padding-bottom:14px;">
@@ -750,7 +801,6 @@
 
     function toggleAutoRefresh() {
         if (autoRefreshCheckbox.checked) {
-            // Start auto-refresh
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             autoRefreshInterval = setInterval(() => {
                 renderReport();
@@ -759,7 +809,6 @@
             refreshStatus.className = 'status on';
             console.log('🔁 Auto-refresh started (5s)');
         } else {
-            // Stop auto-refresh
             if (autoRefreshInterval) {
                 clearInterval(autoRefreshInterval);
                 autoRefreshInterval = null;
@@ -772,7 +821,6 @@
 
     autoRefreshCheckbox.addEventListener('change', toggleAutoRefresh);
 
-    // Reset timer after manual refresh (e.g., after save, filter, etc.)
     function resetAutoRefreshTimer() {
         if (autoRefreshCheckbox.checked) {
             if (autoRefreshInterval) {
@@ -1177,9 +1225,7 @@
                 } else {
                     resetForm();
                 }
-                // Refresh report immediately
                 await renderReport();
-                // Reset auto-refresh timer if enabled
                 resetAutoRefreshTimer();
             } else {
                 alert('❌ সংরক্ষণ ব্যর্থ: ' + result.error);
@@ -1260,21 +1306,16 @@
                 tabContents[target].classList.add('active');
             }
             if (target === 'tabReport') {
-                // Render report when switching to report tab
                 renderReport();
-                // Auto-refresh may already be running, but we want to ensure it's started if checkbox is checked
                 if (autoRefreshCheckbox.checked && !autoRefreshInterval) {
                     toggleAutoRefresh();
                 }
-            } else {
-                // When leaving report tab, stop auto-refresh to save resources? 
-                // We'll keep it running but user can toggle off.
             }
         });
     });
 
     // ================================================================
-    //  RENDER REPORT
+    //  RENDER REPORT (with Last Execution Summary – Only Latest Date)
     // ================================================================
     async function renderReport() {
         try {
@@ -1285,6 +1326,7 @@
             const summaryBox = document.getElementById('reportSummary');
             const execSummary = document.getElementById('executiveSummary');
             const asofContainer = document.getElementById('asofTableContainer');
+            const lastExecContainer = document.getElementById('lastExecutionContainer');
 
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo = document.getElementById('filterDateTo').value;
@@ -1302,6 +1344,38 @@
             execSummary.innerHTML = buildExecutiveSummary(prodEntries, deliveryEntries);
             asofContainer.innerHTML = buildAsOfTable(prodEntries, deliveryEntries);
 
+            // ---- Last Production Execution Summary (Only Latest Date) ----
+            if (prodEntries.length === 0) {
+                lastExecContainer.innerHTML = `<div class="no-data" style="padding:12px;">📭 কোনো প্রোডাকশন এন্ট্রি নেই।</div>`;
+            } else {
+                // Get the latest date from the first entry (already sorted desc)
+                const latestDate = prodEntries[0].date;
+                const latestEntries = prodEntries.filter(e => e.date === latestDate);
+                let html = `<table class="last-execution-table">
+                    <thead><tr>
+                        <th>Date</th><th>Shift</th><th>Code</th><th>Item Name</th><th>Color</th>
+                        <th>Capacity</th><th>Production</th><th>Utilization</th>
+                        <th>Cause</th>
+                    </tr></thead><tbody>`;
+                latestEntries.forEach((e) => {
+                    const utilClass = e.utilization >= 85 ? 'high' : (e.utilization >= 60 ? 'medium' : 'low');
+                    html += `<tr>
+                        <td>${e.date}</td>
+                        <td>${e.shift}</td>
+                        <td>${e.productCode}</td>
+                        <td style="text-align:left; font-size:9px;">${e.itemName.length > 18 ? e.itemName.substring(0, 18) + '…' : e.itemName}</td>
+                        <td>${e.colorName}</td>
+                        <td>${e.capacity}</td>
+                        <td>${e.goodQty}</td>
+                        <td><span class="util-badge-sm ${utilClass}">${e.utilization.toFixed(1)}%</span></td>
+                        <td style="font-size:9px;">${e.cause || '—'}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+                lastExecContainer.innerHTML = html;
+            }
+
+            // ---- Filtered Production List ----
             if (filteredProd.length === 0) {
                 container.innerHTML = `<div class="no-data">📭 কোনো প্রোডাকশন এন্ট্রি পাওয়া যায়নি।</div>`;
             } else {
@@ -1484,7 +1558,7 @@
                 try {
                     await deleteAllData();
                     renderReport();
-                    alert('✅ সব ডেটা মুছে ফেলা হয়েছে။');
+                    alert('✅ সব ডেটা মুছে ফেলা হয়েছে।');
                     resetAutoRefreshTimer();
                 } catch (err) {
                     showError('Delete All Error: ' + err.message);
@@ -1497,7 +1571,7 @@
     });
 
     // ================================================================
-    //  DOWNLOAD FUNCTIONS (same as before)
+    //  DOWNLOAD FUNCTIONS (with Last Execution Summary in Excel)
     // ================================================================
     document.getElementById('downloadPdfBtn').addEventListener('click', function() {
         const element = document.getElementById('reportContent');
@@ -1567,6 +1641,7 @@
 
             const wb = XLSX.utils.book_new();
 
+            // ---- Sheet 1: Production Details ----
             const prodData = prodEntries.map((e, idx) => ({
                 'SL': idx + 1,
                 'Date': e.date,
@@ -1586,6 +1661,27 @@
             const ws1 = XLSX.utils.json_to_sheet(prodData);
             XLSX.utils.book_append_sheet(wb, ws1, 'Production');
 
+            // ---- Sheet 2: Last Execution Summary (Only Latest Date) ----
+            if (prodEntries.length > 0) {
+                const latestDate = prodEntries[0].date;
+                const latestEntries = prodEntries.filter(e => e.date === latestDate);
+                const lastExecData = latestEntries.map((e, idx) => ({
+                    'SL': idx + 1,
+                    'Date': e.date,
+                    'Shift': e.shift,
+                    'Item Code': e.productCode,
+                    'Item Name': e.itemName,
+                    'Color': e.colorName,
+                    'Capacity': e.capacity,
+                    'Production': e.goodQty,
+                    'Utilization %': e.utilization ? e.utilization.toFixed(1) : '',
+                    'Cause': e.cause || ''
+                }));
+                const ws2 = XLSX.utils.json_to_sheet(lastExecData);
+                XLSX.utils.book_append_sheet(wb, ws2, 'Last Execution');
+            }
+
+            // ---- Sheet 3: As of Summary ----
             const allCodes = new Set();
             prodEntries.forEach(e => allCodes.add(e.productCode));
             deliveryEntries.forEach(e => allCodes.add(e.productCode));
@@ -1621,8 +1717,8 @@
                 'As of Delivery': totalDel
             });
 
-            const ws2 = XLSX.utils.json_to_sheet(asofRows);
-            XLSX.utils.book_append_sheet(wb, ws2, 'As of Summary');
+            const ws3 = XLSX.utils.json_to_sheet(asofRows);
+            XLSX.utils.book_append_sheet(wb, ws3, 'As of Summary');
 
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
@@ -1650,7 +1746,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with Auto-Refresh ready.');
+    console.log('✅ Production + Delivery Entry with Last Execution Summary (Latest Date) & Auto-Refresh ready.');
     renderReport();
 </script>
 </body>
