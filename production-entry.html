@@ -669,8 +669,8 @@
         authDomain: "production-app-78f2a.firebaseapp.com",
         projectId: "production-app-78f2a",
         storageBucket: "production-app-78f2a.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID", // you can leave this, it's not required for Firestore
-        appId: "YOUR_APP_ID" // you can leave this, it's not required for Firestore
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
     };
 
     // Initialize Firebase
@@ -989,7 +989,7 @@
     });
 
     // ================================================================
-    //  PRODUCTION SUBMIT (Firebase version)
+    //  PRODUCTION SUBMIT (Firebase version with better error handling)
     // ================================================================
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1033,34 +1033,35 @@
         const editIdValue = editId.value;
 
         try {
+            let result;
             if (editIdValue) {
-                // UPDATE
-                const result = await updateProdEntry(editIdValue, entryData);
-                if (result.success) {
-                    alert('✅ এন্ট্রি আপডেট করা হয়েছে!');
-                    resetForm();
-                    document.querySelector('[data-tab="tabReport"]').click();
-                    renderReport();
-                } else {
-                    alert('❌ আপডেট ব্যর্থ: ' + result.error);
-                }
+                result = await updateProdEntry(editIdValue, entryData);
             } else {
-                // CREATE
-                const result = await addProdEntry(entryData);
-                if (result.success) {
-                    alert('✅ প্রোডাকশন এন্ট্রি সংরক্ষণ করা হয়েছে!');
+                result = await addProdEntry(entryData);
+            }
+            
+            if (result.success) {
+                alert(editIdValue ? '✅ এন্ট্রি আপডেট করা হয়েছে!' : '✅ প্রোডাকশন এন্ট্রি সংরক্ষণ করা হয়েছে!');
+                resetForm();
+                if (!editIdValue) {
                     goodQtyInput.value = '';
                     causeInput.value = '';
                     utilizationDisplay.textContent = '—';
                     utilizationDisplay.className = 'value';
                     goodQtyInput.focus();
-                    if (document.getElementById('tabReport').classList.contains('active')) renderReport();
-                } else {
-                    alert('❌ সংরক্ষণ ব্যর্থ: ' + result.error);
                 }
+                if (document.getElementById('tabReport').classList.contains('active')) {
+                    renderReport();
+                } else {
+                    // যদি রিপোর্ট ট্যাব না খোলা থাকে, তবুও ডেটা রিফ্রেশ করুন
+                    renderReport();
+                }
+            } else {
+                alert('❌ সংরক্ষণ ব্যর্থ: ' + result.error);
             }
         } catch (err) {
             alert('সার্ভারে সমস্যা: ' + err.message);
+            console.error('Submit error:', err);
         }
     });
 
