@@ -424,6 +424,50 @@
         }
         .summary-card .stat-item strong { font-size: 17px; color: #0b2b44; font-weight: 700; }
 
+        /* ---- NEW: 3,7,15 Days Summary Cards ---- */
+        .period-summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .period-summary-card {
+            background: #f6faff;
+            border-radius: 14px;
+            padding: 12px 10px;
+            border: 1px solid #dce8f5;
+            text-align: center;
+        }
+        .period-summary-card h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a3a57;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .period-summary-card .stat-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 8px;
+            justify-content: center;
+        }
+        .period-summary-card .stat-item {
+            display: flex;
+            align-items: baseline;
+            gap: 2px;
+            font-size: 11px;
+            color: #1f3d5a;
+        }
+        .period-summary-card .stat-item strong {
+            font-size: 14px;
+            color: #0b2b44;
+            font-weight: 700;
+        }
+
         .summary-box {
             display: flex;
             flex-wrap: wrap;
@@ -517,10 +561,14 @@
             .filter-row .form-group { flex: 1 1 45%; }
             .filter-row .btn-group { flex: 1 1 100%; }
             .summary-grid { grid-template-columns: 1fr 1fr; }
+            .period-summary-grid { grid-template-columns: 1fr 1fr 1fr; }
             .last-execution-table { font-size: 12px; }
             .last-execution-table th { font-size: 11px; }
             .last-execution-table td { font-size: 11px; }
             .last-execution-table .util-badge-sm { font-size: 10px; min-width: 40px; }
+            .period-summary-card .stat-item { font-size: 12px; }
+            .period-summary-card .stat-item strong { font-size: 15px; }
+            .period-summary-card h4 { font-size: 14px; }
         }
         @media (min-width: 768px) {
             .app-container { max-width: 800px; }
@@ -532,6 +580,9 @@
             .last-execution-table th { font-size: 12px; }
             .last-execution-table td { font-size: 12px; }
             .last-execution-table .util-badge-sm { font-size: 11px; min-width: 44px; }
+            .period-summary-card .stat-item { font-size: 13px; }
+            .period-summary-card .stat-item strong { font-size: 16px; }
+            .period-summary-card h4 { font-size: 15px; }
         }
         .form-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
         .form-group.full-width { grid-column: 1; }
@@ -708,6 +759,14 @@
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">📊 Executive Summary</div>
                 <div class="summary-grid" id="executiveSummary"></div>
+            </div>
+
+            <!-- ===== NEW: 3,7,15 Days Summary Cards ===== -->
+            <div class="card" style="padding-bottom:14px;">
+                <div class="card-title">📊 As of Production & Delivery <span class="badge">Period Summary</span></div>
+                <div class="period-summary-grid" id="periodSummaryContainer">
+                    <!-- dynamically filled -->
+                </div>
             </div>
 
             <!-- ===== Last Production Execution Summary (Only Latest Date) ===== -->
@@ -1315,6 +1374,51 @@
     });
 
     // ================================================================
+    //  BUILD PERIOD SUMMARY (3,7,15 days)
+    // ================================================================
+    function buildPeriodSummary(prodEntries, deliveryEntries) {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const periods = [
+            { label: '3 Days', days: 3 },
+            { label: '7 Days', days: 7 },
+            { label: '15 Days', days: 15 }
+        ];
+
+        // Create a date string for N days ago (excluding today, so we go back N days from today-1)
+        // Example: for 3 days, we want (today-3) to (today-1) i.e., last 3 full days.
+        const getDateRange = (days) => {
+            const end = new Date(today);
+            end.setDate(today.getDate() - 1);
+            const start = new Date(end);
+            start.setDate(end.getDate() - days + 1);
+            return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+        };
+
+        let html = '';
+        periods.forEach(p => {
+            const range = getDateRange(p.days);
+            const filteredProd = prodEntries.filter(e => e.date >= range.start && e.date <= range.end);
+            const filteredDel = deliveryEntries.filter(e => e.date >= range.start && e.date <= range.end);
+            const cap = filteredProd.reduce((s, e) => s + e.capacity, 0);
+            const prod = filteredProd.reduce((s, e) => s + e.goodQty, 0);
+            const del = filteredDel.reduce((s, e) => s + e.qty, 0);
+            const formatNum = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+            html += `
+                <div class="period-summary-card">
+                    <h4>📊 ${p.label}</h4>
+                    <div class="stat-row">
+                        <div class="stat-item">⚙️ <strong>${formatNum(cap)}</strong></div>
+                        <div class="stat-item">✅ <strong>${formatNum(prod)}</strong></div>
+                        <div class="stat-item">🚚 <strong>${formatNum(del)}</strong></div>
+                    </div>
+                </div>
+            `;
+        });
+        return html;
+    }
+
+    // ================================================================
     //  RENDER REPORT
     // ================================================================
     async function renderReport() {
@@ -1327,6 +1431,7 @@
             const execSummary = document.getElementById('executiveSummary');
             const asofContainer = document.getElementById('asofTableContainer');
             const lastExecContainer = document.getElementById('lastExecutionContainer');
+            const periodContainer = document.getElementById('periodSummaryContainer');
 
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo = document.getElementById('filterDateTo').value;
@@ -1341,8 +1446,13 @@
                 return true;
             });
 
-            // ---- Executive Summary (using updated function) ----
+            // ---- Executive Summary ----
             execSummary.innerHTML = buildExecutiveSummary(prodEntries, deliveryEntries);
+
+            // ---- Period Summary (3,7,15 Days) ----
+            periodContainer.innerHTML = buildPeriodSummary(prodEntries, deliveryEntries);
+
+            // ---- As of Table ----
             asofContainer.innerHTML = buildAsOfTable(prodEntries, deliveryEntries);
 
             // ---- Last Production Execution Summary (Only Latest Date) ----
@@ -1440,14 +1550,12 @@
         yesterday.setDate(today.getDate() - 1);
         const yStr = yesterday.toISOString().split('T')[0];
         
-        // ---- Yesterday (full day) ----
         const yProd = prodEntries.filter(e => e.date === yStr);
         const yProdCap = yProd.reduce((s, e) => s + e.capacity, 0);
         const yProdQty = yProd.reduce((s, e) => s + e.goodQty, 0);
         const yDel = deliveryEntries.filter(e => e.date === yStr);
         const yDelQty = yDel.reduce((s, e) => s + e.qty, 0);
 
-        // ---- Month-to-Date (from 1st of current month to today) ----
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
         const fStr = firstDay.toISOString().split('T')[0];
         const tStr = today.toISOString().split('T')[0];
@@ -1576,7 +1684,7 @@
     });
 
     // ================================================================
-    //  DOWNLOAD FUNCTIONS
+    //  DOWNLOAD FUNCTIONS (with Period Summary in Excel)
     // ================================================================
     document.getElementById('downloadPdfBtn').addEventListener('click', function() {
         const element = document.getElementById('reportContent');
@@ -1666,7 +1774,7 @@
             const ws1 = XLSX.utils.json_to_sheet(prodData);
             XLSX.utils.book_append_sheet(wb, ws1, 'Production');
 
-            // ---- Sheet 2: Last Execution Summary (Only Latest Date) ----
+            // ---- Sheet 2: Last Execution Summary ----
             if (prodEntries.length > 0) {
                 const latestDate = prodEntries[0].date;
                 const latestEntries = prodEntries.filter(e => e.date === latestDate);
@@ -1686,7 +1794,39 @@
                 XLSX.utils.book_append_sheet(wb, ws2, 'Last Execution');
             }
 
-            // ---- Sheet 3: As of Summary ----
+            // ---- Sheet 3: Period Summary (3,7,15 days) ----
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            const periodData = [
+                { label: '3 Days', days: 3 },
+                { label: '7 Days', days: 7 },
+                { label: '15 Days', days: 15 }
+            ];
+            const periodRows = periodData.map(p => {
+                const end = new Date(today);
+                end.setDate(today.getDate() - 1);
+                const start = new Date(end);
+                start.setDate(end.getDate() - p.days + 1);
+                const s = start.toISOString().split('T')[0];
+                const e = end.toISOString().split('T')[0];
+                const filteredProd = prodEntries.filter(entry => entry.date >= s && entry.date <= e);
+                const filteredDel = deliveryEntries.filter(entry => entry.date >= s && entry.date <= e);
+                const cap = filteredProd.reduce((sum, entry) => sum + entry.capacity, 0);
+                const prod = filteredProd.reduce((sum, entry) => sum + entry.goodQty, 0);
+                const del = filteredDel.reduce((sum, entry) => sum + entry.qty, 0);
+                return {
+                    'Period': p.label,
+                    'Start Date': s,
+                    'End Date': e,
+                    'Capacity': cap,
+                    'Production': prod,
+                    'Delivery': del
+                };
+            });
+            const ws3 = XLSX.utils.json_to_sheet(periodRows);
+            XLSX.utils.book_append_sheet(wb, ws3, 'Period Summary');
+
+            // ---- Sheet 4: As of Summary ----
             const allCodes = new Set();
             prodEntries.forEach(e => allCodes.add(e.productCode));
             deliveryEntries.forEach(e => allCodes.add(e.productCode));
@@ -1722,8 +1862,8 @@
                 'As of Delivery': totalDel
             });
 
-            const ws3 = XLSX.utils.json_to_sheet(asofRows);
-            XLSX.utils.book_append_sheet(wb, ws3, 'As of Summary');
+            const ws4 = XLSX.utils.json_to_sheet(asofRows);
+            XLSX.utils.book_append_sheet(wb, ws4, 'As of Summary');
 
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
@@ -1751,7 +1891,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with Month-to-Date Executive Summary ready.');
+    console.log('✅ Production + Delivery Entry with 3,7,15 Day Period Summary ready.');
     renderReport();
 </script>
 </body>
