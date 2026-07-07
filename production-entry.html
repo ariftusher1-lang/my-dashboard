@@ -369,43 +369,36 @@
         .filter-row .form-group label { font-size: 14px; font-weight: 500; }
         .filter-row .btn-group { display: flex; gap: 10px; width: 100%; }
 
-        /* ===== PAGINATION ===== */
-        .pagination {
+        /* ===== LOAD MORE ===== */
+        .load-more-container {
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin: 14px 0 8px;
+            margin: 16px 0 8px;
         }
-        .pagination button {
-            padding: 6px 14px;
-            border: 1px solid #dce4ec;
-            border-radius: 8px;
-            background: #fff;
-            cursor: pointer;
+        .load-more-btn {
+            padding: 10px 30px;
+            background: #eaf3fe;
+            color: #2a7de1;
+            border: 2px solid #2a7de1;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             font-family: 'Hind Siliguri', sans-serif;
-            font-size: 14px;
-            font-weight: 500;
+            cursor: pointer;
             transition: 0.2s;
-            min-width: 38px;
             touch-action: manipulation;
         }
-        .pagination button.active {
+        .load-more-btn:hover {
             background: #2a7de1;
             color: #fff;
-            border-color: #2a7de1;
         }
-        .pagination button:disabled {
-            opacity: 0.4;
+        .load-more-btn:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
+            background: #eaf3fe;
+            color: #2a7de1;
         }
-        .pagination button:active:not(:disabled) { transform: scale(0.94); }
-        .pagination .page-info {
-            font-size: 14px;
-            color: #1a3a57;
-            padding: 0 8px;
-        }
+        .load-more-btn:active:not(:disabled) { transform: scale(0.96); }
 
         /* ===== TABLE ===== */
         .table-wrap {
@@ -904,14 +897,13 @@
             <div class="card" style="padding-bottom:16px;">
                 <div class="card-title">📊 As of Production Vs GRN QTY <span class="badge">Up to Today</span></div>
                 <div class="table-wrap" id="prodVsGrnContainer"></div>
-                <!-- Download options placed right below the table, inside the same card -->
                 <div class="download-row">
                     <button class="btn-filter download" id="downloadProdVsGrnImage">🖼️ Image (PNG)</button>
                     <button class="btn-filter download" id="downloadProdVsGrnExcel">📊 Excel</button>
                 </div>
             </div>
 
-            <!-- Filter & Production List with Pagination (Edit only) -->
+            <!-- Filter & Production List with Load More -->
             <div class="card" style="padding-bottom:16px;">
                 <div class="card-title">🔍 ফিল্টার</div>
                 <div class="filter-row">
@@ -950,7 +942,9 @@
                 </div>
                 <div class="card-title" style="margin-top:8px;">📋 প্রোডাকশন লিস্ট <span class="badge" id="prodCountBadge">0</span></div>
                 <div class="table-wrap" id="reportTableContainer"></div>
-                <div id="paginationContainer" class="pagination"></div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="loadMoreBtn">📥 Show More Entry</button>
+                </div>
                 <div class="summary-box" id="reportSummary"></div>
             </div>
         </div>
@@ -968,7 +962,6 @@
             <div class="modal-body" id="modalBody">
                 <!-- dynamically filled -->
             </div>
-            <!-- Download buttons inside modal -->
             <div class="modal-download-row">
                 <button class="btn-filter download" id="modalDownloadImage">🖼️ Image (PNG)</button>
                 <button class="btn-filter download" id="modalDownloadExcel">📊 Excel</button>
@@ -1194,11 +1187,11 @@
     const DELETE_PASSWORD = 'arif';
 
     // ================================================================
-    //  PAGINATION STATE
+    //  LOAD MORE STATE
     // ================================================================
-    let currentPage = 1;
-    const itemsPerPage = 6;
-    let currentFilteredData = [];
+    let visibleCount = 6;
+    const loadMoreStep = 6;
+    let currentFilteredDataForLoadMore = [];
 
     // ================================================================
     //  DOM REFS
@@ -1646,7 +1639,6 @@
                 console.error(err);
             });
         } else if (format === 'excel') {
-            // Build Excel from currentModalData
             const headers = ['SL', 'Date', 'Code', 'Item', 'Color', 'GRN/Delivery QTY'];
             const rows = [headers];
             currentModalData.forEach(r => {
@@ -1724,30 +1716,29 @@
     }
 
     // ================================================================
-    //  RENDER PAGINATED PRODUCTION LIST (Edit only)
+    //  RENDER PRODUCTION LIST WITH LOAD MORE (6 per page)
     // ================================================================
-    function renderPaginatedTable(data, containerId) {
+    function renderLoadMoreTable(data, containerId) {
         const container = document.getElementById(containerId);
-        const paginationDiv = document.getElementById('paginationContainer');
         const badge = document.getElementById('prodCountBadge');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
 
-        currentFilteredData = data;
+        currentFilteredDataForLoadMore = data;
         const totalItems = data.length;
         badge.textContent = totalItems;
 
         if (totalItems === 0) {
             container.innerHTML = `<div class="no-data">📭 কোনো প্রোডাকশন এন্ট্রি পাওয়া যায়নি।</div>`;
-            paginationDiv.innerHTML = '';
+            loadMoreBtn.style.display = 'none';
             return;
         }
 
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
-        if (currentPage > totalPages) currentPage = totalPages;
-        if (currentPage < 1) currentPage = 1;
+        // Reset visible count when data changes
+        visibleCount = 6;
+        if (visibleCount > totalItems) visibleCount = totalItems;
 
-        const start = (currentPage - 1) * itemsPerPage;
-        const end = Math.min(start + itemsPerPage, totalItems);
-        const pageData = data.slice(start, end);
+        // Render only visibleCount items
+        const visibleData = data.slice(0, visibleCount);
 
         let html = `<table><thead><tr>
             <th>#</th><th>তারিখ</th><th>শিফট</th><th>MC No</th><th>ইনচার্জ</th>
@@ -1757,11 +1748,10 @@
             <th>✏️</th>
         </tr></thead><tbody>`;
 
-        pageData.forEach((e, idx) => {
+        visibleData.forEach((e, idx) => {
             const utilClass = e.utilization >= 85 ? 'high' : (e.utilization >= 60 ? 'medium' : 'low');
-            const globalIdx = start + idx + 1;
             html += `<tr>
-                <td>${globalIdx}</td>
+                <td>${idx+1}</td>
                 <td>${e.date}</td>
                 <td>${e.shift}</td>
                 <td>${e.mcNo || '—'}</td>
@@ -1790,33 +1780,26 @@
             });
         });
 
-        // Build pagination controls
-        let pagHtml = '';
-        if (totalPages > 1) {
-            pagHtml += `<button onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>⏮</button>`;
-            pagHtml += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>◀</button>`;
-
-            const startPage = Math.max(1, currentPage - 2);
-            const endPage = Math.min(totalPages, currentPage + 2);
-            if (startPage > 1) pagHtml += `<button onclick="goToPage(1)">1</button>${startPage > 2 ? '…' : ''}`;
-            for (let p = startPage; p <= endPage; p++) {
-                pagHtml += `<button onclick="goToPage(${p})" class="${p === currentPage ? 'active' : ''}">${p}</button>`;
-            }
-            if (endPage < totalPages) pagHtml += `${endPage < totalPages - 1 ? '…' : ''}<button onclick="goToPage(${totalPages})">${totalPages}</button>`;
-
-            pagHtml += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>▶</button>`;
-            pagHtml += `<button onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>⏭</button>`;
-            pagHtml += `<span class="page-info">${currentPage} / ${totalPages}</span>`;
+        // Show/hide load more button
+        if (visibleCount >= totalItems) {
+            loadMoreBtn.style.display = 'none';
+        } else {
+            loadMoreBtn.style.display = 'block';
+            loadMoreBtn.disabled = false;
+            loadMoreBtn.textContent = `📥 Show More Entry (${visibleCount}/${totalItems})`;
         }
-        paginationDiv.innerHTML = pagHtml;
     }
 
-    function goToPage(page) {
-        const total = Math.ceil(currentFilteredData.length / itemsPerPage);
-        if (page < 1 || page > total) return;
-        currentPage = page;
-        renderPaginatedTable(currentFilteredData, 'reportTableContainer');
+    // ================================================================
+    //  LOAD MORE HANDLER
+    // ================================================================
+    function loadMoreEntries() {
+        const totalItems = currentFilteredDataForLoadMore.length;
+        visibleCount = Math.min(visibleCount + loadMoreStep, totalItems);
+        renderLoadMoreTable(currentFilteredDataForLoadMore, 'reportTableContainer');
     }
+
+    document.getElementById('loadMoreBtn').addEventListener('click', loadMoreEntries);
 
     // ================================================================
     //  DOWNLOAD FUNCTIONS for Prod Vs GRN table only (Image + Excel, no PDF)
@@ -1845,7 +1828,6 @@
                 console.error(err);
             });
         } else if (format === 'excel') {
-            // Build data from the table
             const rows = [];
             const ths = table.querySelectorAll('thead th');
             const headers = [];
@@ -1940,7 +1922,7 @@
                 });
             });
 
-            // 4. Filtered Production List (paginated, Edit only)
+            // 4. Filtered Production List (Load More)
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo = document.getElementById('filterDateTo').value;
             const shiftFilter = document.getElementById('filterShift').value;
@@ -1954,8 +1936,7 @@
                 return true;
             });
 
-            currentPage = 1;
-            renderPaginatedTable(filteredProd, 'reportTableContainer');
+            renderLoadMoreTable(filteredProd, 'reportTableContainer');
 
             const totalEntries = filteredProd.length;
             const totalGoodQty = filteredProd.reduce((s, e) => s + e.goodQty, 0);
@@ -2074,7 +2055,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with GRN Details Image/Excel download ready.');
+    console.log('✅ Production + Delivery Entry with Load More (6 per page) ready.');
     renderReport();
 </script>
 </body>
