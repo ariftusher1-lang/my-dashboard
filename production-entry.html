@@ -710,7 +710,7 @@
                 <div class="summary-grid" id="executiveSummary"></div>
             </div>
 
-            <!-- ===== NEW: Last Production Execution Summary (Only Latest Date) ===== -->
+            <!-- ===== Last Production Execution Summary (Only Latest Date) ===== -->
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">📋 Last Production Execution Summary <span class="badge">Latest Date</span></div>
                 <div class="table-wrap" id="lastExecutionContainer">
@@ -1315,7 +1315,7 @@
     });
 
     // ================================================================
-    //  RENDER REPORT (with Last Execution Summary – Only Latest Date)
+    //  RENDER REPORT
     // ================================================================
     async function renderReport() {
         try {
@@ -1341,6 +1341,7 @@
                 return true;
             });
 
+            // ---- Executive Summary (using updated function) ----
             execSummary.innerHTML = buildExecutiveSummary(prodEntries, deliveryEntries);
             asofContainer.innerHTML = buildAsOfTable(prodEntries, deliveryEntries);
 
@@ -1348,7 +1349,6 @@
             if (prodEntries.length === 0) {
                 lastExecContainer.innerHTML = `<div class="no-data" style="padding:12px;">📭 কোনো প্রোডাকশন এন্ট্রি নেই।</div>`;
             } else {
-                // Get the latest date from the first entry (already sorted desc)
                 const latestDate = prodEntries[0].date;
                 const latestEntries = prodEntries.filter(e => e.date === latestDate);
                 let html = `<table class="last-execution-table">
@@ -1432,25 +1432,30 @@
     }
 
     // ================================================================
-    //  BUILD EXECUTIVE SUMMARY
+    //  BUILD EXECUTIVE SUMMARY (Month-to-Date for "Today" card)
     // ================================================================
     function buildExecutiveSummary(prodEntries, deliveryEntries) {
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
         const yStr = yesterday.toISOString().split('T')[0];
-        const tStr = today.toISOString().split('T')[0];
-
+        
+        // ---- Yesterday (full day) ----
         const yProd = prodEntries.filter(e => e.date === yStr);
-        const tProd = prodEntries.filter(e => e.date === tStr);
         const yProdCap = yProd.reduce((s, e) => s + e.capacity, 0);
         const yProdQty = yProd.reduce((s, e) => s + e.goodQty, 0);
-        const tProdCap = tProd.reduce((s, e) => s + e.capacity, 0);
-        const tProdQty = tProd.reduce((s, e) => s + e.goodQty, 0);
         const yDel = deliveryEntries.filter(e => e.date === yStr);
-        const tDel = deliveryEntries.filter(e => e.date === tStr);
         const yDelQty = yDel.reduce((s, e) => s + e.qty, 0);
-        const tDelQty = tDel.reduce((s, e) => s + e.qty, 0);
+
+        // ---- Month-to-Date (from 1st of current month to today) ----
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const fStr = firstDay.toISOString().split('T')[0];
+        const tStr = today.toISOString().split('T')[0];
+        const mtdProd = prodEntries.filter(e => e.date >= fStr && e.date <= tStr);
+        const mtdDel = deliveryEntries.filter(e => e.date >= fStr && e.date <= tStr);
+        const mtdProdCap = mtdProd.reduce((s, e) => s + e.capacity, 0);
+        const mtdProdQty = mtdProd.reduce((s, e) => s + e.goodQty, 0);
+        const mtdDelQty = mtdDel.reduce((s, e) => s + e.qty, 0);
 
         const formatNum = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
@@ -1466,9 +1471,9 @@
             <div class="summary-card">
                 <h4>📌 আজ (${tStr}) <span class="date-tag">As of Production & Delivery</span></h4>
                 <div class="stat-row">
-                    <div class="stat-item">⚙️ Cap: <strong>${formatNum(tProdCap)}</strong></div>
-                    <div class="stat-item">✅ Prod: <strong>${formatNum(tProdQty)}</strong></div>
-                    <div class="stat-item">🚚 Del: <strong>${formatNum(tDelQty)}</strong></div>
+                    <div class="stat-item">⚙️ Cap: <strong>${formatNum(mtdProdCap)}</strong></div>
+                    <div class="stat-item">✅ Prod: <strong>${formatNum(mtdProdQty)}</strong></div>
+                    <div class="stat-item">🚚 Del: <strong>${formatNum(mtdDelQty)}</strong></div>
                 </div>
             </div>
         `;
@@ -1571,7 +1576,7 @@
     });
 
     // ================================================================
-    //  DOWNLOAD FUNCTIONS (with Last Execution Summary in Excel)
+    //  DOWNLOAD FUNCTIONS
     // ================================================================
     document.getElementById('downloadPdfBtn').addEventListener('click', function() {
         const element = document.getElementById('reportContent');
@@ -1746,7 +1751,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with Last Execution Summary (Latest Date) & Auto-Refresh ready.');
+    console.log('✅ Production + Delivery Entry with Month-to-Date Executive Summary ready.');
     renderReport();
 </script>
 </body>
