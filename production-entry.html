@@ -8,9 +8,9 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <!-- Download Libraries -->
+    <!-- html2canvas for Image download -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- xlsx for Excel download -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         /* ===== RESET & BASE ===== */
@@ -339,10 +339,6 @@
         .btn-filter.gray { background: #6c7a8d; }
         .btn-filter.download { background: #1a8a4a; }
         .btn-filter.download:active { background: #0f6b36; }
-        .btn-filter.download-excel { background: #1a7d3a; }
-        .btn-filter.download-excel:active { background: #0f5f2a; }
-        .btn-filter.download-image { background: #b0721a; }
-        .btn-filter.download-image:active { background: #8a5f14; }
         .btn-filter.details {
             background: #1a8a4a;
             color: #fff;
@@ -575,6 +571,7 @@
             padding: 24px 24px 28px;
             box-shadow: 0 12px 48px rgba(0,0,0,0.2);
             animation: modalIn 0.25s ease;
+            position: relative;
         }
         @keyframes modalIn {
             0% { transform: scale(0.92); opacity: 0; }
@@ -587,6 +584,8 @@
             border-bottom: 1px solid #e2eaf2;
             padding-bottom: 12px;
             margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .modal-box .modal-header h3 {
             font-size: 18px;
@@ -614,14 +613,15 @@
             font-size: 13px;
             padding: 8px 8px;
         }
-        .modal-box .download-row-modal {
+        .modal-box .modal-download-row {
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
             margin-top: 16px;
-            justify-content: flex-end;
+            padding-top: 12px;
+            border-top: 1px solid #e2eaf2;
+            flex-wrap: wrap;
         }
-        .modal-box .download-row-modal .btn-filter {
+        .modal-box .modal-download-row .btn-filter {
             flex: 0 1 auto;
             min-width: 100px;
         }
@@ -877,7 +877,7 @@
 
     <!-- ===== REPORT ===== -->
     <div id="tabReport" class="tab-content">
-        <!-- Auto Refresh -->
+        <!-- Auto Refresh (Top) -->
         <div class="card" style="padding-bottom:16px;">
             <div class="card-title">🔄 Auto Refresh</div>
             <div class="toggle-container" style="margin-top:4px;">
@@ -900,17 +900,18 @@
                 <div class="table-wrap" id="lastExecutionContainer"></div>
             </div>
 
-            <!-- As of Production Vs GRN QTY (with Download: Excel & Image) -->
+            <!-- As of Production Vs GRN QTY (with GREEN Details + Download inside card) -->
             <div class="card" style="padding-bottom:16px;">
                 <div class="card-title">📊 As of Production Vs GRN QTY <span class="badge">Up to Today</span></div>
                 <div class="table-wrap" id="prodVsGrnContainer"></div>
+                <!-- Download options placed right below the table, inside the same card -->
                 <div class="download-row">
-                    <button class="btn-filter download download-excel" id="downloadProdVsGrnExcel">📊 Excel</button>
-                    <button class="btn-filter download download-image" id="downloadProdVsGrnImage">🖼️ Image (PNG)</button>
+                    <button class="btn-filter download" id="downloadProdVsGrnImage">🖼️ Image (PNG)</button>
+                    <button class="btn-filter download" id="downloadProdVsGrnExcel">📊 Excel</button>
                 </div>
             </div>
 
-            <!-- Filter & Production List -->
+            <!-- Filter & Production List with Pagination (Edit only) -->
             <div class="card" style="padding-bottom:16px;">
                 <div class="card-title">🔍 ফিল্টার</div>
                 <div class="filter-row">
@@ -957,19 +958,20 @@
         <button class="btn-submit danger" id="deleteAllBtn">🗑️ সব ডেটা মুছুন</button>
     </div>
 
-    <!-- ===== MODAL (for Delivery Details + Download) ===== -->
+    <!-- ===== MODAL (for Delivery Details from Prod Vs GRN only) ===== -->
     <div class="modal-overlay" id="deliveryModal">
         <div class="modal-box">
             <div class="modal-header">
-                <h3 id="modalTitle">📦 ডেলিভারি ডিটেইলস</h3>
+                <h3 id="modalTitle">📦 GRN Details</h3>
                 <button class="modal-close" onclick="closeModal()">×</button>
             </div>
             <div class="modal-body" id="modalBody">
                 <!-- dynamically filled -->
             </div>
-            <!-- Modal Download buttons -->
-            <div class="download-row-modal">
-                <button class="btn-filter download download-image" id="downloadModalImage">🖼️ Image (PNG)</button>
+            <!-- Download buttons inside modal -->
+            <div class="modal-download-row">
+                <button class="btn-filter download" id="modalDownloadImage">🖼️ Image (PNG)</button>
+                <button class="btn-filter download" id="modalDownloadExcel">📊 Excel</button>
             </div>
         </div>
     </div>
@@ -1035,6 +1037,7 @@
 
     autoRefreshCheckbox.addEventListener('change', toggleAutoRefresh);
 
+    // Start auto-refresh on load (since default is checked)
     setTimeout(() => {
         if (autoRefreshCheckbox.checked) {
             toggleAutoRefresh();
@@ -1544,11 +1547,15 @@
     // ================================================================
     //  MODAL FUNCTIONS (for Delivery Details from Prod Vs GRN only)
     // ================================================================
+    let currentModalData = [];
+    let currentModalTitle = '';
+
     function openDeliveryModal(itemCode, itemName) {
         const modal = document.getElementById('deliveryModal');
         const title = document.getElementById('modalTitle');
         const body = document.getElementById('modalBody');
-        title.textContent = `📦 ডেলিভারি ডিটেইলস - ${itemCode} (${itemName})`;
+        currentModalTitle = `📦 GRN Details - ${itemCode} (${itemName})`;
+        title.textContent = currentModalTitle;
         body.innerHTML = '<div style="text-align:center; padding:20px;">⏳ লোড হচ্ছে...</div>';
         modal.classList.add('show');
 
@@ -1562,39 +1569,50 @@
             .then(snapshot => {
                 if (snapshot.empty) {
                     body.innerHTML = `<div class="no-data" style="padding:16px;">📭 এই আইটেমের জন্য কোনো ডেলিভারি এন্ট্রি নেই।</div>`;
+                    currentModalData = [];
                     return;
                 }
+                const rows = [];
+                let idx = 1;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    rows.push({
+                        sl: idx++,
+                        date: data.date || '—',
+                        code: data.productCode || itemCode,
+                        item: data.itemName || itemName,
+                        color: data.colorName || color,
+                        qty: data.qty || 0
+                    });
+                });
+                currentModalData = rows;
+
                 let html = `<table>
                     <thead><tr>
                         <th>#</th><th>তারিখ</th><th>Code</th><th>Item</th><th>Color</th><th>GRN/Delivery QTY</th>
                     </tr></thead><tbody>`;
-                let idx = 1;
-                snapshot.forEach(doc => {
-                    const data = doc.data();
+                rows.forEach(r => {
                     html += `<tr>
-                        <td>${idx++}</td>
-                        <td>${data.date || '—'}</td>
-                        <td>${data.productCode || itemCode}</td>
-                        <td>${data.itemName || itemName}</td>
-                        <td>${data.colorName || color}</td>
-                        <td>${data.qty || 0}</td>
+                        <td>${r.sl}</td>
+                        <td>${r.date}</td>
+                        <td>${r.code}</td>
+                        <td>${r.item}</td>
+                        <td>${r.color}</td>
+                        <td>${r.qty}</td>
                     </tr>`;
                 });
                 html += `</tbody></table>`;
                 body.innerHTML = html;
-
-                // Store modal content for download
-                window._modalContent = body;
             })
             .catch(err => {
                 body.innerHTML = `<div class="no-data" style="padding:16px;">⚠️ ডেটা লোড করতে সমস্যা: ${err.message}</div>`;
-                window._modalContent = body;
+                currentModalData = [];
             });
     }
 
     function closeModal() {
         document.getElementById('deliveryModal').classList.remove('show');
-        window._modalContent = null;
+        currentModalData = [];
     }
 
     document.getElementById('deliveryModal').addEventListener('click', function(e) {
@@ -1602,7 +1620,60 @@
     });
 
     // ================================================================
-    //  BUILD: As of Production Vs GRN QTY
+    //  MODAL DOWNLOAD FUNCTIONS
+    // ================================================================
+    function downloadModalContent(format) {
+        const modalBody = document.getElementById('modalBody');
+        const table = modalBody.querySelector('table');
+        if (!table || currentModalData.length === 0) {
+            alert('ডাউনলোড করার মতো ডেটা নেই।');
+            return;
+        }
+
+        if (format === 'image') {
+            html2canvas(modalBody, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `GRN_Details_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                alert('Image তৈরি করতে সমস্যা হয়েছে।');
+                console.error(err);
+            });
+        } else if (format === 'excel') {
+            // Build Excel from currentModalData
+            const headers = ['SL', 'Date', 'Code', 'Item', 'Color', 'GRN/Delivery QTY'];
+            const rows = [headers];
+            currentModalData.forEach(r => {
+                rows.push([r.sl, r.date, r.code, r.item, r.color, r.qty]);
+            });
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, 'GRN_Details');
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `GRN_Details_${Date.now()}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+    }
+
+    document.getElementById('modalDownloadImage').addEventListener('click', function() {
+        downloadModalContent('image');
+    });
+    document.getElementById('modalDownloadExcel').addEventListener('click', function() {
+        downloadModalContent('excel');
+    });
+
+    // ================================================================
+    //  BUILD: As of Production Vs GRN QTY (with GREEN Details button)
     // ================================================================
     function buildProdVsGrn(prodEntries, deliveryEntries) {
         const allCodes = new Set();
@@ -1711,6 +1782,7 @@
         html += `</tbody></table>`;
         container.innerHTML = html;
 
+        // Attach edit events
         container.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const id = this.dataset.id;
@@ -1718,6 +1790,7 @@
             });
         });
 
+        // Build pagination controls
         let pagHtml = '';
         if (totalPages > 1) {
             pagHtml += `<button onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>⏮</button>`;
@@ -1746,108 +1819,69 @@
     }
 
     // ================================================================
-    //  DOWNLOAD FUNCTIONS for Prod Vs GRN table
+    //  DOWNLOAD FUNCTIONS for Prod Vs GRN table only (Image + Excel, no PDF)
     // ================================================================
-    function downloadProdVsGrnImage() {
+    function downloadProdVsGrn(format) {
         const container = document.getElementById('prodVsGrnContainer');
         const table = container.querySelector('table');
         if (!table) {
             alert('ডাউনলোড করার মতো ডেটা নেই।');
             return;
         }
-        html2canvas(container, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff'
-        }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'ProdVsGRN_Report.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }).catch(err => {
-            alert('Image তৈরি করতে সমস্যা হয়েছে।');
-            console.error(err);
-        });
-    }
 
-    function downloadProdVsGrnExcel() {
-        const container = document.getElementById('prodVsGrnContainer');
-        const table = container.querySelector('table');
-        if (!table) {
-            alert('ডাউনলোড করার মতো ডেটা নেই।');
-            return;
-        }
-        // Build data from the table
-        const rows = [];
-        const ths = table.querySelectorAll('thead th');
-        const headers = [];
-        ths.forEach(th => {
-            let h = th.textContent.trim();
-            if (h === 'Details') return; // skip Details column
-            headers.push(h);
-        });
-        rows.push(headers);
-
-        const trs = table.querySelectorAll('tbody tr');
-        trs.forEach(tr => {
-            const tds = tr.querySelectorAll('td');
-            const row = [];
-            tds.forEach((td, idx) => {
-                if (idx === tds.length - 1) return;
-                let val = td.textContent.trim();
-                if (idx === 5) {
-                    val = val.replace(/[^\d-]/g, '');
-                }
-                row.push(val);
+        if (format === 'image') {
+            html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'ProdVsGRN_Report.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                alert('Image তৈরি করতে সমস্যা হয়েছে।');
+                console.error(err);
             });
-            rows.push(row);
-        });
+        } else if (format === 'excel') {
+            // Build data from the table
+            const rows = [];
+            const ths = table.querySelectorAll('thead th');
+            const headers = [];
+            ths.forEach(th => {
+                let h = th.textContent.trim();
+                if (h === 'Details') return;
+                headers.push(h);
+            });
+            rows.push(headers);
 
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(rows);
-        XLSX.utils.book_append_sheet(wb, ws, 'ProdVsGRN');
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([wbout], { type: 'application/octet-stream' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'ProdVsGRN_Report.xlsx';
-        link.click();
-        URL.revokeObjectURL(link.href);
-    }
+            const trs = table.querySelectorAll('tbody tr');
+            trs.forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                const row = [];
+                tds.forEach((td, idx) => {
+                    if (idx === tds.length - 1) return;
+                    let val = td.textContent.trim();
+                    if (idx === 5) {
+                        val = val.replace(/[^\d-]/g, '');
+                    }
+                    row.push(val);
+                });
+                rows.push(row);
+            });
 
-    // ================================================================
-    //  DOWNLOAD MODAL IMAGE
-    // ================================================================
-    function downloadModalImage() {
-        const body = document.getElementById('modalBody');
-        if (!body || body.innerHTML.includes('⏳ লোড হচ্ছে') || body.innerHTML.includes('📭 এই আইটেমের জন্য কোনো ডেলিভারি এন্ট্রি নেই')) {
-            alert('ডাউনলোড করার মতো ডেটা নেই।');
-            return;
-        }
-        // Wrap the body content in a container for html2canvas
-        const wrapper = document.createElement('div');
-        wrapper.style.padding = '10px';
-        wrapper.style.background = '#ffffff';
-        wrapper.style.borderRadius = '8px';
-        wrapper.innerHTML = body.innerHTML;
-        document.body.appendChild(wrapper);
-        html2canvas(wrapper, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff'
-        }).then(canvas => {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, 'ProdVsGRN');
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const link = document.createElement('a');
-            link.download = 'GRN_Details.png';
-            link.href = canvas.toDataURL('image/png');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'ProdVsGRN_Report.xlsx';
             link.click();
-            document.body.removeChild(wrapper);
-        }).catch(err => {
-            alert('Image তৈরি করতে সমস্যা হয়েছে।');
-            console.error(err);
-            if (wrapper.parentNode) document.body.removeChild(wrapper);
-        });
+            URL.revokeObjectURL(link.href);
+        }
     }
 
     // ================================================================
@@ -1863,10 +1897,10 @@
             const prodVsGrn = document.getElementById('prodVsGrnContainer');
             const summaryBox = document.getElementById('reportSummary');
 
-            // Executive Summary
+            // 1. Executive Summary
             execSummary.innerHTML = buildExecutiveSummary(prodEntries, deliveryEntries);
 
-            // Last Production Execution Summary
+            // 2. Last Production Execution Summary
             if (prodEntries.length === 0) {
                 lastExecContainer.innerHTML = `<div class="no-data" style="padding:16px;">📭 কোনো প্রোডাকশন এন্ট্রি নেই।</div>`;
             } else {
@@ -1896,7 +1930,7 @@
                 lastExecContainer.innerHTML = html;
             }
 
-            // As of Production Vs GRN QTY
+            // 3. As of Production Vs GRN QTY (with GREEN Details)
             prodVsGrn.innerHTML = buildProdVsGrn(prodEntries, deliveryEntries);
             document.querySelectorAll('#prodVsGrnContainer .btn-filter.details').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -1906,7 +1940,7 @@
                 });
             });
 
-            // Filtered Production List
+            // 4. Filtered Production List (paginated, Edit only)
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo = document.getElementById('filterDateTo').value;
             const shiftFilter = document.getElementById('filterShift').value;
@@ -2023,11 +2057,14 @@
     });
 
     // ================================================================
-    //  DOWNLOAD BUTTONS
+    //  DOWNLOAD BUTTONS (Prod Vs GRN only - Image & Excel)
     // ================================================================
-    document.getElementById('downloadProdVsGrnExcel').addEventListener('click', downloadProdVsGrnExcel);
-    document.getElementById('downloadProdVsGrnImage').addEventListener('click', downloadProdVsGrnImage);
-    document.getElementById('downloadModalImage').addEventListener('click', downloadModalImage);
+    document.getElementById('downloadProdVsGrnImage').addEventListener('click', function() {
+        downloadProdVsGrn('image');
+    });
+    document.getElementById('downloadProdVsGrnExcel').addEventListener('click', function() {
+        downloadProdVsGrn('excel');
+    });
 
     // ================================================================
     //  INIT
@@ -2037,7 +2074,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with ProdVsGRN download (Excel & Image) ready.');
+    console.log('✅ Production + Delivery Entry with GRN Details Image/Excel download ready.');
     renderReport();
 </script>
 </body>
