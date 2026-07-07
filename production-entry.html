@@ -486,7 +486,7 @@
                     </div>
                     <div class="form-group">
                         <label for="colorName">🎨 Color Name</label>
-                        <div class="readonly-box" id="colorName"><span class="empty-hint">কSelect Code</span></div>
+                        <div class="readonly-box" id="colorName"><span class="empty-hint">Select Code</span></div>
                     </div>
                     <div class="form-group full-width">
                         <div class="inline-row">
@@ -502,6 +502,7 @@
                     </div>
                     <div class="form-group full-width">
                         <div class="highlight-box">
+                            <!-- UPDATED: Changed from 24h to 12h -->
                             <span class="label">⚙️ Capacity <span style="font-weight:400;font-size:13px;color:#3d6382;">(3600/CT × Cavity × 12h)</span></span>
                             <span class="value" id="capacityDisplay">—</span>
                         </div>
@@ -763,6 +764,7 @@
             capacityDisplay.textContent = '—';
             return null;
         }
+        // UPDATED: Capacity = 3600 / CT * Cavity * 12 (Shift duration)
         const capacity = (3600 / ct) * cavity * 12;
         const rounded = Math.round(capacity * 100) / 100;
         capacityDisplay.textContent = rounded.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -804,16 +806,16 @@
     // ================================================================
     function resetForm() {
         editId.value = '';
-        formTitle.innerHTML = '📋 প্রোডাকশন এন্ট্রি <span class="badge">নতুন</span>';
-        submitBtn.textContent = '💾 সংরক্ষণ করুন';
+        formTitle.innerHTML = '📋 Chair Prod Entry <span class="badge">New</span>';
+        submitBtn.textContent = '💾 Data Save';
         submitBtn.className = 'btn-submit';
         cancelEditBtn.style.display = 'none';
         // Clear fields (except date & shift)
         mcSelect.value = '';
         icName.value = '';
         productCode.value = '';
-        itemNameEl.innerHTML = '<span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span>';
-        colorNameEl.innerHTML = '<span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span>';
+        itemNameEl.innerHTML = '<span class="empty-hint">Select Code Show The Item</span>';
+        colorNameEl.innerHTML = '<span class="empty-hint">Select Code</span>';
         ctInput.value = '';
         cavityInput.value = '';
         capacityDisplay.textContent = '—';
@@ -821,8 +823,6 @@
         causeInput.value = '';
         utilizationDisplay.textContent = '—';
         utilizationDisplay.className = 'value';
-        // Keep date and shift as they are
-        // Recalculate
         calculateAll();
     }
 
@@ -847,30 +847,25 @@
         mcSelect.value = entry.mcNo || '';
         icName.value = entry.icName;
         productCode.value = entry.productCode;
-        // Trigger auto-fill for item & color
         const found = productData.find(p => p.code === entry.productCode);
         if (found) {
             itemNameEl.textContent = found.item;
             colorNameEl.textContent = found.color;
         } else {
-            itemNameEl.innerHTML = '<span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span>';
-            colorNameEl.innerHTML = '<span class="empty-hint">কোড নির্বাচন করলে দেখাবে</span>';
+            itemNameEl.innerHTML = '<span class="empty-hint">Select Code Show The Item</span>';
+            colorNameEl.innerHTML = '<span class="empty-hint">Select Code</span>';
         }
         ctInput.value = entry.ct;
         cavityInput.value = entry.cavity;
         goodQtyInput.value = entry.goodQty;
         causeInput.value = entry.cause || '';
 
-        // Update title & button
-        formTitle.innerHTML = '📋 প্রোডাকশন এন্ট্রি <span class="edit-badge">✏️ এডিট মোড</span>';
-        submitBtn.textContent = '🔄 আপডেট করুন';
+        formTitle.innerHTML = '📋 Chair Prod Entry <span class="edit-badge">✏️ Edit Mode</span>';
+        submitBtn.textContent = '🔄 Update Data';
         submitBtn.className = 'btn-submit edit-mode';
         cancelEditBtn.style.display = 'block';
 
-        // Recalculate capacity & utilization
         calculateAll();
-
-        // Scroll to top of form
         document.querySelector('.app-container').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -879,7 +874,6 @@
     // ================================================================
     cancelEditBtn.addEventListener('click', function() {
         resetForm();
-        // Optionally switch to report tab
         document.querySelector('[data-tab="tabReport"]').click();
     });
 
@@ -928,7 +922,6 @@
         const editIdValue = editId.value;
 
         if (editIdValue) {
-            // UPDATE existing entry
             const index = entries.findIndex(e => e.id === parseInt(editIdValue));
             if (index !== -1) {
                 entries[index] = { ...entries[index], ...entryData };
@@ -941,11 +934,7 @@
                 alert('❌ এন্ট্রি পাওয়া যায়নি!');
             }
         } else {
-            // CREATE new entry
-            const newEntry = {
-                id: Date.now(),
-                ...entryData
-            };
+            const newEntry = { id: Date.now(), ...entryData };
             entries.push(newEntry);
             saveProdEntries(entries);
             alert('✅ প্রোডাকশন এন্ট্রি সংরক্ষণ করা হয়েছে!');
@@ -1090,7 +1079,6 @@
             html += `</tbody></table>`;
             container.innerHTML = html;
 
-            // Attach edit event listeners to all Edit buttons
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = parseInt(this.dataset.id);
@@ -1250,7 +1238,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with Edit option and Password-protected delete ready.');
+    console.log('✅ Production + Delivery Entry with Edit option, 12h capacity, and password-protected delete ready.');
 </script>
 </body>
 </html>
