@@ -39,9 +39,7 @@
             font-weight: 500;
             font-size: 15px;
         }
-        #errorBar.show {
-            display: block;
-        }
+        #errorBar.show { display: block; }
         #errorBar .close-btn {
             float: right;
             cursor: pointer;
@@ -51,6 +49,52 @@
             border: none;
             font-size: 18px;
         }
+
+        /* ===== TOGGLE SWITCH ===== */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1a3a57;
+            margin: 8px 0;
+        }
+        .toggle-container input[type="checkbox"] {
+            width: 40px;
+            height: 22px;
+            appearance: none;
+            background: #ccc;
+            border-radius: 20px;
+            outline: none;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .toggle-container input[type="checkbox"]:checked {
+            background: #2a7de1;
+        }
+        .toggle-container input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+        .toggle-container input[type="checkbox"]:checked::before {
+            left: 20px;
+        }
+        .toggle-container .status {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .toggle-container .status.on { color: #1a8a4a; }
+        .toggle-container .status.off { color: #a33434; }
 
         /* ===== TABS ===== */
         .tabs {
@@ -460,7 +504,7 @@
         <div class="sub">দৈনিক উৎপাদন ও ডেলিভারি লগ</div>
     </div>
 
-    <!-- ===== ERROR BAR ===== -->
+    <!-- ERROR BAR -->
     <div id="errorBar">
         <button class="close-btn" onclick="this.parentElement.classList.remove('show')">×</button>
         <span id="errorMessage"></span>
@@ -479,6 +523,7 @@
                 <div class="card-title" id="formTitle">📋 Chair Prod Entry <span class="badge">New</span></div>
                 <input type="hidden" id="editId" value="" />
                 <div class="form-grid">
+                    <!-- same fields as before -->
                     <div class="form-group">
                         <label for="entryDate" class="label-blue">📅 Date <span class="req">*</span></label>
                         <input type="date" id="entryDate" class="form-control" required />
@@ -600,12 +645,19 @@
 
     <!-- ===== REPORT ===== -->
     <div id="tabReport" class="tab-content">
+        <!-- Download & Auto Refresh -->
         <div class="card" style="padding-bottom:14px;">
             <div class="card-title">📥 Download Report</div>
             <div class="download-row">
                 <button class="btn-filter download" id="downloadPdfBtn">📄 PDF</button>
                 <button class="btn-filter download" id="downloadImageBtn">🖼️ Image (PNG)</button>
                 <button class="btn-filter download" id="downloadExcelBtn">📊 Excel</button>
+            </div>
+            <!-- Auto Refresh Toggle -->
+            <div class="toggle-container" style="margin-top:10px;">
+                <input type="checkbox" id="autoRefresh" />
+                <label for="autoRefresh" style="font-weight:600; cursor:pointer;">Auto Refresh (5s)</label>
+                <span class="status off" id="refreshStatus">OFF</span>
             </div>
         </div>
 
@@ -681,19 +733,60 @@
             msgEl.textContent = msg;
             bar.classList.add('show');
         }
-        // Also log to console using original console.error to avoid recursion
         if (window._originalConsoleError) {
             window._originalConsoleError(msg);
         } else {
             console.log('ERROR: ' + msg);
         }
     }
-
-    // Store original console.error to use safely
     window._originalConsoleError = console.error;
 
     // ================================================================
-    //  🔥 FIREBASE CONFIGURATION (CORRECTED)
+    //  AUTO REFRESH TOGGLE
+    // ================================================================
+    let autoRefreshInterval = null;
+    const autoRefreshCheckbox = document.getElementById('autoRefresh');
+    const refreshStatus = document.getElementById('refreshStatus');
+
+    function toggleAutoRefresh() {
+        if (autoRefreshCheckbox.checked) {
+            // Start auto-refresh
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => {
+                renderReport();
+            }, 5000);
+            refreshStatus.textContent = 'ON';
+            refreshStatus.className = 'status on';
+            console.log('🔁 Auto-refresh started (5s)');
+        } else {
+            // Stop auto-refresh
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            refreshStatus.textContent = 'OFF';
+            refreshStatus.className = 'status off';
+            console.log('⏸️ Auto-refresh stopped');
+        }
+    }
+
+    autoRefreshCheckbox.addEventListener('change', toggleAutoRefresh);
+
+    // Reset timer after manual refresh (e.g., after save, filter, etc.)
+    function resetAutoRefreshTimer() {
+        if (autoRefreshCheckbox.checked) {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = setInterval(() => {
+                    renderReport();
+                }, 5000);
+                console.log('🔄 Auto-refresh timer reset');
+            }
+        }
+    }
+
+    // ================================================================
+    //  🔥 FIREBASE CONFIGURATION
     // ================================================================
     const firebaseConfig = {
         apiKey: "AIzaSyCVGfaUooJfTzfpfyMLI7DV14MGfJZ1G9o",
@@ -705,12 +798,10 @@
         measurementId: "G-ETYYEFFJN7"
     };
 
-    // Initialize Firebase
     let db;
     try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
-        // Test connection
         db.collection('production').limit(1).get().catch(err => {
             showError('Firebase সংযোগ সমস্যা: ' + err.message);
         });
@@ -720,7 +811,7 @@
     }
 
     // ================================================================
-    //  PRODUCT DATA (local reference, used for auto-fill only)
+    //  PRODUCT DATA
     // ================================================================
     const productData = [
         { code: '88709', item: 'Decorate Chair (Diamond) - Rose Wood', color: 'Rose Wood' },
@@ -738,7 +829,7 @@
     ];
 
     // ================================================================
-    //  🔥 FIREBASE CRUD FUNCTIONS (with error reporting)
+    //  FIREBASE CRUD FUNCTIONS
     // ================================================================
     async function getProdEntries() {
         try {
@@ -829,13 +920,10 @@
         await deleteAllDeliveryEntries();
     }
 
-    // ================================================================
-    //  DELETE PASSWORD
-    // ================================================================
     const DELETE_PASSWORD = 'arif';
 
     // ================================================================
-    //  DOM REFS (keep as before)
+    //  DOM REFS
     // ================================================================
     const formTitle = document.getElementById('formTitle');
     const editId = document.getElementById('editId');
@@ -865,7 +953,7 @@
     const deliverySubmitBtn = document.getElementById('deliverySubmitBtn');
 
     // ================================================================
-    //  POPULATE DROPDOWNS
+    //  POPULATE DROPDOWNS & SET DATES
     // ================================================================
     function populateDropdowns() {
         [productCode, deliveryCode].forEach(sel => {
@@ -981,7 +1069,7 @@
     }
 
     // ================================================================
-    //  LOAD ENTRY FOR EDIT (Firebase version)
+    //  LOAD ENTRY FOR EDIT
     // ================================================================
     async function loadEntryForEdit(id) {
         try {
@@ -991,7 +1079,6 @@
                 return;
             }
             const entry = { id: doc.id, ...doc.data() };
-            
             document.querySelector('[data-tab="tabForm"]').click();
             editId.value = entry.id;
             dateInput.value = entry.date;
@@ -1028,7 +1115,7 @@
     });
 
     // ================================================================
-    //  PRODUCTION SUBMIT (Firebase version)
+    //  PRODUCTION SUBMIT
     // ================================================================
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1090,7 +1177,10 @@
                 } else {
                     resetForm();
                 }
-                renderReport();
+                // Refresh report immediately
+                await renderReport();
+                // Reset auto-refresh timer if enabled
+                resetAutoRefreshTimer();
             } else {
                 alert('❌ সংরক্ষণ ব্যর্থ: ' + result.error);
             }
@@ -1105,7 +1195,7 @@
     });
 
     // ================================================================
-    //  DELIVERY SUBMIT (Firebase version)
+    //  DELIVERY SUBMIT
     // ================================================================
     deliveryForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1135,7 +1225,8 @@
                 alert('✅ ডেলিভারি এন্ট্রি সংরক্ষণ করা হয়েছে!');
                 deliveryQty.value = '';
                 deliveryQty.focus();
-                renderReport();
+                await renderReport();
+                resetAutoRefreshTimer();
             } else {
                 alert('❌ সংরক্ষণ ব্যর্থ: ' + result.error);
             }
@@ -1169,13 +1260,21 @@
                 tabContents[target].classList.add('active');
             }
             if (target === 'tabReport') {
+                // Render report when switching to report tab
                 renderReport();
+                // Auto-refresh may already be running, but we want to ensure it's started if checkbox is checked
+                if (autoRefreshCheckbox.checked && !autoRefreshInterval) {
+                    toggleAutoRefresh();
+                }
+            } else {
+                // When leaving report tab, stop auto-refresh to save resources? 
+                // We'll keep it running but user can toggle off.
             }
         });
     });
 
     // ================================================================
-    //  RENDER REPORT (Firebase version)
+    //  RENDER REPORT
     // ================================================================
     async function renderReport() {
         try {
@@ -1361,17 +1460,21 @@
     // ================================================================
     //  FILTER
     // ================================================================
-    document.getElementById('applyFilterBtn').addEventListener('click', renderReport);
+    document.getElementById('applyFilterBtn').addEventListener('click', function() {
+        renderReport();
+        resetAutoRefreshTimer();
+    });
     document.getElementById('clearFilterBtn').addEventListener('click', function() {
         document.getElementById('filterDateFrom').value = '';
         document.getElementById('filterDateTo').value = '';
         document.getElementById('filterShift').value = '';
         document.getElementById('filterIC').value = '';
         renderReport();
+        resetAutoRefreshTimer();
     });
 
     // ================================================================
-    //  DELETE ALL (Firebase version)
+    //  DELETE ALL
     // ================================================================
     document.getElementById('deleteAllBtn').addEventListener('click', async function() {
         const enteredPassword = prompt('🔒 ডেটা মুছতে পাসওয়ার্ড দিন:');
@@ -1381,7 +1484,8 @@
                 try {
                     await deleteAllData();
                     renderReport();
-                    alert('✅ সব ডেটা মুছে ফেলা হয়েছে।');
+                    alert('✅ সব ডেটা মুছে ফেলা হয়েছে။');
+                    resetAutoRefreshTimer();
                 } catch (err) {
                     showError('Delete All Error: ' + err.message);
                     alert('ডিলিট করতে সমস্যা: ' + err.message);
@@ -1546,7 +1650,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Production + Delivery Entry with Firebase ready.');
+    console.log('✅ Production + Delivery Entry with Auto-Refresh ready.');
     renderReport();
 </script>
 </body>
