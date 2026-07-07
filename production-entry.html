@@ -142,6 +142,10 @@
             gap: 6px;
             flex-wrap: wrap;
         }
+        /* ----- Blue label for Date & Shift ----- */
+        .label-blue {
+            color: #2a7de1 !important;
+        }
         .form-group label .req {
             color: #e34f4f;
             font-weight: 700;
@@ -176,12 +180,17 @@
             color: #1f3d5a;
             border-color: #dce4ec;
         }
+        /* ----- Select dropdown options in RED ----- */
         select.form-control {
             cursor: pointer;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%235f7d9c' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 16px center;
             padding-right: 44px;
+            color: #cc0000; /* selected value red */
+        }
+        select.form-control option {
+            color: #cc0000 !important; /* dropdown options red */
         }
         .inline-row {
             display: flex;
@@ -543,18 +552,31 @@
             <div class="card">
                 <div class="card-title">📋 প্রোডাকশন এন্ট্রি <span class="badge">নতুন</span></div>
                 <div class="form-grid">
+                    <!-- DATE (label blue) -->
                     <div class="form-group">
-                        <label for="entryDate">📅 তারিখ <span class="req">*</span></label>
+                        <label for="entryDate" class="label-blue">📅 তারিখ <span class="req">*</span></label>
                         <input type="date" id="entryDate" class="form-control" required />
                     </div>
+                    <!-- SHIFT (label blue) -->
                     <div class="form-group">
-                        <label for="shiftSelect">⏰ শিফট <span class="req">*</span></label>
+                        <label for="shiftSelect" class="label-blue">⏰ শিফট <span class="req">*</span></label>
                         <select id="shiftSelect" class="form-control" required>
                             <option value="">— নির্বাচন —</option>
                             <option value="Day">Day Shift</option>
                             <option value="Night">Night Shift</option>
                         </select>
                     </div>
+
+                    <!-- ===== NEW: MC No Select ===== -->
+                    <div class="form-group full-width">
+                        <label for="mcSelect">🔧 MC No <span class="req">*</span></label>
+                        <select id="mcSelect" class="form-control" required>
+                            <option value="">— MC নির্বাচন —</option>
+                            <option value="MC-C1-800-30">MC-C1-800-30</option>
+                            <option value="MC-C2-800-31">MC-C2-800-31</option>
+                        </select>
+                    </div>
+
                     <div class="form-group full-width">
                         <label for="icName">👤 ইনচার্জ <span class="req">*</span></label>
                         <select id="icName" class="form-control" required>
@@ -751,6 +773,7 @@
     // ================================================================
     const dateInput = document.getElementById('entryDate');
     const shiftSelect = document.getElementById('shiftSelect');
+    const mcSelect = document.getElementById('mcSelect');  // NEW
     const icName = document.getElementById('icName');
     const productCode = document.getElementById('productCode');
     const itemNameEl = document.getElementById('itemName');
@@ -880,12 +903,13 @@
     goodQtyInput.addEventListener('input', calculateUtilization);
 
     // ================================================================
-    //  PRODUCTION SUBMIT
+    //  PRODUCTION SUBMIT (with mcNo added)
     // ================================================================
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         const date = dateInput.value;
         const shift = shiftSelect.value;
+        const mcNo = mcSelect.value;      // NEW
         const ic = icName.value;
         const code = productCode.value;
         const item = itemNameEl.textContent;
@@ -897,7 +921,7 @@
         const cause = causeInput.value.trim() || '';
         const utilization = utilizationDisplay.textContent;
 
-        if (!date || !shift || !ic || !code || !ct || parseFloat(ct) <= 0 || !cavity || parseInt(cavity) <= 0 || goodQty === '' || parseFloat(goodQty) < 0 || capacity === '—') {
+        if (!date || !shift || !mcNo || !ic || !code || !ct || parseFloat(ct) <= 0 || !cavity || parseInt(cavity) <= 0 || goodQty === '' || parseFloat(goodQty) < 0 || capacity === '—') {
             alert('সব ফিল্ড সঠিকভাবে পূরণ করুন।');
             return;
         }
@@ -906,6 +930,7 @@
             id: Date.now(),
             date,
             shift,
+            mcNo,           // NEW
             icName: ic,
             productCode: code,
             itemName: item,
@@ -1033,7 +1058,7 @@
             container.innerHTML = `<div class="no-data">📭 কোনো প্রোডাকশন এন্ট্রি পাওয়া যায়নি।</div>`;
         } else {
             let html = `<table><thead><tr>
-                <th>#</th><th>তারিখ</th><th>শিফট</th><th>ইনচার্জ</th>
+                <th>#</th><th>তারিখ</th><th>শিফট</th><th>MC No</th><th>ইনচার্জ</th>
                 <th>কোড</th><th>আইটেম</th><th>রঙ</th>
                 <th>CT</th><th>Cavity</th><th>Capacity</th>
                 <th>Good QTY</th><th>কারণ</th><th>Utilization</th>
@@ -1044,6 +1069,7 @@
                     <td>${idx+1}</td>
                     <td>${e.date}</td>
                     <td>${e.shift}</td>
+                    <td>${e.mcNo || '—'}</td>
                     <td>${e.icName}</td>
                     <td>${e.productCode}</td>
                     <td>${e.itemName}</td>
@@ -1202,7 +1228,7 @@
     capacityDisplay.textContent = '—';
     utilizationDisplay.textContent = '—';
 
-    console.log('✅ Mobile-friendly Production + Delivery Entry ready.');
+    console.log('✅ Mobile-friendly Production + Delivery Entry with MC No ready.');
 </script>
 </body>
 </html>
