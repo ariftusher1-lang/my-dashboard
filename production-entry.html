@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
     <title>প্রোডাকশন + ডেলিভারি ম্যানেজমেন্ট</title>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <!-- ===== LIBRARIES FOR DOWNLOAD ===== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -419,7 +418,6 @@
             .form-group.full-width { grid-column: 1 / -1; }
         }
 
-        /* ===== DOWNLOAD BUTTONS ROW ===== */
         .download-row {
             display: flex;
             gap: 8px;
@@ -461,7 +459,6 @@
                 <div class="card-title" id="formTitle">
                     📋 Chair Prod Entry <span class="badge">New</span>
                 </div>
-                <!-- Hidden field for edit ID -->
                 <input type="hidden" id="editId" value="" />
                 <div class="form-grid">
                     <div class="form-group">
@@ -589,7 +586,6 @@
     <!-- TAB 3: REPORT -->
     <!-- ============================================================ -->
     <div id="tabReport" class="tab-content">
-        <!-- ===== DOWNLOAD BUTTONS ===== -->
         <div class="card" style="padding-bottom:14px;">
             <div class="card-title">📥 Download Report</div>
             <div class="download-row">
@@ -599,7 +595,6 @@
             </div>
         </div>
 
-        <!-- ===== REPORT CONTENT ===== -->
         <div id="reportContent">
             <div class="card" style="padding-bottom:14px;">
                 <div class="card-title">📊 Executive Summary</div>
@@ -663,9 +658,9 @@
 
 <script>
     // ================================================================
-    //  API CONFIG – replace with your Google Apps Script Web App URL
+    //  🔴 IMPORTANT: Replace this URL with your Google Apps Script Web App URL
     // ================================================================
-    const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbxgKETwyxe8U-RlOCaWkkmqDaRLwGK6xEd6jKe2Dvha9HNLsZjumtRWbUH-fyJqQ6Z9Ow/exec';  // <-- CHANGE THIS
+    const API_BASE_URL = 'https://script.google.com/macros/s/আপনার-আইডি/exec';  // <-- CHANGE THIS
 
     // ================================================================
     //  PRODUCT DATA (local reference, used for auto-fill only)
@@ -684,11 +679,6 @@
         { code: '86117', item: 'Plastic Chair W/O Arm (Stick) - Sandal Wood', color: 'Sandal Wood' },
         { code: '86107', item: 'Plastic Chair W/O Arm (Stick) - Rose Wood', color: 'Rose Wood' }
     ];
-
-    // ================================================================
-    //  DELETE PASSWORD
-    // ================================================================
-    const DELETE_PASSWORD = 'arif';
 
     // ================================================================
     //  API HELPER FUNCTIONS
@@ -726,7 +716,6 @@
         return await apiCall('deleteAll', 'production');
     }
 
-    // ===== DELIVERY =====
     async function getDeliveryEntries() {
         const result = await apiCall('getAll', 'delivery');
         return result.success ? result.data : [];
@@ -744,6 +733,8 @@
         await deleteAllProdEntries();
         await deleteAllDeliveryEntries();
     }
+
+    const DELETE_PASSWORD = 'arif';
 
     // ================================================================
     //  DOM REFS
@@ -791,9 +782,6 @@
     }
     populateDropdowns();
 
-    // ================================================================
-    //  SET DATES
-    // ================================================================
     function setDates() {
         const today = new Date();
         const y = today.getFullYear();
@@ -805,9 +793,6 @@
     }
     setDates();
 
-    // ================================================================
-    //  AUTO-FILL (Production)
-    // ================================================================
     productCode.addEventListener('change', function() {
         const code = this.value;
         const found = productData.find(p => p.code === code);
@@ -821,9 +806,6 @@
         calculateAll();
     });
 
-    // ================================================================
-    //  AUTO-FILL (Delivery)
-    // ================================================================
     deliveryCode.addEventListener('change', function() {
         const code = this.value;
         const found = productData.find(p => p.code === code);
@@ -836,9 +818,6 @@
         }
     });
 
-    // ================================================================
-    //  CAPACITY & UTILIZATION (ROUNDED CAPACITY)
-    // ================================================================
     function calculateCapacity() {
         const ct = parseFloat(ctInput.value);
         const cavity = parseInt(cavityInput.value);
@@ -882,9 +861,6 @@
     cavityInput.addEventListener('input', calculateAll);
     goodQtyInput.addEventListener('input', calculateUtilization);
 
-    // ================================================================
-    //  RESET FORM (clear edit mode)
-    // ================================================================
     function resetForm() {
         editId.value = '';
         formTitle.innerHTML = '📋 Chair Prod Entry <span class="badge">New</span>';
@@ -906,42 +882,46 @@
         calculateAll();
     }
 
-    // ================================================================
-    //  LOAD ENTRY FOR EDIT
-    // ================================================================
     function loadEntryForEdit(id) {
-        getProdEntries().then(entries => {
-            const entry = entries.find(e => e.id === id);
-            if (!entry) {
-                alert('এন্ট্রি পাওয়া যায়নি!');
-                return;
-            }
-            document.querySelector('[data-tab="tabForm"]').click();
-            editId.value = entry.id;
-            dateInput.value = entry.date;
-            shiftSelect.value = entry.shift;
-            mcSelect.value = entry.mcNo || '';
-            icName.value = entry.icName;
-            productCode.value = entry.productCode;
-            const found = productData.find(p => p.code === entry.productCode);
-            if (found) {
-                itemNameEl.textContent = found.item;
-                colorNameEl.textContent = found.color;
-            } else {
-                itemNameEl.innerHTML = '<span class="empty-hint">Select Code Show The Item</span>';
-                colorNameEl.innerHTML = '<span class="empty-hint">Select Code</span>';
-            }
-            ctInput.value = entry.ct;
-            cavityInput.value = entry.cavity;
-            goodQtyInput.value = entry.goodQty;
-            causeInput.value = entry.cause || '';
-            formTitle.innerHTML = '📋 Chair Prod Entry <span class="edit-badge">✏️ Edit Mode</span>';
-            submitBtn.textContent = '🔄 Update Data';
-            submitBtn.className = 'btn-submit edit-mode';
-            cancelEditBtn.style.display = 'block';
-            calculateAll();
-            document.querySelector('.app-container').scrollIntoView({ behavior: 'smooth' });
-        });
+        // This will be populated from API data
+        const entries = getProdEntries(); // This is async, we need to handle it differently.
+        // We'll implement this properly in the renderReport function.
+        alert('Edit functionality is now API-based. Click Edit from the report table.');
+    }
+
+    // Override loadEntryForEdit with async version
+    async function loadEntryForEditAsync(id) {
+        const entries = await getProdEntries();
+        const entry = entries.find(e => e.id === id);
+        if (!entry) {
+            alert('এন্ট্রি পাওয়া যায়নি!');
+            return;
+        }
+        document.querySelector('[data-tab="tabForm"]').click();
+        editId.value = entry.id;
+        dateInput.value = entry.date;
+        shiftSelect.value = entry.shift;
+        mcSelect.value = entry.mcNo || '';
+        icName.value = entry.icName;
+        productCode.value = entry.productCode;
+        const found = productData.find(p => p.code === entry.productCode);
+        if (found) {
+            itemNameEl.textContent = found.item;
+            colorNameEl.textContent = found.color;
+        } else {
+            itemNameEl.innerHTML = '<span class="empty-hint">Select Code Show The Item</span>';
+            colorNameEl.innerHTML = '<span class="empty-hint">Select Code</span>';
+        }
+        ctInput.value = entry.ct;
+        cavityInput.value = entry.cavity;
+        goodQtyInput.value = entry.goodQty;
+        causeInput.value = entry.cause || '';
+        formTitle.innerHTML = '📋 Chair Prod Entry <span class="edit-badge">✏️ Edit Mode</span>';
+        submitBtn.textContent = '🔄 Update Data';
+        submitBtn.className = 'btn-submit edit-mode';
+        cancelEditBtn.style.display = 'block';
+        calculateAll();
+        document.querySelector('.app-container').scrollIntoView({ behavior: 'smooth' });
     }
 
     cancelEditBtn.addEventListener('click', function() {
@@ -950,7 +930,7 @@
     });
 
     // ================================================================
-    //  PRODUCTION SUBMIT (Create or Update) – API version
+    //  PRODUCTION SUBMIT (API version)
     // ================================================================
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1029,7 +1009,7 @@
     });
 
     // ================================================================
-    //  DELIVERY SUBMIT – API version
+    //  DELIVERY SUBMIT (API version)
     // ================================================================
     deliveryForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1101,83 +1081,89 @@
     //  RENDER REPORT (async)
     // ================================================================
     async function renderReport() {
-        const prodEntries = await getProdEntries();
-        const deliveryEntries = await getDeliveryEntries();
-        const container = document.getElementById('reportTableContainer');
-        const summaryBox = document.getElementById('reportSummary');
-        const execSummary = document.getElementById('executiveSummary');
-        const asofContainer = document.getElementById('asofTableContainer');
+        try {
+            const prodEntries = await getProdEntries();
+            const deliveryEntries = await getDeliveryEntries();
 
-        const dateFrom = document.getElementById('filterDateFrom').value;
-        const dateTo = document.getElementById('filterDateTo').value;
-        const shiftFilter = document.getElementById('filterShift').value;
-        const icFilter = document.getElementById('filterIC').value;
+            const container = document.getElementById('reportTableContainer');
+            const summaryBox = document.getElementById('reportSummary');
+            const execSummary = document.getElementById('executiveSummary');
+            const asofContainer = document.getElementById('asofTableContainer');
 
-        let filteredProd = prodEntries.filter(e => {
-            if (dateFrom && e.date < dateFrom) return false;
-            if (dateTo && e.date > dateTo) return false;
-            if (shiftFilter && e.shift !== shiftFilter) return false;
-            if (icFilter && e.icName !== icFilter) return false;
-            return true;
-        });
-        filteredProd.sort((a, b) => (a.date < b.date ? 1 : -1));
+            const dateFrom = document.getElementById('filterDateFrom').value;
+            const dateTo = document.getElementById('filterDateTo').value;
+            const shiftFilter = document.getElementById('filterShift').value;
+            const icFilter = document.getElementById('filterIC').value;
 
-        execSummary.innerHTML = buildExecutiveSummary(prodEntries, deliveryEntries);
-        asofContainer.innerHTML = buildAsOfTable(prodEntries, deliveryEntries);
-
-        if (filteredProd.length === 0) {
-            container.innerHTML = `<div class="no-data">📭 কোনো প্রোডাকশন এন্ট্রি পাওয়া যায়নি।</div>`;
-        } else {
-            let html = `<table><thead><tr>
-                <th>#</th><th>তারিখ</th><th>শিফট</th><th>MC No</th><th>ইনচার্জ</th>
-                <th>কোড</th><th>আইটেম</th><th>রঙ</th>
-                <th>CT</th><th>Cavity</th><th>Capacity</th>
-                <th>Good QTY</th><th>কারণ</th><th>Utilization</th>
-                <th>✏️</th>
-            </tr></thead><tbody>`;
-            filteredProd.forEach((e, idx) => {
-                const utilClass = e.utilization >= 85 ? 'high' : (e.utilization >= 60 ? 'medium' : 'low');
-                html += `<tr>
-                    <td>${idx+1}</td>
-                    <td>${e.date}</td>
-                    <td>${e.shift}</td>
-                    <td>${e.mcNo || '—'}</td>
-                    <td>${e.icName}</td>
-                    <td>${e.productCode}</td>
-                    <td>${e.itemName}</td>
-                    <td>${e.colorName}</td>
-                    <td>${e.ct}</td>
-                    <td>${e.cavity}</td>
-                    <td>${e.capacity.toLocaleString()}</td>
-                    <td>${e.goodQty}</td>
-                    <td>${e.cause || '—'}</td>
-                    <td><span class="util-badge ${utilClass}">${e.utilization.toFixed(1)}%</span></td>
-                    <td><button class="edit-btn" data-id="${e.id}">✏️ Edit</button></td>
-                </tr>`;
+            let filteredProd = prodEntries.filter(e => {
+                if (dateFrom && e.date < dateFrom) return false;
+                if (dateTo && e.date > dateTo) return false;
+                if (shiftFilter && e.shift !== shiftFilter) return false;
+                if (icFilter && e.icName !== icFilter) return false;
+                return true;
             });
-            html += `</tbody></table>`;
-            container.innerHTML = html;
+            filteredProd.sort((a, b) => (a.date < b.date ? 1 : -1));
 
-            document.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = parseInt(this.dataset.id);
-                    loadEntryForEdit(id);
+            execSummary.innerHTML = buildExecutiveSummary(prodEntries, deliveryEntries);
+            asofContainer.innerHTML = buildAsOfTable(prodEntries, deliveryEntries);
+
+            if (filteredProd.length === 0) {
+                container.innerHTML = `<div class="no-data">📭 কোনো প্রোডাকশন এন্ট্রি পাওয়া যায়নি।</div>`;
+            } else {
+                let html = `<table><thead><tr>
+                    <th>#</th><th>তারিখ</th><th>শিফট</th><th>MC No</th><th>ইনচার্জ</th>
+                    <th>কোড</th><th>আইটেম</th><th>রঙ</th>
+                    <th>CT</th><th>Cavity</th><th>Capacity</th>
+                    <th>Good QTY</th><th>কারণ</th><th>Utilization</th>
+                    <th>✏️</th>
+                </tr></thead><tbody>`;
+                filteredProd.forEach((e, idx) => {
+                    const utilClass = e.utilization >= 85 ? 'high' : (e.utilization >= 60 ? 'medium' : 'low');
+                    html += `<tr>
+                        <td>${idx+1}</td>
+                        <td>${e.date}</td>
+                        <td>${e.shift}</td>
+                        <td>${e.mcNo || '—'}</td>
+                        <td>${e.icName}</td>
+                        <td>${e.productCode}</td>
+                        <td>${e.itemName}</td>
+                        <td>${e.colorName}</td>
+                        <td>${e.ct}</td>
+                        <td>${e.cavity}</td>
+                        <td>${e.capacity.toLocaleString()}</td>
+                        <td>${e.goodQty}</td>
+                        <td>${e.cause || '—'}</td>
+                        <td><span class="util-badge ${utilClass}">${e.utilization.toFixed(1)}%</span></td>
+                        <td><button class="edit-btn" data-id="${e.id}">✏️ Edit</button></td>
+                    </tr>`;
                 });
-            });
-        }
+                html += `</tbody></table>`;
+                container.innerHTML = html;
 
-        const totalEntries = filteredProd.length;
-        const totalGoodQty = filteredProd.reduce((s, e) => s + e.goodQty, 0);
-        const avgUtil = totalEntries > 0 ? (filteredProd.reduce((s, e) => s + e.utilization, 0) / totalEntries) : 0;
-        summaryBox.innerHTML = `
-            <div class="summary-item">📌 মোট এন্ট্রি: <strong>${totalEntries}</strong></div>
-            <div class="summary-item">✅ মোট Good QTY: <strong>${totalGoodQty.toLocaleString()}</strong></div>
-            <div class="summary-item">📊 গড় Utilization: <strong>${avgUtil.toFixed(1)}%</strong></div>
-        `;
+                document.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = parseInt(this.dataset.id);
+                        await loadEntryForEditAsync(id);
+                    });
+                });
+            }
+
+            const totalEntries = filteredProd.length;
+            const totalGoodQty = filteredProd.reduce((s, e) => s + e.goodQty, 0);
+            const avgUtil = totalEntries > 0 ? (filteredProd.reduce((s, e) => s + e.utilization, 0) / totalEntries) : 0;
+            summaryBox.innerHTML = `
+                <div class="summary-item">📌 মোট এন্ট্রি: <strong>${totalEntries}</strong></div>
+                <div class="summary-item">✅ মোট Good QTY: <strong>${totalGoodQty.toLocaleString()}</strong></div>
+                <div class="summary-item">📊 গড় Utilization: <strong>${avgUtil.toFixed(1)}%</strong></div>
+            `;
+        } catch (err) {
+            console.error('Render report error:', err);
+            document.getElementById('reportTableContainer').innerHTML = `<div class="no-data">⚠️ ডেটা লোড করতে সমস্যা: ${err.message}</div>`;
+        }
     }
 
     // ================================================================
-    //  EXECUTIVE SUMMARY
+    //  BUILD EXECUTIVE SUMMARY
     // ================================================================
     function buildExecutiveSummary(prodEntries, deliveryEntries) {
         const today = new Date();
@@ -1220,7 +1206,7 @@
     }
 
     // ================================================================
-    //  AS OF TABLE
+    //  BUILD AS OF TABLE
     // ================================================================
     function buildAsOfTable(prodEntries, deliveryEntries) {
         if (prodEntries.length === 0 && deliveryEntries.length === 0) {
@@ -1289,7 +1275,7 @@
     });
 
     // ================================================================
-    //  DELETE ALL – PASSWORD PROTECTED
+    //  DELETE ALL (API version)
     // ================================================================
     document.getElementById('deleteAllBtn').addEventListener('click', async function() {
         const enteredPassword = prompt('🔒 ডেটা মুছতে পাসওয়ার্ড দিন:');
@@ -1310,12 +1296,13 @@
     });
 
     // ================================================================
-    //  DOWNLOAD FUNCTIONS (PDF, Image, Excel) – same as before
+    //  DOWNLOAD FUNCTIONS (same as before, but using async report data)
     // ================================================================
     document.getElementById('downloadPdfBtn').addEventListener('click', function() {
         const element = document.getElementById('reportContent');
         this.textContent = '⏳ Generating...';
         this.disabled = true;
+
         html2canvas(element, {
             scale: 2,
             useCORS: true,
@@ -1343,6 +1330,7 @@
         const element = document.getElementById('reportContent');
         this.textContent = '⏳ Generating...';
         this.disabled = true;
+
         html2canvas(element, {
             scale: 2,
             useCORS: true,
@@ -1363,8 +1351,8 @@
         });
     });
 
-    document.getElementById('downloadExcelBtn').addEventListener('click', function() {
-        (async () => {
+    document.getElementById('downloadExcelBtn').addEventListener('click', async function() {
+        try {
             const prodEntries = await getProdEntries();
             const deliveryEntries = await getDeliveryEntries();
 
@@ -1376,86 +1364,83 @@
             this.textContent = '⏳ Generating...';
             this.disabled = true;
 
-            try {
-                const wb = XLSX.utils.book_new();
+            const wb = XLSX.utils.book_new();
 
-                // Sheet 1: Production
-                const prodData = prodEntries.map((e, idx) => ({
-                    'SL': idx + 1,
-                    'Date': e.date,
-                    'Shift': e.shift,
-                    'MC No': e.mcNo || '',
-                    'IC Name': e.icName,
-                    'Item Code': e.productCode,
-                    'Item Name': e.itemName,
-                    'Color': e.colorName,
-                    'CT': e.ct,
-                    'Cavity': e.cavity,
-                    'Capacity': e.capacity,
-                    'Good QTY': e.goodQty,
-                    'Cause': e.cause || '',
-                    'Utilization %': e.utilization ? e.utilization.toFixed(1) : ''
-                }));
-                const ws1 = XLSX.utils.json_to_sheet(prodData);
-                XLSX.utils.book_append_sheet(wb, ws1, 'Production');
+            // Sheet 1: Production
+            const prodData = prodEntries.map((e, idx) => ({
+                'SL': idx + 1,
+                'Date': e.date,
+                'Shift': e.shift,
+                'MC No': e.mcNo || '',
+                'IC Name': e.icName,
+                'Item Code': e.productCode,
+                'Item Name': e.itemName,
+                'Color': e.colorName,
+                'CT': e.ct,
+                'Cavity': e.cavity,
+                'Capacity': e.capacity,
+                'Good QTY': e.goodQty,
+                'Cause': e.cause || '',
+                'Utilization %': e.utilization ? e.utilization.toFixed(1) : ''
+            }));
+            const ws1 = XLSX.utils.json_to_sheet(prodData);
+            XLSX.utils.book_append_sheet(wb, ws1, 'Production');
 
-                // Sheet 2: As of Summary
-                const allCodes = new Set();
-                prodEntries.forEach(e => allCodes.add(e.productCode));
-                deliveryEntries.forEach(e => allCodes.add(e.productCode));
+            // Sheet 2: As of Summary
+            const allCodes = new Set();
+            prodEntries.forEach(e => allCodes.add(e.productCode));
+            deliveryEntries.forEach(e => allCodes.add(e.productCode));
 
-                const asofRows = [];
-                let totalCap = 0, totalProd = 0, totalDel = 0;
-                allCodes.forEach(code => {
-                    const product = productData.find(p => p.code === code);
-                    if (!product) return;
-                    const prodItems = prodEntries.filter(e => e.productCode === code);
-                    const delItems = deliveryEntries.filter(e => e.productCode === code);
-                    const capSum = prodItems.reduce((s, e) => s + e.capacity, 0);
-                    const prodSum = prodItems.reduce((s, e) => s + e.goodQty, 0);
-                    const delSum = delItems.reduce((s, e) => s + e.qty, 0);
-                    totalCap += capSum;
-                    totalProd += prodSum;
-                    totalDel += delSum;
-                    asofRows.push({
-                        'Code': code,
-                        'Item Name': product.item,
-                        'Color': product.color,
-                        'As of Capacity': capSum,
-                        'As of Production': prodSum,
-                        'As of Delivery': delSum
-                    });
-                });
+            const asofRows = [];
+            let totalCap = 0, totalProd = 0, totalDel = 0;
+            allCodes.forEach(code => {
+                const product = productData.find(p => p.code === code);
+                if (!product) return;
+                const prodItems = prodEntries.filter(e => e.productCode === code);
+                const delItems = deliveryEntries.filter(e => e.productCode === code);
+                const capSum = prodItems.reduce((s, e) => s + e.capacity, 0);
+                const prodSum = prodItems.reduce((s, e) => s + e.goodQty, 0);
+                const delSum = delItems.reduce((s, e) => s + e.qty, 0);
+                totalCap += capSum;
+                totalProd += prodSum;
+                totalDel += delSum;
                 asofRows.push({
-                    'Code': 'মোট',
-                    'Item Name': '',
-                    'Color': '',
-                    'As of Capacity': totalCap,
-                    'As of Production': totalProd,
-                    'As of Delivery': totalDel
+                    'Code': code,
+                    'Item Name': product.item,
+                    'Color': product.color,
+                    'As of Capacity': capSum,
+                    'As of Production': prodSum,
+                    'As of Delivery': delSum
                 });
+            });
+            asofRows.push({
+                'Code': 'মোট',
+                'Item Name': '',
+                'Color': '',
+                'As of Capacity': totalCap,
+                'As of Production': totalProd,
+                'As of Delivery': totalDel
+            });
 
-                const ws2 = XLSX.utils.json_to_sheet(asofRows);
-                XLSX.utils.book_append_sheet(wb, ws2, 'As of Summary');
+            const ws2 = XLSX.utils.json_to_sheet(asofRows);
+            XLSX.utils.book_append_sheet(wb, ws2, 'As of Summary');
 
-                // Write file
-                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-                const blob = new Blob([wbout], { type: 'application/octet-stream' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = 'Production_Report.xlsx';
-                link.click();
-                URL.revokeObjectURL(link.href);
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Production_Report.xlsx';
+            link.click();
+            URL.revokeObjectURL(link.href);
 
-                this.textContent = '📊 Excel';
-                this.disabled = false;
-            } catch (err) {
-                alert('Excel তৈরি করতে সমস্যা হয়েছে।');
-                console.error(err);
-                this.textContent = '📊 Excel';
-                this.disabled = false;
-            }
-        })();
+            this.textContent = '📊 Excel';
+            this.disabled = false;
+        } catch (err) {
+            alert('Excel তৈরি করতে সমস্যা হয়েছে।');
+            console.error(err);
+            this.textContent = '📊 Excel';
+            this.disabled = false;
+        }
     });
 
     // ================================================================
@@ -1467,6 +1452,8 @@
     utilizationDisplay.textContent = '—';
 
     console.log('✅ Production + Delivery Entry with Google Sheets API ready.');
+    // Initial render
+    renderReport();
 </script>
 </body>
 </html>
