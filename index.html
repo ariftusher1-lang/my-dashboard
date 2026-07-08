@@ -530,6 +530,24 @@
             margin-left: 6px;
             font-weight: 400;
         }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .loading-overlay.active {
+            display: flex;
+        }
     </style>
 </head>
 <body>
@@ -712,9 +730,20 @@
 
     </div>
 
-    <script>
-        const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnFf9_D0a8EAdJVeFQUClLIyNMv8--q8zEeWzKeUnunJ5tBWSwSYQ15bTyXyyVhAkpiA/exec';
+    <!-- লোডিং ওভারলে -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div>⏳ ডেটা চেক করা হচ্ছে...</div>
+    </div>
 
+    <script>
+        // =============================================================
+        // 🔥 আপনার Google Apps Script URL (JSONP সাপোর্ট সহ)
+        // =============================================================
+        const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCqPfQdTnXKHWTyvdZGowT4mbvPNXmDQAEFJbW2sK6-OacPyYsvdJ39QbM52ni3m1ZqA/exec';
+
+        // ============================================================
+        // ১. ডিপার্টমেন্ট ম্যাপিং (আগের মতো)
+        // ============================================================
         const DEPARTMENT_IC_MAP = {
             'RIP> DPL> Plastic-3': 'Mr. Shawon',
             'RIP> DPL> Plastic-6.1': 'Mr. Hazrat',
@@ -771,6 +800,71 @@
             'DPL-QA', 'RIP RFL Store'
         ];
 
+        // ============================================================
+        // ২. JSONP দিয়ে সার্ভার থেকে ডেটা আনা
+        // ============================================================
+        function fetchDataViaJSONP(callback) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                window[callbackName] = function(data) {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    resolve(data);
+                };
+
+                const url = APP_SCRIPT_URL + '?action=getData&callback=' + callbackName;
+                const script = document.createElement('script');
+                script.src = url;
+                script.onerror = function() {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    reject(new Error('JSONP কল ব্যর্থ'));
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        // ============================================================
+        // ৩. ডুপ্লিকেট চেক (লোকাল + JSONP)
+        // ============================================================
+        async function checkDuplicate(date, shift, dept) {
+            const key = `${date}_${shift}_${dept}`;
+
+            // ১. লোকাল চেক (দ্রুত)
+            if (localStorage.getItem(key) === 'submitted') {
+                return { duplicate: true, source: 'localStorage' };
+            }
+
+            // ২. সার্ভার চেক (JSONP)
+            try {
+                const response = await fetchDataViaJSONP();
+                if (!response || !response.data) {
+                    // যদি ডেটা না আসে, তাহলে আমরা এন্ট্রি ব্লক করি (নিরাপদ)
+                    return { duplicate: false, source: 'server_error', error: true };
+                }
+                const allData = response.data;
+                const found = allData.some(row => {
+                    const rowDate = row.entryDate || row.Date || '';
+                    const rowShift = row.shift || row.Shift || '';
+                    const rowDept = row.department || row.Department || '';
+                    return rowDate === date && rowShift === shift && rowDept === dept;
+                });
+
+                if (found) {
+                    localStorage.setItem(key, 'submitted');
+                    return { duplicate: true, source: 'server' };
+                }
+                return { duplicate: false, source: 'server' };
+            } catch (err) {
+                console.warn('JSONP চেক ব্যর্থ:', err);
+                // সার্ভার থেকে ডেটা না এলে আমরা এন্ট্রি ব্লক করি (নিরাপদ)
+                return { duplicate: false, source: 'server_error', error: true };
+            }
+        }
+
+        // ============================================================
+        // ৪. DOM লোড হলে সেটআপ
+        // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
             populateDepartments();
             const today = new Date().toISOString().slice(0, 10);
@@ -841,6 +935,9 @@
             });
         });
 
+        // ============================================================
+        // ৫. অটো শিফট
+        // ============================================================
         function autoSetShift() {
             const now = new Date();
             const hours = now.getHours();
@@ -870,6 +967,9 @@
             }
         }
 
+        // ============================================================
+        // ৬. অটো ডার্ক মোড
+        // ============================================================
         function applyAutoDarkMode() {
             if (localStorage.getItem('autoDarkMode') === 'false') return;
             const now = new Date();
@@ -897,6 +997,9 @@
             }
         }
 
+        // ============================================================
+        // ৭. ডিপার্টমেন্ট পপুলেট ও টগল
+        // ============================================================
         function populateDepartments() {
             const select = document.getElementById('department');
             select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
@@ -916,6 +1019,9 @@
             document.getElementById('operatorSection').style.display = isNonMC ? 'none' : 'block';
         }
 
+        // ============================================================
+        // ৮. অটো ক্যালকুলেশন
+        // ============================================================
         function autoCalculate() {
             const total = parseInt(document.getElementById('totalMC').value) || 0;
             let running = parseInt(document.getElementById('mcRunning').value) || 0;
@@ -959,6 +1065,9 @@
             document.getElementById('pctStopped').value = pctS.toFixed(2) + '%';
         }
 
+        // ============================================================
+        // ৯. রিসেট ফর্ম
+        // ============================================================
         function resetForm() {
             document.getElementById('entryDate').value = '';
             document.getElementById('shift').value = 'Day';
@@ -1016,18 +1125,15 @@
             document.getElementById('entryDate').value = today;
         }
 
+        // ============================================================
+        // ১০. কাউন্টার আপডেট (লোকাল স্টোরেজ থেকে)
+        // ============================================================
         async function updateEntryCounter() {
             const counterStatus = document.getElementById('counterStatus');
             const countSpan = document.getElementById('entryCount');
             const shiftInfo = document.getElementById('counterShiftInfo');
             try {
                 counterStatus.textContent = '⏳ লোড হচ্ছে...';
-                const response = await fetch(APP_SCRIPT_URL + '?action=getData', { mode: 'no-cors' });
-                // no-cors এ রেসপন্স পড়া যায় না, তাই আমরা লোকাল স্টোরেজ থেকে কাউন্ট করি?
-                // আসলে আমরা সঠিক কাউন্ট পাব না, তাই আমরা আগের মতো লোকাল ডেটা ব্যবহার করব?
-                // কিন্তু আমরা চাইলে আজকের এন্ট্রি কাউন্ট লোকাল স্টোরেজ থেকে করতে পারি
-                // তবে এটা নির্ভরযোগ্য নয়। আমরা শুধু একটি আনুমানিক সংখ্যা দেখাব।
-                // এখানে আমরা লোকাল স্টোরেজে সংরক্ষিত কীগুলো কাউন্ট করি
                 const today = new Date().toISOString().slice(0, 10);
                 const hours = new Date().getHours();
                 const currentShift = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
@@ -1056,6 +1162,9 @@
             }
         }
 
+        // ============================================================
+        // ১১. ভয়েস ফাংশন
+        // ============================================================
         function speakSuccess() {
             if (!('speechSynthesis' in window)) {
                 console.warn('Speech Synthesis not supported');
@@ -1116,41 +1225,23 @@
             }
         }
 
-        // ডুপ্লিকেট চেক: লোকাল + সার্ভার (যদি পাওয়া যায়)
-        async function checkDuplicate(date, shift, dept) {
-            const key = `${date}_${shift}_${dept}`;
-            // লোকাল চেক
-            if (localStorage.getItem(key) === 'submitted') {
-                return { duplicate: true, source: 'localStorage' };
-            }
-
-            // সার্ভার চেক – কিন্তু no-cors মোডে রেসপন্স পড়া যায় না, তাই আমরা এটি কল করব, কিন্তু রেসপন্স না পেলে লোকাল ডেটাকেই সত্যি ধরি
-            try {
-                const response = await fetch(APP_SCRIPT_URL + '?action=getData', { mode: 'no-cors' });
-                // no-cors এ রেসপন্স বডি পড়া যায় না, তাই আমরা ধরে নিই ডুপ্লিকেট নেই
-                // কিন্তু আমরা চাইলে একটি সতর্কতা দেখাতে পারি
-                // আমরা এখানে ফাংশন থেকে ফিরে আসব
-                // যেহেতু রেসপন্স পড়া যায় না, আমরা ধরে নিচ্ছি ডুপ্লিকেট নেই
-                // কিন্তু ব্যবহারকারীকে সতর্ক করতে আমরা status এ মেসেজ দেব
-                return { duplicate: false, source: 'server (no response)' };
-            } catch (error) {
-                console.warn('সার্ভার চেক ব্যর্থ:', error);
-                return { duplicate: false, source: 'server error' };
-            }
-        }
-
+        // ============================================================
+        // ১২. ফর্ম সাবমিট
+        // ============================================================
         document.getElementById('entryForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const status = document.getElementById('status');
             const duplicateAlert = document.getElementById('duplicateAlert');
             const submitBtn = document.getElementById('submitBtn');
+            const overlay = document.getElementById('loadingOverlay');
 
             duplicateAlert.style.display = 'none';
             status.className = '';
             status.innerHTML = '⏳ চেক করা হচ্ছে...';
             submitBtn.disabled = true;
             submitBtn.textContent = '⏳ চেক হচ্ছে...';
+            overlay.classList.add('active');
 
             const date = document.getElementById('entryDate').value;
             const shift = document.getElementById('shift').value;
@@ -1163,11 +1254,23 @@
                 status.innerHTML = '❌ দয়া করে সব * চিহ্নিত ফিল্ড পূরণ করুন!';
                 submitBtn.disabled = false;
                 submitBtn.textContent = '💾 ডেটা সেভ করুন';
+                overlay.classList.remove('active');
                 return;
             }
 
             // ডুপ্লিকেট চেক
             const checkResult = await checkDuplicate(date, shift, dept);
+            overlay.classList.remove('active');
+
+            if (checkResult.error) {
+                // সার্ভার থেকে ডেটা আসেনি, আমরা ব্লক করি (নিরাপদ)
+                status.className = 'error';
+                status.innerHTML = '❌ সার্ভার থেকে ডেটা পাওয়া যায়নি, তাই ডুপ্লিকেট চেক সম্ভব নয়। দয়া করে পরে চেষ্টা করুন অথবা অ্যাডমিনের সাথে যোগাযোগ করুন।';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '💾 ডেটা সেভ করুন';
+                return;
+            }
+
             if (checkResult.duplicate) {
                 duplicateAlert.style.display = 'block';
                 status.className = 'error';
@@ -1177,20 +1280,7 @@
                 return;
             }
 
-            // যদি checkResult.source === 'server (no response)' হয়, তাহলে আমরা সতর্ক করি
-            if (checkResult.source === 'server (no response)') {
-                // আমরা ব্যবহারকারীকে জানাই যে সার্ভার থেকে ডেটা পাওয়া যায়নি, তাই তারা নিজ দায়িত্বে এগিয়ে যেতে পারেন
-                const proceed = confirm('⚠️ সার্ভার থেকে ডেটা পাওয়া যাচ্ছে না, তাই ডুপ্লিকেট চেক করা সম্ভব নয়। আপনি কি তবুও এন্ট্রি দিতে চান?');
-                if (!proceed) {
-                    status.className = 'warning';
-                    status.innerHTML = '⏸️ ব্যবহারকারী বাতিল করেছেন।';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = '💾 ডেটা সেভ করুন';
-                    return;
-                }
-            }
-
-            // সেভ প্রক্রিয়া
+            // --- ডুপ্লিকেট নেই, সেভ করুন ---
             status.innerHTML = '⏳ সেভ হচ্ছে...';
             const getVal = (id) => document.getElementById(id).value;
             const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
