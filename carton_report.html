@@ -14,7 +14,7 @@
         .header { background: linear-gradient(135deg, #0d47a1, #1976d2); color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
         .header h1 { font-size: 22px; }
         .live-badge {
-            background: #28a745 !important;  /* সবুজ */
+            background: #28a745 !important;
             color: white;
             padding: 4px 14px;
             border-radius: 50px;
@@ -146,11 +146,11 @@
         </div>
     </div>
 
-    <!-- ডেইলি সামারি -->
+    <!-- 🔥 ডেইলি সামারি – শুধু গতকালের ডেটা -->
     <div class="card" id="dailyReportContainer">
         <h2>
             <span class="toggle-wrapper">
-                <span id="dailyHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি</span>
+                <span id="dailyHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (গতকাল)</span>
                 <button class="toggle-btn" onclick="toggleSection('dailyContent')" id="dailyToggle">🙈 লুকান</button>
             </span>
             <span class="btn-group-small">
@@ -160,7 +160,7 @@
             </span>
         </h2>
         <div id="dailyContent" class="section-content">
-            <div id="summaryTableContainer"><div class="empty-msg">কোনো ডেটা নেই</div></div>
+            <div id="summaryTableContainer"><div class="empty-msg">গতকালের কোনো ডেটা নেই</div></div>
         </div>
     </div>
 
@@ -234,7 +234,7 @@
 
 <script type="module">
     // ================================================================
-    // 🔥 Firebase Config (আপনার দেওয়া তথ্য অনুযায়ী সম্পূর্ণ)
+    // 🔥 Firebase Config
     // ================================================================
     import { initializeApp } from "firebase-app";
     import { getDatabase, ref, onValue, remove } from "firebase-database";
@@ -255,7 +255,7 @@
     const cartonRef = ref(database, 'cartonEntries');
 
     // ================================================================
-    // কনফিগারেশন ও গ্লোবাল ভেরিয়েবল
+    // কনফিগারেশন
     // ================================================================
     const PER_HR_CAPACITY = 40;
     const DEPARTMENTS = [
@@ -307,7 +307,7 @@
     }
 
     // ================================================================
-    // রেন্ডার ফাংশন (সম্পূর্ণ)
+    // রেন্ডার অল (ফিল্টার + শর্ট + ওভারঅল + মাস + লগ)
     // ================================================================
     window.renderAll = function() {
         const filterDate = getFilterDate();
@@ -322,24 +322,40 @@
         }
 
         document.getElementById('shortHeading').innerHTML = `📊 শর্ট সামারি (ফিল্টার অনুযায়ী) ${filterDate ? '— ' + dateDisplay : ''}`;
-        document.getElementById('dailyHeading').innerHTML = `📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি ${filterDate ? '— ' + dateDisplay : ' (সব তারিখ)'}`;
+        // ডেইলি হেডার আলাদা – গতকালের জন্য
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yStr = yesterday.toISOString().slice(0,10);
+        const yDisplay = formatDateDisplay(yStr);
+        document.getElementById('dailyHeading').innerHTML = `📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (গতকাল — ${yDisplay})`;
 
+        // শর্ট সামারি – ফিল্টার অনুযায়ী
         renderShortSummary(filtered);
-        if (filtered.length === 0) {
-            document.getElementById('summaryTableContainer').innerHTML = `<div class="empty-msg">এই তারিখে কোনো এন্ট্রি নেই</div>`;
+
+        // 🔥 ডেইলি সামারি – শুধু গতকালের ডেটা (ফিল্টার উপেক্ষা করে)
+        const yesterdayEntries = allEntries.filter(e => e.entryDate === yStr);
+        if (yesterdayEntries.length === 0) {
+            document.getElementById('summaryTableContainer').innerHTML = `<div class="empty-msg">গতকালের (${yDisplay}) কোনো এন্ট্রি নেই</div>`;
             window._dailyTableData = [];
         } else {
-            renderDailySummary(filtered);
+            renderDailySummary(yesterdayEntries);
         }
+
+        // ওভারঅল – সব তারিখ
         renderOverallSummary(allEntries);
+
+        // মাস অনুযায়ী
         populateMonthFilter(allEntries);
         renderMonthlySummary();
+
+        // এন্ট্রি লগ (ফিল্টার অনুযায়ী)
         renderLog(filtered);
+
         document.getElementById('currentDate').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
     };
 
     // ================================================================
-    // শর্ট সামারি
+    // শর্ট সামারি (আগের মতো)
     // ================================================================
     function renderShortSummary(entries) {
         const container = document.getElementById('shortSummaryContent');
@@ -412,7 +428,7 @@
     }
 
     // ================================================================
-    // ডেইলি সামারি (পূর্ণ টেবিল)
+    // ডেইলি সামারি – শুধু গতকালের ডেটার জন্য (প্যারামিটার হিসেবে entries নেয়)
     // ================================================================
     function renderDailySummary(entries) {
         const container = document.getElementById('summaryTableContainer');
@@ -630,7 +646,7 @@
     }
 
     // ================================================================
-    // ওভারঅল সারাংশ (সব তারিখ)
+    // ওভারঅল সারাংশ (আগের মতো)
     // ================================================================
     function renderOverallSummary(allEntries) {
         const container = document.getElementById('overallSummaryContainer');
@@ -709,7 +725,7 @@
     }
 
     // ================================================================
-    // মাস ফিল্টার পপুলেট
+    // মাস ফিল্টার পপুলেট (আগের মতো)
     // ================================================================
     function populateMonthFilter(entries) {
         const select = document.getElementById('monthFilter');
@@ -749,7 +765,7 @@
     }
 
     // ================================================================
-    // মাস অনুযায়ী সারাংশ রেন্ডার
+    // মাস অনুযায়ী সারাংশ (আগের মতো)
     // ================================================================
     window.renderMonthlySummary = function() {
         const container = document.getElementById('monthlySummaryContainer');
@@ -853,7 +869,7 @@
     };
 
     // ================================================================
-    // 📋 এন্ট্রি লগ রেন্ডার
+    // 📋 এন্ট্রি লগ (আগের মতো)
     // ================================================================
     function renderLog(entries) {
         const container = document.getElementById('entryLogContainer');
@@ -890,7 +906,7 @@
     }
 
     // ================================================================
-    // 📥 ডাউনলোড ফাংশন (Short, Daily, Overall, Monthly)
+    // 📥 ডাউনলোড ফাংশন (আগের মতো)
     // ================================================================
     window.downloadShortExcel = function() {
         const data = window._shortData;
