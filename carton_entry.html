@@ -11,7 +11,7 @@
         .header { background: linear-gradient(135deg, #0d47a1, #1976d2); color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
         .header h1 { font-size: 22px; }
         .live-badge {
-            background: #28a745 !important;  /* সবুজ */
+            background: #28a745 !important;
             color: white;
             padding: 4px 14px;
             border-radius: 50px;
@@ -116,9 +116,32 @@
             .live-clock .clock-time { font-size: 32px; padding: 6px 12px; }
             .live-clock .clock-time .seconds { font-size: 22px; }
         }
-        .nav-links { display: flex; gap: 20px; margin-top: 20px; justify-content: center; }
+        .nav-links { display: flex; gap: 20px; margin-top: 20px; justify-content: center; flex-wrap: wrap; }
         .nav-links a { color: #1976d2; text-decoration: none; font-weight: 600; }
         .nav-links a:hover { text-decoration: underline; }
+        .nav-links .report-link {
+            background: #28a745;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+        .nav-links .report-link:hover {
+            background: #1e7e34;
+            text-decoration: none;
+        }
+        .btn-danger-lg {
+            background: #dc3545;
+            color: white;
+            padding: 10px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-danger-lg:hover { background: #bd2130; transform: scale(1.02); }
     </style>
 </head>
 <body>
@@ -187,11 +210,13 @@
         </div>
     </div>
 
+    <!-- ⭐ অ্যাকশন বার — "সব ডেটা মুছুন" -->
     <div class="action-bar">
         <button class="btn btn-warning" onclick="exportCSV()">⬇️ CSV ডাউনলোড</button>
-        <button class="btn btn-danger" onclick="clearAll()">🗑️ সব ডেটা মুছুন</button>
+        <button class="btn btn-danger-lg" onclick="clearAll()">🗑️ সব ডেটা মুছুন</button>
     </div>
 
+    <!-- ⭐ এন্ট্রি লগ -->
     <div class="card">
         <h2>📋 এন্ট্রি লগ (লাইভ)</h2>
         <div id="entryLogContainer"><div class="empty-msg">লোড হচ্ছে...</div></div>
@@ -205,13 +230,15 @@
         <div class="clock-date" id="clockDate">শনিবার, ০১ জানুয়ারি ২০২৬</div>
     </div>
 
+    <!-- ⭐ নাভিগেশন লিংক — রিপোর্ট লিংক যোগ করা হয়েছে -->
     <div class="nav-links">
         <a href="carton_report.html">📊 রিপোর্ট দেখুন</a>
+        <a href="https://my-dashboard-a4y.pages.dev/carton_report" target="_blank" class="report-link">📦 Packaging Data দেখতে এখানে ক্লিক করুন</a>
         <a href="index.html">🏠 ড্যাশবোর্ড</a>
     </div>
 </div>
 
-<!-- Firebase Import Map -->
+<!-- Firebase Import Map & Script (আগের মতোই থাকবে) -->
 <script type="importmap">
     {
         "imports": {
@@ -223,7 +250,7 @@
 
 <script type="module">
     // ================================================================
-    // 🔥 Firebase Config (আপনার দেওয়া তথ্য অনুযায়ী সম্পূর্ণ)
+    // 🔥 Firebase Config (আপনার দেওয়া তথ্য)
     // ================================================================
     import { initializeApp } from "firebase-app";
     import { getDatabase, ref, push, onValue, update, remove } from "firebase-database";
@@ -308,7 +335,7 @@
     };
 
     // ================================================================
-    // 🗣️ ভয়েস ফাংশন (Female Voice)
+    // 🗣️ ভয়েস ফাংশন
     // ================================================================
     function getFemaleVoice() {
         const voices = window.speechSynthesis.getVoices();
@@ -450,7 +477,7 @@
     };
 
     // ================================================================
-    // 🗑️ ডিলিট ফাংশন (Firebase)
+    // 🗑️ ডিলিট ফাংশন
     // ================================================================
     window.deleteEntry = async function(key) {
         if (!confirm('এই এন্ট্রি মুছবেন?')) return;
@@ -462,7 +489,7 @@
     };
 
     // ================================================================
-    // ✏️ Output Update (Firebase)
+    // ✏️ Output Update
     // ================================================================
     window.showOutputUpdateForm = function(key) {
         document.querySelectorAll('.output-update-form').forEach(el => el.classList.remove('show'));
@@ -504,14 +531,15 @@
     };
 
     // ================================================================
-    // 🗑️ সব ডেটা মুছুন (Firebase)
+    // 🗑️ সব ডেটা মুছুন
     // ================================================================
     window.clearAll = async function() {
-        if (!confirm('সব ডেটা স্থায়ীভাবে মুছবেন?')) return;
+        if (!confirm('⚠️ সতর্কতা: সব ডেটা স্থায়ীভাবে মুছে ফেলা হবে। আপনি কি নিশ্চিত?')) return;
         try {
             await remove(cartonRef);
+            alert('✅ সব ডেটা সফলভাবে মুছে ফেলা হয়েছে!');
         } catch (error) {
-            alert('সব ডেটা মুছতে সমস্যা: ' + error.message);
+            alert('❌ সব ডেটা মুছতে সমস্যা: ' + error.message);
         }
     };
 
@@ -551,7 +579,7 @@
     };
 
     // ================================================================
-    // 🖥️ লগ রেন্ডার
+    // 🖥️ এন্ট্রি লগ রেন্ডার
     // ================================================================
     function renderLog() {
         if (allEntries.length === 0) {
