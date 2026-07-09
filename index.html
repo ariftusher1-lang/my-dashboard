@@ -337,7 +337,7 @@
         .shift-badge.day { background: var(--shift-badge-day); }
         .shift-badge.night { background: var(--shift-badge-night); }
 
-        /* ===== নতুন: সম্পূর্ণ সারাংশ কার্ড (সব ডেটা) ===== */
+        /* ===== সারাংশ কার্ড (সম্পূর্ণ) ===== */
         #summaryCard {
             display: none;
             margin-top: 20px;
@@ -376,6 +376,8 @@
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            width: auto;
+            margin: 0;
         }
         #summaryCard .card-title .btn-download:hover {
             background: #0a3a7a;
@@ -430,23 +432,6 @@
             #summaryCard .card-title { font-size: 18px; }
         }
 
-        .debug-box {
-            background: var(--section-bg);
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            margin-top: 15px;
-            border-radius: 6px;
-            font-size: 13px;
-            max-height: 250px;
-            overflow: auto;
-            white-space: pre-wrap;
-            word-break: break-all;
-            display: none;
-            transition: background 0.3s, border-color 0.3s;
-        }
-        .debug-box.show { display: block; }
-        .debug-box .debug-label { font-weight: 700; margin-bottom: 6px; display: block; }
-        .debug-box .debug-content { font-family: monospace; font-size: 12px; }
         .loading-overlay {
             display: none;
             position: fixed;
@@ -620,7 +605,7 @@
         <div id="duplicateAlert">⚠️ আপনার ডিপার্টমেন্ট থেকে ইতিমধ্যে একই তারিখ ও শিফটের ডেটা জমা দেওয়া হয়েছে!</div>
     </form>
 
-    <!-- ===== সম্পূর্ণ সারাংশ কার্ড (সব ডেটা + ইমেজ ডাউনলোড) ===== -->
+    <!-- ===== সম্পূর্ণ সারাংশ কার্ড ===== -->
     <div id="summaryCard">
         <div class="card-title">
             <span>✅ সম্পূর্ণ এন্ট্রি সারাংশ</span>
@@ -632,11 +617,6 @@
     </div>
 
     <div id="status"></div>
-
-    <div class="debug-box" id="debugBox">
-        <span class="debug-label">📡 সার্ভার রেসপন্স (JSONP):</span>
-        <div class="debug-content" id="debugContent">লোড হচ্ছে...</div>
-    </div>
 
     <div class="report-footer">
         <div class="link-group">
@@ -773,7 +753,6 @@
             document.getElementById('duplicateAlert').style.display = 'none';
             document.getElementById('status').className = '';
             document.getElementById('status').innerHTML = '';
-            document.getElementById('debugBox').classList.remove('show');
             document.getElementById('summaryCard').style.display = 'none';
         });
 
@@ -781,7 +760,6 @@
             document.getElementById('duplicateAlert').style.display = 'none';
             document.getElementById('status').className = '';
             document.getElementById('status').innerHTML = '';
-            document.getElementById('debugBox').classList.remove('show');
             document.getElementById('summaryCard').style.display = 'none';
         });
         document.getElementById('shift').addEventListener('change', function() {
@@ -790,7 +768,6 @@
             document.getElementById('duplicateAlert').style.display = 'none';
             document.getElementById('status').className = '';
             document.getElementById('status').innerHTML = '';
-            document.getElementById('debugBox').classList.remove('show');
             document.getElementById('summaryCard').style.display = 'none';
         });
     });
@@ -961,7 +938,7 @@
     }
 
     // =============================================================
-    // JSONP কল
+    // JSONP কল (শুধু ডুপ্লিকেট চেকের জন্য, ডিবাগ বক্স সরানো হয়েছে)
     // =============================================================
     function fetchDataViaJSONP() {
         return new Promise((resolve, reject) => {
@@ -969,10 +946,6 @@
             window[callbackName] = function(data) {
                 delete window[callbackName];
                 document.body.removeChild(script);
-                const debugBox = document.getElementById('debugBox');
-                const debugContent = document.getElementById('debugContent');
-                debugBox.classList.add('show');
-                debugContent.textContent = JSON.stringify(data, null, 2);
                 resolve(data);
             };
 
@@ -982,10 +955,6 @@
             script.onerror = function() {
                 delete window[callbackName];
                 document.body.removeChild(script);
-                const debugBox = document.getElementById('debugBox');
-                const debugContent = document.getElementById('debugContent');
-                debugBox.classList.add('show');
-                debugContent.textContent = '❌ JSONP কল ব্যর্থ! চেক করুন URL ও নেটওয়ার্ক।';
                 reject(new Error('JSONP কল ব্যর্থ'));
             };
             document.body.appendChild(script);
@@ -1008,7 +977,6 @@
             }
             const allData = response.data;
 
-            // ✅ শুধু তারিখের 'YYYY-MM-DD' অংশ তুলনা করি
             const searchDate = new Date(date);
             searchDate.setHours(0, 0, 0, 0);
 
@@ -1146,7 +1114,6 @@
         document.getElementById('duplicateAlert').style.display = 'none';
         document.getElementById('status').className = '';
         document.getElementById('status').innerHTML = '';
-        // summaryCard রিসেট করব না – এটি ডেটা দেখানোর জন্য থাকে
         autoSetShift();
         const today = new Date().toISOString().slice(0, 10);
         document.getElementById('entryDate').value = today;
