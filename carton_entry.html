@@ -52,7 +52,9 @@
         .btn-danger:hover { background: #bd2130; }
         .btn-warning { background: #ffc107; color: #333; }
         .btn-warning:hover { background: #e0a800; }
-        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
+        .btn-sm-primary { background: #1976d2; color: white; }
+        .btn-sm-primary:hover { background: #0d47a1; }
         .table-wrap { overflow-x: auto; margin-top: 15px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { background: #e3eef9; color: #0d47a1; padding: 10px 8px; border-bottom: 2px solid #1976d2; white-space: nowrap; text-align: center; }
@@ -128,6 +130,46 @@
             transition: 0.2s;
         }
         .btn-danger-lg:hover { background: #bd2130; transform: scale(1.02); }
+
+        /* Edit Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: white;
+            max-width: 500px;
+            width: 100%;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .modal-box h3 { font-size: 22px; color: #0d47a1; border-bottom: 2px solid #1976d2; padding-bottom: 10px; margin-bottom: 16px; }
+        .modal-box .form-group { margin-bottom: 14px; }
+        .modal-box .form-group label { display: block; font-weight: 600; font-size: 14px; color: #333; margin-bottom: 4px; }
+        .modal-box .form-group input, .modal-box .form-group textarea {
+            width: 100%; padding: 10px 14px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+        .modal-box .form-group input:focus { border-color: #1976d2; outline: none; box-shadow: 0 0 0 3px rgba(25,118,210,0.1); }
+        .modal-box .btn-group { display: flex; gap: 12px; margin-top: 18px; }
+        .modal-box .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        .modal-box .btn-group .btn-save { background: #28a745; color: white; }
+        .modal-box .btn-group .btn-save:hover { background: #1e7e34; }
+        .modal-box .btn-group .btn-cancel { background: #6c757d; color: white; }
+        .modal-box .btn-group .btn-cancel:hover { background: #5a6268; }
+        .modal-box .readonly-field {
+            background: #f5f5f5; color: #333; padding: 10px 14px; border-radius: 8px; border: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
@@ -219,6 +261,42 @@
     <!-- নেভিগেশন লিংক — এখানে রিপোর্ট লিংক যুক্ত -->
     <div class="nav-links">
         <a href="carton_report.html" class="report-link">📊 রিপোর্ট দেখুন</a>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+        <h3>✏️ এন্ট্রি সম্পাদনা করুন (শুধু অ্যাডমিন)</h3>
+        <input type="hidden" id="editKey">
+        <div class="form-group">
+            <label>ডিপার্টমেন্ট</label>
+            <div class="readonly-field" id="editDept"></div>
+        </div>
+        <div class="form-group">
+            <label>শিফট</label>
+            <div class="readonly-field" id="editShift"></div>
+        </div>
+        <div class="form-group">
+            <label>IC Name</label>
+            <div class="readonly-field" id="editIC"></div>
+        </div>
+        <div class="form-group">
+            <label>Day HR</label>
+            <input type="number" id="editDayHr" step="0.5" min="0">
+        </div>
+        <div class="form-group">
+            <label>CTN Output</label>
+            <input type="number" id="editOutput" step="1" min="0">
+        </div>
+        <div class="form-group">
+            <label>Cause (কারণ)</label>
+            <input type="text" id="editCause" placeholder="কারণ লিখুন">
+        </div>
+        <div class="btn-group">
+            <button class="btn-save" onclick="saveEdit()">💾 সংরক্ষণ</button>
+            <button class="btn-cancel" onclick="closeEditModal()">বাতিল</button>
+        </div>
     </div>
 </div>
 
@@ -454,7 +532,7 @@
         }
     };
 
-    // ===== Output Update (এখনো রাখলাম) =====
+    // ===== Output Update (জনসাধারণের জন্য) =====
     window.showOutputUpdateForm = function(key) {
         document.querySelectorAll('.output-update-form').forEach(el => el.classList.remove('show'));
         const form = document.getElementById(`edit-form-${key}`);
@@ -491,6 +569,72 @@
             setTimeout(() => alertBox.classList.remove('show'), 4000);
         } catch (error) {
             alert('আপডেট করতে সমস্যা: ' + error.message);
+        }
+    };
+
+    // ===== এডিট ফাংশন (শুধু অ্যাডমিন) =====
+    let currentEditKey = null;
+
+    window.editEntry = function(key) {
+        // পাসওয়ার্ড চেক
+        const password = prompt('🔒 এডিট করতে পাসওয়ার্ড দিন:');
+        if (password === null) return;
+        if (password !== 'arif123') {
+            alert('❌ ভুল পাসওয়ার্ড!');
+            return;
+        }
+
+        const entry = allEntries.find(e => e.key === key);
+        if (!entry) {
+            alert('এন্ট্রি পাওয়া যায়নি!');
+            return;
+        }
+
+        currentEditKey = key;
+        document.getElementById('editKey').value = key;
+        document.getElementById('editDept').textContent = entry.dept || '';
+        document.getElementById('editShift').textContent = entry.shift || '';
+        document.getElementById('editIC').textContent = entry.icName || '';
+        document.getElementById('editDayHr').value = entry.dayHr || 0;
+        document.getElementById('editOutput').value = entry.output || 0;
+        document.getElementById('editCause').value = entry.cause || '';
+
+        document.getElementById('editModal').classList.add('show');
+    };
+
+    window.closeEditModal = function() {
+        document.getElementById('editModal').classList.remove('show');
+        currentEditKey = null;
+    };
+
+    window.saveEdit = async function() {
+        const key = document.getElementById('editKey').value;
+        const dayHr = parseFloat(document.getElementById('editDayHr').value) || 0;
+        const output = parseFloat(document.getElementById('editOutput').value) || 0;
+        const cause = document.getElementById('editCause').value.trim();
+
+        if (dayHr < 0 || output < 0) {
+            alert('Day HR ও Output ০ বা তার বেশি হতে হবে!');
+            return;
+        }
+
+        const perHr = dayHr > 0 ? output / dayHr : 0;
+        const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
+
+        const updateData = {
+            dayHr: dayHr,
+            output: output,
+            perHr: perHr,
+            utilPct: utilPct,
+            cause: cause
+        };
+
+        try {
+            await update(ref(database, `cartonEntries/${key}`), updateData);
+            alert('✅ এন্ট্রি সফলভাবে আপডেট করা হয়েছে!');
+            closeEditModal();
+        } catch (error) {
+            alert('❌ আপডেট করতে সমস্যা: ' + error.message);
         }
     };
 
@@ -541,7 +685,7 @@
         return shift;
     };
 
-    // ===== এন্ট্রি লগ রেন্ডার =====
+    // ===== এন্ট্রি লগ রেন্ডার (Output দিন + Edit) =====
     function renderLog() {
         if (allEntries.length === 0) {
             entryLogContainer.innerHTML = `<div class="empty-msg">📭 কোনো এন্ট্রি নেই</div>`;
@@ -575,8 +719,10 @@
                 <td>
                     <button class="btn btn-danger btn-sm" onclick="deleteEntry('${e.key}')">🗑️</button>
                     ${isDayWithZeroOutput ? ` <button class="btn btn-warning btn-sm" onclick="showOutputUpdateForm('${e.key}')">✏️ Output দিন</button>` : ''}
+                    <button class="btn btn-sm btn-sm-primary" onclick="editEntry('${e.key}')" style="margin-left:4px;">✏️ Edit</button>
                 </td>
             </tr>
+            ${isDayWithZeroOutput ? `
             <tr id="edit-row-${e.key}" style="display: none;">
                 <td colspan="13">
                     <div id="edit-form-${e.key}" class="output-update-form">
@@ -592,12 +738,13 @@
                         <button class="btn btn-danger" onclick="document.getElementById('edit-form-${e.key}').classList.remove('show')">বাতিল</button>
                     </div>
                 </td>
-            </tr>`;
-        });
+            </tr>` : ''}
+        `);
 
         html += `</tbody></table></div>`;
         entryLogContainer.innerHTML = html;
 
+        // Output Update ফর্মের টগল শো/হাইড
         document.querySelectorAll('.output-update-form').forEach(form => {
             const key = form.id.replace('edit-form-', '');
             const row = document.getElementById(`edit-row-${key}`);
