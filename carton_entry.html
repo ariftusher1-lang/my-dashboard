@@ -267,7 +267,7 @@
 <!-- Edit Modal -->
 <div class="modal-overlay" id="editModal">
     <div class="modal-box">
-        <h3>✏️ এন্ট্রি সম্পাদনা করুন (শুধু অ্যাডমিন)</h3>
+        <h3>✏️ এন্ট্রি সম্পাদনা করুন</h3>
         <input type="hidden" id="editKey">
         <div class="form-group">
             <label>ডিপার্টমেন্ট</label>
@@ -532,7 +532,7 @@
         }
     };
 
-    // ===== Output Update (জনসাধারণের জন্য) =====
+    // ===== Output Update (সকলের জন্য উন্মুক্ত) =====
     window.showOutputUpdateForm = function(key) {
         document.querySelectorAll('.output-update-form').forEach(el => el.classList.remove('show'));
         const form = document.getElementById(`edit-form-${key}`);
@@ -572,24 +572,26 @@
         }
     };
 
-    // ===== এডিট ফাংশন (শুধু অ্যাডমিন) =====
+    // ===== এডিট ফাংশন (পাসওয়ার্ড সুরক্ষিত) =====
     let currentEditKey = null;
 
     window.editEntry = function(key) {
         // পাসওয়ার্ড চেক
-        const password = prompt('🔒 এডিট করতে পাসওয়ার্ড দিন:');
+        const password = prompt('🔒 সম্পূর্ণ এডিট করতে পাসওয়ার্ড দিন:');
         if (password === null) return;
         if (password !== 'arif123') {
             alert('❌ ভুল পাসওয়ার্ড!');
             return;
         }
 
+        // এন্ট্রি খুঁজে বের করা
         const entry = allEntries.find(e => e.key === key);
         if (!entry) {
             alert('এন্ট্রি পাওয়া যায়নি!');
             return;
         }
 
+        // মডাল পপুলেট
         currentEditKey = key;
         document.getElementById('editKey').value = key;
         document.getElementById('editDept').textContent = entry.dept || '';
@@ -618,6 +620,7 @@
             return;
         }
 
+        // ক্যালকুলেশন
         const perHr = dayHr > 0 ? output / dayHr : 0;
         const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
 
@@ -633,6 +636,7 @@
             await update(ref(database, `cartonEntries/${key}`), updateData);
             alert('✅ এন্ট্রি সফলভাবে আপডেট করা হয়েছে!');
             closeEditModal();
+            // লিস্ট রিফ্রেশ – onValue নিজেই আপডেট করবে
         } catch (error) {
             alert('❌ আপডেট করতে সমস্যা: ' + error.message);
         }
@@ -685,7 +689,7 @@
         return shift;
     };
 
-    // ===== এন্ট্রি লগ রেন্ডার (Output দিন + Edit) =====
+    // ===== এন্ট্রি লগ রেন্ডার (Output দিন + Edit বাটন) =====
     function renderLog() {
         if (allEntries.length === 0) {
             entryLogContainer.innerHTML = `<div class="empty-msg">📭 কোনো এন্ট্রি নেই</div>`;
@@ -722,7 +726,6 @@
                     <button class="btn btn-sm btn-sm-primary" onclick="editEntry('${e.key}')" style="margin-left:4px;">✏️ Edit</button>
                 </td>
             </tr>
-            ${isDayWithZeroOutput ? `
             <tr id="edit-row-${e.key}" style="display: none;">
                 <td colspan="13">
                     <div id="edit-form-${e.key}" class="output-update-form">
@@ -738,8 +741,8 @@
                         <button class="btn btn-danger" onclick="document.getElementById('edit-form-${e.key}').classList.remove('show')">বাতিল</button>
                     </div>
                 </td>
-            </tr>` : ''}
-        `);
+            </tr>`;
+        });
 
         html += `</tbody></table></div>`;
         entryLogContainer.innerHTML = html;
