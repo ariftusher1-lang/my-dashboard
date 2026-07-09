@@ -77,6 +77,8 @@
         .nav-links a:hover { text-decoration: underline; }
         .today-summary-table th { background: #1a237e; }
         .today-summary-table .total-row td { background: #d4e4f7 !important; }
+        .pending-output { color: #d32f2f !important; font-weight: 700; }
+        .pending-output .note { font-weight: 400; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -106,7 +108,7 @@
         </div>
     </div>
 
-    <!-- আজকের শিফটের সারাংশ -->
+    <!-- ===== আজকের শিফটের সারাংশ (আপডেটেড: CTN Output যোগ) ===== -->
     <div class="card" id="todayShiftContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -142,11 +144,11 @@
         </div>
     </div>
 
-    <!-- ===== নতুন: ডিপার্টমেন্ট ওয়াইজ মাসের শুরু থেকে সামারি (০১/০৭/২০২৬ থেকে আজ পর্যন্ত) ===== -->
+    <!-- ডেট রেঞ্জ সারাংশ (০১/০৭/২০২৬ থেকে আজ) -->
     <div class="card" id="dateRangeReportContainer">
         <h2>
             <span class="toggle-wrapper">
-                <span id="dateRangeHeading">📋 ডিপার্টমেন্ট ওয়াইজ মাসের শুরু থেকে সামারিি (০১/০৭/২০২৬ থেকে আজ পর্যন্ত)</span>
+                <span id="dateRangeHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (০১/০৭/২০২৬ থেকে আজ পর্যন্ত)</span>
                 <button class="toggle-btn" onclick="toggleSection('dateRangeContent')" id="dateRangeToggle">🙈 লুকান</button>
             </span>
             <span class="btn-group-small">
@@ -271,7 +273,7 @@
     // ================================================================
     // কনফিগারেশন
     // ================================================================
-    const PER_HR_CAPACITY = 20;
+    const PER_HR_CAPACITY = 40;
     const DEPARTMENTS = [
         { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur' },
         { id: 'mc2', name: 'RIP> DPL> Plastic-3', type: 'MC', prodIC: 'Mr. Shawon' },
@@ -359,9 +361,9 @@
             renderTodaySummary(todayEntries);
         }
 
-        // ===== নতুন: ডেট রেঞ্জ সারাংশ (01-07-2026 to Today) =====
+        // ডেট রেঞ্জ (01-07-2026 to Today)
         const startDateStr = '2026-07-01';
-        const endDateStr = tStr; // today
+        const endDateStr = tStr;
         const rangeEntries = allEntries.filter(e => e.entryDate >= startDateStr && e.entryDate <= endDateStr);
         const startDisplay = formatDateDisplay(startDateStr);
         const endDisplay = formatDateDisplay(endDateStr);
@@ -401,10 +403,11 @@
     };
 
     // ================================================================
-    // আজকের শিফটের সারাংশ (সংক্ষিপ্ত)
+    // আজকের শিফটের সারাংশ (CTN Output কলাম যোগ)
     // ================================================================
     function renderTodaySummary(entries) {
         const container = document.getElementById('todaySummaryContainer');
+        // একত্রিত করি – প্রতিটি ডিপার্টমেন্টের জন্য
         const deptMap = {};
         entries.forEach(e => {
             if (!deptMap[e.dept]) {
@@ -413,21 +416,45 @@
                     shift: e.shift,
                     icName: e.icName || '',
                     dayHr: 0,
-                    target: 0
+                    target: 0,
+                    output: 0,
+                    hasOutput: false
                 };
             }
             deptMap[e.dept].dayHr += e.dayHr;
             deptMap[e.dept].target += e.target;
+            // Output যোগ – যদি কোনো এন্ট্রিতে output থাকে, তাহলে সেটা যোগ করব
+            if (e.output && e.output > 0) {
+                deptMap[e.dept].output += e.output;
+                deptMap[e.dept].hasOutput = true;
+            }
         });
 
         let html = `<div class="table-wrap"><table class="today-summary-table">
             <thead><tr>
-                <th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th>
+                <th>ডিপার্টমেন্ট</th>
+                <th>Prod IC</th>
+                <th>শিফট</th>
+                <th>IC Name</th>
+                <th>Day HR</th>
+                <th>Target (CTN)</th>
+                <th>CTN Output</th>
             </tr></thead><tbody>`;
-        let grandHr = 0, grandTarget = 0;
+
+        let grandHr = 0, grandTarget = 0, grandOutput = 0;
         for (const [dept, data] of Object.entries(deptMap)) {
             grandHr += data.dayHr;
             grandTarget += data.target;
+            grandOutput += data.output;
+
+            // Output কলাম: যদি output থাকে তাহলে দেখাবে, না হলে লাল রঙে বার্তা
+            let outputDisplay = '';
+            if (data.hasOutput && data.output > 0) {
+                outputDisplay = data.output;
+            } else {
+                outputDisplay = `<span class="pending-output">${data.target} <span class="note">(শিফট সেস বসানো)</span></span>`;
+            }
+
             html += `<tr>
                 <td class="dept-name"><strong>${dept}</strong></td>
                 <td>${data.prodIC}</td>
@@ -435,15 +462,17 @@
                 <td>${data.icName}</td>
                 <td>${data.dayHr}</td>
                 <td>${data.target}</td>
+                <td>${outputDisplay}</td>
             </tr>`;
         }
         html += `<tr class="total-row">
             <td colspan="4"><strong>📌 মোট</strong></td>
             <td><strong>${grandHr}</strong></td>
             <td><strong>${grandTarget}</strong></td>
+            <td><strong>${grandOutput}</strong></td>
         </tr></tbody></table></div>`;
         container.innerHTML = html;
-        window._todayTableData = { deptMap, grandHr, grandTarget };
+        window._todayTableData = { deptMap, grandHr, grandTarget, grandOutput };
     }
 
     // ================================================================
@@ -699,14 +728,13 @@
             window._dailyTableData = null;
             return;
         }
-        // টেবিল তৈরি
         let html = buildSummaryTableHTML(tableRows);
         container.innerHTML = html;
         window._dailyTableData = tableRows;
     }
 
     // ================================================================
-    // নতুন: ডেট রেঞ্জ সারাংশ (পূর্ণ)
+    // ডেট রেঞ্জ সারাংশ (পূর্ণ)
     // ================================================================
     function renderDateRangeSummary(entries) {
         const container = document.getElementById('dateRangeSummaryContainer');
@@ -1041,9 +1069,48 @@
     // ================================================================
 
     // ---- শর্ট ----
-    window.downloadShortExcel = function() { /* ... same as before ... */ };
-    window.downloadShortImage = function() { /* ... */ };
-    window.downloadShortPDF = function() { /* ... */ };
+    window.downloadShortExcel = function() {
+        const data = window._shortData;
+        if (!data) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['বিভাগ', 'HR', 'Target', 'Output', 'CTN/HR', 'Util%'];
+        const rows = [
+            ['ONLINE PACK', data.online.hr, data.online.target, data.online.output, data.online.perHr.toFixed(2), data.online.util.toFixed(1) + '%'],
+            ['OFFLINE PACK', data.offline.hr, data.offline.target, data.offline.output, data.offline.perHr.toFixed(2), data.offline.util.toFixed(1) + '%'],
+            ['OVERALL', data.overall.hr, data.overall.target, data.overall.output, data.overall.perHr.toFixed(2), data.overall.util.toFixed(1) + '%']
+        ];
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Short Summary');
+        XLSX.writeFile(wb, `Short_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+    window.downloadShortImage = function() {
+        const container = document.getElementById('shortSummaryContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Short_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+    window.downloadShortPDF = function() {
+        const container = document.getElementById('shortSummaryContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Short_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
 
     // ---- ডেইলি (গতকাল) ----
     window.downloadDailyExcel = function() {
@@ -1067,10 +1134,35 @@
         XLSX.utils.book_append_sheet(wb, ws, 'Daily Summary');
         XLSX.writeFile(wb, `Daily_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
     };
-    window.downloadDailyImage = function() { /* ... */ };
-    window.downloadDailyPDF = function() { /* ... */ };
+    window.downloadDailyImage = function() {
+        const container = document.getElementById('dailyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Daily_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+    window.downloadDailyPDF = function() {
+        const container = document.getElementById('dailyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Daily_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
 
-    // ---- নতুন: ডেট রেঞ্জ ডাউনলোড ----
+    // ---- ডেট রেঞ্জ ----
     window.downloadDateRangeExcel = function() {
         const rows = window._dateRangeTableData;
         if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
@@ -1121,19 +1213,130 @@
     };
 
     // ---- ওভারঅল ----
-    window.downloadOverallExcel = function() { /* ... */ };
-    window.downloadOverallImage = function() { /* ... */ };
-    window.downloadOverallPDF = function() { /* ... */ };
+    window.downloadOverallExcel = function() {
+        const container = document.getElementById('overallReportContainer');
+        const table = container.querySelector('table');
+        if (!table) { alert('টেবিল পাওয়া যায়নি!'); return; }
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, 'Overall Summary');
+        XLSX.writeFile(wb, `Overall_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+    window.downloadOverallImage = function() {
+        const container = document.getElementById('overallReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Overall_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+    window.downloadOverallPDF = function() {
+        const container = document.getElementById('overallReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Overall_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
 
     // ---- মাস ----
-    window.downloadMonthlyExcel = function() { /* ... */ };
-    window.downloadMonthlyImage = function() { /* ... */ };
-    window.downloadMonthlyPDF = function() { /* ... */ };
+    window.downloadMonthlyExcel = function() {
+        const data = window._monthlyData;
+        if (!data || data.deptList.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'Total HR', 'Total CTN Cap (Target)', 'Total Carton Output', 'Utilisation %', 'পজিশন'];
+        const rows = data.deptList.map(d => [
+            d.name, d.prodIC, d.totalHr, d.totalTarget, d.totalOutput,
+            d.util.toFixed(1) + '%', d.position === 1 ? '🥇 ১ম' : d.position === 2 ? '🥈 ২য়' : d.position === 3 ? '🥉 ৩য়' : d.position
+        ]);
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, `Month_${data.month}`);
+        XLSX.writeFile(wb, `Monthly_Summary_${data.month.replace(' ', '_')}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+    window.downloadMonthlyImage = function() {
+        const container = document.getElementById('monthlyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Monthly_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+    window.downloadMonthlyPDF = function() {
+        const container = document.getElementById('monthlyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Monthly_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
 
     // ---- আজকের শিফট ----
-    window.downloadTodayExcel = function() { /* ... */ };
-    window.downloadTodayImage = function() { /* ... */ };
-    window.downloadTodayPDF = function() { /* ... */ };
+    window.downloadTodayExcel = function() {
+        const data = window._todayTableData;
+        if (!data || !data.deptMap) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'শিফট', 'IC Name', 'Day HR', 'Target (CTN)', 'CTN Output'];
+        const rows = [];
+        for (const [dept, vals] of Object.entries(data.deptMap)) {
+            let outputDisplay = vals.hasOutput && vals.output > 0 ? vals.output : `${vals.target} (শিফট সেস বসানো)`;
+            rows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target, outputDisplay]);
+        }
+        rows.push(['📌 মোট', '-', '-', '-', data.grandHr, data.grandTarget, data.grandOutput]);
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Today Shift Summary');
+        XLSX.writeFile(wb, `Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+    window.downloadTodayImage = function() {
+        const container = document.getElementById('todaySummaryContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+    window.downloadTodayPDF = function() {
+        const container = document.getElementById('todaySummaryContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
 
     // ================================================================
     // 🗑️ সব ডেটা মুছুন
@@ -1148,9 +1351,32 @@
     };
 
     // ================================================================
-    // CSV এক্সপোর্ট
+    // CSV এক্সপোর্ট (ফিল্টার অনুযায়ী)
     // ================================================================
-    window.exportCSV = function() { /* ... */ };
+    window.exportCSV = function() {
+        const filterDate = getFilterDate();
+        let filtered = allEntries;
+        if (filterDate) {
+            filtered = allEntries.filter(e => e.entryDate === filterDate);
+        }
+        if (filtered.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['Department', 'Prod IC', 'Shift', 'IC Name', 'Day HR', 'Target', 'CTN Output', 'Per HR CTN', 'Utilisation %', 'Entry Date', 'Timestamp'];
+        let csv = headers.join(',') + '\n';
+        filtered.forEach(e => {
+            const row = [
+                `"${e.dept}"`, `"${e.prodIC}"`, `"${e.shift}"`, `"${e.icName}"`,
+                e.dayHr, e.target, e.output, e.perHr, e.utilPct ? e.utilPct.toFixed(1) : '0',
+                `"${e.entryDate}"`, `"${e.timestamp}"`
+            ];
+            csv += row.join(',') + '\n';
+        });
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Carton_Report_${filterDate || 'All'}_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    };
 
     // ================================================================
     // 🔴 Firebase Live Listener
