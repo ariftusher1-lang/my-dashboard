@@ -79,6 +79,23 @@
         .today-summary-table .total-row td { background: #d4e4f7 !important; }
         .pending-output { color: #d32f2f !important; font-weight: 700; }
         .pending-output .note { font-weight: 400; font-size: 11px; }
+
+        /* Email button style */
+        .btn-email-sm {
+            background: #0d47a1;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-left: 4px;
+        }
+        .btn-email-sm:hover {
+            background: #0a3a8a;
+        }
     </style>
 </head>
 <body>
@@ -108,7 +125,7 @@
         </div>
     </div>
 
-    <!-- আজকের শিফটের সারাংশ (CTN Output ঠিক করা হয়েছে) -->
+    <!-- আজকের শিফটের সারাংশ -->
     <div class="card" id="todayShiftContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -162,7 +179,7 @@
         </div>
     </div>
 
-    <!-- গতকালের ডেইলি সামারি -->
+    <!-- গতকালের ডেইলি সামারি (Email বাটন সহ) -->
     <div class="card" id="dailyReportContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -329,7 +346,7 @@
     }
 
     // ================================================================
-    // রেন্ডার অল (সম্পূর্ণ)
+    // রেন্ডার অল
     // ================================================================
     window.renderAll = function() {
         const filterDate = getFilterDate();
@@ -403,7 +420,7 @@
     };
 
     // ================================================================
-    // আজকের শিফটের সারাংশ (সঠিক CTN Output - শুধু সংখ্যা বা ০)
+    // আজকের শিফটের সারাংশ (সঠিক CTN Output)
     // ================================================================
     function renderTodaySummary(entries) {
         const container = document.getElementById('todaySummaryContainer');
@@ -445,7 +462,6 @@
             grandTarget += data.target;
             grandOutput += data.output;
 
-            // ✅ CTN Output – আউটপুট থাকলে সংখ্যা, না থাকলে লাল ০
             let outputDisplay = '';
             if (data.hasOutput && data.output > 0) {
                 outputDisplay = data.output;
@@ -544,6 +560,144 @@
             </tr>
         </tbody></table></div>`;
         container.innerHTML = html;
+    }
+
+    // ================================================================
+    // ইমেইল পাঠানোর ফাংশন
+    // ================================================================
+    window.sendDepartmentEmail = function(deptName, deptData, dateStr) {
+        // ইমেইল ঠিকানা – আপনি এখানে ডিপার্টমেন্ট অনুযায়ী ইমেইল সেট করতে পারেন
+        const emailMap = {
+            'RIP> DPL> Plastic-1': 'head.plastic1@rfl.com',
+            'RIP> DPL> Plastic-3': 'head.plastic3@rfl.com',
+            'RIP> DPL> Plastic-6.1': 'head.plastic6.1@rfl.com',
+            'RIP> DPL> Plastic-6.2': 'head.plastic6.2@rfl.com',
+            'RIP> DPL> Plastic-7.1': 'head.plastic7.1@rfl.com',
+            'RIP> DPL> Plastic-7.2': 'head.plastic7.2@rfl.com',
+            'RIP> DPL> Plastic-7.3': 'head.plastic7.3@rfl.com',
+            'RIP> DPL> Plastic-7.4': 'head.plastic7.4@rfl.com',
+            'Plastic Packaging-01': 'head.packaging1@rfl.com',
+            'Plastic Packaging-02': 'head.packaging2@rfl.com',
+            'Plastic Packaging-03': 'head.packaging3@rfl.com',
+            'Silicon Project': 'head.silicon@rfl.com'
+        };
+
+        const toEmail = emailMap[deptName] || 'head@rfl.com';
+
+        // ইমেইল বডি তৈরি
+        const subject = `Daily Summary Report - ${deptName} - ${dateStr}`;
+        let body = `Dear Sir,\n\n`;
+        body += `Here is the daily summary report for department: ${deptName}\n`;
+        body += `Date: ${dateStr}\n`;
+        body += `Shift: ${deptData.shift || 'Day'}\n`;
+        body += `IC Name: ${deptData.icName || '-'}\n`;
+        body += `Day HR: ${deptData.dayHr || 0}\n`;
+        body += `Target (CTN): ${deptData.target || 0}\n`;
+        body += `CTN Output: ${deptData.output || 0}\n`;
+        body += `Utilisation: ${deptData.util ? deptData.util.toFixed(1) + '%' : '0%'}\n\n`;
+        body += `Thank you.\n`;
+        body += `(Automated Report from Carton Management System)`;
+
+        // mailto লিংক তৈরি
+        const mailtoLink = `mailto:${toEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink, '_blank');
+    };
+
+    // ================================================================
+    // ডেইলি সামারি – গতকালের (পূর্ণ + ইমেইল বাটন)
+    // ================================================================
+    function renderDailySummary(entries) {
+        const container = document.getElementById('summaryTableContainer');
+        const result = buildDepartmentSummary(entries);
+        const tableRows = result.tableRows;
+        if (!tableRows || tableRows.length === 0) {
+            container.innerHTML = `<div class="empty-msg">গতকালের কোনো ডেটা নেই</div>`;
+            window._dailyTableData = null;
+            return;
+        }
+
+        // ডেট রেঞ্জের জন্য তারিখ বের করা
+        let dateStr = '';
+        if (entries.length > 0) {
+            const firstEntry = entries[0];
+            dateStr = firstEntry.entryDate ? formatDateDisplay(firstEntry.entryDate) : '';
+        }
+
+        // টেবিল তৈরি – প্রতিটি ডিপার্টমেন্টের জন্য ইমেইল বাটন যোগ করা হলো
+        let html = `<div class="table-wrap"><table>
+            <thead><tr>
+                <th rowspan="2">ডিপার্টমেন্ট</th>
+                <th rowspan="2">Prod IC</th>
+                <th rowspan="2">টাইপ</th>
+                <th colspan="6" style="background:#1a237e;">📊 ডে + নাইট (Total)</th>
+                <th colspan="5" style="background:#0d47a1;">☀️ ডে শিফট</th>
+                <th colspan="5" style="background:#1a237e;">🌙 নাইট শিফট</th>
+                <th rowspan="2">📧</th>
+            </tr>
+            <tr>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th><th>পজিশন</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+            </tr></thead><tbody>`;
+
+        // পৃথকভাবে ডিপার্টমেন্ট ডেটা সংরক্ষণ (ইমেইলের জন্য)
+        const deptDataMap = {};
+
+        tableRows.forEach(row => {
+            let rowClass = '';
+            if (row.isSummary) {
+                if (row.summaryType === 'online') rowClass = 'row-online-summary';
+                else if (row.summaryType === 'offline') rowClass = 'row-offline-summary';
+                else if (row.summaryType === 'grand') rowClass = 'row-grand-total';
+            }
+            const utilColor = row.totalUtil >= 80 ? 'util-high' : (row.totalUtil >= 50 ? 'util-mid' : 'util-low');
+            html += `<tr class="${rowClass}">`;
+            html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
+            html += `<td>${row.prodIC}</td>`;
+            html += `<td>${row.typeLabel ? `<span class="${row.badgeClass || ''}">${row.typeLabel}</span>` : '-'}</td>`;
+            html += `<td><strong>${row.totalHr}</strong></td>`;
+            html += `<td>${row.totalTarget}</td>`;
+            html += `<td><strong>${row.totalOutput}</strong></td>`;
+            html += `<td>${row.totalPerHr.toFixed(2)}</td>`;
+            html += `<td class="${utilColor}">${row.totalUtil.toFixed(1)}%</td>`;
+            html += `<td class="${row.posClass || ''}"><strong>${row.position}</strong></td>`;
+            html += `<td>${row.dayHr}</td>`;
+            html += `<td>${row.dayTarget}</td>`;
+            html += `<td>${row.dayOutput}</td>`;
+            html += `<td>${row.dayPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.dayUtil.toFixed(1)}%</td>`;
+            html += `<td>${row.nightHr}</td>`;
+            html += `<td>${row.nightTarget}</td>`;
+            html += `<td>${row.nightOutput}</td>`;
+            html += `<td>${row.nightPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.nightUtil.toFixed(1)}%</td>`;
+
+            // ইমেইল বাটন (শুধু মেইন ডিপার্টমেন্টের জন্য, সারাংশ সারির জন্য না)
+            if (!row.isSummary) {
+                // ডিপার্টমেন্ট ডেটা সংরক্ষণ
+                deptDataMap[row.dept] = {
+                    shift: row.shift || 'Day',
+                    icName: row.icName || '',
+                    dayHr: row.dayHr || 0,
+                    target: row.totalTarget || 0,
+                    output: row.totalOutput || 0,
+                    util: row.totalUtil || 0
+                };
+                html += `<td><button class="btn-email-sm" onclick="sendDepartmentEmail('${row.dept}', window._deptDataMap['${row.dept}'], '${dateStr}')">📧</button></td>`;
+            } else {
+                html += `<td>-</td>`;
+            }
+
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+
+        // ডেটা ম্যাপ উইন্ডোতে সংরক্ষণ
+        window._deptDataMap = deptDataMap;
+
+        container.innerHTML = html;
+        window._dailyTableData = tableRows;
     }
 
     // ================================================================
@@ -715,23 +869,6 @@
     }
 
     // ================================================================
-    // ডেইলি সামারি – গতকালের (পূর্ণ)
-    // ================================================================
-    function renderDailySummary(entries) {
-        const container = document.getElementById('summaryTableContainer');
-        const result = buildDepartmentSummary(entries);
-        const tableRows = result.tableRows;
-        if (!tableRows || tableRows.length === 0) {
-            container.innerHTML = `<div class="empty-msg">গতকালের কোনো ডেটা নেই</div>`;
-            window._dailyTableData = null;
-            return;
-        }
-        let html = buildSummaryTableHTML(tableRows);
-        container.innerHTML = html;
-        window._dailyTableData = tableRows;
-    }
-
-    // ================================================================
     // ডেট রেঞ্জ সারাংশ (পূর্ণ)
     // ================================================================
     function renderDateRangeSummary(entries) {
@@ -743,13 +880,14 @@
             window._dateRangeTableData = null;
             return;
         }
+        // ডেট রেঞ্জের জন্য ইমেইল বাটন লাগবে না, তাই সরল টেবিল
         let html = buildSummaryTableHTML(tableRows);
         container.innerHTML = html;
         window._dateRangeTableData = tableRows;
     }
 
     // ================================================================
-    // টেবিল HTML তৈরির ফাংশন (পূর্ণ ১৯ কলাম)
+    // টেবিল HTML তৈরির ফাংশন (পূর্ণ ১৯ কলাম) – ইমেইল বাটন ছাড়া
     // ================================================================
     function buildSummaryTableHTML(tableRows) {
         let html = `<div class="table-wrap"><table>
@@ -1063,7 +1201,7 @@
     }
 
     // ================================================================
-    // 📥 ডাউনলোড ফাংশন (সব সেকশনের জন্য) – সম্পূর্ণ
+    // 📥 ডাউনলোড ফাংশন (সব সেকশনের জন্য) – সংক্ষেপে, আগের মতোই
     // ================================================================
 
     // ---- শর্ট ----
