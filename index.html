@@ -285,12 +285,7 @@
         .machine-box label { color: var(--machine-box-label); font-weight: 700; }
         .machine-box input:not([readonly]) { color: var(--machine-box-input-color) !important; font-weight: 700 !important; font-size: 16px; }
         #duplicateAlert {
-            background: var(--duplicate-bg);
-            color: var(--duplicate-text);
-            padding: 10px;
-            border-radius: 6px;
             margin-top: 10px;
-            border: 1px solid var(--border-color);
             display: none;
             transition: background 0.3s, color 0.3s;
         }
@@ -465,7 +460,7 @@
 
 <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner"></div>
-    <span>⏳ ডেটা চেক করা হচ্ছে...</span>
+    <span>⏳ আপনার ডেটা চেক করা হচ্ছে অপেক্ষা করুন...</span>
 </div>
 
 <div class="container">
@@ -602,7 +597,9 @@
         </div>
 
         <button type="submit" id="submitBtn">💾 ডেটা সেভ করুন</button>
-        <div id="duplicateAlert">⚠️ আপনার ডিপার্টমেন্ট থেকে ইতিমধ্যে একই তারিখ ও শিফটের ডেটা জমা দেওয়া হয়েছে!</div>
+        
+        <!-- 🔴 ডুপ্লিকেট অ্যালার্ট (বড় লাল রঙে) -->
+        <div id="duplicateAlert"></div>
     </form>
 
     <!-- ===== সম্পূর্ণ সারাংশ কার্ড ===== -->
@@ -751,6 +748,7 @@
             document.getElementById('pctRunning').value = '';
             document.getElementById('pctStopped').value = '';
             document.getElementById('duplicateAlert').style.display = 'none';
+            document.getElementById('duplicateAlert').innerHTML = '';
             document.getElementById('status').className = '';
             document.getElementById('status').innerHTML = '';
             document.getElementById('summaryCard').style.display = 'none';
@@ -758,6 +756,7 @@
 
         document.getElementById('entryDate').addEventListener('change', function() {
             document.getElementById('duplicateAlert').style.display = 'none';
+            document.getElementById('duplicateAlert').innerHTML = '';
             document.getElementById('status').className = '';
             document.getElementById('status').innerHTML = '';
             document.getElementById('summaryCard').style.display = 'none';
@@ -766,6 +765,7 @@
             localStorage.setItem('manualShift', 'true');
             document.getElementById('autoShiftIndicator').textContent = '🔒 ম্যানুয়াল';
             document.getElementById('duplicateAlert').style.display = 'none';
+            document.getElementById('duplicateAlert').innerHTML = '';
             document.getElementById('status').className = '';
             document.getElementById('status').innerHTML = '';
             document.getElementById('summaryCard').style.display = 'none';
@@ -938,7 +938,7 @@
     }
 
     // =============================================================
-    // JSONP কল (শুধু ডুপ্লিকেট চেকের জন্য, ডিবাগ বক্স সরানো হয়েছে)
+    // JSONP কল (শুধু ডুপ্লিকেট চেকের জন্য)
     // =============================================================
     function fetchDataViaJSONP() {
         return new Promise((resolve, reject) => {
@@ -1112,6 +1112,7 @@
         document.getElementById('welding').value = '';
         document.getElementById('hrTransfer').value = '';
         document.getElementById('duplicateAlert').style.display = 'none';
+        document.getElementById('duplicateAlert').innerHTML = '';
         document.getElementById('status').className = '';
         document.getElementById('status').innerHTML = '';
         autoSetShift();
@@ -1131,6 +1132,7 @@
         const overlay = document.getElementById('loadingOverlay');
 
         duplicateAlert.style.display = 'none';
+        duplicateAlert.innerHTML = '';
         status.className = '';
         status.innerHTML = '⏳ চেক করা হচ্ছে...';
         submitBtn.disabled = true;
@@ -1165,7 +1167,18 @@
         }
 
         if (checkResult.duplicate) {
+            // 🔴 বড় লাল রঙের মেসেজ দেখানো হবে
             duplicateAlert.style.display = 'block';
+            duplicateAlert.innerHTML = `
+                <div style="background: #ffebee; border-left: 6px solid #b71c1c; padding: 20px 22px; border-radius: 10px; box-shadow: 0 4px 12px rgba(183, 28, 28, 0.15);">
+                    <div style="color: #b71c1c; font-size: 22px; font-weight: 700; line-height: 1.8;">
+                        ⚠️ আপনার ডিপার্টমেন্ট থেকে ইতিমধ্যে কেউ একজন আজকের তারিখ ও শিফটের ডেটা জমা দিয়েছে ! তাই আর ডুপ্লিকেট এন্ট্রি আজকের তারিখ ও শিফটের ডেটা জমা নেওয়া  সম্ভব না !! <br><br>
+                        আপনার সঠিক এবং একবার ডেটা এন্ট্রি  আমাদের কাম্য ! <br><br>
+                        ❌ ডুপ্লিকেট এন্ট্রি অনুমোদিত নয় (এটা সার্ভার থেকে রিকল করছে তাই কোন ভাবেই ডুপ্লিকেট এন্ট্রি জমা নেওয়া  সম্ভব না)  ! (সোর্স: Server)- <br><br>
+                        ধন্যবাদ  আপনাকে ভালো থাকবনে সুস্থ থাকবেন
+                    </div>
+                </div>
+            `;
             status.className = 'error';
             status.innerHTML = '❌ ডুপ্লিকেট এন্ট্রি অনুমোদিত নয়! (সোর্স: ' + checkResult.source + ')';
             submitBtn.disabled = false;
