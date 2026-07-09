@@ -3399,7 +3399,7 @@
         }
 
         // ============================================================
-        // WHATSAPP MESSAGE – সম্পূর্ণ আপডেটেড (Total MC, Target MC Run, MC Will Off, % Running Average)
+        // WHATSAPP MESSAGE – সঠিক ক্যালকুলেশন (Total MC & Target Run থেকে % বের করা)
         // ============================================================
         function updateWhatsAppMessage() {
             const container = document.getElementById('whatsappMessageContent');
@@ -3418,9 +3418,7 @@
                 mcStopManpower = 0;
             let totalMC = 0,
                 targetRun = 0,
-                mcWillOff = 0,
-                sumRunningPct = 0,
-                countRunningPct = 0;
+                mcWillOff = 0;
 
             const prodDepts = [
                 'RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1',
@@ -3450,18 +3448,16 @@
                 targetRun += getNum(row, ['MC Running', 'mcRunning']);
                 mcWillOff += getNum(row, ['MC Stopped', 'mcStopped']);
 
-                const pctRunning = parseFloat(getVal(row, ['% Running', 'pctRunning'])) || 0;
-                if (pctRunning > 0) {
-                    sumRunningPct += pctRunning;
-                    countRunningPct++;
-                }
-
                 if (prodDepts.includes(dept)) prodPresent += hr;
                 else if (packDepts.includes(dept)) packPresent += hr;
                 else if (commonDepts.includes(dept)) commonPresent += hr;
             });
 
-            const avgRunningPct = countRunningPct > 0 ? (sumRunningPct / countRunningPct) : 0;
+            // সঠিকভাবে % বের করা – (Target Run / Total MC) * 100
+            let runningPct = 0;
+            if (totalMC > 0) {
+                runningPct = (targetRun / totalMC) * 100;
+            }
 
             if (filteredData.length === 0 && allData.length === 0) {
                 totalPresent = 923;
@@ -3469,12 +3465,12 @@
                 totalNoDemand = 49;
                 totalMoldChange = 26;
                 mcStopManpower = 84;
-                totalMC = 0;
-                targetRun = 0;
-                mcWillOff = 0;
-                avgRunningPct = 0;
+                totalMC = 422;
+                targetRun = 239;
+                mcWillOff = 183;
+                runningPct = (239 / 422) * 100; // ~56.6%
                 prodPresent = 544;
-                packPresent = 163;
+                packPresent = 173;
                 commonPresent = 216;
             }
 
@@ -3489,7 +3485,7 @@
         🔧 Total MC\t${totalMC}
         🔧 Target MC Run\t${targetRun}
         ❌ MC Will Off\t${mcWillOff}
-        📊 % of MC Running Average %\t${avgRunningPct.toFixed(1)}%
+        📊 % of MC Running  %\t- ${runningPct.toFixed(1)}%
         👥 Total Present\t${totalPresent} (Breakdown Prod Team ${prodPresent} , Packaging Team ${packPresent}, Common Team ${commonPresent})
         ❌ Total Absent\t${totalAbsent}
         📊 Total No Demand\t${totalNoDemand}
