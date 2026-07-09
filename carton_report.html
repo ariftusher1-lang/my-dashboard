@@ -108,7 +108,7 @@
         </div>
     </div>
 
-    <!-- ===== আজকের শিফটের সারাংশ (আপডেটেড: CTN Output যোগ) ===== -->
+    <!-- আজকের শিফটের সারাংশ (CTN Output ঠিক করা হয়েছে) -->
     <div class="card" id="todayShiftContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -144,7 +144,7 @@
         </div>
     </div>
 
-    <!-- ডেট রেঞ্জ সারাংশ (০১/০৭/২০২৬ থেকে আজ) -->
+    <!-- ডেট রেঞ্জ সারাংশ -->
     <div class="card" id="dateRangeReportContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -403,11 +403,10 @@
     };
 
     // ================================================================
-    // আজকের শিফটের সারাংশ (CTN Output কলাম যোগ)
+    // আজকের শিফটের সারাংশ (সঠিক CTN Output)
     // ================================================================
     function renderTodaySummary(entries) {
         const container = document.getElementById('todaySummaryContainer');
-        // একত্রিত করি – প্রতিটি ডিপার্টমেন্টের জন্য
         const deptMap = {};
         entries.forEach(e => {
             if (!deptMap[e.dept]) {
@@ -423,7 +422,6 @@
             }
             deptMap[e.dept].dayHr += e.dayHr;
             deptMap[e.dept].target += e.target;
-            // Output যোগ – যদি কোনো এন্ট্রিতে output থাকে, তাহলে সেটা যোগ করব
             if (e.output && e.output > 0) {
                 deptMap[e.dept].output += e.output;
                 deptMap[e.dept].hasOutput = true;
@@ -447,12 +445,12 @@
             grandTarget += data.target;
             grandOutput += data.output;
 
-            // Output কলাম: যদি output থাকে তাহলে দেখাবে, না হলে লাল রঙে বার্তা
+            // ✅ CTN Output কলাম – আউটপুট থাকলে দেখাবে, না থাকলে লাল রঙে ০
             let outputDisplay = '';
             if (data.hasOutput && data.output > 0) {
                 outputDisplay = data.output;
             } else {
-                outputDisplay = `<span class="pending-output">${data.target} <span class="note">(অউটপুট শিফট সেস বসানো হবে না হলে রাতের এইচ আর ইনপুট দেওয়া যাবে না)</span></span>`;
+                outputDisplay = `<span class="pending-output">0</span>`;
             }
 
             html += `<tr>
@@ -1300,8 +1298,8 @@
         const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'শিফট', 'IC Name', 'Day HR', 'Target (CTN)', 'CTN Output'];
         const rows = [];
         for (const [dept, vals] of Object.entries(data.deptMap)) {
-            let outputDisplay = vals.hasOutput && vals.output > 0 ? vals.output : `${vals.target} (অউটপুট শিফট সেস বসানো হবে না হলে রাতের এইচ আর ইনপুট দেওয়া যাবে না)`;
-            rows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target, outputDisplay]);
+            let outputVal = vals.hasOutput && vals.output > 0 ? vals.output : 0;
+            rows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target, outputVal]);
         }
         rows.push(['📌 মোট', '-', '-', '-', data.grandHr, data.grandTarget, data.grandOutput]);
         const aoa = [headers, ...rows];
