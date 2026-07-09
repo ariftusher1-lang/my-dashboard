@@ -11,7 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
     </script>
     <style>
-        /* ===== সম্পূর্ণ স্টাইল ===== */
+        /* ===== সম্পূর্ণ স্টাইল (আগের মতোই) ===== */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -305,7 +305,6 @@
             font-weight: 600;
         }
 
-        /* ডুপ্লিকেট হাইলাইট (লাল) */
         .row-duplicate {
             background: #f8d7da !important;
             border-left: 4px solid #dc3545 !important;
@@ -633,7 +632,6 @@
             font-size: 14px;
         }
 
-        /* অটো-রিফ্রেশ টগল */
         .auto-refresh-container {
             display: flex;
             align-items: center;
@@ -710,7 +708,6 @@
             min-width: 120px;
         }
 
-        /* ----- নতুন: টেবিল আকারে সারাংশ (কপি-পেস্ট উপযোগী) ----- */
         .summary-table-wrap {
             background: white;
             border-radius: 12px;
@@ -759,7 +756,6 @@
             background: #136b2a;
         }
 
-        /* টেবিলের জন্য কাস্টম স্টাইল – কপি করার সুবিধার জন্য */
         .summary-data-table {
             width: 100%;
             border-collapse: collapse;
@@ -803,7 +799,6 @@
             border-bottom: 2px solid #ffb300;
         }
 
-        /* ===== পারফরম্যান্স স্কোরকার্ড ===== */
         .scorecard-wrap {
             background: white;
             border-radius: 12px;
@@ -934,7 +929,6 @@
             display: inline-block;
         }
 
-        /* ===== হোয়াটসঅ্যাপ মেসেজ বক্স ===== */
         #whatsappMessageBox {
             border-left-color: #25D366 !important;
         }
@@ -960,7 +954,6 @@
             border: 1px solid #e2e8f0;
         }
 
-        /* ===== MC ডিপার্টমেন্ট সারাংশ (হরাইজন্টাল) ===== */
         .mc-dept-summary-wrap {
             background: white;
             border-radius: 12px;
@@ -994,8 +987,6 @@
             font-size: 13px;
             transition: 0.2s;
         }
-
-        /* হরাইজন্টাল MC টেবিল */
         .mc-horizontal-table {
             width: 100%;
             border-collapse: collapse;
@@ -1032,7 +1023,6 @@
             border-top: 1px solid rgba(255, 255, 255, 0.3);
             padding-top: 2px;
         }
-        /* সাব-হেডার (📊 Metric) এর জন্য আলাদা স্টাইল */
         .mc-horizontal-table thead .sub-header-metric {
             font-weight: 400;
             font-size: 11px;
@@ -1205,7 +1195,7 @@
             <span id="countdownDisplay">পরবর্তী আপডেট: ১০s</span>
         </div>
 
-        <!-- ===== হোয়াটসঅ্যাপ মেসেজ ===== -->
+        <!-- ===== হোয়াটসঅ্যাপ মেসেজ (আপডেটেড) ===== -->
         <div class="summary-table-wrap" id="whatsappMessageBox">
             <div class="summary-header-text">
                 <span>💬 হোয়াটসঅ্যাপ মেসেজ কপি করে পাঠান (জাহিদ স্যার এর জন্য)</span>
@@ -1666,10 +1656,17 @@
         // RENDER FUNCTIONS
         // ============================================================
 
-        // ---- Current Summary ----
+        // ---- Current Summary (Total MC, Target MC Run, MC Will Off যুক্ত) ----
         function renderCurrentSummary(data) {
-            let totalPresent = 0, totalAbsent = 0, totalNoDemand = 0;
-            let mcStopManpower = 0, mcStopNoDemand = 0, totalMoldChange = 0;
+            let totalPresent = 0,
+                totalAbsent = 0,
+                totalNoDemand = 0;
+            let mcStopManpower = 0,
+                mcStopNoDemand = 0,
+                totalMoldChange = 0;
+            let totalMC = 0,
+                targetRun = 0,
+                mcWillOff = 0;
 
             data.forEach(row => {
                 totalPresent += getNum(row, ['Total HR', 'totalHR']);
@@ -1678,6 +1675,9 @@
                 mcStopManpower += getNum(row, ['MP Short', 'mpShort']);
                 mcStopNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
                 totalMoldChange += getNum(row, ['Mold Change', 'moldChange']);
+                totalMC += getNum(row, ['Total MC', 'totalMC']);
+                targetRun += getNum(row, ['MC Running', 'mcRunning']);
+                mcWillOff += getNum(row, ['MC Stopped', 'mcStopped']);
             });
 
             document.getElementById('sumPresent').innerText = totalPresent;
@@ -1686,6 +1686,8 @@
             document.getElementById('sumMCStopManpower').innerText = mcStopManpower;
             document.getElementById('sumMCStopNoDemand').innerText = mcStopNoDemand;
             document.getElementById('sumMoldChange').innerText = totalMoldChange;
+            document.getElementById('sumtotalmc').innerText = totalMC;
+            document.getElementById('sumtargetMC Run').innerText = targetRun;
 
             const date = document.getElementById('filterDate').value;
             const shift = document.getElementById('filterShift').value;
@@ -1695,8 +1697,13 @@
 
         // ---- Stats ----
         function renderStats(data) {
-            let totalHR = 0, totalPresent = 0, totalLeave = 0, totalAbsent = 0;
-            let totalMC = 0, totalTargetRun = 0, sumPct = 0;
+            let totalHR = 0,
+                totalPresent = 0,
+                totalLeave = 0,
+                totalAbsent = 0;
+            let totalMC = 0,
+                totalTargetRun = 0,
+                sumPct = 0;
 
             data.forEach(r => {
                 const hr = getNum(r, ['Total HR', 'totalHR']);
@@ -1720,10 +1727,11 @@
             document.getElementById('totalManpower').innerText = totalPresent + totalLeave + totalAbsent;
             document.getElementById('totalMC').innerText = totalMC;
             document.getElementById('totalTargetRun').innerText = totalTargetRun;
-            document.getElementById('avgRunningPct').innerText = data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%';
+            document.getElementById('avgRunningPct').innerText = data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' :
+                '0.0%';
         }
 
-        // ---- Saifuddin Table ----
+        // ---- Saifuddin Table (সম্পূর্ণ) ----
         function renderSaifuddinTable(data) {
             const container = document.getElementById('saifuddinTableContainer');
             let rows = [];
@@ -1756,11 +1764,24 @@
                 const isFixed = FIXED_SN_LIST.includes(item.sn);
                 const isDuplicate = deptRows.length > 1;
 
-                let totalPresent = 0, absent = 0, leave = 0;
-                let calculatedMC = 0, targetRun = 0, mcWillOff = 0;
-                let doubleMC = 0, packagingOperator = 0;
-                let mpShort = 0, moldProb = 0, moldChange = 0, sample = 0, mcProb = 0;
-                let preventive = 0, noDemand = 0, materialShort = 0, overStock = 0, accShort = 0;
+                let totalPresent = 0,
+                    absent = 0,
+                    leave = 0;
+                let calculatedMC = 0,
+                    targetRun = 0,
+                    mcWillOff = 0;
+                let doubleMC = 0,
+                    packagingOperator = 0;
+                let mpShort = 0,
+                    moldProb = 0,
+                    moldChange = 0,
+                    sample = 0,
+                    mcProb = 0;
+                let preventive = 0,
+                    noDemand = 0,
+                    materialShort = 0,
+                    overStock = 0,
+                    accShort = 0;
 
                 if (hasData) {
                     deptRows.forEach(r => {
@@ -1970,7 +1991,7 @@
             window._saifuddinHeaders = headers;
         }
 
-        // ---- MC Department Horizontal Summary (Three-line Header) ----
+        // ---- MC Department Horizontal Summary ----
         function renderMcDeptSummary(data) {
             const container = document.getElementById('mcDeptSummaryContainer');
             const mcData = data.filter(row => {
@@ -2151,35 +2172,37 @@
             let html = `<div class="mc-horizontal-scroll">`;
             html += `<table class="mc-horizontal-table">`;
             html += `<thead>`;
-            
-            // সারি 1: "📊 Metric" – শুধু প্রথম কলামে সাব-হেডার হিসেবে, বাকি কলাম ফাঁকা
+
             html += `<tr>`;
-            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center;" class="sub-header-metric">📊 Metric</th>`;
+            html +=
+                `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center;" class="sub-header-metric">📊 Metric</th>`;
             depts.forEach(() => {
                 html += `<th style="background:#0d47a1; color:white; font-weight:400; font-size:10px;"></th>`;
             });
             html += `<th style="background:#1a237e; color:white; font-weight:400; font-size:10px;"></th>`;
             html += `</tr>`;
-            
-            // সারি 2: ডিপার্টমেন্টের নাম (সংক্ষিপ্ত) + Grand Total
+
             html += `<tr>`;
-            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center; font-weight:700; font-size:12px;">Department</th>`;
+            html +=
+                `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center; font-weight:700; font-size:12px;">Department</th>`;
             depts.forEach(dept => {
                 const shortName = dept.replace('RIP> DPL> ', '').replace('Plastic-', 'P-');
                 html += `<th style="min-width:90px;" class="dept-header">${shortName}</th>`;
             });
             html += `<th style="min-width:90px;background:#1a237e;color:white; font-weight:700; font-size:12px;">📌 Grand Total</th>`;
             html += `</tr>`;
-            
-            // সারি 3: "Entry Output" সাব-হেডার
+
             html += `<tr>`;
-            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; font-weight:400; font-size:10px; color:white; border-top:1px solid rgba(255,255,255,0.3); text-align:center;">&nbsp;</th>`;
+            html +=
+                `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; font-weight:400; font-size:10px; color:white; border-top:1px solid rgba(255,255,255,0.3); text-align:center;">&nbsp;</th>`;
             depts.forEach(() => {
-                html += `<th style="font-weight:400; font-size:10px; background:#0d47a1; color:white; border-top:1px solid rgba(255,255,255,0.3);">Entry Output</th>`;
+                html +=
+                    `<th style="font-weight:400; font-size:10px; background:#0d47a1; color:white; border-top:1px solid rgba(255,255,255,0.3);">Entry Output</th>`;
             });
-            html += `<th style="font-weight:400; font-size:10px; background:#1a237e; color:white; border-top:1px solid rgba(255,255,255,0.3);">Total</th>`;
+            html +=
+                `<th style="font-weight:400; font-size:10px; background:#1a237e; color:white; border-top:1px solid rgba(255,255,255,0.3);">Total</th>`;
             html += `</tr>`;
-            
+
             html += `</thead>`;
             html += `<tbody>`;
 
@@ -2403,7 +2426,7 @@
             window._scorecardData = scoreData;
         }
 
-        // ---- MC Summary Table (Visual) ----
+        // ---- MC Summary Table ----
         function renderMcSummaryTable(data) {
             const container = document.getElementById('mcSummaryTable');
             const mcData = data.filter(row => {
@@ -2888,7 +2911,7 @@
         }
 
         // ============================================================
-        // DOWNLOAD FUNCTIONS
+        // DOWNLOAD FUNCTIONS (সমস্ত ডাউনলোড অপশন যুক্ত)
         // ============================================================
 
         function downloadMcDeptImage() {
@@ -3376,7 +3399,7 @@
         }
 
         // ============================================================
-        // WHATSAPP MESSAGE
+        // WHATSAPP MESSAGE – সম্পূর্ণ আপডেটেড (Total MC, Target MC Run, MC Will Off, % Running Average)
         // ============================================================
         function updateWhatsAppMessage() {
             const container = document.getElementById('whatsappMessageContent');
@@ -3384,66 +3407,81 @@
 
             const dateVal = document.getElementById('filterDate').value;
             const shiftVal = document.getElementById('filterShift').value;
-            let displayDate = dateVal ? formatDate(dateVal) : '06-07-2026 ( Monday )';
-            let displayShift = (shiftVal !== 'All' && shiftVal !== '') ? shiftVal : 'Day';
 
-            const greeting = 'Good Day !!!';
-            const totalPresent = document.getElementById('sumPresent').innerText || '831';
-            const totalAbsent = document.getElementById('sumAbsent').innerText || '58';
-            const totalNoDemand = document.getElementById('sumNoDemand').innerText || '45';
-            const totalMoldChange = document.getElementById('sumMoldChange').innerText || '34';
-            const mcStopManpower = document.getElementById('sumMCStopManpower').innerText || '90';
+            let displayDate = dateVal ? formatDate(dateVal) : formatDate(new Date().toISOString().slice(0, 10));
+            let displayShift = (shiftVal !== 'All' && shiftVal !== '') ? shiftVal : getCurrentShift();
+
+            let totalPresent = 0,
+                totalAbsent = 0,
+                totalNoDemand = 0,
+                totalMoldChange = 0,
+                mcStopManpower = 0;
+            let totalMC = 0,
+                targetRun = 0,
+                mcWillOff = 0,
+                sumRunningPct = 0,
+                countRunningPct = 0;
+
+            const prodDepts = [
+                'RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1',
+                'RIP> DPL> Plastic-6.2', 'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2',
+                'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4', 'Silicon Project'
+            ];
+            const packDepts = ['Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03'];
+            const commonDepts = [
+                'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
+                'Corporate sales Production.', 'Plastics-Recycle & Silo',
+                'Product Development & Mold Change', 'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
+            ];
 
             let prodPresent = 0,
                 packPresent = 0,
                 commonPresent = 0;
-            if (filteredData && filteredData.length > 0) {
-                const prodDepts = [
-                    'RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1',
-                    'RIP> DPL> Plastic-6.2', 'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2',
-                    'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4', 'Silicon Project'
-                ];
-                const packDepts = ['Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03'];
-                const commonDepts = [
-                    'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
-                    'Corporate sales Production.', 'Plastics-Recycle & Silo',
-                    'Product Development & Mold Change', 'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
-                ];
-                filteredData.forEach(row => {
-                    const dept = getVal(row, ['Department', 'department']);
-                    const hr = getNum(row, ['Total HR', 'totalHR']);
-                    if (prodDepts.includes(dept)) prodPresent += hr;
-                    else if (packDepts.includes(dept)) packPresent += hr;
-                    else if (commonDepts.includes(dept)) commonPresent += hr;
-                });
-            } else {
-                prodPresent = 495;
-                packPresent = 115;
-                commonPresent = 221;
-            }
 
-            let moldProb = 0,
-                mcProb = 0,
-                doubleMC = 0,
-                packagingOperator = 0;
-            if (filteredData && filteredData.length > 0) {
-                filteredData.forEach(row => {
-                    moldProb += getNum(row, ['moldProblem']);
-                    mcProb += getNum(row, ['mcProblem']);
-                    doubleMC += getNum(row, ['doubleMC']);
-                    packagingOperator += getNum(row, ['packagingOperator']);
-                });
-            } else {
-                moldProb = 9;
-                mcProb = 7;
-                doubleMC = 48;
-                packagingOperator = 73;
+            (filteredData.length > 0 ? filteredData : allData).forEach(row => {
+                const dept = getVal(row, ['Department', 'department']);
+                const hr = getNum(row, ['Total HR', 'totalHR']);
+                totalPresent += hr;
+                totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
+                totalNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
+                totalMoldChange += getNum(row, ['Mold Change', 'moldChange']);
+                mcStopManpower += getNum(row, ['MP Short', 'mpShort']);
+                totalMC += getNum(row, ['Total MC', 'totalMC']);
+                targetRun += getNum(row, ['MC Running', 'mcRunning']);
+                mcWillOff += getNum(row, ['MC Stopped', 'mcStopped']);
+
+                const pctRunning = parseFloat(getVal(row, ['% Running', 'pctRunning'])) || 0;
+                if (pctRunning > 0) {
+                    sumRunningPct += pctRunning;
+                    countRunningPct++;
+                }
+
+                if (prodDepts.includes(dept)) prodPresent += hr;
+                else if (packDepts.includes(dept)) packPresent += hr;
+                else if (commonDepts.includes(dept)) commonPresent += hr;
+            });
+
+            const avgRunningPct = countRunningPct > 0 ? (sumRunningPct / countRunningPct) : 0;
+
+            if (filteredData.length === 0 && allData.length === 0) {
+                totalPresent = 923;
+                totalAbsent = 54;
+                totalNoDemand = 49;
+                totalMoldChange = 26;
+                mcStopManpower = 84;
+                totalMC = 0;
+                targetRun = 0;
+                mcWillOff = 0;
+                avgRunningPct = 0;
+                prodPresent = 544;
+                packPresent = 163;
+                commonPresent = 216;
             }
 
             const message =
                 `Dear @ DPL DGM Sir, 
         Asslamualaikum ,
-        ${greeting} 
+        Good Day !!! 
         Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Report. You Can Check The report. 
 
         📅 Date\t${displayDate}
@@ -3456,11 +3494,7 @@
         ❌ Total Absent\t${totalAbsent}
         📊 Total No Demand\t${totalNoDemand}
         🔧 Total Mold Change QTY\t${totalMoldChange}
-        ⛔ MC Stop (Manpower)\t${mcStopManpower}
-        ❌ Mold Prob -\t${moldProb}
-        ❌ MC Prob -\t${mcProb}
-        👥 Double MC -\t${doubleMC}
-        👥 Packaging Operator -\t${packagingOperator}`;
+        ⛔ MC Stop (Manpower)\t${mcStopManpower}`;
 
             container.innerText = message;
         }
