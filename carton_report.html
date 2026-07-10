@@ -136,6 +136,23 @@
             margin-left: 4px;
         }
         .btn-email-image:hover { background: #1da851; }
+
+        /* CTN Output input field style */
+        .ctn-output-input {
+            width:70px; 
+            padding:4px; 
+            border:1px solid #ccc; 
+            border-radius:4px; 
+            text-align:center; 
+            font-weight:600;
+            background: #fff;
+            transition: 0.2s;
+        }
+        .ctn-output-input:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 5px rgba(25,118,210,0.3);
+            outline: none;
+        }
     </style>
 </head>
 <body>
@@ -527,7 +544,6 @@
             deptSelect.appendChild(opt);
         });
 
-        // সেভ করার সময় ব্যবহার করার জন্য গ্লোবাল ভেরিয়েবলে রাখি
         window._currentEditor = userName;
         document.getElementById('editModal').style.display = 'block';
     };
@@ -563,7 +579,6 @@
 
         try {
             await update(ref(database, 'cartonEntries/' + key), updatedData);
-            // ইউজারের নাম ব্যবহার করছি
             const editor = window._currentEditor || 'অজানা';
             await saveLog('edit', dept, `এডিট করেছেন: ${dept} (IC: ${icName})`, editor);
             alert('✅ সফলভাবে আপডেট করা হয়েছে!');
@@ -605,7 +620,7 @@
     };
 
     // ================================================================
-    // 🖼️ ইমেজ ইমেইল (ইউজারের নাম সহ – অপশনাল)
+    // 🖼️ ইমেজ ইমেইল (ইউজারের নাম সহ)
     // ================================================================
     window.sendSummaryImageEmail = function() {
         const container = document.getElementById('summaryTableContainer');
@@ -628,7 +643,6 @@
                 fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
                     .then(() => {
                         alert('✅ ইমেইল পাঠানোর অনুরোধ করা হয়েছে!');
-                        // লগে ইমেইল পাঠানোর রেকর্ড রাখতে চাইলে এখানেও saveLog করতে পারেন
                     })
                     .catch(err => { alert('❌ ইমেইল পাঠাতে ব্যর্থ: ' + err.message); });
             })
@@ -783,7 +797,7 @@
     }
 
     // ================================================================
-    // রেন্ডার: Today Summary
+    // রেন্ডার: Today Summary (CTN Output ইনপুটযোগ্য)
     // ================================================================
     function renderTodaySummary(entries) {
         const container = document.getElementById('todaySummaryContainer');
@@ -797,16 +811,16 @@
                     dayHr: 0,
                     target: 0,
                     output: 0,
-                    hasOutput: false
+                    key: e.key // 🔑 Firebase key সংরক্ষণ
                 };
             }
             deptMap[e.dept].dayHr += e.dayHr;
             deptMap[e.dept].target += e.target;
-            if (e.output && e.output > 0) {
-                deptMap[e.dept].output += e.output;
-                deptMap[e.dept].hasOutput = true;
-            }
+            deptMap[e.dept].output += e.output || 0;
+            deptMap[e.dept].key = e.key;
         });
+
+        const entryDate = entries.length > 0 ? entries[0].entryDate : '';
 
         let html = `<div class="table-wrap"><table class="today-summary-table">
             <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th><th>CTN Output</th></tr></thead><tbody>`;
@@ -816,12 +830,75 @@
             grandHr += data.dayHr;
             grandTarget += data.target;
             grandOutput += data.output;
-            let outputDisplay = data.hasOutput && data.output > 0 ? data.output : `<span class="pending-output">0</span>`;
-            html += `<tr><td class="dept-name"><strong>${dept}</strong></td><td>${data.prodIC}</td><td>${data.shift}</td><td>${data.icName}</td><td>${data.dayHr}</td><td>${data.target}</td><td>${outputDisplay}</td></tr>`;
+            html += `<tr>
+                <td class="dept-name"><strong>${dept}</strong></td>
+                <td>${data.prodIC}</td>
+                <td>${data.shift}</td>
+                <td>${data.icName}</td>
+                <td>${data.dayHr}</td>
+                <td>${data.target}</td>
+                <td>
+                    <input type="number" class="ctn-output-input" 
+                           value="${data.output}" 
+                           data-key="${data.key}" 
+                           data-dept="${dept}" 
+                           data-shift="${data.shift}" 
+                           data-date="${entryDate}"
+                           style="width:70px; padding:4px; border:1px solid #ccc; border-radius:4px; text-align:center; font-weight:600;">
+                </td>
+            </tr>`;
         }
-        html += `<tr class="total-row"><td colspan="4"><strong>📌 মোট</strong></td><td><strong>${grandHr}</strong></td><td><strong>${grandTarget}</strong></td><td><strong>${grandOutput}</strong></td></tr></tbody></table></div>`;
+        html += `<tr class="total-row"><td colspan="4"><strong>📌 মোট</strong></td>
+            <td><strong>${grandHr}</strong></td>
+            <td><strong>${grandTarget}</strong></td>
+            <td><strong id="todayGrandOutput">${grandOutput}</strong></td>
+        </tr></tbody></table></div>`;
         container.innerHTML = html;
+
+        // ✅ ইনপুট ফিল্ডে onChange ইভেন্ট যোগ করা
+        document.querySelectorAll('.ctn-output-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const newValue = parseFloat(this.value) || 0;
+                const key = this.dataset.key;
+                const dept = this.dataset.dept;
+                const shift = this.dataset.shift;
+                const date = this.dataset.date;
+                updateTodayOutput(key, newValue, dept, shift, date);
+            });
+        });
+
         window._todayTableData = { deptMap, grandHr, grandTarget, grandOutput };
+    }
+
+    // ================================================================
+    // 🆕 CTN Output আপডেট করার ফাংশন (ইনপুট পরিবর্তনে)
+    // ================================================================
+    async function updateTodayOutput(key, newOutput, dept, shift, date) {
+        try {
+            // 1. ফায়ারবেসে আপডেট
+            const entryRef = ref(database, 'cartonEntries/' + key);
+            await update(entryRef, { output: newOutput });
+
+            // 2. গ্র্যান্ড টোটাল আপডেট (UI-তে)
+            const grandOutputEl = document.getElementById('todayGrandOutput');
+            if (grandOutputEl) {
+                let total = 0;
+                document.querySelectorAll('.ctn-output-input').forEach(inp => {
+                    total += parseFloat(inp.value) || 0;
+                });
+                grandOutputEl.textContent = total;
+            }
+
+            // 3. লগে রেকর্ড (ইউজারের নাম সহ)
+            const userName = getUserCredentials('CTN Output আপডেট');
+            if (userName) {
+                await saveLog('edit', dept, `CTN Output আপডেট: ${dept} (শিফট: ${shift}) → ${newOutput}`, userName);
+            }
+
+            console.log(`✅ CTN Output আপডেট: ${dept} → ${newOutput}`);
+        } catch (err) {
+            alert('❌ আপডেট করতে ব্যর্থ: ' + err.message);
+        }
     }
 
     // ================================================================
