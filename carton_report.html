@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* ===== আগের সব স্টাইল ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
         .container { max-width: 1600px; margin: 0 auto; }
@@ -81,7 +80,6 @@
         .pending-output { color: #d32f2f !important; font-weight: 700; }
         .pending-output .note { font-weight: 400; font-size: 11px; }
 
-        /* Email button style */
         .btn-email-sm {
             background: #0d47a1;
             color: white;
@@ -125,12 +123,10 @@
         </div>
     </div>
 
-    <!-- বাংলা বার্তা -->
     <div class="live-message">
         📢 আপনার তথ্য RFL গ্রুপের সবাই লাইভ দেখতে পারবেন
     </div>
 
-    <!-- ফিল্টার বার -->
     <div class="card">
         <div class="filter-bar">
             <label>📅 তারিখ নির্বাচন করুন:</label>
@@ -141,7 +137,6 @@
         </div>
     </div>
 
-    <!-- আজকের শিফটের সারাংশ -->
     <div class="card" id="todayShiftContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -159,7 +154,6 @@
         </div>
     </div>
 
-    <!-- শর্ট সামারি -->
     <div class="card" id="shortSummaryContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -177,7 +171,6 @@
         </div>
     </div>
 
-    <!-- ডেট রেঞ্জ সারাংশ -->
     <div class="card" id="dateRangeReportContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -195,7 +188,6 @@
         </div>
     </div>
 
-    <!-- গতকালের ডেইলি সামারি (Email বাটন সহ) -->
     <div class="card" id="dailyReportContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -206,7 +198,6 @@
                 <button class="btn-sm btn-excel-sm" onclick="downloadDailyExcel()">📊 Excel</button>
                 <button class="btn-sm btn-image-sm" onclick="downloadDailyImage()">🖼️ Image</button>
                 <button class="btn-sm btn-pdf-sm" onclick="downloadDailyPDF()">📄 PDF</button>
-                <!-- ✨ নতুন ইমেইল (Image) বাটন -->
                 <button class="btn-email-image" onclick="sendSummaryImageEmail()">📧 ইমেইল (Image)</button>
             </span>
         </h2>
@@ -215,7 +206,6 @@
         </div>
     </div>
 
-    <!-- ওভারঅল সারাংশ -->
     <div class="card" id="overallReportContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -233,7 +223,6 @@
         </div>
     </div>
 
-    <!-- মাস অনুযায়ী সারাংশ -->
     <div class="card" id="monthlyReportContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -285,7 +274,7 @@
 
 <script type="module">
     // ================================================================
-    // 🔥 Firebase Config (আপনার নিজের)
+    // 🔥 Firebase Config
     // ================================================================
     import { initializeApp } from "firebase-app";
     import { getDatabase, ref, onValue, remove, update } from "firebase-database";
@@ -378,11 +367,9 @@
             document.getElementById('dateInfo').innerHTML = `📌 সব তারিখের ডেটা দেখানো হচ্ছে`;
         }
 
-        // শর্ট সামারি
         document.getElementById('shortHeading').innerHTML = `📊 শর্ট সামারি (ফিল্টার অনুযায়ী) ${filterDate ? '— ' + dateDisplay : ''}`;
         renderShortSummary(filtered);
 
-        // আজকের শিফট
         const today = new Date();
         const tStr = today.toISOString().slice(0,10);
         const currentShift = getCurrentShift();
@@ -396,7 +383,6 @@
             renderTodaySummary(todayEntries);
         }
 
-        // ডেট রেঞ্জ (01-07-2026 to Today)
         const startDateStr = '2026-07-01';
         const endDateStr = tStr;
         const rangeEntries = allEntries.filter(e => e.entryDate >= startDateStr && e.entryDate <= endDateStr);
@@ -410,7 +396,6 @@
             renderDateRangeSummary(rangeEntries);
         }
 
-        // গতকাল
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yStr = yesterday.toISOString().slice(0,10);
@@ -424,21 +409,15 @@
             renderDailySummary(yesterdayEntries);
         }
 
-        // ওভারঅল
         renderOverallSummary(allEntries);
-
-        // মাস
         populateMonthFilter(allEntries);
         renderMonthlySummary();
-
-        // লগ
         renderLog(filtered);
-
         document.getElementById('currentDate').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
     };
 
     // ================================================================
-    // আজকের শিফটের সারাংশ (সঠিক CTN Output)
+    // আজকের শিফটের সারাংশ
     // ================================================================
     function renderTodaySummary(entries) {
         const container = document.getElementById('todaySummaryContainer');
@@ -465,13 +444,7 @@
 
         let html = `<div class="table-wrap"><table class="today-summary-table">
             <thead><tr>
-                <th>ডিপার্টমেন্ট</th>
-                <th>Prod IC</th>
-                <th>শিফট</th>
-                <th>IC Name</th>
-                <th>Day HR</th>
-                <th>Target (CTN)</th>
-                <th>CTN Output</th>
+                <th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th><th>CTN Output</th>
             </tr></thead><tbody>`;
 
         let grandHr = 0, grandTarget = 0, grandOutput = 0;
@@ -479,14 +452,12 @@
             grandHr += data.dayHr;
             grandTarget += data.target;
             grandOutput += data.output;
-
             let outputDisplay = '';
             if (data.hasOutput && data.output > 0) {
                 outputDisplay = data.output;
             } else {
                 outputDisplay = `<span class="pending-output">0</span>`;
             }
-
             html += `<tr>
                 <td class="dept-name"><strong>${dept}</strong></td>
                 <td>${data.prodIC}</td>
@@ -590,7 +561,6 @@
             return;
         }
 
-        // পাসওয়ার্ড চেক (ঐচ্ছিক)
         const pwd = prompt('🔒 ইমেইল পাঠাতে পাসওয়ার্ড দিন:');
         if (pwd === null) return;
         if (pwd !== 'arif123') {
@@ -598,7 +568,6 @@
             return;
         }
 
-        // html2canvas দিয়ে টেবিলের স্ক্রিনশট
         html2canvas(container, {
             scale: 2,
             backgroundColor: '#ffffff',
@@ -606,18 +575,16 @@
             useCORS: true
         }).then(canvas => {
             const dataUrl = canvas.toDataURL('image/png');
-            const base64 = dataUrl.split(',')[1]; // "data:image/png;base64," অংশ বাদ
+            const base64 = dataUrl.split(',')[1];
 
-            // গতকালের তারিখ
             const today = new Date();
             const yesterday = new Date(today);
             yesterday.setDate(today.getDate() - 1);
             const yStr = yesterday.toISOString().slice(0,10);
             const displayDate = formatDateDisplay(yStr);
 
-            // 🔥 এখানে আপনার গ্রুপ ইমেইল ও Apps Script URL বসান
-            const GROUP_EMAIL = "ariftusher1@gmail.com,taniatoma1030@gmail.com,mstselenaaktar7452@gmail.com"; // ← পরিবর্তন করুন
-            const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1awMU-wvA85L2Cq9iigbllYGUlFIIGG8cX06I9OV1MDq1V0tEIL3GYmKmSmXTlvL/exec"; // ← আপনার Web App URL
+            const GROUP_EMAIL = "ariftusher1@gmail.com";
+            const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1awMU-wvA85L2Cq9iigbllYGUlFIIGG8cX06I9OV1MDq1V0tEIL3GYmKmSmXTlvL/exec";
 
             const payload = {
                 imageData: base64,
@@ -654,14 +621,12 @@
             return;
         }
 
-        // ডেট রেঞ্জের জন্য তারিখ বের করা
         let dateStr = '';
         if (entries.length > 0) {
             const firstEntry = entries[0];
             dateStr = firstEntry.entryDate ? formatDateDisplay(firstEntry.entryDate) : '';
         }
 
-        // টেবিল তৈরি – প্রতিটি ডিপার্টমেন্টের জন্য ইমেইল বাটন যোগ করা হলো (ঐচ্ছিক)
         let html = `<div class="table-wrap"><table>
             <thead><tr>
                 <th rowspan="2">ডিপার্টমেন্ট</th>
@@ -678,7 +643,6 @@
                 <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
             </tr></thead><tbody>`;
 
-        // পৃথকভাবে ডিপার্টমেন্ট ডেটা সংরক্ষণ (ইমেইলের জন্য)
         const deptDataMap = {};
 
         tableRows.forEach(row => {
@@ -710,9 +674,7 @@
             html += `<td>${row.nightPerHr.toFixed(2)}</td>`;
             html += `<td>${row.nightUtil.toFixed(1)}%</td>`;
 
-            // ইমেইল বাটন (শুধু মেইন ডিপার্টমেন্টের জন্য, সারাংশ সারির জন্য না)
             if (!row.isSummary) {
-                // ডিপার্টমেন্ট ডেটা সংরক্ষণ
                 deptDataMap[row.dept] = {
                     shift: row.shift || 'Day',
                     icName: row.icName || '',
@@ -730,8 +692,6 @@
         });
 
         html += `</tbody></table></div>`;
-
-        // ডেটা ম্যাপ উইন্ডোতে সংরক্ষণ
         window._deptDataMap = deptDataMap;
 
         container.innerHTML = html;
@@ -739,7 +699,7 @@
     }
 
     // ================================================================
-    // জেনেরিক ফাংশন: ডিপার্টমেন্ট ওয়াইজ সামারি টেবিল তৈরি (পূর্ণ)
+    // buildDepartmentSummary (জেনেরিক)
     // ================================================================
     function buildDepartmentSummary(entries) {
         const summary = {};
@@ -907,7 +867,7 @@
     }
 
     // ================================================================
-    // ডেট রেঞ্জ সারাংশ (পূর্ণ)
+    // ডেট রেঞ্জ সারাংশ
     // ================================================================
     function renderDateRangeSummary(entries) {
         const container = document.getElementById('dateRangeSummaryContainer');
@@ -918,14 +878,13 @@
             window._dateRangeTableData = null;
             return;
         }
-        // ডেট রেঞ্জের জন্য ইমেইল বাটন লাগবে না, তাই সরল টেবিল
         let html = buildSummaryTableHTML(tableRows);
         container.innerHTML = html;
         window._dateRangeTableData = tableRows;
     }
 
     // ================================================================
-    // টেবিল HTML তৈরির ফাংশন (পূর্ণ ১৯ কলাম) – ইমেইল বাটন ছাড়া
+    // buildSummaryTableHTML (পূর্ণ ১৯ কলাম)
     // ================================================================
     function buildSummaryTableHTML(tableRows) {
         let html = `<div class="table-wrap"><table>
@@ -1239,29 +1198,290 @@
     }
 
     // ================================================================
-    // 📥 ডাউনলোড ফাংশন (সব সেকশনের জন্য) – আগের মতোই
+    // 📥 সব ডাউনলোড ফাংশন (সম্পূর্ণ)
     // ================================================================
-    // (এখানে ডাউনলোড ফাংশনগুলো আগের মতোই থাকবে – আমি সংক্ষেপে দিচ্ছি)
-    window.downloadShortExcel = function() { /* ... */ };
-    window.downloadShortImage = function() { /* ... */ };
-    window.downloadShortPDF = function() { /* ... */ };
-    window.downloadDailyExcel = function() { /* ... */ };
-    window.downloadDailyImage = function() { /* ... */ };
-    window.downloadDailyPDF = function() { /* ... */ };
-    window.downloadDateRangeExcel = function() { /* ... */ };
-    window.downloadDateRangeImage = function() { /* ... */ };
-    window.downloadDateRangePDF = function() { /* ... */ };
-    window.downloadOverallExcel = function() { /* ... */ };
-    window.downloadOverallImage = function() { /* ... */ };
-    window.downloadOverallPDF = function() { /* ... */ };
-    window.downloadMonthlyExcel = function() { /* ... */ };
-    window.downloadMonthlyImage = function() { /* ... */ };
-    window.downloadMonthlyPDF = function() { /* ... */ };
-    window.downloadTodayExcel = function() { /* ... */ };
-    window.downloadTodayImage = function() { /* ... */ };
-    window.downloadTodayPDF = function() { /* ... */ };
 
-    // (সব ডাউনলোড ফাংশনের পূর্ণ কোড আপনার আগের ফাইলেই আছে, আমি এখানে পুনরায় দিচ্ছি না)
+    // ---- Short Summary ----
+    window.downloadShortExcel = function() {
+        const data = window._shortData;
+        if (!data) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['বিভাগ', 'HR', 'Target', 'Output', 'CTN/HR', 'Util%'];
+        const rows = [
+            ['ONLINE PACK', data.online.hr, data.online.target, data.online.output, data.online.perHr.toFixed(2), data.online.util.toFixed(1) + '%'],
+            ['OFFLINE PACK', data.offline.hr, data.offline.target, data.offline.output, data.offline.perHr.toFixed(2), data.offline.util.toFixed(1) + '%'],
+            ['OVERALL', data.overall.hr, data.overall.target, data.overall.output, data.overall.perHr.toFixed(2), data.overall.util.toFixed(1) + '%']
+        ];
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Short Summary');
+        XLSX.writeFile(wb, `Short_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadShortImage = function() {
+        const container = document.getElementById('shortSummaryContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Short_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadShortPDF = function() {
+        const container = document.getElementById('shortSummaryContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Short_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
+
+    // ---- Daily Summary ----
+    window.downloadDailyExcel = function() {
+        const rows = window._dailyTableData;
+        if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'টাইপ', 'Total HR', 'Total Target', 'Total Output', 'CTN/HR', 'Util%', 'পজিশন', 'Day HR', 'Day Target', 'Day Output', 'Day CTN/HR', 'Day Util%', 'Night HR', 'Night Target', 'Night Output', 'Night CTN/HR', 'Night Util%'];
+        const aoa = [headers];
+        rows.forEach(row => {
+            aoa.push([
+                row.dept, row.prodIC, row.typeLabel || '',
+                row.totalHr, row.totalTarget, row.totalOutput,
+                row.totalPerHr.toFixed(2), row.totalUtil.toFixed(1) + '%', row.position,
+                row.dayHr, row.dayTarget, row.dayOutput,
+                row.dayPerHr.toFixed(2), row.dayUtil.toFixed(1) + '%',
+                row.nightHr, row.nightTarget, row.nightOutput,
+                row.nightPerHr.toFixed(2), row.nightUtil.toFixed(1) + '%'
+            ]);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Daily Summary');
+        XLSX.writeFile(wb, `Daily_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadDailyImage = function() {
+        const container = document.getElementById('dailyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Daily_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadDailyPDF = function() {
+        const container = document.getElementById('dailyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Daily_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
+
+    // ---- Date Range Summary ----
+    window.downloadDateRangeExcel = function() {
+        const rows = window._dateRangeTableData;
+        if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'টাইপ', 'Total HR', 'Total Target', 'Total Output', 'CTN/HR', 'Util%', 'পজিশন', 'Day HR', 'Day Target', 'Day Output', 'Day CTN/HR', 'Day Util%', 'Night HR', 'Night Target', 'Night Output', 'Night CTN/HR', 'Night Util%'];
+        const aoa = [headers];
+        rows.forEach(row => {
+            aoa.push([
+                row.dept, row.prodIC, row.typeLabel || '',
+                row.totalHr, row.totalTarget, row.totalOutput,
+                row.totalPerHr.toFixed(2), row.totalUtil.toFixed(1) + '%', row.position,
+                row.dayHr, row.dayTarget, row.dayOutput,
+                row.dayPerHr.toFixed(2), row.dayUtil.toFixed(1) + '%',
+                row.nightHr, row.nightTarget, row.nightOutput,
+                row.nightPerHr.toFixed(2), row.nightUtil.toFixed(1) + '%'
+            ]);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Date Range Summary');
+        XLSX.writeFile(wb, `DateRange_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadDateRangeImage = function() {
+        const container = document.getElementById('dateRangeReportContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `DateRange_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadDateRangePDF = function() {
+        const container = document.getElementById('dateRangeReportContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`DateRange_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
+
+    // ---- Overall Summary ----
+    window.downloadOverallExcel = function() {
+        const container = document.getElementById('overallReportContainer');
+        const table = container.querySelector('table');
+        if (!table) { alert('টেবিল পাওয়া যায়নি!'); return; }
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, 'Overall Summary');
+        XLSX.writeFile(wb, `Overall_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadOverallImage = function() {
+        const container = document.getElementById('overallReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Overall_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadOverallPDF = function() {
+        const container = document.getElementById('overallReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Overall_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
+
+    // ---- Monthly Summary ----
+    window.downloadMonthlyExcel = function() {
+        const data = window._monthlyData;
+        if (!data || data.deptList.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'Total HR', 'Total CTN Cap (Target)', 'Total Carton Output', 'Utilisation %', 'পজিশন'];
+        const rows = data.deptList.map(d => [
+            d.name, d.prodIC, d.totalHr, d.totalTarget, d.totalOutput,
+            d.util.toFixed(1) + '%', d.position === 1 ? '🥇 ১ম' : d.position === 2 ? '🥈 ২য়' : d.position === 3 ? '🥉 ৩য়' : d.position
+        ]);
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, `Month_${data.month}`);
+        XLSX.writeFile(wb, `Monthly_Summary_${data.month.replace(' ', '_')}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadMonthlyImage = function() {
+        const container = document.getElementById('monthlyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Monthly_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadMonthlyPDF = function() {
+        const container = document.getElementById('monthlyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Monthly_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
+
+    // ---- Today Shift Summary ----
+    window.downloadTodayExcel = function() {
+        const data = window._todayTableData;
+        if (!data || !data.deptMap) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'শিফট', 'IC Name', 'Day HR', 'Target (CTN)', 'CTN Output'];
+        const rows = [];
+        for (const [dept, vals] of Object.entries(data.deptMap)) {
+            let outputVal = vals.hasOutput && vals.output > 0 ? vals.output : 0;
+            rows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target, outputVal]);
+        }
+        rows.push(['📌 মোট', '-', '-', '-', data.grandHr, data.grandTarget, data.grandOutput]);
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Today Shift Summary');
+        XLSX.writeFile(wb, `Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadTodayImage = function() {
+        const container = document.getElementById('todaySummaryContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadTodayPDF = function() {
+        const container = document.getElementById('todaySummaryContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
 
     // ================================================================
     // 🗑️ সব ডেটা মুছুন
