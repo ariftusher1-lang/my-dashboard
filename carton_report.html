@@ -447,7 +447,7 @@
             html += `<tr>
                 <td>${log.time || ''}</td>
                 <td class="${actionClass}">${actionLabel}</td>
-                <td>${log.user || 'অ্যাডমিন'}</td>
+                <td><strong>${log.user || 'অজানা'}</strong></td>
                 <td>${log.dept || '-'}</td>
                 <td>${log.details || ''}</td>
             </tr>`;
@@ -461,16 +461,16 @@
     };
 
     // ================================================================
-    // লগ সেভ করার ফাংশন
+    // লগ সেভ করার ফাংশন (ইউজারের নাম সহ)
     // ================================================================
-    async function saveLog(action, dept, details, user = 'অ্যাডমিন') {
+    async function saveLog(action, dept, details, user) {
         try {
             const newLogRef = push(logRef);
             await set(newLogRef, {
                 action: action,
                 dept: dept || '',
                 details: details || '',
-                user: user,
+                user: user || 'অজানা',
                 time: new Date().toLocaleString('bn-BD'),
                 timestamp: Date.now()
             });
@@ -480,12 +480,30 @@
     }
 
     // ================================================================
-    // ✏️ এডিট/ডিলিট অপশন
+    // ইউজারের নাম ও পাসওয়ার্ড চেক করার ফাংশন
+    // ================================================================
+    function getUserCredentials(actionLabel) {
+        const name = prompt(`🔑 আপনার নাম লিখুন (যিনি ${actionLabel} করছেন):`);
+        if (name === null) return null;
+        if (name.trim() === '') {
+            alert('নাম অবশ্যই দিতে হবে!');
+            return null;
+        }
+        const pwd = prompt('🔒 পাসওয়ার্ড দিন:');
+        if (pwd === null) return null;
+        if (pwd !== 'arif123') {
+            alert('❌ ভুল পাসওয়ার্ড!');
+            return null;
+        }
+        return name.trim();
+    }
+
+    // ================================================================
+    // ✏️ এডিট/ডিলিট অপশন (ইউজারের নাম সহ)
     // ================================================================
     window.editEntry = function(key) {
-        const pwd = prompt('🔒 এডিট করতে পাসওয়ার্ড দিন:');
-        if (pwd === null) return;
-        if (pwd !== 'arif123') { alert('❌ ভুল পাসওয়ার্ড!'); return; }
+        const userName = getUserCredentials('এডিট');
+        if (!userName) return;
 
         const entry = allEntries.find(e => e.key === key);
         if (!entry) { alert('এন্ট্রি পাওয়া যায়নি!'); return; }
@@ -509,11 +527,14 @@
             deptSelect.appendChild(opt);
         });
 
+        // সেভ করার সময় ব্যবহার করার জন্য গ্লোবাল ভেরিয়েবলে রাখি
+        window._currentEditor = userName;
         document.getElementById('editModal').style.display = 'block';
     };
 
     window.closeEditModal = function() {
         document.getElementById('editModal').style.display = 'none';
+        window._currentEditor = null;
     };
 
     window.saveEdit = async function() {
@@ -542,7 +563,9 @@
 
         try {
             await update(ref(database, 'cartonEntries/' + key), updatedData);
-            await saveLog('edit', dept, `এডিট করেছেন: ${dept} (IC: ${icName})`);
+            // ইউজারের নাম ব্যবহার করছি
+            const editor = window._currentEditor || 'অজানা';
+            await saveLog('edit', dept, `এডিট করেছেন: ${dept} (IC: ${icName})`, editor);
             alert('✅ সফলভাবে আপডেট করা হয়েছে!');
             closeEditModal();
         } catch (err) {
@@ -551,19 +574,65 @@
     };
 
     window.deleteEntry = async function(key) {
-        const pwd = prompt('🔒 ডিলিট করতে পাসওয়ার্ড দিন:');
-        if (pwd === null) return;
-        if (pwd !== 'arif123') { alert('❌ ভুল পাসওয়ার্ড!'); return; }
+        const userName = getUserCredentials('ডিলিট');
+        if (!userName) return;
 
         if (!confirm('এই এন্ট্রি স্থায়ীভাবে মুছবেন?')) return;
         try {
             const entry = allEntries.find(e => e.key === key);
             await remove(ref(database, 'cartonEntries/' + key));
-            if (entry) await saveLog('delete', entry.dept, `ডিলিট করেছেন: ${entry.dept} (IC: ${entry.icName})`);
+            if (entry) await saveLog('delete', entry.dept, `ডিলিট করেছেন: ${entry.dept} (IC: ${entry.icName})`, userName);
             alert('🗑️ ডিলিট করা হয়েছে!');
         } catch (err) {
             alert('❌ ডিলিট করতে ব্যর্থ: ' + err.message);
         }
+    };
+
+    // ================================================================
+    // 🗑️ সব ডেটা মুছুন (ইউজারের নাম সহ)
+    // ================================================================
+    window.clearAll = async function() {
+        const userName = getUserCredentials('সব ডেটা মুছা');
+        if (!userName) return;
+        if (!confirm('সব ডেটা স্থায়ীভাবে মুছবেন?')) return;
+        try {
+            await remove(cartonRef);
+            await saveLog('delete', 'ALL', 'পুরো ডেটাবেস মুছে ফেলা হয়েছে', userName);
+            alert('🗑️ সব ডেটা মুছে ফেলা হয়েছে!');
+        } catch (error) {
+            alert('সব ডেটা মুছতে সমস্যা: ' + error.message);
+        }
+    };
+
+    // ================================================================
+    // 🖼️ ইমেজ ইমেইল (ইউজারের নাম সহ – অপশনাল)
+    // ================================================================
+    window.sendSummaryImageEmail = function() {
+        const container = document.getElementById('summaryTableContainer');
+        if (!container || container.innerText.includes('গতকালের কোনো ডেটা নেই')) { alert('গতকালের কোনো ডেটা নেই!'); return; }
+        const userName = getUserCredentials('ইমেইল পাঠানো');
+        if (!userName) return;
+
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true })
+            .then(canvas => {
+                const dataUrl = canvas.toDataURL('image/png');
+                const base64 = dataUrl.split(',')[1];
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+                const yStr = yesterday.toISOString().slice(0,10);
+                const displayDate = formatDateDisplay(yStr);
+                const GROUP_EMAIL = "ariftusher1@gmail.com,taniatoma1030@gmail.com,mstselenaaktar7452@gmail.com,biplobchandra.me@gmail.com,dplexport12@prangroup.com,fahimsha444@gmail.com,mdsirajsae@gmail.com,ripdpl204@prangroup.com,ripdpl330@prangroup.com,ripdpl369@prangroup.com,ripdpl334@prangroup.com,ripdpl282@prangroup.com,ripdpl188@prangroup.com,ripdpl304@prangroup.com,ripdpl327@prangroup.com,ripdpl252@prangroup.com,ripdpl261@prangroup.com,ripdpl333@prangroup.com,ripdpl319@prangroup.com,ripdpl259@prangroup.com";
+                const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1awMU-wvA85L2Cq9iigbllYGUlFIIGG8cX06I9OV1MDq1V0tEIL3GYmKmSmXTlvL/exec";
+                const payload = { imageData: base64, dateStr: yStr, toEmail: GROUP_EMAIL, subject: `📊 Daily Summary Report - ${displayDate}` };
+                fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+                    .then(() => {
+                        alert('✅ ইমেইল পাঠানোর অনুরোধ করা হয়েছে!');
+                        // লগে ইমেইল পাঠানোর রেকর্ড রাখতে চাইলে এখানেও saveLog করতে পারেন
+                    })
+                    .catch(err => { alert('❌ ইমেইল পাঠাতে ব্যর্থ: ' + err.message); });
+            })
+            .catch(err => { alert('❌ ইমেজ ক্যাপচার করতে ব্যর্থ: ' + err.message); });
     };
 
     // ================================================================
@@ -619,7 +688,6 @@
             document.getElementById('dateInfo').innerHTML = `📌 সব তারিখের ডেটা দেখানো হচ্ছে`;
         }
 
-        // KPI আপডেট (সব ডেটা থেকে)
         updateKPIs(allEntries);
 
         document.getElementById('shortHeading').innerHTML = `📊 শর্ট সামারি (ফিল্টার অনুযায়ী) ${filterDate ? '— ' + dateDisplay : ''}`;
@@ -1021,34 +1089,6 @@
     };
 
     // ================================================================
-    // 🖼️ ইমেজ ইমেইল (পূর্বের মতো)
-    // ================================================================
-    window.sendSummaryImageEmail = function() {
-        const container = document.getElementById('summaryTableContainer');
-        if (!container || container.innerText.includes('গতকালের কোনো ডেটা নেই')) { alert('গতকালের কোনো ডেটা নেই!'); return; }
-        const pwd = prompt('🔒 ইমেইল পাঠাতে পাসওয়ার্ড দিন:');
-        if (pwd === null) return;
-        if (pwd !== 'arif123') { alert('❌ ভুল পাসওয়ার্ড!'); return; }
-        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true })
-            .then(canvas => {
-                const dataUrl = canvas.toDataURL('image/png');
-                const base64 = dataUrl.split(',')[1];
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(today.getDate() - 1);
-                const yStr = yesterday.toISOString().slice(0,10);
-                const displayDate = formatDateDisplay(yStr);
-                const GROUP_EMAIL = "ariftusher1@gmail.com,taniatoma1030@gmail.com,mstselenaaktar7452@gmail.com,biplobchandra.me@gmail.com,dplexport12@prangroup.com,fahimsha444@gmail.com,mdsirajsae@gmail.com,ripdpl204@prangroup.com,ripdpl330@prangroup.com,ripdpl369@prangroup.com,ripdpl334@prangroup.com,ripdpl282@prangroup.com,ripdpl188@prangroup.com,ripdpl304@prangroup.com,ripdpl327@prangroup.com,ripdpl252@prangroup.com,ripdpl261@prangroup.com,ripdpl333@prangroup.com,ripdpl319@prangroup.com,ripdpl259@prangroup.com";
-                const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1awMU-wvA85L2Cq9iigbllYGUlFIIGG8cX06I9OV1MDq1V0tEIL3GYmKmSmXTlvL/exec";
-                const payload = { imageData: base64, dateStr: yStr, toEmail: GROUP_EMAIL, subject: `📊 Daily Summary Report - ${displayDate}` };
-                fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                    .then(() => { alert('✅ ইমেইল পাঠানোর অনুরোধ করা হয়েছে!'); })
-                    .catch(err => { alert('❌ ইমেইল পাঠাতে ব্যর্থ: ' + err.message); });
-            })
-            .catch(err => { alert('❌ ইমেজ ক্যাপচার করতে ব্যর্থ: ' + err.message); });
-    };
-
-    // ================================================================
     // 📥 ডাউনলোড ফাংশনসমূহ (সম্পূর্ণ)
     // ================================================================
 
@@ -1261,12 +1301,8 @@
     };
 
     // ================================================================
-    // 🗑️ সব ডেটা মুছুন ও CSV এক্সপোর্ট
+    // CSV এক্সপোর্ট
     // ================================================================
-    window.clearAll = async function() {
-        if (!confirm('সব ডেটা স্থায়ীভাবে মুছবেন?')) return;
-        try { await remove(cartonRef); await saveLog('delete', 'ALL', 'পুরো ডেটাবেস মুছে ফেলা হয়েছে'); } catch (error) { alert('সব ডেটা মুছতে সমস্যা: ' + error.message); }
-    };
     window.exportCSV = function() {
         const filterDate = getFilterDate();
         let filtered = allEntries;
