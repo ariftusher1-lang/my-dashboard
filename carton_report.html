@@ -136,33 +136,6 @@
             margin-left: 4px;
         }
         .btn-email-image:hover { background: #1da851; }
-
-        /* CTN Output input field style */
-        .ctn-output-input {
-            width:70px; 
-            padding:4px; 
-            border:1px solid #ccc; 
-            border-radius:4px; 
-            text-align:center; 
-            font-weight:600;
-            background: #fff;
-            transition: 0.2s;
-        }
-        .ctn-output-input:focus {
-            border-color: #1976d2;
-            box-shadow: 0 0 5px rgba(25,118,210,0.3);
-            outline: none;
-        }
-        .ctn-output-input:disabled {
-            background: #f5f5f5;
-            color: #999;
-            cursor: not-allowed;
-        }
-        .no-entry-msg {
-            font-size: 11px;
-            color: #999;
-            margin-left: 5px;
-        }
     </style>
 </head>
 <body>
@@ -198,7 +171,7 @@
         </div>
     </div>
 
-    <!-- Today Shift (ডে + নাইট আলাদা) -->
+    <!-- Today Shift (ডে + নাইট আলাদা, CTN Output বাদ) -->
     <div class="card" id="todayShiftContainer">
         <h2>
             <span class="toggle-wrapper">
@@ -575,7 +548,7 @@
 
         if (!dept || !prodIC) { alert('দয়া করে সব ফিল্ড পূরণ করুন!'); return; }
 
-        const perHr = dayHr > 0 ? output / dayHr : 0;  // ← পরিবর্তন: output/dayHr
+        const perHr = dayHr > 0 ? target / dayHr : 0;
         const utilPct = target > 0 ? (output / target) * 100 : 0;
 
         const updatedData = {
@@ -723,12 +696,7 @@
         const todayEntries = allEntries.filter(e => e.entryDate === tStr);
         const todayDisplay = formatDateDisplay(tStr);
         document.getElementById('todayHeading').innerHTML = `📋 ডিপার্টমেন্ট ওয়াইজ সারাংশ (আজকের শিফট — ${todayDisplay})`;
-        if (todayEntries.length === 0) {
-            // এন্ট্রি না থাকলেও ডে টেবিল দেখাবে (খালি)
-            renderTodaySummary(todayEntries);
-        } else {
-            renderTodaySummary(todayEntries);
-        }
+        renderTodaySummary(todayEntries); // সব সময় রেন্ডার করবে (এন্ট্রি না থাকলেও ডে টেবিল দেখাবে)
 
         const startDateStr = '2026-07-01';
         const endDateStr = tStr;
@@ -782,8 +750,6 @@
             const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-online' : 'badge-offline';
             const util = e.utilPct || 0;
             const utilClass = util >= 80 ? 'util-high' : (util >= 50 ? 'util-mid' : 'util-low');
-            // Per HR CTN = output / dayHr (if dayHr > 0)
-            const perHr = (e.dayHr > 0) ? (e.output || 0) / e.dayHr : 0;
             html += `<tr>
                 <td>${idx + 1}</td>
                 <td><span class="badge ${badgeClass}">${e.dept}</span></td>
@@ -793,7 +759,7 @@
                 <td>${e.dayHr}</td>
                 <td>${e.target}</td>
                 <td>${e.output}</td>
-                <td>${perHr.toFixed(2)}</td>
+                <td>${e.perHr}</td>
                 <td class="${utilClass}">${util.toFixed(1)}%</td>
                 <td>${e.entryDate}</td>
                 <td>${e.timestamp}</td>
@@ -809,7 +775,7 @@
     }
 
     // ================================================================
-    // রেন্ডার: Today Summary (ডে সব সময়, নাইট থাকলে)
+    // রেন্ডার: Today Summary (CTN Output বাদ)
     // ================================================================
     function renderTodaySummary(entries) {
         const container = document.getElementById('todaySummaryContainer');
@@ -838,21 +804,6 @@
 
         container.innerHTML = html;
 
-        // ইনপুট ইভেন্ট (ডে ও নাইট উভয়ের জন্য)
-        document.querySelectorAll('.ctn-output-input').forEach(input => {
-            input.addEventListener('change', function() {
-                const newValue = parseFloat(this.value) || 0;
-                const key = this.dataset.key;
-                const dept = this.dataset.dept;
-                const shift = this.dataset.shift;
-                const date = this.dataset.date;
-                updateTodayOutput(key, newValue, dept, shift, date);
-            });
-        });
-
-        // গ্র্যান্ড টোটাল আপডেট
-        updateTodayGrandTotal();
-
         // _todayTableData সংরক্ষণ (Excel/Image/PDF-এর জন্য)
         const allDayData = buildDeptMap(dayEntries);
         const allNightData = buildDeptMap(nightEntries);
@@ -875,13 +826,11 @@
                     icName: e.icName || '',
                     dayHr: 0,
                     target: 0,
-                    output: 0,
                     key: e.key
                 };
             }
             deptMap[e.dept].dayHr += e.dayHr;
             deptMap[e.dept].target += e.target;
-            deptMap[e.dept].output += e.output || 0;
             deptMap[e.dept].key = e.key;
         });
         return deptMap;
@@ -890,16 +839,14 @@
     // ===== হেল্পার: টেবিল বিল্ডার (এন্ট্রি থাকলে) =====
     function buildTodayTable(entries, shiftLabel) {
         const deptMap = buildDeptMap(entries);
-        const entryDate = entries.length > 0 ? entries[0].entryDate : '';
 
         let html = `<div class="table-wrap"><table class="today-summary-table">
-            <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th><th>CTN Output</th></tr></thead><tbody>`;
+            <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th></tr></thead><tbody>`;
 
-        let grandHr = 0, grandTarget = 0, grandOutput = 0;
+        let grandHr = 0, grandTarget = 0;
         for (const [dept, data] of Object.entries(deptMap)) {
             grandHr += data.dayHr;
             grandTarget += data.target;
-            grandOutput += data.output;
             html += `<tr>
                 <td class="dept-name"><strong>${dept}</strong></td>
                 <td>${data.prodIC}</td>
@@ -907,21 +854,11 @@
                 <td>${data.icName}</td>
                 <td>${data.dayHr}</td>
                 <td>${data.target}</td>
-                <td>
-                    <input type="number" class="ctn-output-input" 
-                           value="${data.output}" 
-                           data-key="${data.key}" 
-                           data-dept="${dept}" 
-                           data-shift="${data.shift}" 
-                           data-date="${entryDate}"
-                           style="width:70px; padding:4px; border:1px solid #ccc; border-radius:4px; text-align:center; font-weight:600;">
-                </td>
             </tr>`;
         }
         html += `<tr class="total-row"><td colspan="4"><strong>📌 মোট</strong></td>
             <td><strong>${grandHr}</strong></td>
             <td><strong>${grandTarget}</strong></td>
-            <td><strong class="today-grand-output" data-shift="${shiftLabel}">${grandOutput}</strong></td>
         </tr></tbody></table></div>`;
         return html;
     }
@@ -929,7 +866,7 @@
     // ===== হেল্পার: খালি ডে টেবিল (শুধু ডিপার্টমেন্ট লিস্ট) =====
     function buildEmptyTodayTable(shiftLabel) {
         let html = `<div class="table-wrap"><table class="today-summary-table">
-            <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th><th>CTN Output</th></tr></thead><tbody>`;
+            <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th></tr></thead><tbody>`;
 
         const depts = DEPARTMENTS.filter(d => d.type === 'MC' || d.type === 'Packaging');
         depts.forEach(d => {
@@ -940,89 +877,14 @@
                 <td>-</td>
                 <td>0</td>
                 <td>0</td>
-                <td>
-                    <input type="number" class="ctn-output-input" 
-                           value="0" 
-                           data-key="" 
-                           data-dept="${d.name}" 
-                           data-shift="${shiftLabel}" 
-                           data-date=""
-                           style="width:70px; padding:4px; border:1px solid #ccc; border-radius:4px; text-align:center; font-weight:600;" disabled>
-                    <span class="no-entry-msg">(এন্ট্রি নেই)</span>
-                </td>
             </tr>`;
         });
 
         html += `<tr class="total-row"><td colspan="4"><strong>📌 মোট</strong></td>
             <td><strong>0</strong></td>
             <td><strong>0</strong></td>
-            <td><strong class="today-grand-output" data-shift="${shiftLabel}">0</strong></td>
         </tr></tbody></table></div>`;
         return html;
-    }
-
-    // ===== গ্র্যান্ড টোটাল আপডেট (UI) =====
-    function updateTodayGrandTotal() {
-        document.querySelectorAll('.today-grand-output').forEach(el => {
-            const shift = el.dataset.shift;
-            let total = 0;
-            document.querySelectorAll(`.ctn-output-input[data-shift="${shift}"]`).forEach(inp => {
-                total += parseFloat(inp.value) || 0;
-            });
-            el.textContent = total;
-        });
-    }
-
-    // ================================================================
-    // 🆕 CTN Output আপডেট (খালি কী চেক সহ) - perHr আপডেট করা হয়
-    // ================================================================
-    async function updateTodayOutput(key, newOutput, dept, shift, date) {
-        // যদি key খালি থাকে, তাহলে কোনো এন্ট্রি নেই—আপডেট করবেন না
-        if (!key || key === '') {
-            alert('⚠️ এই ডিপার্টমেন্টের জন্য এখনো কোনো এন্ট্রি তৈরি হয়নি। দয়া করে প্রথমে এন্ট্রি ফর্ম ব্যবহার করে এন্ট্রি তৈরি করুন।');
-            // ইনপুটের মান 0 সেট করুন
-            const inputs = document.querySelectorAll(`.ctn-output-input[data-dept="${dept}"][data-shift="${shift}"]`);
-            inputs.forEach(inp => {
-                inp.value = 0;
-            });
-            updateTodayGrandTotal();
-            return;
-        }
-
-        // প্রথমে এন্ট্রিটি খুঁজে বের করি
-        const entry = allEntries.find(e => e.key === key);
-        if (!entry) {
-            alert('এন্ট্রি পাওয়া যায়নি!');
-            return;
-        }
-
-        // নতুন perHr হিসাব (output / dayHr)
-        const dayHr = entry.dayHr || 0;
-        const newPerHr = dayHr > 0 ? newOutput / dayHr : 0;
-        // নতুন utilPct (output / target * 100)
-        const target = entry.target || 0;
-        const newUtilPct = target > 0 ? (newOutput / target) * 100 : 0;
-
-        try {
-            // ফায়ারবেসে আপডেট
-            const entryRef = ref(database, 'cartonEntries/' + key);
-            await update(entryRef, { 
-                output: newOutput,
-                perHr: newPerHr,
-                utilPct: newUtilPct
-            });
-
-            // গ্র্যান্ড টোটাল আপডেট
-            updateTodayGrandTotal();
-
-            const userName = getUserCredentials('CTN Output আপডেট');
-            if (userName) {
-                await saveLog('edit', dept, `CTN Output আপডেট: ${dept} (শিফট: ${shift}) → ${newOutput} (PerHr: ${newPerHr.toFixed(2)})`, userName);
-            }
-            console.log(`✅ CTN Output আপডেট: ${dept} → ${newOutput}, PerHr: ${newPerHr.toFixed(2)}`);
-        } catch (err) {
-            alert('❌ আপডেট করতে ব্যর্থ: ' + err.message);
-        }
     }
 
     // ================================================================
@@ -1325,7 +1187,7 @@
         }).catch(()=>alert('❌ PDF তৈরি ব্যর্থ!'));
     };
 
-    // ---- Today Shift (ডে + নাইট আলাদা) ----
+    // ---- Today Shift (CTN Output বাদ) ----
     window.downloadTodayExcel = function() {
         const data = window._todayTableData;
         if (!data) { alert('কোনো ডেটা নেই!'); return; }
@@ -1335,14 +1197,14 @@
         // ডে শিফট
         if (data.day && Object.keys(data.day).length > 0) {
             const dayRows = [];
-            const dayHeaders = ['ডিপার্টমেন্ট','Prod IC','শিফট','IC Name','Day HR','Target (CTN)','CTN Output'];
+            const dayHeaders = ['ডিপার্টমেন্ট','Prod IC','শিফট','IC Name','Day HR','Target (CTN)'];
             dayRows.push(dayHeaders);
-            let gHr=0,gTarget=0,gOutput=0;
+            let gHr=0,gTarget=0;
             for (const [dept, vals] of Object.entries(data.day)) {
-                gHr += vals.dayHr; gTarget += vals.target; gOutput += vals.output;
-                dayRows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target, vals.output]);
+                gHr += vals.dayHr; gTarget += vals.target;
+                dayRows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target]);
             }
-            dayRows.push(['📌 মোট', '-', '-', '-', gHr, gTarget, gOutput]);
+            dayRows.push(['📌 মোট', '-', '-', '-', gHr, gTarget]);
             const wsDay = XLSX.utils.aoa_to_sheet(dayRows);
             XLSX.utils.book_append_sheet(wb, wsDay, 'Day Shift');
         }
@@ -1350,14 +1212,14 @@
         // নাইট শিফট
         if (data.night && Object.keys(data.night).length > 0) {
             const nightRows = [];
-            const nightHeaders = ['ডিপার্টমেন্ট','Prod IC','শিফট','IC Name','Day HR','Target (CTN)','CTN Output'];
+            const nightHeaders = ['ডিপার্টমেন্ট','Prod IC','শিফট','IC Name','Day HR','Target (CTN)'];
             nightRows.push(nightHeaders);
-            let gHr=0,gTarget=0,gOutput=0;
+            let gHr=0,gTarget=0;
             for (const [dept, vals] of Object.entries(data.night)) {
-                gHr += vals.dayHr; gTarget += vals.target; gOutput += vals.output;
-                nightRows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target, vals.output]);
+                gHr += vals.dayHr; gTarget += vals.target;
+                nightRows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target]);
             }
-            nightRows.push(['📌 মোট', '-', '-', '-', gHr, gTarget, gOutput]);
+            nightRows.push(['📌 মোট', '-', '-', '-', gHr, gTarget]);
             const wsNight = XLSX.utils.aoa_to_sheet(nightRows);
             XLSX.utils.book_append_sheet(wb, wsNight, 'Night Shift');
         }
@@ -1535,11 +1397,7 @@
         if (filtered.length === 0) { alert('কোনো ডেটা নেই!'); return; }
         const headers = ['Department','Prod IC','Shift','IC Name','Day HR','Target','CTN Output','Per HR CTN','Utilisation %','Entry Date','Timestamp'];
         let csv = headers.join(',') + '\n';
-        filtered.forEach(e => {
-            const perHr = (e.dayHr > 0) ? (e.output || 0) / e.dayHr : 0;
-            const row = [`"${e.dept}"`,`"${e.prodIC}"`,`"${e.shift}"`,`"${e.icName}"`, e.dayHr, e.target, e.output, perHr.toFixed(2), e.utilPct?e.utilPct.toFixed(1):'0', `"${e.entryDate}"`,`"${e.timestamp}"`];
-            csv += row.join(',') + '\n';
-        });
+        filtered.forEach(e => { const row = [`"${e.dept}"`,`"${e.prodIC}"`,`"${e.shift}"`,`"${e.icName}"`, e.dayHr, e.target, e.output, e.perHr, e.utilPct?e.utilPct.toFixed(1):'0', `"${e.entryDate}"`,`"${e.timestamp}"`]; csv += row.join(',') + '\n'; });
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `Carton_Report_${filterDate||'All'}_${new Date().toISOString().slice(0,10)}.csv`; link.click(); URL.revokeObjectURL(link.href);
     };
