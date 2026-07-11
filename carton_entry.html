@@ -70,6 +70,9 @@
         .util-pct { font-size: 12px; color: #0d47a1; font-weight: 600; display: block; margin-top: 2px; }
         .alert-box { background: #fff3cd; border-left: 6px solid #ffc107; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px; color: #856404; font-weight: 500; display: none; }
         .alert-box.show { display: block; }
+        .alert-box.success { background: #d4edda; border-left-color: #28a745; color: #155724; }
+        .alert-box.warning { background: #fff3cd; border-left-color: #ffc107; color: #856404; }
+        .alert-box.error { background: #f8d7da; border-left-color: #dc3545; color: #721c24; }
         .output-update-form {
             display: none;
             background: #e8f0fe;
@@ -208,7 +211,7 @@
             </div>
             <div class="form-group">
                 <label>🕒 শিফট</label>
-                <select id="shiftSelect">
+                <select id="shiftSelect" onchange="onShiftChange()">
                     <option value="Day">ডে (Day)</option>
                     <option value="Night">নাইট (Night)</option>
                 </select>
@@ -225,8 +228,8 @@
                 <label>🎯 Carton Target (অটো)</label>
                 <input type="number" id="cartonTarget" class="readonly" readonly value="0">
             </div>
-            <div class="form-group">
-                <label>📦 CTN Output (ম্যানুয়াল)</label>
+            <div class="form-group" id="ctnOutputGroup">
+                <label>📦 CTN Output <span id="outputRequired" style="color:#dc3545; font-weight:400;">(ডে শিফটে বাধ্যতামূলক)</span></label>
                 <input type="number" id="ctnOutput" placeholder="যেমন 400" step="1" min="0" oninput="calculatePerHrAndUtil()">
             </div>
             <div class="form-group">
@@ -390,6 +393,24 @@
         document.getElementById('utilDisplay').innerHTML = `Utilisation: ${utilPct.toFixed(1)}%`;
     };
 
+    // ===== শিফট পরিবর্তনে CTN Output লেবেল পরিবর্তন =====
+    window.onShiftChange = function() {
+        const shift = document.getElementById('shiftSelect').value;
+        const outputLabel = document.getElementById('outputRequired');
+        const ctnInput = document.getElementById('ctnOutput');
+        if (shift === 'Day') {
+            outputLabel.style.display = 'inline';
+            outputLabel.textContent = '(ডে শিফটে বাধ্যতামূলক)';
+            outputLabel.style.color = '#dc3545';
+            ctnInput.required = true;
+        } else {
+            outputLabel.style.display = 'inline';
+            outputLabel.textContent = '(নাইট শিফটে ঐচ্ছিক)';
+            outputLabel.style.color = '#28a745';
+            ctnInput.required = false;
+        }
+    };
+
     // ===== ভয়েস =====
     function getFemaleVoice() {
         const voices = window.speechSynthesis.getVoices();
@@ -428,13 +449,10 @@
         speakText(msg, 1.2, 0.85);
     }
 
-    // ===== Firebase এন্ট্রি যোগ =====
+    // ===== Firebase এন্ট্রি যোগ (নাইট শিফটে CTN Output ঐচ্ছিক) =====
     window.addEntry = async function() {
         alertBox.classList.remove('show');
-        alertBox.innerText = '';
-        alertBox.style.borderLeftColor = '#ffc107';
-        alertBox.style.background = '#fff3cd';
-        alertBox.style.color = '#856404';
+        alertBox.className = 'alert-box';
 
         const dept = document.getElementById('deptSelect').value;
         const prodIC = document.getElementById('prodIC').value;
@@ -447,10 +465,26 @@
         const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
         const entryDate = document.getElementById('entryDate').value;
 
-        if (!entryDate) { alert('দয়া করে একটি তারিখ নির্বাচন করুন!'); return; }
-        if (!dept) { alert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!'); return; }
-        if (dayHr <= 0) { alert('Day HR অবশ্যই ০-এর বেশি হতে হবে!'); return; }
+        // --- ভ্যালিডেশন ---
+        if (!entryDate) { showAlert('দয়া করে একটি তারিখ নির্বাচন করুন!', 'error'); return; }
+        if (!dept) { showAlert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!', 'error'); return; }
+        if (dayHr <= 0) { showAlert('Day HR অবশ্যই ০-এর বেশি হতে হবে!', 'error'); return; }
 
+        // ডে শিফটে CTN Output বাধ্যতামূলক
+        if (shift === 'Day' && output <= 0) {
+            showAlert('⚠️ ডে শিফটে CTN Output অবশ্যই ০-এর বেশি হতে হবে!', 'error');
+            return;
+        }
+
+        // নাইট শিফটে CTN Output দেওয়া থাকলে সেটা নোট করুন (ঐচ্ছিক)
+        let nightOutputNote = '';
+        if (shift === 'Night' && output > 0) {
+            nightOutputNote = ` (নাইট শিফটে CTN Output: ${output} দেওয়া হয়েছে)`;
+        } else if (shift === 'Night') {
+            nightOutputNote = ' (নাইট শিফটে CTN Output দেওয়া হয়নি, পরে আপডেট করা যাবে)';
+        }
+
+        // --- ডে শিফট ডুপ্লিকেট চেক ---
         const existingDayEntries = allEntries.filter(e =>
             e.entryDate === entryDate && e.shift === 'Day' && e.dept === dept
         );
@@ -459,33 +493,32 @@
             if (existingDayEntries.length > 0) {
                 const icNameExisting = existingDayEntries[0].icName;
                 const alertMsg = `মিস্টার ${icNameExisting}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখে ইতিমধ্যে একটি Day Shift এন্ট্রি আছে! দয়া করে আগের এন্ট্রি ডিলিট করে নতুন করুন, অথবা শুধুমাত্র Night Shift দিন।`;
-                alertBox.innerText = `⚠️ ${alertMsg}`;
-                alertBox.classList.add('show');
+                showAlert(`⚠️ ${alertMsg}`, 'warning');
                 speakAlert(alertMsg);
                 return;
             }
         }
 
+        // --- নাইট শিফট চেক: ডে শিফট না থাকলে সতর্কতা ---
         if (shift === 'Night') {
             if (existingDayEntries.length === 0) {
                 const nameToUse = (icName !== '-') ? icName : prodIC;
-                const alertMsg = `মিস্টার ${nameToUse}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখে কোনো Day Shift এন্ট্রি নেই! আগে Day Shift-এর পেকেজিং এর Cartoon Output সহ এন্ট্রি সম্পূর্ণ করুন তা না হলে রাতের সিফট এর এইচ আর বা আপনার অপারেটর ইনপুট দিতে পারবেন না!!!`;
-                alertBox.innerText = `⚠️ ${alertMsg}`;
-                alertBox.classList.add('show');
+                const alertMsg = `মিস্টার ${nameToUse}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখে কোনো Day Shift এন্ট্রি নেই! আগে Day Shift-এর পেকেজিং এর Cartoon Output সহ এন্ট্রি সম্পূর্ণ করুন।`;
+                showAlert(`⚠️ ${alertMsg}`, 'warning');
                 speakAlert(alertMsg);
                 return;
             }
             const dayEntry = existingDayEntries[0];
             if (!dayEntry.output || dayEntry.output === 0) {
                 const icNameExisting = dayEntry.icName;
-                const alertMsg = `মিস্টার ${icNameExisting}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখের Day Shift-এর পেকেজিং এর Cartoon Output (বর্তমানে ${dayEntry.output}) দেওয়া হয়নি! দয়া করে নিচের লগ টেবিলে গিয়ে "Output দিন" বাটনে ক্লিক করে Output আপডেট করুন, তারপর Night Shift দিন।`;
-                alertBox.innerText = `⚠️ ${alertMsg}`;
-                alertBox.classList.add('show');
+                const alertMsg = `মিস্টার ${icNameExisting}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখের Day Shift-এর CTN Output (বর্তমানে ${dayEntry.output}) দেওয়া হয়নি! দয়া করে নিচের লগ টেবিলে গিয়ে "Output দিন" বাটনে ক্লিক করে Output আপডেট করুন, তারপর Night Shift দিন।`;
+                showAlert(`⚠️ ${alertMsg}`, 'warning');
                 speakAlert(alertMsg);
                 return;
             }
         }
 
+        // --- নতুন এন্ট্রি তৈরি ---
         const newEntry = {
             dept, prodIC, shift, icName, dayHr, target, output, perHr, utilPct, entryDate,
             timestamp: new Date().toLocaleString('bn-BD')
@@ -493,6 +526,7 @@
 
         try {
             await push(cartonRef, newEntry);
+            // ফর্ম রিসেট
             document.getElementById('deptSelect').value = '';
             document.getElementById('prodIC').value = '';
             document.getElementById('icName').value = '';
@@ -506,23 +540,23 @@
             autoSelectShift();
             updateProdIC();
 
-            alertBox.style.borderLeftColor = '#28a745';
-            alertBox.style.background = '#d4edda';
-            alertBox.style.color = '#155724';
-            alertBox.innerText = `✅ ${shift} Shift-এর এন্ট্রি সফলভাবে যোগ হয়েছে! (CTN: ${output})`;
-            alertBox.classList.add('show');
+            showAlert(`✅ ${shift} Shift-এর এন্ট্রি সফলভাবে যোগ হয়েছে!${nightOutputNote}`, 'success');
             speakSuccess();
 
             setTimeout(() => {
                 alertBox.classList.remove('show');
-                alertBox.style.borderLeftColor = '#ffc107';
-                alertBox.style.background = '#fff3cd';
-                alertBox.style.color = '#856404';
-            }, 5000);
+            }, 6000);
         } catch (error) {
-            alert('Firebase-এ সংরক্ষণ করতে সমস্যা: ' + error.message);
+            showAlert('Firebase-এ সংরক্ষণ করতে সমস্যা: ' + error.message, 'error');
         }
     };
+
+    // ===== অ্যালার্ট শো ফাংশন =====
+    function showAlert(message, type = 'warning') {
+        alertBox.className = 'alert-box show ' + type;
+        alertBox.innerText = message;
+        alertBox.style.display = 'block';
+    }
 
     // ===== ডিলিট (পাসওয়ার্ড সুরক্ষিত) =====
     window.deleteEntry = async function(key) {
@@ -569,11 +603,7 @@
                 perHr: perHr,
                 utilPct: utilPct
             });
-            alertBox.style.borderLeftColor = '#28a745';
-            alertBox.style.background = '#d4edda';
-            alertBox.style.color = '#155724';
-            alertBox.innerText = `✅ Output সফলভাবে আপডেট হয়েছে! নতুন Output: ${newOutput}`;
-            alertBox.classList.add('show');
+            showAlert(`✅ Output সফলভাবে আপডেট হয়েছে! নতুন Output: ${newOutput}`, 'success');
             setTimeout(() => alertBox.classList.remove('show'), 4000);
         } catch (error) {
             alert('আপডেট করতে সমস্যা: ' + error.message);
@@ -688,7 +718,10 @@
         const hours = now.getHours();
         const shift = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
         const shiftSelect = document.getElementById('shiftSelect');
-        if (shiftSelect) shiftSelect.value = shift;
+        if (shiftSelect) {
+            shiftSelect.value = shift;
+            onShiftChange();
+        }
         return shift;
     };
 
@@ -810,6 +843,10 @@
                 window.speechSynthesis.getVoices();
             };
         }
+        // শিফট পরিবর্তন ইভেন্ট
+        document.getElementById('shiftSelect').addEventListener('change', onShiftChange);
+        // প্রাথমিক শিফট সেট
+        onShiftChange();
     });
 </script>
 </body>
