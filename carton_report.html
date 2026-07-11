@@ -575,7 +575,7 @@
 
         if (!dept || !prodIC) { alert('দয়া করে সব ফিল্ড পূরণ করুন!'); return; }
 
-        const perHr = dayHr > 0 ? target / dayHr : 0;
+        const perHr = dayHr > 0 ? output / dayHr : 0;  // ← পরিবর্তন: output/dayHr
         const utilPct = target > 0 ? (output / target) * 100 : 0;
 
         const updatedData = {
@@ -782,6 +782,8 @@
             const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-online' : 'badge-offline';
             const util = e.utilPct || 0;
             const utilClass = util >= 80 ? 'util-high' : (util >= 50 ? 'util-mid' : 'util-low');
+            // Per HR CTN = output / dayHr (if dayHr > 0)
+            const perHr = (e.dayHr > 0) ? (e.output || 0) / e.dayHr : 0;
             html += `<tr>
                 <td>${idx + 1}</td>
                 <td><span class="badge ${badgeClass}">${e.dept}</span></td>
@@ -791,7 +793,7 @@
                 <td>${e.dayHr}</td>
                 <td>${e.target}</td>
                 <td>${e.output}</td>
-                <td>${e.perHr}</td>
+                <td>${perHr.toFixed(2)}</td>
                 <td class="${utilClass}">${util.toFixed(1)}%</td>
                 <td>${e.entryDate}</td>
                 <td>${e.timestamp}</td>
@@ -972,7 +974,7 @@
     }
 
     // ================================================================
-    // 🆕 CTN Output আপডেট (খালি কী চেক সহ)
+    // 🆕 CTN Output আপডেট (খালি কী চেক সহ) - perHr আপডেট করা হয়
     // ================================================================
     async function updateTodayOutput(key, newOutput, dept, shift, date) {
         // যদি key খালি থাকে, তাহলে কোনো এন্ট্রি নেই—আপডেট করবেন না
@@ -987,18 +989,37 @@
             return;
         }
 
+        // প্রথমে এন্ট্রিটি খুঁজে বের করি
+        const entry = allEntries.find(e => e.key === key);
+        if (!entry) {
+            alert('এন্ট্রি পাওয়া যায়নি!');
+            return;
+        }
+
+        // নতুন perHr হিসাব (output / dayHr)
+        const dayHr = entry.dayHr || 0;
+        const newPerHr = dayHr > 0 ? newOutput / dayHr : 0;
+        // নতুন utilPct (output / target * 100)
+        const target = entry.target || 0;
+        const newUtilPct = target > 0 ? (newOutput / target) * 100 : 0;
+
         try {
+            // ফায়ারবেসে আপডেট
             const entryRef = ref(database, 'cartonEntries/' + key);
-            await update(entryRef, { output: newOutput });
+            await update(entryRef, { 
+                output: newOutput,
+                perHr: newPerHr,
+                utilPct: newUtilPct
+            });
 
             // গ্র্যান্ড টোটাল আপডেট
             updateTodayGrandTotal();
 
             const userName = getUserCredentials('CTN Output আপডেট');
             if (userName) {
-                await saveLog('edit', dept, `CTN Output আপডেট: ${dept} (শিফট: ${shift}) → ${newOutput}`, userName);
+                await saveLog('edit', dept, `CTN Output আপডেট: ${dept} (শিফট: ${shift}) → ${newOutput} (PerHr: ${newPerHr.toFixed(2)})`, userName);
             }
-            console.log(`✅ CTN Output আপডেট: ${dept} → ${newOutput}`);
+            console.log(`✅ CTN Output আপডেট: ${dept} → ${newOutput}, PerHr: ${newPerHr.toFixed(2)}`);
         } catch (err) {
             alert('❌ আপডেট করতে ব্যর্থ: ' + err.message);
         }
@@ -1314,7 +1335,7 @@
         // ডে শিফট
         if (data.day && Object.keys(data.day).length > 0) {
             const dayRows = [];
-            const dayHeaders = ['ডিপার্টমেন্ট','Prod IC','শিফট','IC Name','Day HR','Target (CTN)'];
+            const dayHeaders = ['ডিপার্টমেন্ট','Prod IC','শিফট','IC Name','Day HR','Target (CTN)','CTN Output'];
             dayRows.push(dayHeaders);
             let gHr=0,gTarget=0,gOutput=0;
             for (const [dept, vals] of Object.entries(data.day)) {
@@ -1514,7 +1535,11 @@
         if (filtered.length === 0) { alert('কোনো ডেটা নেই!'); return; }
         const headers = ['Department','Prod IC','Shift','IC Name','Day HR','Target','CTN Output','Per HR CTN','Utilisation %','Entry Date','Timestamp'];
         let csv = headers.join(',') + '\n';
-        filtered.forEach(e => { const row = [`"${e.dept}"`,`"${e.prodIC}"`,`"${e.shift}"`,`"${e.icName}"`, e.dayHr, e.target, e.output, e.perHr, e.utilPct?e.utilPct.toFixed(1):'0', `"${e.entryDate}"`,`"${e.timestamp}"`]; csv += row.join(',') + '\n'; });
+        filtered.forEach(e => {
+            const perHr = (e.dayHr > 0) ? (e.output || 0) / e.dayHr : 0;
+            const row = [`"${e.dept}"`,`"${e.prodIC}"`,`"${e.shift}"`,`"${e.icName}"`, e.dayHr, e.target, e.output, perHr.toFixed(2), e.utilPct?e.utilPct.toFixed(1):'0', `"${e.entryDate}"`,`"${e.timestamp}"`];
+            csv += row.join(',') + '\n';
+        });
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `Carton_Report_${filterDate||'All'}_${new Date().toISOString().slice(0,10)}.csv`; link.click(); URL.revokeObjectURL(link.href);
     };
