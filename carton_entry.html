@@ -175,6 +175,8 @@
         .modal-box .readonly-field {
             background: #f5f5f5; color: #333; padding: 10px 14px; border-radius: 8px; border: 1px solid #ddd;
         }
+        /* shift note */
+        .shift-note { font-size: 12px; color: #666; font-weight: 400; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -215,6 +217,7 @@
                     <option value="Day">ডে (Day)</option>
                     <option value="Night">নাইট (Night)</option>
                 </select>
+                <span class="shift-note">🕐 Day: 8am–8pm | Night: 8pm–8am</span>
             </div>
             <div class="form-group">
                 <label>🧑‍💼 IC Name (Data Entry)</label>
@@ -231,6 +234,7 @@
             <div class="form-group" id="ctnOutputGroup">
                 <label>📦 CTN Output <span id="outputRequired" style="color:#dc3545; font-weight:400;">(ডে শিফটে বাধ্যতামূলক)</span></label>
                 <input type="number" id="ctnOutput" placeholder="যেমন 400" step="1" min="0" oninput="calculatePerHrAndUtil()">
+                <span class="shift-note" id="outputNote">নাইট শিফটে Output ঐচ্ছিক, পরে আপডেট করতে পারবেন</span>
             </div>
             <div class="form-group">
                 <label>📊 Per HR CTN (অটো)</label>
@@ -397,16 +401,19 @@
     window.onShiftChange = function() {
         const shift = document.getElementById('shiftSelect').value;
         const outputLabel = document.getElementById('outputRequired');
+        const outputNote = document.getElementById('outputNote');
         const ctnInput = document.getElementById('ctnOutput');
         if (shift === 'Day') {
             outputLabel.style.display = 'inline';
             outputLabel.textContent = '(ডে শিফটে বাধ্যতামূলক)';
             outputLabel.style.color = '#dc3545';
+            outputNote.textContent = 'ডে শিফটে CTN Output অবশ্যই ০-এর বেশি হতে হবে';
             ctnInput.required = true;
         } else {
             outputLabel.style.display = 'inline';
             outputLabel.textContent = '(নাইট শিফটে ঐচ্ছিক)';
             outputLabel.style.color = '#28a745';
+            outputNote.textContent = 'নাইট শিফটের Output পরে আপডেট করতে পারবেন (শিফট শেষে)';
             ctnInput.required = false;
         }
     };
@@ -503,7 +510,7 @@
         if (shift === 'Night') {
             if (existingDayEntries.length === 0) {
                 const nameToUse = (icName !== '-') ? icName : prodIC;
-                const alertMsg = `মিস্টার ${nameToUse}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখে কোনো Day Shift এন্ট্রি নেই! আগে Day Shift-এর পেকেজিং এর Cartoon Output সহ এন্ট্রি সম্পূর্ণ করুন।`;
+                const alertMsg = `মিস্টার ${nameToUse}  ${dept} ডিপার্টমেন্টের ${entryDate} তারিখে কোনো Day Shift এন্ট্রি নেই! আগে Day Shift-এর CTN Output সহ এন্ট্রি সম্পূর্ণ করুন।`;
                 showAlert(`⚠️ ${alertMsg}`, 'warning');
                 speakAlert(alertMsg);
                 return;
@@ -574,7 +581,7 @@
         }
     };
 
-    // ===== Output Update (সবার জন্য খোলা) =====
+    // ===== Output Update (সবার জন্য খোলা) – এখন সকল শিফটের জন্য =====
     window.showOutputUpdateForm = function(key) {
         document.querySelectorAll('.output-update-form').forEach(el => el.classList.remove('show'));
         const form = document.getElementById(`edit-form-${key}`);
@@ -716,6 +723,7 @@
     window.autoSelectShift = function() {
         const now = new Date();
         const hours = now.getHours();
+        // 8am – 8pm = Day, বাকি Night
         const shift = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
         const shiftSelect = document.getElementById('shiftSelect');
         if (shiftSelect) {
@@ -725,7 +733,7 @@
         return shift;
     };
 
-    // ===== এন্ট্রি লগ রেন্ডার (Output দিন + Edit + Delete) =====
+    // ===== এন্ট্রি লগ রেন্ডার (Output দিন + Edit + Delete) – এখন সকল শিফটের জন্য =====
     function renderLog() {
         if (allEntries.length === 0) {
             entryLogContainer.innerHTML = `<div class="empty-msg">📭 কোনো এন্ট্রি নেই</div>`;
@@ -742,7 +750,8 @@
 
         allEntries.forEach((e, idx) => {
             const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-mc' : 'badge-pack';
-            const isDayWithZeroOutput = (e.shift === 'Day' && (e.output === 0 || !e.output));
+            // এখন সকল শিফটের জন্য Output দিন বাটন দেখাবে, যদি Output 0 হয়
+            const showOutputBtn = (e.output === 0 || !e.output);
             html += `<tr>
                 <td>${idx + 1}</td>
                 <td><span class="badge ${badgeClass}">${e.dept}</span></td>
@@ -759,7 +768,7 @@
                 <td>
                     <button class="btn btn-danger btn-sm" onclick="deleteEntry('${e.key}')">🗑️</button>
                     <button class="btn btn-sm btn-sm-primary" onclick="editEntry('${e.key}')" style="margin-left:4px;">✏️</button>
-                    ${isDayWithZeroOutput ? ` <button class="btn btn-sm btn-sm-warning" onclick="showOutputUpdateForm('${e.key}')" style="margin-left:4px;">📦 Output দিন</button>` : ''}
+                    ${showOutputBtn ? ` <button class="btn btn-sm btn-sm-warning" onclick="showOutputUpdateForm('${e.key}')" style="margin-left:4px;">📦 Output দিন</button>` : ''}
                 </td>
             </tr>
             <tr id="edit-row-${e.key}" style="display: none;">
@@ -783,6 +792,7 @@
         html += `</tbody></table></div>`;
         entryLogContainer.innerHTML = html;
 
+        // Output update form টগল
         document.querySelectorAll('.output-update-form').forEach(form => {
             const key = form.id.replace('edit-form-', '');
             const row = document.getElementById(`edit-row-${key}`);
