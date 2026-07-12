@@ -442,38 +442,24 @@
             };
 
             statusEl.textContent = '📤 ইমেইল পাঠানো হচ্ছে...';
+                statusEl.textContent = '📤 ইমেইল পাঠানো হচ্ছে...';
 
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                if (data && data.success === true) {
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // ← এখানে পরিবর্তন
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(() => {
+                    // no-cors এ রেসপন্স পাওয়া যায় না, তাই সরাসরি সফল ধরে নিচ্ছি
                     statusEl.className = 'email-status success';
-                    statusEl.textContent = `✅ ইমেইল সফলভাবে পাঠানো হয়েছে! (${displayDate})`;
-                } else {
-                    const errMsg = data && data.error ? data.error : 'অজানা ত্রুটি';
-                    throw new Error(errMsg);
-                }
-            })
-            .catch(err => {
-                console.error('Fetch error:', err);
-                statusEl.className = 'email-status error';
-                statusEl.textContent = `❌ ইমেইল পাঠাতে ব্যর্থ: ${err.message}`;
-            });
-
-        }).catch(err => {
-            console.error('html2canvas error:', err);
-            statusEl.className = 'email-status error';
-            statusEl.textContent = '❌ ইমেজ ক্যাপচার করতে ব্যর্থ: ' + err.message;
-        });
-    };
+                    statusEl.textContent = `✅ ইমেইল পাঠানোর অনুরোধ করা হয়েছে! (${displayDate})`;
+                })
+                .catch(err => {
+                    console.error('Fetch error:', err);
+                    statusEl.className = 'email-status error';
+                    statusEl.textContent = `❌ ইমেইল পাঠাতে ব্যর্থ: ${err.message}`;
+                });
 
     // ================================================================
     // রেন্ডার অল
