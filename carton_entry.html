@@ -343,9 +343,9 @@
                 <input type="number" id="cartonTarget" class="readonly" readonly value="0">
             </div>
             <div class="form-group" id="ctnOutputGroup">
-                <label>📦 CTN Output <span id="outputRequired" style="color:#dc3545; font-weight:400;">(ডে শিফটে বাধ্যতামূলক)</span></label>
+                <label>📦 CTN Output <span id="outputRequired" style="color:#28a745; font-weight:400;">(ঐচ্ছিক — শিফট শেষে আপডেট করুন)</span></label>
                 <input type="number" id="ctnOutput" placeholder="যেমন 400" step="1" min="0" oninput="calculatePerHrAndUtil()">
-                <span class="shift-note" id="outputNote">নাইট শিফটে Output ঐচ্ছিক, পরে আপডেট করতে পারবেন</span>
+                <span class="shift-note" id="outputNote">শিফট শেষে Output আপডেট করতে পারবেন</span>
             </div>
             <div class="form-group">
                 <label>📊 Per HR CTN (অটো)</label>
@@ -517,24 +517,18 @@
         document.getElementById('utilDisplay').innerHTML = `Utilisation: ${utilPct.toFixed(1)}%`;
     };
 
+    // ===== শিফট পরিবর্তনে CTN Output লেবেল পরিবর্তন (এখন দুই শিফটেই ঐচ্ছিক) =====
     window.onShiftChange = function() {
         const shift = document.getElementById('shiftSelect').value;
         const outputLabel = document.getElementById('outputRequired');
         const outputNote = document.getElementById('outputNote');
         const ctnInput = document.getElementById('ctnOutput');
-        if (shift === 'Day') {
-            outputLabel.style.display = 'inline';
-            outputLabel.textContent = '(ডে শিফটে বাধ্যতামূলক)';
-            outputLabel.style.color = '#dc3545';
-            outputNote.textContent = 'ডে শিফটে CTN Output অবশ্যই ০-এর বেশি হতে হবে';
-            ctnInput.required = true;
-        } else {
-            outputLabel.style.display = 'inline';
-            outputLabel.textContent = '(নাইট শিফটে ঐচ্ছিক)';
-            outputLabel.style.color = '#28a745';
-            outputNote.textContent = 'নাইট শিফটের Output পরে আপডেট করতে পারবেন (শিফট শেষে)';
-            ctnInput.required = false;
-        }
+        // এখন ডে ও নাইট—উভয় শিফটেই CTN Output ঐচ্ছিক
+        outputLabel.style.display = 'inline';
+        outputLabel.textContent = '(ঐচ্ছিক — শিফট শেষে আপডেট করুন)';
+        outputLabel.style.color = '#28a745';
+        outputNote.textContent = 'শিফট শেষে CTN Output আপডেট করতে পারবেন';
+        ctnInput.required = false;
     };
 
     // ===== ভয়েস =====
@@ -645,16 +639,18 @@
         if (!entryDate) { showAlert('দয়া করে একটি তারিখ নির্বাচন করুন!', 'error'); return; }
         if (!dept) { showAlert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!', 'error'); return; }
         if (dayHr <= 0) { showAlert('Day HR অবশ্যই ০-এর বেশি হতে হবে!', 'error'); return; }
-        if (shift === 'Day' && output <= 0) {
-            showAlert('⚠️ ডে শিফটে CTN Output অবশ্যই ০-এর বেশি হতে হবে!', 'error');
-            return;
-        }
+
+        // এখন ডে শিফটে CTN Output বাধ্যতামূলক নয় — তাই এই চেক সরানো হলো
 
         let nightOutputNote = '';
         if (shift === 'Night' && output > 0) {
             nightOutputNote = ` (নাইট শিফটে CTN Output: ${output} দেওয়া হয়েছে)`;
         } else if (shift === 'Night') {
             nightOutputNote = ' (নাইট শিফটে CTN Output দেওয়া হয়নি, পরে আপডেট করা যাবে)';
+        } else if (shift === 'Day' && output > 0) {
+            nightOutputNote = ` (ডে শিফটে CTN Output: ${output} দেওয়া হয়েছে)`;
+        } else if (shift === 'Day') {
+            nightOutputNote = ' (ডে শিফটে CTN Output দেওয়া হয়নি, পরে আপডেট করা যাবে)';
         }
 
         const existingDayEntries = allEntries.filter(e =>
