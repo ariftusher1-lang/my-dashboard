@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
+        /* আপনার আগের CSS ঠিক আছে – আমি সেটা রেখে দিচ্ছি */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
         .container { max-width: 1600px; margin: 0 auto; }
@@ -110,6 +111,31 @@
         .btn-email-image:hover {
             background: #1da851;
         }
+        .email-status {
+            font-size: 13px;
+            margin-top: 6px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: none;
+        }
+        .email-status.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .email-status.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .email-status.info {
+            display: block;
+            background: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
     </style>
 </head>
 <body>
@@ -203,6 +229,7 @@
         </h2>
         <div id="dailyContent" class="section-content">
             <div id="summaryTableContainer"><div class="empty-msg">গতকালের কোনো ডেটা নেই</div></div>
+            <div id="emailStatus" class="email-status"></div>
         </div>
     </div>
 
@@ -277,7 +304,7 @@
     // 🔥 Firebase Config
     // ================================================================
     import { initializeApp } from "firebase-app";
-    import { getDatabase, ref, onValue, remove, update } from "firebase-database";
+    import { getDatabase, ref, onValue, remove } from "firebase-database";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAHMH9uGLQfXsCppY1xwbY91wbMcOMUUE",
@@ -297,7 +324,6 @@
     // ================================================================
     // কনফিগারেশন
     // ================================================================
-    const PER_HR_CAPACITY = 40;
     const DEPARTMENTS = [
         { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur' },
         { id: 'mc2', name: 'RIP> DPL> Plastic-3', type: 'MC', prodIC: 'Mr. Shawon' },
@@ -315,23 +341,8 @@
     let allEntries = [];
 
     // ================================================================
-    // টগল ফাংশন
+    // ইউটিলিটি ফাংশন
     // ================================================================
-    window.toggleSection = function(contentId) {
-        const content = document.getElementById(contentId);
-        const btn = document.getElementById(contentId.replace('Content', 'Toggle'));
-        if (!content || !btn) return;
-        if (content.classList.contains('hidden')) {
-            content.classList.remove('hidden');
-            btn.textContent = '🙈 লুকান';
-            btn.classList.remove('hide');
-        } else {
-            content.classList.add('hidden');
-            btn.textContent = '👁️ দেখান';
-            btn.classList.add('hide');
-        }
-    };
-
     function getFilterDate() {
         return document.getElementById('filterDate').value;
     }
@@ -352,10 +363,119 @@
         return (hours >= 8 && hours < 20) ? 'Day' : 'Night';
     }
 
+    window.toggleSection = function(contentId) {
+        const content = document.getElementById(contentId);
+        const btn = document.getElementById(contentId.replace('Content', 'Toggle'));
+        if (!content || !btn) return;
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            btn.textContent = '🙈 লুকান';
+            btn.classList.remove('hide');
+        } else {
+            content.classList.add('hidden');
+            btn.textContent = '👁️ দেখান';
+            btn.classList.add('hide');
+        }
+    };
+
     // ================================================================
-    // রেন্ডার অল
+    // 📧 ইমেজ ক্যাপচার করে Apps Script-এ পাঠান (গ্রুপ ইমেইল)
     // ================================================================
-    window.renderAll = function() {
+    window.sendSummaryImageEmail = function() {
+        const statusEl = document.getElementById('emailStatus');
+        statusEl.className = 'email-status info';
+        statusEl.textContent = '⏳ ইমেজ ক্যাপচার করা হচ্ছে...';
+        statusEl.style.display = 'block';
+
+        const container = document.getElementById('summaryTableContainer');
+        if (!container || container.innerText.includes('গতকালের কোনো ডেটা নেই')) {
+            statusEl.className = 'email-status error';
+            statusEl.textContent = '❌ গতকালের কোনো ডেটা নেই!';
+            return;
+        }
+
+        const pwd = prompt('🔒 ইমেইল পাঠাতে পাসওয়ার্ড দিন:');
+        if (pwd === null) {
+            statusEl.style.display = 'none';
+            return;
+        }
+        if (pwd !== 'arif123') {
+            statusEl.className = 'email-status error';
+            statusEl.textContent = '❌ ভুল পাসওয়ার্ড!';
+            return;
+        }
+
+        statusEl.textContent = '📸 ইমেজ রেন্ডার করা হচ্ছে...';
+
+        // টেবিল এলিমেন্ট ক্যাপচার করব (SVG বাদ যাবে)
+        const tableElement = container.querySelector('table');
+        const elementToCapture = tableElement || container;
+
+        html2canvas(elementToCapture, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true,
+            allowTaint: true,
+            foreignObjectRendering: true
+        }).then(canvas => {
+            const dataUrl = canvas.toDataURL('image/png');
+            const base64 = dataUrl.split(',')[1];
+
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yStr = yesterday.toISOString().slice(0, 10);
+            const displayDate = formatDateDisplay(yStr);
+
+            const GROUP_EMAIL = "ariftusher1@gmail.com,taniatoma1030@gmail.com,mstselenaaktar7452@gmail.com,biplobchandra.me@gmail.com,dplexport12@prangroup.com,fahimsha444@gmail.com,mdsirajsae@gmail.com,ripdpl204@prangroup.com,ripdpl330@prangroup.com,ripdpl369@prangroup.com,ripdpl334@prangroup.com,ripdpl282@prangroup.com,ripdpl188@prangroup.com,ripdpl304@prangroup.com,ripdpl327@prangroup.com,ripdpl252@prangroup.com,ripdpl261@prangroup.com,ripdpl333@prangroup.com,ripdpl319@prangroup.com,ripdpl259@prangroup.com";
+
+            // ⚠️ আপনার নতুন ডেপ্লয় URL বসান
+            const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyj2FjfTttLH1dacQBigu35R2UbGdo_z3GYKosLI0DOGRKlgh6glmQRXhM1IMgi61A7/exec";
+
+            const payload = {
+                imageData: base64,
+                dateStr: yStr,
+                toEmail: GROUP_EMAIL,
+                subject: `📊 Daily Summary Report - ${displayDate}`
+            };
+
+            statusEl.textContent = '📤 ইমেইল পাঠানো হচ্ছে...';
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.success === true) {
+                    statusEl.className = 'email-status success';
+                    statusEl.textContent = `✅ ইমেইল সফলভাবে পাঠানো হয়েছে! (${displayDate})`;
+                } else {
+                    const errMsg = data && data.error ? data.error : 'অজানা ত্রুটি';
+                    throw new Error(errMsg);
+                }
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                statusEl.className = 'email-status error';
+                statusEl.textContent = `❌ ইমেইল পাঠাতে ব্যর্থ: ${err.message}`;
+            });
+
+        }).catch(err => {
+            console.error('html2canvas error:', err);
+            statusEl.className = 'email-status error';
+            statusEl.textContent = '❌ ইমেজ ক্যাপচার করতে ব্যর্থ: ' + err.message;
+        });
+    };
+
+    // ================================================================
+    // 📊 রেন্ডার ফাংশনসমূহ (সব)
+    // ================================================================
+
+    function renderAll() {
         const filterDate = getFilterDate();
         let filtered = allEntries;
         let dateDisplay = 'সব তারিখ';
@@ -403,7 +523,7 @@
         document.getElementById('dailyHeading').innerHTML = `📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (গতকাল — ${yDisplay})`;
         const yesterdayEntries = allEntries.filter(e => e.entryDate === yStr);
         if (yesterdayEntries.length === 0) {
-            document.getElementById('summaryTableContainer').innerHTML = `<div class="empty-msg">গতকালের (${yDisplay}) কোনো এন্ট্রি নেই</div>`;
+            document.getElementById('summaryTableContainer').innerHTML = `<div class="empty-msg">গতকালের (${yDisplay}) কোনো ডেটা নেই</div>`;
             window._dailyTableData = null;
         } else {
             renderDailySummary(yesterdayEntries);
@@ -414,11 +534,9 @@
         renderMonthlySummary();
         renderLog(filtered);
         document.getElementById('currentDate').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
-    };
+    }
 
-    // ================================================================
-    // আজকের শিফটের সারাংশ
-    // ================================================================
+    // Today Summary
     function renderTodaySummary(entries) {
         const container = document.getElementById('todaySummaryContainer');
         const deptMap = {};
@@ -478,9 +596,7 @@
         window._todayTableData = { deptMap, grandHr, grandTarget, grandOutput };
     }
 
-    // ================================================================
-    // শর্ট সামারি
-    // ================================================================
+    // Short Summary
     function renderShortSummary(entries) {
         const container = document.getElementById('shortSummaryContent');
         if (entries.length === 0) {
@@ -551,165 +667,7 @@
         container.innerHTML = html;
     }
 
-    // ================================================================
-    // ✨ ইমেজ ক্যাপচার করে Apps Script-এ পাঠানোর ফাংশন
-    // ================================================================
-    window.sendSummaryImageEmail = function() {
-        const container = document.getElementById('summaryTableContainer');
-        if (!container || container.innerText.includes('গতকালের কোনো ডেটা নেই')) {
-            alert('গতকালের কোনো ডেটা নেই!');
-            return;
-        }
-
-        const pwd = prompt('🔒 ইমেইল পাঠাতে পাসওয়ার্ড দিন:');
-        if (pwd === null) return;
-        if (pwd !== 'arif123') {
-            alert('❌ ভুল পাসওয়ার্ড!');
-            return;
-        }
-
-        html2canvas(container, {
-            scale: 2,
-            backgroundColor: '#ffffff',
-            logging: false,
-            useCORS: true
-        }).then(canvas => {
-            const dataUrl = canvas.toDataURL('image/png');
-            const base64 = dataUrl.split(',')[1];
-
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            const yStr = yesterday.toISOString().slice(0,10);
-            const displayDate = formatDateDisplay(yStr);
-
-            const GROUP_EMAIL = "ariftusher1@gmail.com,taniatoma1030@gmail.com,mstselenaaktar7452@gmail.com,biplobchandra.me@gmail.com,dplexport12@prangroup.com,fahimsha444@gmail.com,mdsirajsae@gmail.com,ripdpl204@prangroup.com,ripdpl330@prangroup.com,ripdpl369@prangroup.com,ripdpl334@prangroup.com,ripdpl282@prangroup.com,ripdpl188@prangroup.com,ripdpl304@prangroup.com,ripdpl327@prangroup.com,ripdpl252@prangroup.com,ripdpl261@prangroup.com,ripdpl333@prangroup.com,ripdpl319@prangroup.com,ripdpl259@prangroup.com";
-            const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyj2FjfTttLH1dacQBigu35R2UbGdo_z3GYKosLI0DOGRKlgh6glmQRXhM1IMgi61A7/exec";
-
-            const payload = {
-                imageData: base64,
-                dateStr: yStr,
-                toEmail: GROUP_EMAIL,
-                subject: `📊 Daily Summary Report - ${displayDate}`
-            };
-
-                statusEl.textContent = '📤 ইমেইল পাঠানো হচ্ছে...';
-
-                fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'cors', // ← পরিবর্তন: cors
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.success === true) {
-                        statusEl.className = 'email-status success';
-                        statusEl.textContent = `✅ ইমেইল সফলভাবে পাঠানো হয়েছে! (${displayDate})`;
-                    } else {
-                        const errMsg = data && data.error ? data.error : 'অজানা ত্রুটি';
-                        throw new Error(errMsg);
-                    }
-                })
-                .catch(err => {
-                    console.error('Fetch error:', err);
-                    statusEl.className = 'email-status error';
-                    statusEl.textContent = `❌ ইমেইল পাঠাতে ব্যর্থ: ${err.message}`;
-                });
-
-    // ================================================================
-    // ডেইলি সামারি – গতকালের (পূর্ণ + ইমেইল বাটন)
-    // ================================================================
-    function renderDailySummary(entries) {
-        const container = document.getElementById('summaryTableContainer');
-        const result = buildDepartmentSummary(entries);
-        const tableRows = result.tableRows;
-        if (!tableRows || tableRows.length === 0) {
-            container.innerHTML = `<div class="empty-msg">গতকালের কোনো ডেটা নেই</div>`;
-            window._dailyTableData = null;
-            return;
-        }
-
-        let dateStr = '';
-        if (entries.length > 0) {
-            const firstEntry = entries[0];
-            dateStr = firstEntry.entryDate ? formatDateDisplay(firstEntry.entryDate) : '';
-        }
-
-        let html = `<div class="table-wrap"><table>
-            <thead><tr>
-                <th rowspan="2">ডিপার্টমেন্ট</th>
-                <th rowspan="2">Prod IC</th>
-                <th rowspan="2">টাইপ</th>
-                <th colspan="6" style="background:#1a237e;">📊 ডে + নাইট (Total)</th>
-                <th colspan="5" style="background:#0d47a1;">☀️ ডে শিফট</th>
-                <th colspan="5" style="background:#1a237e;">🌙 নাইট শিফট</th>
-                <th rowspan="2">📧</th>
-            </tr>
-            <tr>
-                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th><th>পজিশন</th>
-                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
-                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
-            </tr></thead><tbody>`;
-
-        const deptDataMap = {};
-
-        tableRows.forEach(row => {
-            let rowClass = '';
-            if (row.isSummary) {
-                if (row.summaryType === 'online') rowClass = 'row-online-summary';
-                else if (row.summaryType === 'offline') rowClass = 'row-offline-summary';
-                else if (row.summaryType === 'grand') rowClass = 'row-grand-total';
-            }
-            const utilColor = row.totalUtil >= 80 ? 'util-high' : (row.totalUtil >= 50 ? 'util-mid' : 'util-low');
-            html += `<tr class="${rowClass}">`;
-            html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
-            html += `<td>${row.prodIC}</td>`;
-            html += `<td>${row.typeLabel ? `<span class="${row.badgeClass || ''}">${row.typeLabel}</span>` : '-'}</td>`;
-            html += `<td><strong>${row.totalHr}</strong></td>`;
-            html += `<td>${row.totalTarget}</td>`;
-            html += `<td><strong>${row.totalOutput}</strong></td>`;
-            html += `<td>${row.totalPerHr.toFixed(2)}</td>`;
-            html += `<td class="${utilColor}">${row.totalUtil.toFixed(1)}%</td>`;
-            html += `<td class="${row.posClass || ''}"><strong>${row.position}</strong></td>`;
-            html += `<td>${row.dayHr}</td>`;
-            html += `<td>${row.dayTarget}</td>`;
-            html += `<td>${row.dayOutput}</td>`;
-            html += `<td>${row.dayPerHr.toFixed(2)}</td>`;
-            html += `<td>${row.dayUtil.toFixed(1)}%</td>`;
-            html += `<td>${row.nightHr}</td>`;
-            html += `<td>${row.nightTarget}</td>`;
-            html += `<td>${row.nightOutput}</td>`;
-            html += `<td>${row.nightPerHr.toFixed(2)}</td>`;
-            html += `<td>${row.nightUtil.toFixed(1)}%</td>`;
-
-            if (!row.isSummary) {
-                deptDataMap[row.dept] = {
-                    shift: row.shift || 'Day',
-                    icName: row.icName || '',
-                    dayHr: row.dayHr || 0,
-                    target: row.totalTarget || 0,
-                    output: row.totalOutput || 0,
-                    util: row.totalUtil || 0
-                };
-                html += `<td><button class="btn-email-sm" onclick="sendDepartmentEmail('${row.dept}', window._deptDataMap['${row.dept}'], '${dateStr}')">📧</button></td>`;
-            } else {
-                html += `<td>-</td>`;
-            }
-
-            html += `</tr>`;
-        });
-
-        html += `</tbody></table></div>`;
-        window._deptDataMap = deptDataMap;
-
-        container.innerHTML = html;
-        window._dailyTableData = tableRows;
-    }
-
-    // ================================================================
     // buildDepartmentSummary (জেনেরিক)
-    // ================================================================
     function buildDepartmentSummary(entries) {
         const summary = {};
         DEPARTMENTS.forEach(d => {
@@ -875,9 +833,24 @@
         return { tableRows, grandTot, onlineTot, offlineTot, summary };
     }
 
-    // ================================================================
-    // ডেট রেঞ্জ সারাংশ
-    // ================================================================
+    // Daily Summary (গতকাল)
+    function renderDailySummary(entries) {
+        const container = document.getElementById('summaryTableContainer');
+        const result = buildDepartmentSummary(entries);
+        const tableRows = result.tableRows;
+        if (!tableRows || tableRows.length === 0) {
+            container.innerHTML = `<div class="empty-msg">গতকালের কোনো ডেটা নেই</div>`;
+            window._dailyTableData = null;
+            return;
+        }
+
+        // build HTML from tableRows (আমি পুরো টেবিল তৈরির ফাংশন buildSummaryTableHTML ডিফাইন করব নিচে)
+        let html = buildSummaryTableHTML(tableRows);
+        container.innerHTML = html;
+        window._dailyTableData = tableRows;
+    }
+
+    // Date Range Summary
     function renderDateRangeSummary(entries) {
         const container = document.getElementById('dateRangeSummaryContainer');
         const result = buildDepartmentSummary(entries);
@@ -892,9 +865,7 @@
         window._dateRangeTableData = tableRows;
     }
 
-    // ================================================================
     // buildSummaryTableHTML (পূর্ণ ১৯ কলাম)
-    // ================================================================
     function buildSummaryTableHTML(tableRows) {
         let html = `<div class="table-wrap"><table>
             <thead><tr>
@@ -946,9 +917,7 @@
         return html;
     }
 
-    // ================================================================
-    // ওভারঅল সারাংশ
-    // ================================================================
+    // Overall Summary
     function renderOverallSummary(allEntries) {
         const container = document.getElementById('overallSummaryContainer');
         if (allEntries.length === 0) {
@@ -1025,9 +994,7 @@
         container.innerHTML = html;
     }
 
-    // ================================================================
-    // মাস ফিল্টার পপুলেট
-    // ================================================================
+    // Month filter
     function populateMonthFilter(entries) {
         const select = document.getElementById('monthFilter');
         const months = new Set();
@@ -1065,9 +1032,7 @@
         });
     }
 
-    // ================================================================
-    // মাস অনুযায়ী সারাংশ
-    // ================================================================
+    // Monthly Summary
     window.renderMonthlySummary = function() {
         const container = document.getElementById('monthlySummaryContainer');
         const selectedMonth = document.getElementById('monthFilter').value;
@@ -1169,9 +1134,7 @@
         container.innerHTML = html;
     };
 
-    // ================================================================
-    // 📋 এন্ট্রি লগ
-    // ================================================================
+    // Entry Log
     function renderLog(entries) {
         const container = document.getElementById('entryLogContainer');
         if (entries.length === 0) {
@@ -1207,10 +1170,10 @@
     }
 
     // ================================================================
-    // 📥 সব ডাউনলোড ফাংশন (সম্পূর্ণ)
+    // 📥 ডাউনলোড ফাংশনসমূহ (শুধু এক্সেল, ইমেজ, পিডিএফ – শর্ট, ডেইলি, ডেট রেঞ্জ, ওভারঅল, মান্থলি, টুডে)
     // ================================================================
 
-    // ---- Short Summary ----
+    // Short Summary
     window.downloadShortExcel = function() {
         const data = window._shortData;
         if (!data) { alert('কোনো ডেটা নেই!'); return; }
@@ -1237,7 +1200,7 @@
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             })
-            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
     };
 
     window.downloadShortPDF = function() {
@@ -1253,10 +1216,10 @@
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(`Short_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
             })
-            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
     };
 
-    // ---- Daily Summary ----
+    // Daily Summary
     window.downloadDailyExcel = function() {
         const rows = window._dailyTableData;
         if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
@@ -1289,7 +1252,7 @@
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             })
-            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
     };
 
     window.downloadDailyPDF = function() {
@@ -1305,10 +1268,10 @@
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(`Daily_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
             })
-            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
     };
 
-    // ---- Date Range Summary ----
+    // Date Range
     window.downloadDateRangeExcel = function() {
         const rows = window._dateRangeTableData;
         if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
@@ -1341,7 +1304,7 @@
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             })
-            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
     };
 
     window.downloadDateRangePDF = function() {
@@ -1357,10 +1320,10 @@
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(`DateRange_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
             })
-            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
     };
 
-    // ---- Overall Summary ----
+    // Overall
     window.downloadOverallExcel = function() {
         const container = document.getElementById('overallReportContainer');
         const table = container.querySelector('table');
@@ -1381,7 +1344,7 @@
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             })
-            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
     };
 
     window.downloadOverallPDF = function() {
@@ -1397,10 +1360,10 @@
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(`Overall_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
             })
-            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
     };
 
-    // ---- Monthly Summary ----
+    // Monthly
     window.downloadMonthlyExcel = function() {
         const data = window._monthlyData;
         if (!data || data.deptList.length === 0) { alert('কোনো ডেটা নেই!'); return; }
@@ -1426,7 +1389,7 @@
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             })
-            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
     };
 
     window.downloadMonthlyPDF = function() {
@@ -1442,10 +1405,10 @@
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(`Monthly_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
             })
-            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
     };
 
-    // ---- Today Shift Summary ----
+    // Today Shift
     window.downloadTodayExcel = function() {
         const data = window._todayTableData;
         if (!data || !data.deptMap) { alert('কোনো ডেটা নেই!'); return; }
@@ -1473,7 +1436,7 @@
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             })
-            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
     };
 
     window.downloadTodayPDF = function() {
@@ -1489,7 +1452,7 @@
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(`Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
             })
-            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+            .catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
     };
 
     // ================================================================
