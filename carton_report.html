@@ -584,7 +584,7 @@
             const displayDate = formatDateDisplay(yStr);
 
             const GROUP_EMAIL = "ariftusher1@gmail.com,taniatoma1030@gmail.com,mstselenaaktar7452@gmail.com,biplobchandra.me@gmail.com,dplexport12@prangroup.com,fahimsha444@gmail.com,mdsirajsae@gmail.com,ripdpl204@prangroup.com,ripdpl330@prangroup.com,ripdpl369@prangroup.com,ripdpl334@prangroup.com,ripdpl282@prangroup.com,ripdpl188@prangroup.com,ripdpl304@prangroup.com,ripdpl327@prangroup.com,ripdpl252@prangroup.com,ripdpl261@prangroup.com,ripdpl333@prangroup.com,ripdpl319@prangroup.com,ripdpl259@prangroup.com";
-            const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxeSntgazM9YSLC4t1R-6INlb1XWu1Sh1D5OdU5He2uMzUU3sQsykfEoahbhTWW3_ay/exec";
+            const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyj2FjfTttLH1dacQBigu35R2UbGdo_z3GYKosLI0DOGRKlgh6glmQRXhM1IMgi61A7/exec";
 
             const payload = {
                 imageData: base64,
@@ -593,20 +593,29 @@
                 subject: `📊 Daily Summary Report - ${displayDate}`
             };
 
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).then(() => {
-                alert('✅ ইমেইল পাঠানোর অনুরোধ করা হয়েছে! অনুগ্রহ করে আপনার ইনবক্স চেক করুন (স্প্যাম ফোল্ডারেও দেখুন)।');
-            }).catch(err => {
-                alert('❌ ইমেইল পাঠাতে ব্যর্থ: ' + err.message);
-            });
-        }).catch(err => {
-            alert('❌ ইমেজ ক্যাপচার করতে ব্যর্থ: ' + err.message);
-        });
-    };
+                statusEl.textContent = '📤 ইমেইল পাঠানো হচ্ছে...';
+
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors', // ← পরিবর্তন: cors
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.success === true) {
+                        statusEl.className = 'email-status success';
+                        statusEl.textContent = `✅ ইমেইল সফলভাবে পাঠানো হয়েছে! (${displayDate})`;
+                    } else {
+                        const errMsg = data && data.error ? data.error : 'অজানা ত্রুটি';
+                        throw new Error(errMsg);
+                    }
+                })
+                .catch(err => {
+                    console.error('Fetch error:', err);
+                    statusEl.className = 'email-status error';
+                    statusEl.textContent = `❌ ইমেইল পাঠাতে ব্যর্থ: ${err.message}`;
+                });
 
     // ================================================================
     // ডেইলি সামারি – গতকালের (পূর্ণ + ইমেইল বাটন)
