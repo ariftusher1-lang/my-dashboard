@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>প্রতিদিনের এন্ট্রি ফর্ম</title>
-    <!-- html2canvas CDN (ইমেজ তৈরি করতে) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
     </script>
     <style>
@@ -56,6 +55,8 @@
             --summary-item-border: rgba(0,0,0,0.06);
             --head-photo-bg: #f8f9fa;
             --head-photo-border: #e0e0e0;
+            --head-photo-shadow: rgba(0,0,0,0.08);
+            --head-highlight-border: #ff9800;
         }
         body.dark-mode {
             --bg-color: #121212;
@@ -104,6 +105,8 @@
             --summary-item-border: rgba(255,255,255,0.06);
             --head-photo-bg: #2a2a2a;
             --head-photo-border: #444444;
+            --head-photo-shadow: rgba(0,0,0,0.3);
+            --head-highlight-border: #ffb74d;
         }
         * { box-sizing: border-box; }
         body {
@@ -115,7 +118,7 @@
             color: var(--text-color);
         }
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: auto;
             background: var(--container-bg);
             padding: 30px;
@@ -165,6 +168,68 @@
             .top-clock .clock-time .seconds { font-size: 20px; }
             .top-clock .clock-admin-info { font-size: 12px; }
         }
+
+        /* ===== হেড ছবি গ্রিড (সব ডিপার্টমেন্ট) ===== */
+        .head-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px 16px;
+            padding: 10px 12px;
+            background: var(--container-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin: 12px 0 8px 0;
+            box-shadow: 0 2px 6px var(--shadow-color);
+            transition: background 0.3s, border 0.3s;
+        }
+        .head-grid .head-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 10px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 2px solid transparent;
+            min-width: 70px;
+        }
+        .head-grid .head-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #1976d2;
+            background: #fff;
+            box-shadow: 0 2px 6px var(--head-photo-shadow);
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        .head-grid .head-item .head-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-top: 4px;
+            text-align: center;
+            line-height: 1.2;
+            max-width: 80px;
+        }
+        .head-grid .head-item.active {
+            border-color: var(--head-highlight-border);
+            background: var(--head-photo-bg);
+        }
+        .head-grid .head-item.active img {
+            border-color: var(--head-highlight-border);
+            box-shadow: 0 0 0 3px rgba(255,152,0,0.3);
+        }
+        .head-grid .head-item .no-photo-small {
+            font-size: 10px;
+            color: #999;
+        }
+        @media (max-width:600px) {
+            .head-grid .head-item img { width: 40px; height: 40px; }
+            .head-grid .head-item .head-label { font-size: 9px; max-width: 60px; }
+        }
+
         h2 {
             color: var(--header-color);
             border-bottom: 2px solid #007bff;
@@ -336,7 +401,7 @@
         .shift-badge.day { background: var(--shift-badge-day); }
         .shift-badge.night { background: var(--shift-badge-night); }
 
-        /* ===== হেড ছবি (Head Photo) ===== */
+        /* ===== হেড ছবি (আইসি নামের নিচে, ফর্মের জন্য) ===== */
         .head-photo-container {
             display: flex;
             align-items: center;
@@ -379,7 +444,7 @@
         body.dark-mode .head-photo-container .info .dept { color: #aaa; }
         body.dark-mode .head-photo-container .no-photo { color: #777; }
 
-        /* ===== সারাংশ কার্ড (সম্পূর্ণ) ===== */
+        /* ===== সারাংশ কার্ড ===== */
         #summaryCard {
             display: none;
             margin-top: 20px;
@@ -523,6 +588,11 @@
         </div>
     </div>
 
+    <!-- ===== হেড ছবি গ্রিড (সব ডিপার্টমেন্ট) ===== -->
+    <div class="head-grid" id="headGrid">
+        <!-- ডায়নামিকভাবে জাভাস্ক্রিপ্ট দিয়ে তৈরি হবে -->
+    </div>
+
     <h2>
         📋 প্রতিদিনের প্রতি শিফটের ম্যানপাওয়ার এলোকেশন এবং মেশিন রানিং মনিটরিং
         <span style="display:flex; align-items:center; gap:6px;">
@@ -559,7 +629,7 @@
                     <input type="text" id="icName" placeholder="ডিপার্টমেন্ট সিলেক্ট করলে অটো আসবে" required>
                 </div>
             </div>
-            <!-- 🔥 হেডের ছবি দেখানোর জায়গা (আইসি নামের নিচে) -->
+            <!-- হেডের ছবি (আইসি নামের নিচে) -->
             <div class="head-photo-container" id="headPhotoContainer" style="margin-top:12px;">
                 <img id="headPhoto" src="" alt="হেডের ছবি" style="display:none; width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid #1976d2;">
                 <div class="info">
@@ -654,18 +724,17 @@
 
         <button type="submit" id="submitBtn">💾 ডেটা সেভ করুন</button>
         
-        <!-- 🔴 ডুপ্লিকেট অ্যালার্ট (বড় লাল রঙে) -->
         <div id="duplicateAlert"></div>
     </form>
 
-    <!-- ===== সম্পূর্ণ সারাংশ কার্ড ===== -->
+    <!-- ===== সারাংশ কার্ড ===== -->
     <div id="summaryCard">
         <div class="card-title">
             <span>✅ সম্পূর্ণ এন্ট্রি সারাংশ</span>
             <button class="btn-download" onclick="downloadSummaryImage()">🖼️ Make Image & Save it</button>
         </div>
         <div class="card-body" id="summaryCardBody">
-            <!-- ডায়নামিকভাবে সব ডেটা এখানে ঢোকানো হবে -->
+            <!-- ডায়নামিক -->
         </div>
     </div>
 
@@ -686,12 +755,12 @@
 
 <script>
     // =============================================================
-    // 🔥 আপনার Google Apps Script URL (JSONP সাপোর্ট সহ)
+    // কনফিগারেশন
     // =============================================================
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCqPfQdTnXKHWTyvdZGowT4mbvPNXmDQAEFJbW2sK6-OacPyYsvdJ39QbM52ni3m1ZqA/exec';
 
     // =============================================================
-    // ✅ ডিপার্টমেন্ট ম্যাপিং (IC Name + Photo URL) – সব ছবি যোগ করা হয়েছে
+    // ডিপার্টমেন্ট ম্যাপিং (IC Name + Photo URL)
     // =============================================================
     const DEPARTMENT_IC_MAP = {
         'RIP> DPL> Plastic-3': { ic: 'Mr. Shawon', photo: 'https://i.ibb.co/sv1frrdn/Whats-App-Image-2026-07-12-at-9-24-06-AM.jpg' },
@@ -749,10 +818,76 @@
         'DPL-QA', 'RIP RFL Store'
     ];
 
+    let allEntries = [];
+
+    // =============================================================
+    // হেড গ্রিড তৈরি (সব ডিপার্টমেন্টের ছবি)
+    // =============================================================
+    function renderHeadGrid() {
+        const grid = document.getElementById('headGrid');
+        grid.innerHTML = '';
+        const deptKeys = Object.keys(DEPARTMENT_IC_MAP);
+        deptKeys.forEach(dept => {
+            const info = DEPARTMENT_IC_MAP[dept];
+            const item = document.createElement('div');
+            item.className = 'head-item';
+            item.dataset.dept = dept;
+            const img = document.createElement('img');
+            if (info.photo && info.photo.trim() !== '') {
+                img.src = info.photo;
+                img.alt = dept;
+                img.onerror = function() {
+                    this.style.display = 'none';
+                    const span = document.createElement('span');
+                    span.className = 'no-photo-small';
+                    span.textContent = '📷';
+                    item.appendChild(span);
+                };
+            } else {
+                img.style.display = 'none';
+                const span = document.createElement('span');
+                span.className = 'no-photo-small';
+                span.textContent = '📷';
+                item.appendChild(span);
+            }
+            item.appendChild(img);
+            const label = document.createElement('span');
+            label.className = 'head-label';
+            // সংক্ষিপ্ত নাম তৈরি (শুধু শেষ অংশ)
+            let shortName = dept.replace('RIP> DPL> ', '').replace('Plastic ', 'P-');
+            if (shortName.length > 12) shortName = shortName.substring(0, 10) + '…';
+            label.textContent = shortName;
+            item.appendChild(label);
+            // ক্লিক করলে ডিপার্টমেন্ট সিলেক্ট হবে
+            item.addEventListener('click', function() {
+                const sel = document.getElementById('department');
+                if (sel) {
+                    sel.value = dept;
+                    sel.dispatchEvent(new Event('change'));
+                }
+            });
+            grid.appendChild(item);
+        });
+    }
+
+    // =============================================================
+    // হাইলাইট আপডেট (ডিপার্টমেন্ট সিলেক্ট করলে)
+    // =============================================================
+    function updateHeadGridHighlight(deptName) {
+        const items = document.querySelectorAll('.head-item');
+        items.forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.dept === deptName) {
+                item.classList.add('active');
+            }
+        });
+    }
+
     // =============================================================
     // DOM রেডি
     // =============================================================
     document.addEventListener('DOMContentLoaded', function() {
+        renderHeadGrid();
         populateDepartments();
         const today = new Date().toISOString().slice(0, 10);
         document.getElementById('entryDate').value = today;
@@ -777,7 +912,7 @@
         updateTopClock();
         setInterval(updateTopClock, 1000);
 
-        // ডিপার্টমেন্ট পরিবর্তনে IC Name + ছবি আপডেট
+        // ডিপার্টমেন্ট পরিবর্তনে IC Name + ছবি আপডেট + হাইলাইট
         document.getElementById('department').addEventListener('change', function() {
             const dept = this.value;
             const icInput = document.getElementById('icName');
@@ -785,8 +920,10 @@
             const deptInfo = DEPARTMENT_IC_MAP[dept] || { ic: '', photo: '' };
             icInput.value = deptInfo.ic || '';
 
-            // ছবি আপডেট
+            // ছবি আপডেট (ফর্মের ভেতর)
             updateHeadPhoto(dept, deptInfo.photo, deptInfo.ic);
+            // হেড গ্রিড হাইলাইট
+            updateHeadGridHighlight(dept);
 
             if (dept in DEPARTMENT_MC) {
                 const mcVal = DEPARTMENT_MC[dept];
@@ -831,10 +968,13 @@
             document.getElementById('status').innerHTML = '';
             document.getElementById('summaryCard').style.display = 'none';
         });
+
+        // প্রথমে কোনো ডিপার্টমেন্ট সিলেক্ট না থাকলে হাইলাইট ক্লিয়ার
+        updateHeadGridHighlight('');
     });
 
     // =============================================================
-    // হেডের ছবি আপডেট ফাংশন
+    // হেডের ছবি আপডেট (ফর্মের ভেতর)
     // =============================================================
     function updateHeadPhoto(deptName, photoUrl, icName) {
         const img = document.getElementById('headPhoto');
@@ -1036,7 +1176,7 @@
     }
 
     // =============================================================
-    // JSONP কল (শুধু ডুপ্লিকেট চেকের জন্য)
+    // JSONP কল (ডুপ্লিকেট চেক)
     // =============================================================
     function fetchDataViaJSONP() {
         return new Promise((resolve, reject) => {
@@ -1060,7 +1200,7 @@
     }
 
     // =============================================================
-    // ডুপ্লিকেট চেক (শুধু DATE অংশ মিলানো)
+    // ডুপ্লিকেট চেক
     // =============================================================
     async function checkDuplicate(date, shift, dept) {
         const key = `${date}_${shift}_${dept}`;
@@ -1160,7 +1300,7 @@
     }
 
     // =============================================================
-    // ফর্ম রিসেট (শুধু ফিল্ড পরিষ্কার করবে, সারাংশ থাকবে)
+    // ফর্ম রিসেট
     // =============================================================
     function resetForm() {
         document.getElementById('entryDate').value = '';
@@ -1213,8 +1353,8 @@
         document.getElementById('duplicateAlert').innerHTML = '';
         document.getElementById('status').className = '';
         document.getElementById('status').innerHTML = '';
-        // ছবি রিসেট
         updateHeadPhoto('', '', '');
+        updateHeadGridHighlight('');
         autoSetShift();
         const today = new Date().toISOString().slice(0, 10);
         document.getElementById('entryDate').value = today;
@@ -1254,7 +1394,6 @@
             return;
         }
 
-        // ডুপ্লিকেট চেক
         const checkResult = await checkDuplicate(date, shift, dept);
         overlay.classList.remove('active');
 
@@ -1267,7 +1406,6 @@
         }
 
         if (checkResult.duplicate) {
-            // 🔴 বড় লাল রঙের মেসেজ দেখানো হবে
             duplicateAlert.style.display = 'block';
             duplicateAlert.innerHTML = `
                 <div style="background: #ffebee; border-left: 6px solid #b71c1c; padding: 20px 22px; border-radius: 10px; box-shadow: 0 4px 12px rgba(183, 28, 28, 0.15);">
@@ -1286,7 +1424,6 @@
             return;
         }
 
-        // --- সেভ ---
         status.innerHTML = '⏳ সেভ হচ্ছে...';
         const getVal = (id) => document.getElementById(id).value;
         const getNum = (id) => parseInt(document.getElementById(id).value) || 0;
@@ -1359,7 +1496,6 @@
             const key = `${date}_${shift}_${dept}`;
             localStorage.setItem(key, 'submitted');
 
-            // ---- সারাংশ কার্ড পপুলেট করা ----
             populateSummaryCard(payload, date, shift, dept, icName, pctRunning, totalHRValue);
 
             status.className = 'success';
@@ -1380,11 +1516,10 @@
     });
 
     // =============================================================
-    // সারাংশ কার্ড পপুলেট (সব ডেটা)
+    // সারাংশ কার্ড পপুলেট
     // =============================================================
     function populateSummaryCard(payload, date, shift, dept, icName, pctRunning, totalHR) {
         const body = document.getElementById('summaryCardBody');
-        // কনভার্ট তারিখ ফরম্যাট
         const dateObj = new Date(date + 'T00:00:00');
         const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
         const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ( ' + dayName + ' )';
@@ -1405,7 +1540,6 @@
             { label: '⛔ MC Stop (Manpower)', value: payload.mpShort || 0 },
         ];
 
-        // কারণসমূহ (স্টপের কারণ)
         const causeItems = [
             { label: 'Mold Problem', value: payload.moldProblem || 0 },
             { label: 'Mold Change', value: payload.moldChange || 0 },
@@ -1418,14 +1552,12 @@
             { label: 'Accessories Short', value: payload.accessoriesShort || 0 },
         ];
 
-        // এইচআর
         const hrItems = [
             { label: 'Total HR', value: payload.totalHR || 0 },
             { label: 'Leave Employee', value: payload.leaveEmployee || 0 },
             { label: 'Absent Employee', value: payload.absentEmployee || 0 },
         ];
 
-        // মেশিন টাইপ
         const machineTypeItems = [
             { label: 'Export MC', value: payload.exportMC || 0 },
             { label: 'Domestic MC', value: payload.domesticMC || 0 },
@@ -1433,7 +1565,6 @@
             { label: 'Double MC', value: payload.doubleMC || 0 },
         ];
 
-        // অপারেটর ও স্টাফ
         const operatorItems = [
             { label: 'Prod IC', value: payload.prodIC || 0 },
             { label: 'SIC', value: payload.sic || 0 },
@@ -1459,30 +1590,25 @@
 
         let html = '';
 
-        // প্রধান আইটেম
         items.forEach(item => {
             html += `<div class="card-item"><span class="card-label">${item.label}</span><span class="card-value highlight">${item.value}</span></div>`;
         });
 
-        // কারণসমূহ – সেকশন
         html += `<div class="summary-section-title">⛔ স্টপের কারণ (Cause of Stop - QTY)</div>`;
         causeItems.forEach(item => {
             html += `<div class="card-item"><span class="card-label">${item.label}</span><span class="card-value">${item.value}</span></div>`;
         });
 
-        // এইচআর
         html += `<div class="summary-section-title">👥 এইচআর ও ম্যানপাওয়ার</div>`;
         hrItems.forEach(item => {
             html += `<div class="card-item"><span class="card-label">${item.label}</span><span class="card-value">${item.value}</span></div>`;
         });
 
-        // মেশিন টাইপ
         html += `<div class="summary-section-title">🏭 মেশিন টাইপ</div>`;
         machineTypeItems.forEach(item => {
             html += `<div class="card-item"><span class="card-label">${item.label}</span><span class="card-value">${item.value}</span></div>`;
         });
 
-        // অপারেটর
         html += `<div class="summary-section-title">👨‍🔧 অপারেটর ও স্টাফ</div>`;
         operatorItems.forEach(item => {
             html += `<div class="card-item"><span class="card-label">${item.label}</span><span class="card-value">${item.value}</span></div>`;
@@ -1493,7 +1619,7 @@
     }
 
     // =============================================================
-    // 📸 ইমেজ ডাউনলোড (html2canvas)
+    // 📸 ইমেজ ডাউনলোড
     // =============================================================
     function downloadSummaryImage() {
         const card = document.getElementById('summaryCard');
@@ -1502,7 +1628,6 @@
             return;
         }
 
-        // কার্ডের মধ্যে থাকা বাটন লুকিয়ে ফেলি (যাতে ইমেজে না আসে)
         const btn = card.querySelector('.btn-download');
         let btnDisplay = '';
         if (btn) {
@@ -1517,7 +1642,6 @@
             allowTaint: true,
             useCORS: true
         }).then(canvas => {
-            // বাটন আবার দেখাই
             if (btn) btn.style.display = btnDisplay || 'inline-block';
             const link = document.createElement('a');
             link.download = `Entry_Summary_${new Date().toISOString().slice(0,10)}.png`;
