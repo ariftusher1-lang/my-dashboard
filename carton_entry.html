@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>📦 কার্টন এন্ট্রি (Firebase Live)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
@@ -175,8 +176,119 @@
         .modal-box .readonly-field {
             background: #f5f5f5; color: #333; padding: 10px 14px; border-radius: 8px; border: 1px solid #ddd;
         }
-        /* shift note */
         .shift-note { font-size: 12px; color: #666; font-weight: 400; margin-top: 4px; }
+
+        /* ===== SUMMARY MODAL ===== */
+        .summary-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .summary-modal-overlay.show { display: flex; }
+        .summary-modal-box {
+            background: white;
+            max-width: 600px;
+            width: 100%;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalIn 0.3s ease;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        .summary-modal-box h2 {
+            color: #0d47a1;
+            border-bottom: 3px solid #1976d2;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+        }
+        .summary-item .label { font-weight: 600; color: #333; }
+        .summary-item .value { color: #0d47a1; font-weight: 700; }
+        .summary-item .value.highlight { color: #28a745; }
+        .summary-item .value.warning { color: #e65100; }
+        .summary-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .summary-actions .btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .btn-download-image { background: #6c757d; color: white; }
+        .btn-download-image:hover { background: #5a6268; }
+        .btn-close-summary { background: #dc3545; color: white; }
+        .btn-close-summary:hover { background: #bd2130; }
+
+        /* সারাংশ প্রিন্ট/ইমেজ স্টাইল */
+        #summaryContent {
+            padding: 10px 0;
+        }
+        #summaryContent .brand {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #0d47a1;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+        #summaryContent .brand span { color: #28a745; }
+        #summaryContent .sub-title {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+        }
+        .summary-grid .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dashed #ddd;
+            font-size: 14px;
+        }
+        .summary-grid .item .label { font-weight: 500; color: #555; }
+        .summary-grid .item .value { font-weight: 700; color: #0d47a1; }
+        .summary-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        @media (max-width: 480px) {
+            .summary-grid { grid-template-columns: 1fr; }
+            .summary-modal-box { padding: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -187,7 +299,6 @@
         <span>📅 <span id="currentDate"></span></span>
     </div>
 
-    <!-- বাংলা বার্তা -->
     <div class="live-message">
         📢 আপনার তথ্য RFL গ্রুপের সবাই লাইভ দেখতে পারবেন
     </div>
@@ -247,13 +358,11 @@
         </div>
     </div>
 
-    <!-- অ্যাকশন বার — সব ডেটা মুছুন (পাসওয়ার্ড সুরক্ষিত) -->
     <div class="action-bar">
         <button class="btn btn-warning" onclick="exportCSV()">⬇️ CSV ডাউনলোড</button>
         <button class="btn btn-danger-lg" onclick="clearAll()">🗑️ সব ডেটা মুছুন</button>
     </div>
 
-    <!-- এন্ট্রি লগ -->
     <div class="card">
         <h2>📋 এন্ট্রি লগ (লাইভ)</h2>
         <div id="entryLogContainer"><div class="empty-msg">লোড হচ্ছে...</div></div>
@@ -267,7 +376,6 @@
         <div class="clock-date" id="clockDate">শনিবার, ০১ জানুয়ারি ২০২৬</div>
     </div>
 
-    <!-- নেভিগেশন লিংক — এখানে রিপোর্ট লিংক যুক্ত -->
     <div class="nav-links">
         <a href="carton_report.html" class="report-link">📊 রিপোর্ট দেখুন</a>
     </div>
@@ -309,6 +417,20 @@
     </div>
 </div>
 
+<!-- ===== SUMMARY MODAL ===== -->
+<div class="summary-modal-overlay" id="summaryModal">
+    <div class="summary-modal-box">
+        <h2>📋 এন্ট্রি সারাংশ</h2>
+        <div id="summaryContent">
+            <!-- ডায়নামিক কন্টেন্ট এখানে আসবে -->
+        </div>
+        <div class="summary-actions">
+            <button class="btn btn-download-image" onclick="downloadSummaryImage()">🖼️ ইমেজ ডাউনলোড</button>
+            <button class="btn btn-close-summary" onclick="closeSummaryModal()">✖️ বন্ধ করুন</button>
+        </div>
+    </div>
+</div>
+
 <!-- Firebase Import Map & Script -->
 <script type="importmap">
     {
@@ -338,7 +460,6 @@
     const database = getDatabase(app);
     const cartonRef = ref(database, 'cartonEntries');
 
-    // ===== কনফিগারেশন =====
     const PER_HR_CAPACITY = 20;
     const DEPARTMENTS = [
         { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur' },
@@ -375,8 +496,7 @@
 
     window.updateProdIC = function() {
         const dept = document.getElementById('deptSelect').value;
-        const icInput = document.getElementById('prodIC');
-        icInput.value = (dept && DEPT_NAME_TO_IC[dept]) ? DEPT_NAME_TO_IC[dept] : '';
+        document.getElementById('prodIC').value = (dept && DEPT_NAME_TO_IC[dept]) ? DEPT_NAME_TO_IC[dept] : '';
         calculateTargetAndUtil();
         calculatePerHrAndUtil();
     };
@@ -397,7 +517,6 @@
         document.getElementById('utilDisplay').innerHTML = `Utilisation: ${utilPct.toFixed(1)}%`;
     };
 
-    // ===== শিফট পরিবর্তনে CTN Output লেবেল পরিবর্তন =====
     window.onShiftChange = function() {
         const shift = document.getElementById('shiftSelect').value;
         const outputLabel = document.getElementById('outputRequired');
@@ -456,7 +575,58 @@
         speakText(msg, 1.2, 0.85);
     }
 
-    // ===== Firebase এন্ট্রি যোগ (নাইট শিফটে CTN Output ঐচ্ছিক) =====
+    // ===== সারাংশ মডাল শো =====
+    function showSummary(entry) {
+        const container = document.getElementById('summaryContent');
+        const utilColor = entry.utilPct >= 80 ? 'highlight' : (entry.utilPct >= 50 ? 'warning' : '');
+        container.innerHTML = `
+            <div class="brand">📦 <span>PRAN RFL</span> · কার্টন এন্ট্রি</div>
+            <div class="sub-title">এন্ট্রি সফলভাবে সংরক্ষিত হয়েছে ✅</div>
+            <div class="summary-grid">
+                <div class="item"><span class="label">📅 তারিখ</span><span class="value">${entry.entryDate}</span></div>
+                <div class="item"><span class="label">🕒 শিফট</span><span class="value">${entry.shift}</span></div>
+                <div class="item"><span class="label">🏢 ডিপার্টমেন্ট</span><span class="value">${entry.dept}</span></div>
+                <div class="item"><span class="label">👨‍💼 Prod IC</span><span class="value">${entry.prodIC}</span></div>
+                <div class="item"><span class="label">🧑‍💼 IC Name</span><span class="value">${entry.icName}</span></div>
+                <div class="item"><span class="label">⏳ Day HR</span><span class="value">${entry.dayHr}</span></div>
+                <div class="item"><span class="label">🎯 Target (CTN)</span><span class="value">${entry.target}</span></div>
+                <div class="item"><span class="label">📦 CTN Output</span><span class="value">${entry.output}</span></div>
+                <div class="item"><span class="label">📊 Per HR CTN</span><span class="value">${entry.perHr ? entry.perHr.toFixed(2) : '0.00'}</span></div>
+                <div class="item"><span class="label">📈 Utilisation</span><span class="value ${utilColor}">${entry.utilPct ? entry.utilPct.toFixed(1) : '0.0'}%</span></div>
+            </div>
+            <div class="summary-footer">🕐 সংরক্ষণের সময়: ${entry.timestamp || new Date().toLocaleString('bn-BD')}</div>
+        `;
+        document.getElementById('summaryModal').classList.add('show');
+    }
+
+    window.closeSummaryModal = function() {
+        document.getElementById('summaryModal').classList.remove('show');
+    };
+
+    // ===== ইমেজ ডাউনলোড =====
+    window.downloadSummaryImage = function() {
+        const container = document.getElementById('summaryContent');
+        if (!container) { alert('সারাংশ পাওয়া যায়নি!'); return; }
+        html2canvas(container, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true,
+            width: container.scrollWidth,
+            height: container.scrollHeight,
+            windowWidth: container.scrollWidth,
+            windowHeight: container.scrollHeight
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Entry_Summary_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(err => {
+            alert('❌ ইমেজ তৈরি করতে ব্যর্থ: ' + err.message);
+        });
+    };
+
+    // ===== এন্ট্রি যোগ =====
     window.addEntry = async function() {
         alertBox.classList.remove('show');
         alertBox.className = 'alert-box';
@@ -472,18 +642,14 @@
         const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
         const entryDate = document.getElementById('entryDate').value;
 
-        // --- ভ্যালিডেশন ---
         if (!entryDate) { showAlert('দয়া করে একটি তারিখ নির্বাচন করুন!', 'error'); return; }
         if (!dept) { showAlert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!', 'error'); return; }
         if (dayHr <= 0) { showAlert('Day HR অবশ্যই ০-এর বেশি হতে হবে!', 'error'); return; }
-
-        // ডে শিফটে CTN Output বাধ্যতামূলক
         if (shift === 'Day' && output <= 0) {
             showAlert('⚠️ ডে শিফটে CTN Output অবশ্যই ০-এর বেশি হতে হবে!', 'error');
             return;
         }
 
-        // নাইট শিফটে CTN Output দেওয়া থাকলে সেটা নোট করুন (ঐচ্ছিক)
         let nightOutputNote = '';
         if (shift === 'Night' && output > 0) {
             nightOutputNote = ` (নাইট শিফটে CTN Output: ${output} দেওয়া হয়েছে)`;
@@ -491,7 +657,6 @@
             nightOutputNote = ' (নাইট শিফটে CTN Output দেওয়া হয়নি, পরে আপডেট করা যাবে)';
         }
 
-        // --- ডে শিফট ডুপ্লিকেট চেক ---
         const existingDayEntries = allEntries.filter(e =>
             e.entryDate === entryDate && e.shift === 'Day' && e.dept === dept
         );
@@ -506,7 +671,6 @@
             }
         }
 
-        // --- নাইট শিফট চেক: ডে শিফট না থাকলে সতর্কতা ---
         if (shift === 'Night') {
             if (existingDayEntries.length === 0) {
                 const nameToUse = (icName !== '-') ? icName : prodIC;
@@ -525,7 +689,6 @@
             }
         }
 
-        // --- নতুন এন্ট্রি তৈরি ---
         const newEntry = {
             dept, prodIC, shift, icName, dayHr, target, output, perHr, utilPct, entryDate,
             timestamp: new Date().toLocaleString('bn-BD')
@@ -533,6 +696,7 @@
 
         try {
             await push(cartonRef, newEntry);
+            
             // ফর্ম রিসেট
             document.getElementById('deptSelect').value = '';
             document.getElementById('prodIC').value = '';
@@ -550,6 +714,9 @@
             showAlert(`✅ ${shift} Shift-এর এন্ট্রি সফলভাবে যোগ হয়েছে!${nightOutputNote}`, 'success');
             speakSuccess();
 
+            // 🔥 সারাংশ মডাল দেখান
+            showSummary(newEntry);
+
             setTimeout(() => {
                 alertBox.classList.remove('show');
             }, 6000);
@@ -558,14 +725,13 @@
         }
     };
 
-    // ===== অ্যালার্ট শো ফাংশন =====
     function showAlert(message, type = 'warning') {
         alertBox.className = 'alert-box show ' + type;
         alertBox.innerText = message;
         alertBox.style.display = 'block';
     }
 
-    // ===== ডিলিট (পাসওয়ার্ড সুরক্ষিত) =====
+    // ===== ডিলিট =====
     window.deleteEntry = async function(key) {
         const password = prompt('🔒 ডিলিট করতে পাসওয়ার্ড দিন:');
         if (password === null) return;
@@ -581,7 +747,7 @@
         }
     };
 
-    // ===== Output Update (সবার জন্য খোলা) – এখন সকল শিফটের জন্য =====
+    // ===== Output Update =====
     window.showOutputUpdateForm = function(key) {
         document.querySelectorAll('.output-update-form').forEach(el => el.classList.remove('show'));
         const form = document.getElementById(`edit-form-${key}`);
@@ -617,7 +783,7 @@
         }
     };
 
-    // ===== এডিট (পাসওয়ার্ড সুরক্ষিত) =====
+    // ===== এডিট =====
     let currentEditKey = null;
 
     window.editEntry = function(key) {
@@ -682,7 +848,7 @@
         }
     };
 
-    // ===== সব ডেটা মুছুন (পাসওয়ার্ড) =====
+    // ===== সব ডেটা মুছুন =====
     window.clearAll = async function() {
         const password = prompt('🔒 সব ডেটা মুছতে পাসওয়ার্ড দিন:');
         if (password === null) return;
@@ -723,7 +889,6 @@
     window.autoSelectShift = function() {
         const now = new Date();
         const hours = now.getHours();
-        // 8am – 8pm = Day, বাকি Night
         const shift = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
         const shiftSelect = document.getElementById('shiftSelect');
         if (shiftSelect) {
@@ -733,7 +898,7 @@
         return shift;
     };
 
-    // ===== এন্ট্রি লগ রেন্ডার (Output দিন + Edit + Delete) – এখন সকল শিফটের জন্য =====
+    // ===== রেন্ডার লগ =====
     function renderLog() {
         if (allEntries.length === 0) {
             entryLogContainer.innerHTML = `<div class="empty-msg">📭 কোনো এন্ট্রি নেই</div>`;
@@ -750,7 +915,6 @@
 
         allEntries.forEach((e, idx) => {
             const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-mc' : 'badge-pack';
-            // এখন সকল শিফটের জন্য Output দিন বাটন দেখাবে, যদি Output 0 হয়
             const showOutputBtn = (e.output === 0 || !e.output);
             html += `<tr>
                 <td>${idx + 1}</td>
@@ -792,7 +956,6 @@
         html += `</tbody></table></div>`;
         entryLogContainer.innerHTML = html;
 
-        // Output update form টগল
         document.querySelectorAll('.output-update-form').forEach(form => {
             const key = form.id.replace('edit-form-', '');
             const row = document.getElementById(`edit-row-${key}`);
@@ -814,7 +977,7 @@
         });
     }
 
-    // ===== Firebase লাইভ লিসেনার =====
+    // ===== লাইভ লিসেনার =====
     onValue(cartonRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -853,9 +1016,7 @@
                 window.speechSynthesis.getVoices();
             };
         }
-        // শিফট পরিবর্তন ইভেন্ট
         document.getElementById('shiftSelect').addEventListener('change', onShiftChange);
-        // প্রাথমিক শিফট সেট
         onShiftChange();
     });
 </script>
