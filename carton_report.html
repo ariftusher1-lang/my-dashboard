@@ -3,563 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📊 কার্টন রিপোর্ট (অ্যাডমিন)</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js">
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-    </script>
+    <title>📊 কার্টন রিপোর্ট (লাইভ)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: #f0f2f5;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #0d47a1, #1976d2); color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+        .header h1 { font-size: 22px; }
+        .live-badge { background: #28a745 !important; color: white; padding: 4px 14px; border-radius: 50px; font-size: 14px; font-weight: 700; animation: pulse 1.5s infinite; display: inline-block; margin-left: 10px; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .live-message { background: #e8f5e9; color: #1b5e20; padding: 10px 18px; border-radius: 8px; font-size: 15px; font-weight: 600; text-align: center; margin-bottom: 20px; border-left: 5px solid #28a745; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .header .right-group { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .header .right-group a { color: white; text-decoration: none; background: #28a745; padding: 6px 15px; border-radius: 6px; font-weight: 600; }
+        .header .right-group a:hover { background: #1e7e34; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
+        .card h2 { color: #0d47a1; margin-bottom: 15px; border-bottom: 2px solid #1976d2; padding-bottom: 8px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .card h2 .btn-group-small { display: flex; gap: 8px; }
+        .btn-group-small .btn-sm { padding: 4px 12px; font-size: 12px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
+        .btn-excel-sm { background: #1e7e34; color: white; }
+        .btn-excel-sm:hover { background: #136b2a; }
+        .btn-image-sm { background: #6c757d; color: white; }
+        .btn-image-sm:hover { background: #5a6268; }
+        .btn-pdf-sm { background: #d32f2f; color: white; }
+        .btn-pdf-sm:hover { background: #b71c1c; }
+        .btn { padding: 8px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-warning:hover { background: #e0a800; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #bd2130; }
+        .btn-primary { background: #1976d2; color: white; }
+        .btn-primary:hover { background: #0d47a1; }
+        .filter-bar { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        .filter-bar label { font-weight: 600; color: #333; }
+        .filter-bar input[type="date"] { padding: 6px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .filter-bar select { padding: 6px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #0d47a1; color: white; padding: 10px 6px; border-bottom: 2px solid #1565c0; white-space: nowrap; text-align: center; font-size: 12px; }
+        td { padding: 8px 5px; text-align: center; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f5f9ff; }
+        .total-row { background: #d4e4f7 !important; font-weight: 700; }
+        .total-row td { border-top: 2px solid #1976d2; }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-online { background: #d4edda; color: #155724; }
+        .badge-offline { background: #f8d7da; color: #721c24; }
+        .empty-msg { text-align: center; color: #888; padding: 40px 20px; font-style: italic; font-size: 16px; }
+        .dept-name { font-weight: 600; color: #1a3a5c; text-align: left; padding-left: 10px; }
+        .util-high { color: #1b5e20; font-weight: 700; }
+        .util-mid { color: #e65100; font-weight: 700; }
+        .util-low { color: #b71c1c; font-weight: 700; }
+        .pos-1 { background: #ffd700 !important; color: #333; font-weight: 700; border-radius: 4px; }
+        .pos-2 { background: #c0c0c0 !important; color: #333; font-weight: 700; border-radius: 4px; }
+        .pos-3 { background: #cd7f32 !important; color: #fff; font-weight: 700; border-radius: 4px; }
+        .action-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        .row-online-summary td { background: #cce5ff !important; color: #004085; font-weight: 700; border-top: 2px solid #007bff; }
+        .row-offline-summary td { background: #fff3cd !important; color: #856404; font-weight: 700; border-top: 2px solid #ffc107; }
+        .row-grand-total td { background: #d4edda !important; color: #155724; font-weight: 700; border-top: 3px solid #28a745; }
+        .short-online td { background: #e3f2fd !important; color: #0d47a1; }
+        .short-offline td { background: #fff8e1 !important; color: #e65100; }
+        .short-overall td { background: #e8f5e9 !important; color: #1b5e20; }
+        .toggle-btn { background: #6c757d; color: white; border: none; border-radius: 4px; padding: 4px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; margin-left: 10px; }
+        .toggle-btn:hover { background: #5a6268; }
+        .toggle-btn.hide { background: #28a745; }
+        .toggle-btn.hide:hover { background: #1e7e34; }
+        .section-content { transition: all 0.3s ease; }
+        .section-content.hidden { display: none; }
+        .toggle-wrapper { display: flex; align-items: center; gap: 10px; }
+        .nav-links { display: flex; gap: 20px; margin-top: 20px; justify-content: center; }
+        .nav-links a { color: #1976d2; text-decoration: none; font-weight: 600; }
+        .nav-links a:hover { text-decoration: underline; }
+        .today-summary-table th { background: #1a237e; }
+        .today-summary-table .total-row td { background: #d4e4f7 !important; }
+        .pending-output { color: #d32f2f !important; font-weight: 700; }
+        .pending-output .note { font-weight: 400; font-size: 11px; }
 
-        /* KPI Cards */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .kpi-card {
-            background: white;
-            padding: 18px 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            text-align: center;
-            border-left: 5px solid #1976d2;
-        }
-        .kpi-card .label {
-            font-size: 14px;
-            color: #666;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .kpi-card .value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #0d47a1;
-            margin-top: 6px;
-        }
-        .kpi-card .sub {
-            font-size: 13px;
-            color: #888;
-            margin-top: 4px;
-        }
-        .kpi-card.online {
-            border-left-color: #28a745;
-        }
-        .kpi-card.offline {
-            border-left-color: #ffc107;
-        }
-        .kpi-card.total {
-            border-left-color: #0d47a1;
-        }
-        .kpi-card.util {
-            border-left-color: #dc3545;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #0d47a1, #1976d2);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-        .header h1 {
-            font-size: 22px;
-        }
-        .live-badge {
-            background: #28a745 !important;
-            color: white;
-            padding: 4px 14px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 700;
-            animation: pulse 1.5s infinite;
-            display: inline-block;
-            margin-left: 10px;
-        }
-        @keyframes pulse {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.7;
-            }
-        }
-        .live-message {
-            background: #e8f5e9;
-            color: #1b5e20;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 20px;
-            border-left: 5px solid #28a745;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .header .right-group {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .header .right-group a {
-            color: white;
-            text-decoration: none;
-            background: #28a745;
-            padding: 6px 15px;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-        .header .right-group a:hover {
-            background: #1e7e34;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            margin-bottom: 20px;
-        }
-        .card h2 {
-            color: #0d47a1;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #1976d2;
-            padding-bottom: 8px;
-            font-size: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .card h2 .btn-group-small {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .btn-group-small .btn-sm {
-            padding: 4px 12px;
-            font-size: 12px;
-            border: none;
-            border-radius: 4px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .btn-excel-sm {
-            background: #1e7e34;
-            color: white;
-        }
-        .btn-excel-sm:hover {
-            background: #136b2a;
-        }
-        .btn-image-sm {
-            background: #6c757d;
-            color: white;
-        }
-        .btn-image-sm:hover {
-            background: #5a6268;
-        }
-        .btn-pdf-sm {
-            background: #d32f2f;
-            color: white;
-        }
-        .btn-pdf-sm:hover {
-            background: #b71c1c;
-        }
-        .btn {
-            padding: 8px 20px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-warning {
-            background: #ffc107;
-            color: #333;
-        }
-        .btn-warning:hover {
-            background: #e0a800;
-        }
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-        .btn-danger:hover {
-            background: #bd2130;
-        }
-        .btn-primary {
-            background: #1976d2;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #0d47a1;
-        }
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-        .btn-success:hover {
-            background: #1e7e34;
-        }
-        .filter-bar {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-        .filter-bar label {
-            font-weight: 600;
-            color: #333;
-        }
-        .filter-bar input[type="date"] {
-            padding: 6px 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .filter-bar select {
-            padding: 6px 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .table-wrap {
-            overflow-x: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        th {
+        .btn-email-sm {
             background: #0d47a1;
             color: white;
-            padding: 10px 6px;
-            border-bottom: 2px solid #1565c0;
-            white-space: nowrap;
-            text-align: center;
-            font-size: 12px;
-        }
-        td {
-            padding: 8px 5px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
-        }
-        tr:hover {
-            background: #f5f9ff;
-        }
-        .total-row {
-            background: #d4e4f7 !important;
-            font-weight: 700;
-        }
-        .total-row td {
-            border-top: 2px solid #1976d2;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .badge-online {
-            background: #d4edda;
-            color: #155724;
-        }
-        .badge-offline {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .empty-msg {
-            text-align: center;
-            color: #888;
-            padding: 40px 20px;
-            font-style: italic;
-            font-size: 16px;
-        }
-        .dept-name {
-            font-weight: 600;
-            color: #1a3a5c;
-            text-align: left;
-            padding-left: 10px;
-        }
-        .util-high {
-            color: #1b5e20;
-            font-weight: 700;
-        }
-        .util-mid {
-            color: #e65100;
-            font-weight: 700;
-        }
-        .util-low {
-            color: #b71c1c;
-            font-weight: 700;
-        }
-        .pos-1 {
-            background: #ffd700 !important;
-            color: #333;
-            font-weight: 700;
-            border-radius: 4px;
-        }
-        .pos-2 {
-            background: #c0c0c0 !important;
-            color: #333;
-            font-weight: 700;
-            border-radius: 4px;
-        }
-        .pos-3 {
-            background: #cd7f32 !important;
-            color: #fff;
-            font-weight: 700;
-            border-radius: 4px;
-        }
-        .action-bar {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-        .row-online-summary td {
-            background: #cce5ff !important;
-            color: #004085;
-            font-weight: 700;
-            border-top: 2px solid #007bff;
-        }
-        .row-offline-summary td {
-            background: #fff3cd !important;
-            color: #856404;
-            font-weight: 700;
-            border-top: 2px solid #ffc107;
-        }
-        .row-grand-total td {
-            background: #d4edda !important;
-            color: #155724;
-            font-weight: 700;
-            border-top: 3px solid #28a745;
-        }
-        .short-online td {
-            background: #e3f2fd !important;
-            color: #0d47a1;
-        }
-        .short-offline td {
-            background: #fff8e1 !important;
-            color: #e65100;
-        }
-        .short-overall td {
-            background: #e8f5e9 !important;
-            color: #1b5e20;
-        }
-        .toggle-btn {
-            background: #6c757d;
-            color: white;
             border: none;
             border-radius: 4px;
-            padding: 4px 14px;
+            padding: 4px 10px;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: 0.2s;
-            margin-left: 10px;
+            margin-left: 4px;
         }
-        .toggle-btn:hover {
-            background: #5a6268;
-        }
-        .toggle-btn.hide {
-            background: #28a745;
-        }
-        .toggle-btn.hide:hover {
-            background: #1e7e34;
-        }
-        .section-content {
-            transition: all 0.3s ease;
-        }
-        .section-content.hidden {
-            display: none;
-        }
-        .toggle-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .nav-links {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-            justify-content: center;
-        }
-        .nav-links a {
-            color: #1976d2;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .nav-links a:hover {
-            text-decoration: underline;
-        }
-        .today-summary-table th {
-            background: #1a237e;
-        }
-        .today-summary-table .total-row td {
-            background: #d4e4f7 !important;
-        }
-        .pending-output {
-            color: #d32f2f !important;
-            font-weight: 700;
-        }
-
-        /* Admin Action Buttons */
-        .btn-admin {
-            background: #ff9800;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 2px 8px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            margin: 0 2px;
-        }
-        .btn-admin:hover {
-            background: #e68900;
-        }
-        .btn-admin-del {
-            background: #dc3545;
-        }
-        .btn-admin-del:hover {
-            background: #bd2130;
-        }
-
-        /* Modal (Edit Form) */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            padding-top: 60px;
-        }
-        .modal-content {
-            background: #fefefe;
-            margin: 0 auto;
-            padding: 20px;
-            border-radius: 12px;
-            max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
-        .modal-content h3 {
-            margin-bottom: 15px;
-            color: #0d47a1;
-        }
-        .modal-content label {
-            display: block;
-            margin: 8px 0 4px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .modal-content input,
-        .modal-content select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .modal-content .btn-group {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-        .modal-content .btn-group button {
-            padding: 8px 20px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .modal-content .btn-save {
-            background: #1976d2;
-            color: white;
-        }
-        .modal-content .btn-save:hover {
-            background: #0d47a1;
-        }
-        .modal-content .btn-cancel {
-            background: #6c757d;
-            color: white;
-        }
-        .modal-content .btn-cancel:hover {
-            background: #5a6268;
-        }
-        .close {
-            position: absolute;
-            top: 10px;
-            right: 18px;
-            font-size: 28px;
-            font-weight: 700;
-            color: #888;
-            cursor: pointer;
-        }
-        .close:hover {
-            color: #000;
-        }
-
-        /* Activity Log */
-        .log-table td {
-            font-size: 12px;
-        }
-        .log-action-edit {
-            color: #1976d2;
-            font-weight: 600;
-        }
-        .log-action-delete {
-            color: #dc3545;
-            font-weight: 600;
-        }
-        .log-action-add {
-            color: #28a745;
-            font-weight: 600;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .kpi-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-        @media (max-width: 480px) {
-            .kpi-grid {
-                grid-template-columns: 1fr;
-            }
+        .btn-email-sm:hover {
+            background: #0a3a8a;
         }
         .btn-email-image {
             background: #25D366;
@@ -576,764 +110,1074 @@
         .btn-email-image:hover {
             background: #1da851;
         }
-        .email-status {
-            font-size: 13px;
-            margin-top: 6px;
-            padding: 6px 12px;
-            border-radius: 6px;
-            display: none;
-        }
-        .email-status.success {
-            display: block;
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .email-status.error {
-            display: block;
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .email-status.info {
-            display: block;
-            background: #cce5ff;
-            color: #004085;
-            border: 1px solid #b8daff;
-        }
     </style>
 </head>
 <body>
-    <div class="container">
+<div class="container">
 
-        <!-- KPI CARDS -->
-        <div class="kpi-grid" id="kpiGrid">
-            <div class="kpi-card total">
-                <div class="label">📋 মোট এন্ট্রি</div>
-                <div class="value" id="kpiTotalEntries">0</div>
-                <div class="sub">সকল তারিখ</div>
-            </div>
-            <div class="kpi-card online">
-                <div class="label">📦 মোট আউটপুট (CTN)</div>
-                <div class="value" id="kpiTotalOutput">0</div>
-                <div class="sub">সকল ডিপার্টমেন্ট</div>
-            </div>
-            <div class="kpi-card util">
-                <div class="label">📈 গড় ইউটিলাইজেশন</div>
-                <div class="value" id="kpiAvgUtil">0%</div>
-                <div class="sub">সব ডেটা</div>
-            </div>
-            <div class="kpi-card offline">
-                <div class="label">🔄 অনলাইন vs অফলাইন</div>
-                <div class="value" id="kpiOnlineOffline">0 / 0</div>
-                <div class="sub">MC / Packaging</div>
-            </div>
-        </div>
-
-        <div class="header">
-            <h1>📊 কার্টন রিপোর্ট <span class="live-badge">🟢 লাইভ</span></h1>
-            <div class="right-group">
-                <span id="currentDate"></span>
-                <a href="carton_entry.html" target="_blank">📝 এন্ট্রি ফর্ম</a>
-            </div>
-        </div>
-
-        <div class="live-message">
-            📢 আপনার তথ্য RFL গ্রুপের সবাই লাইভ দেখতে পারবেন
-        </div>
-
-        <div class="card">
-            <div class="filter-bar">
-                <label>📅 তারিখ নির্বাচন করুন:</label>
-                <input type="date" id="filterDate" onchange="renderAll()">
-                <button class="btn btn-primary" onclick="renderAll()">🔍 ফিল্টার প্রয়োগ</button>
-                <button class="btn btn-warning" onclick="document.getElementById('filterDate').value=''; renderAll();">🔄 সব দেখান</button>
-                <span id="dateInfo" style="color:#666; font-size:14px; margin-left:10px;"></span>
-            </div>
-        </div>
-
-        <!-- Today Shift (ডে + নাইট আলাদা, CTN Output বাদ) -->
-        <div class="card" id="todayShiftContainer">
-            <h2>
-                <span class="toggle-wrapper">
-                    <span id="todayHeading">📋 ডিপার্টমেন্ট ওয়াইজ সারাংশ (আজকের শিফট)</span>
-                    <button class="toggle-btn" onclick="toggleSection('todayContent')" id="todayToggle">🙈 লুকান</button>
-                </span>
-                <span class="btn-group-small">
-                    <button class="btn-sm btn-excel-sm" onclick="downloadTodayExcel()">📊 Excel</button>
-                    <button class="btn-sm btn-image-sm" onclick="downloadTodayImage()">🖼️ Image</button>
-                    <button class="btn-sm btn-pdf-sm" onclick="downloadTodayPDF()">📄 PDF</button>
-                </span>
-            </h2>
-            <div id="todayContent" class="section-content">
-                <div id="todaySummaryContainer">
-                    <div class="empty-msg">আজকের কোনো এন্ট্রি নেই</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Short Summary -->
-        <div class="card" id="shortSummaryContainer">
-            <h2>
-                <span class="toggle-wrapper">
-                    <span id="shortHeading">📊 শর্ট সামারি (ফিল্টার অনুযায়ী)</span>
-                    <button class="toggle-btn" onclick="toggleSection('shortContent')" id="shortToggle">🙈 লুকান</button>
-                </span>
-                <span class="btn-group-small">
-                    <button class="btn-sm btn-excel-sm" onclick="downloadShortExcel()">📊 Excel</button>
-                    <button class="btn-sm btn-image-sm" onclick="downloadShortImage()">🖼️ Image</button>
-                    <button class="btn-sm btn-pdf-sm" onclick="downloadShortPDF()">📄 PDF</button>
-                </span>
-            </h2>
-            <div id="shortContent" class="section-content">
-                <div id="shortSummaryContent">
-                    <div class="empty-msg">কোনো ডেটা নেই</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Date Range Report -->
-        <div class="card" id="dateRangeReportContainer">
-            <h2>
-                <span class="toggle-wrapper">
-                    <span id="dateRangeHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (০১/০৭/২০২৬ থেকে আজ পর্যন্ত)</span>
-                    <button class="toggle-btn" onclick="toggleSection('dateRangeContent')" id="dateRangeToggle">🙈 লুকান</button>
-                </span>
-                <span class="btn-group-small">
-                    <button class="btn-sm btn-excel-sm" onclick="downloadDateRangeExcel()">📊 Excel</button>
-                    <button class="btn-sm btn-image-sm" onclick="downloadDateRangeImage()">🖼️ Image</button>
-                    <button class="btn-sm btn-pdf-sm" onclick="downloadDateRangePDF()">📄 PDF</button>
-                </span>
-            </h2>
-            <div id="dateRangeContent" class="section-content">
-                <div id="dateRangeSummaryContainer">
-                    <div class="empty-msg">এই রেঞ্জে কোনো এন্ট্রি নেই</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Daily Summary (Yesterday) -->
-        <div class="card" id="dailyReportContainer">
-            <h2>
-                <span class="toggle-wrapper">
-                    <span id="dailyHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (গতকাল)</span>
-                    <button class="toggle-btn" onclick="toggleSection('dailyContent')" id="dailyToggle">🙈 লুকান</button>
-                </span>
-                <span class="btn-group-small">
-                    <button class="btn-sm btn-excel-sm" onclick="downloadDailyExcel()">📊 Excel</button>
-                    <button class="btn-sm btn-image-sm" onclick="downloadDailyImage()">🖼️ Image</button>
-                    <button class="btn-sm btn-pdf-sm" onclick="downloadDailyPDF()">📄 PDF</button>
-                    <button class="btn-email-image" onclick="sendSummaryImageEmail()">📧 ইমেইল (Image)</button>
-                </span>
-            </h2>
-            <div id="dailyContent" class="section-content">
-                <div id="summaryTableContainer">
-                    <div class="empty-msg">গতকালের কোনো ডেটা নেই</div>
-                </div>
-                <div id="emailStatus" class="email-status"></div>
-            </div>
-        </div>
-
-        <!-- Overall Summary -->
-        <div class="card" id="overallReportContainer">
-            <h2>
-                <span class="toggle-wrapper">
-                    <span>📊 এখন পর্যন্ত সারাংশ (সব তারিখ)</span>
-                    <button class="toggle-btn" onclick="toggleSection('overallContent')" id="overallToggle">🙈 লুকান</button>
-                </span>
-                <span class="btn-group-small">
-                    <button class="btn-sm btn-excel-sm" onclick="downloadOverallExcel()">📊 Excel</button>
-                    <button class="btn-sm btn-image-sm" onclick="downloadOverallImage()">🖼️ Image</button>
-                    <button class="btn-sm btn-pdf-sm" onclick="downloadOverallPDF()">📄 PDF</button>
-                </span>
-            </h2>
-            <div id="overallContent" class="section-content">
-                <div id="overallSummaryContainer">
-                    <div class="empty-msg">কোনো ডেটা নেই</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Monthly Summary -->
-        <div class="card" id="monthlyReportContainer">
-            <h2>
-                <span class="toggle-wrapper">
-                    <span>📊 মাস অনুযায়ী সারাংশ (Month-wise Summary)</span>
-                    <button class="toggle-btn" onclick="toggleSection('monthlyContent')" id="monthlyToggle">🙈 লুকান</button>
-                </span>
-                <span class="btn-group-small">
-                    <button class="btn-sm btn-excel-sm" onclick="downloadMonthlyExcel()">📊 Excel</button>
-                    <button class="btn-sm btn-image-sm" onclick="downloadMonthlyImage()">🖼️ Image</button>
-                    <button class="btn-sm btn-pdf-sm" onclick="downloadMonthlyPDF()">📄 PDF</button>
-                </span>
-            </h2>
-            <div id="monthlyContent" class="section-content">
-                <div class="filter-bar" style="margin-bottom:10px;">
-                    <label>📅 মাস নির্বাচন করুন:</label>
-                    <select id="monthFilter" onchange="renderMonthlySummary()">
-                        <option value="">-- সিলেক্ট করুন --</option>
-                    </select>
-                </div>
-                <div id="monthlySummaryContainer">
-                    <div class="empty-msg">কোনো ডেটা নেই</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Activity Log (Admin only) -->
-        <div class="card" id="activityLogContainer">
-            <h2>
-                <span class="toggle-wrapper">
-                    <span>📋 অ্যাডমিন অ্যাক্টিভিটি লগ</span>
-                    <button class="toggle-btn" onclick="toggleSection('logContent')" id="logToggle">🙈 লুকান</button>
-                </span>
-                <button class="btn-sm btn-primary" onclick="refreshLog()" style="font-size:12px;">🔄 রিফ্রেশ</button>
-            </h2>
-            <div id="logContent" class="section-content">
-                <div id="logContainer">
-                    <div class="empty-msg">কোনো লগ নেই</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="action-bar">
-            <button class="btn btn-warning" onclick="exportCSV()">⬇️ CSV ডাউনলোড (ফিল্টার অনুযায়ী)</button>
-            <button class="btn btn-danger" onclick="clearAll()">🗑️ সব ডেটা মুছুন</button>
-        </div>
-
-        <div class="card">
-            <h2>📋 এন্ট্রি লগ (সব এন্ট্রি)
-                <span style="font-size:13px; font-weight:400; color:#666;">— অ্যাডমিন: এডিট/ডিলিট করতে পারেন</span>
-            </h2>
-            <div id="entryLogContainer">
-                <div class="empty-msg">কোনো এন্ট্রি নেই</div>
-            </div>
-        </div>
-
-        <div class="nav-links">
-            <a href="carton_entry.html">📝 এন্ট্রি ফর্ম</a>
-            <a href="index.html">🏠 ড্যাশবোর্ড</a>
+    <div class="header">
+        <h1>📊 কার্টন রিপোর্ট <span class="live-badge">🟢 লাইভ</span></h1>
+        <div class="right-group">
+            <span id="currentDate"></span>
+            <a href="carton_entry.html" target="_blank">📝 এন্ট্রি ফর্ম</a>
         </div>
     </div>
 
-    <!-- Modal for Edit -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeEditModal()">&times;</span>
-            <h3>✏️ এন্ট্রি এডিট করুন</h3>
-            <form id="editForm">
-                <input type="hidden" id="editKey">
-                <label>ডিপার্টমেন্ট</label>
-                <select id="editDept" required></select>
-                <label>Prod IC</label>
-                <input type="text" id="editProdIC" required>
-                <label>শিফট</label>
-                <select id="editShift" required>
-                    <option value="Day">Day</option>
-                    <option value="Night">Night</option>
+    <div class="live-message">
+        📢 আপনার তথ্য RFL গ্রুপের সবাই লাইভ দেখতে পারবেন
+    </div>
+
+    <div class="card">
+        <div class="filter-bar">
+            <label>📅 তারিখ নির্বাচন করুন:</label>
+            <input type="date" id="filterDate" onchange="renderAll()">
+            <button class="btn btn-primary" onclick="renderAll()">🔍 ফিল্টার প্রয়োগ</button>
+            <button class="btn btn-warning" onclick="document.getElementById('filterDate').value=''; renderAll();">🔄 সব দেখান</button>
+            <span id="dateInfo" style="color:#666; font-size:14px; margin-left:10px;"></span>
+        </div>
+    </div>
+
+    <div class="card" id="todayShiftContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span id="todayHeading">📋 ডিপার্টমেন্ট ওয়াইজ সারাংশ (আজকের শিফট)</span>
+                <button class="toggle-btn" onclick="toggleSection('todayContent')" id="todayToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadTodayExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadTodayImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadTodayPDF()">📄 PDF</button>
+            </span>
+        </h2>
+        <div id="todayContent" class="section-content">
+            <div id="todaySummaryContainer"><div class="empty-msg">আজকের শিফটে কোনো এন্ট্রি নেই</div></div>
+        </div>
+    </div>
+
+    <div class="card" id="shortSummaryContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span id="shortHeading">📊 শর্ট সামারি (ফিল্টার অনুযায়ী)</span>
+                <button class="toggle-btn" onclick="toggleSection('shortContent')" id="shortToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadShortExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadShortImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadShortPDF()">📄 PDF</button>
+            </span>
+        </h2>
+        <div id="shortContent" class="section-content">
+            <div id="shortSummaryContent"><div class="empty-msg">কোনো ডেটা নেই</div></div>
+        </div>
+    </div>
+
+    <div class="card" id="dateRangeReportContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span id="dateRangeHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (০১/০৭/২০২৬ থেকে আজ পর্যন্ত)</span>
+                <button class="toggle-btn" onclick="toggleSection('dateRangeContent')" id="dateRangeToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadDateRangeExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadDateRangeImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadDateRangePDF()">📄 PDF</button>
+            </span>
+        </h2>
+        <div id="dateRangeContent" class="section-content">
+            <div id="dateRangeSummaryContainer"><div class="empty-msg">এই রেঞ্জে কোনো এন্ট্রি নেই</div></div>
+        </div>
+    </div>
+
+    <div class="card" id="dailyReportContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span id="dailyHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (গতকাল)</span>
+                <button class="toggle-btn" onclick="toggleSection('dailyContent')" id="dailyToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadDailyExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadDailyImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadDailyPDF()">📄 PDF</button>
+                <button class="btn-email-image" onclick="sendSummaryImageEmail()">📧 ইমেইল (Image)</button>
+            </span>
+        </h2>
+        <div id="dailyContent" class="section-content">
+            <div id="summaryTableContainer"><div class="empty-msg">গতকালের কোনো ডেটা নেই</div></div>
+        </div>
+    </div>
+
+    <div class="card" id="overallReportContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span>📊 এখন পর্যন্ত সারাংশ (সব তারিখ)</span>
+                <button class="toggle-btn" onclick="toggleSection('overallContent')" id="overallToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadOverallExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadOverallImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadOverallPDF()">📄 PDF</button>
+            </span>
+        </h2>
+        <div id="overallContent" class="section-content">
+            <div id="overallSummaryContainer"><div class="empty-msg">কোনো ডেটা নেই</div></div>
+        </div>
+    </div>
+
+    <div class="card" id="monthlyReportContainer">
+        <h2>
+            <span class="toggle-wrapper">
+                <span>📊 মাস অনুযায়ী সারাংশ (Month-wise Summary)</span>
+                <button class="toggle-btn" onclick="toggleSection('monthlyContent')" id="monthlyToggle">🙈 লুকান</button>
+            </span>
+            <span class="btn-group-small">
+                <button class="btn-sm btn-excel-sm" onclick="downloadMonthlyExcel()">📊 Excel</button>
+                <button class="btn-sm btn-image-sm" onclick="downloadMonthlyImage()">🖼️ Image</button>
+                <button class="btn-sm btn-pdf-sm" onclick="downloadMonthlyPDF()">📄 PDF</button>
+            </span>
+        </h2>
+        <div id="monthlyContent" class="section-content">
+            <div class="filter-bar" style="margin-bottom:10px;">
+                <label>📅 মাস নির্বাচন করুন:</label>
+                <select id="monthFilter" onchange="renderMonthlySummary()">
+                    <option value="">-- সিলেক্ট করুন --</option>
                 </select>
-                <label>IC Name</label>
-                <input type="text" id="editICName" required>
-                <label>Day HR</label>
-                <input type="number" id="editDayHr" step="0.5" required>
-                <label>Target (CTN)</label>
-                <input type="number" id="editTarget" required>
-                <label>CTN Output</label>
-                <input type="number" id="editOutput" step="1" required>
-                <div class="btn-group">
-                    <button type="button" class="btn-cancel" onclick="closeEditModal()">বাতিল</button>
-                    <button type="button" class="btn-save" onclick="saveEdit()">💾 সেভ করুন</button>
-                </div>
-            </form>
+            </div>
+            <div id="monthlySummaryContainer"><div class="empty-msg">কোনো ডেটা নেই</div></div>
         </div>
     </div>
 
-    <!-- Firebase Import Map -->
-    <script type="importmap">
-        {
-            "imports": {
-                "firebase-app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
-                "firebase-database": "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"
-            }
+    <div class="action-bar">
+        <button class="btn btn-warning" onclick="exportCSV()">⬇️ CSV ডাউনলোড (ফিল্টার অনুযায়ী)</button>
+        <button class="btn btn-danger" onclick="clearAll()">🗑️ সব ডেটা মুছুন</button>
+    </div>
+
+    <div class="card">
+        <h2>📋 এন্ট্রি লগ (সব এন্ট্রি)</h2>
+        <div id="entryLogContainer"><div class="empty-msg">কোনো এন্ট্রি নেই</div></div>
+    </div>
+
+    <div class="nav-links">
+        <a href="carton_entry.html">📝 এন্ট্রি ফর্ম</a>
+        <a href="index.html">🏠 ড্যাশবোর্ড</a>
+    </div>
+</div>
+
+<!-- Firebase Import Map -->
+<script type="importmap">
+    {
+        "imports": {
+            "firebase-app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+            "firebase-database": "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"
         }
-    </script>
+    }
+</script>
 
-    <script type="module">
-        // ================================================================
-        // 🔥 Firebase Config
-        // ================================================================
-        import { initializeApp } from "firebase-app";
-        import { getDatabase, ref, onValue, remove, update, push, set } from "firebase-database";
+<script type="module">
+    // ================================================================
+    // 🔥 Firebase Config
+    // ================================================================
+    import { initializeApp } from "firebase-app";
+    import { getDatabase, ref, onValue, remove, update } from "firebase-database";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAHMH9uGLQfXsCppY1xwbY91wbMcOMUUE",
-            authDomain: "carton-management.firebaseapp.com",
-            databaseURL: "https://carton-management-default-rtdb.asia-southeast1.firebasedatabase.app/",
-            projectId: "carton-management",
-            storageBucket: "carton-management.firebasestorage.app",
-            messagingSenderId: "610163022584",
-            appId: "1:610163022584:web:04c1a715b5e66aa2f6390d",
-            measurementId: "G-ZFZNK5Q4V"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyAHMH9uGLQfXsCppY1xwbY91wbMcOMUUE",
+        authDomain: "carton-management.firebaseapp.com",
+        databaseURL: "https://carton-management-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "carton-management",
+        storageBucket: "carton-management.firebasestorage.app",
+        messagingSenderId: "610163022584",
+        appId: "1:610163022584:web:04c1a715b5e66aa2f6390d",
+        measurementId: "G-ZFZNK5Q4V"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-        const cartonRef = ref(database, 'cartonEntries');
-        const logRef = ref(database, 'adminLogs');
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const cartonRef = ref(database, 'cartonEntries');
 
-        // ================================================================
-        // কনফিগারেশন
-        // ================================================================
-        const DEPARTMENTS = [
-            { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur' },
-            { id: 'mc2', name: 'RIP> DPL> Plastic-3', type: 'MC', prodIC: 'Mr. Shawon' },
-            { id: 'mc3', name: 'RIP> DPL> Plastic-6.1', type: 'MC', prodIC: 'Mr. Hazrat' },
-            { id: 'mc4', name: 'RIP> DPL> Plastic-6.2', type: 'MC', prodIC: 'Mr. Polash' },
-            { id: 'mc5', name: 'RIP> DPL> Plastic-7.1', type: 'MC', prodIC: 'Mr. Monir' },
-            { id: 'mc6', name: 'RIP> DPL> Plastic-7.2', type: 'MC', prodIC: 'Mr. Sayem' },
-            { id: 'mc7', name: 'RIP> DPL> Plastic-7.3', type: 'MC', prodIC: 'Mr. Saddam' },
-            { id: 'mc8', name: 'RIP> DPL> Plastic-7.4', type: 'MC', prodIC: 'Mr. Awal' },
-            { id: 'p1', name: 'Plastic Packaging-01', type: 'Packaging', prodIC: 'Mr. Mahbub' },
-            { id: 'p2', name: 'Plastic Packaging-02', type: 'Packaging', prodIC: 'Mr. Rakib' },
-            { id: 'p3', name: 'Plastic Packaging-03', type: 'Packaging', prodIC: 'Mr. Mahbub' }
-        ];
+    // ================================================================
+    // কনফিগারেশন
+    // ================================================================
+    const PER_HR_CAPACITY = 40;
+    const DEPARTMENTS = [
+        { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur' },
+        { id: 'mc2', name: 'RIP> DPL> Plastic-3', type: 'MC', prodIC: 'Mr. Shawon' },
+        { id: 'mc3', name: 'RIP> DPL> Plastic-6.1', type: 'MC', prodIC: 'Mr. Hazrat' },
+        { id: 'mc4', name: 'RIP> DPL> Plastic-6.2', type: 'MC', prodIC: 'Mr. Polash' },
+        { id: 'mc5', name: 'RIP> DPL> Plastic-7.1', type: 'MC', prodIC: 'Mr. Monir' },
+        { id: 'mc6', name: 'RIP> DPL> Plastic-7.2', type: 'MC', prodIC: 'Mr. Sayem' },
+        { id: 'mc7', name: 'RIP> DPL> Plastic-7.3', type: 'MC', prodIC: 'Mr. Saddam' },
+        { id: 'mc8', name: 'RIP> DPL> Plastic-7.4', type: 'MC', prodIC: 'Mr. Awal' },
+        { id: 'p1', name: 'Plastic Packaging-01', type: 'Packaging', prodIC: 'Mr. Mahbub' },
+        { id: 'p2', name: 'Plastic Packaging-02', type: 'Packaging', prodIC: 'Mr. Rakib' },
+        { id: 'p3', name: 'Plastic Packaging-03', type: 'Packaging', prodIC: 'Mr. Mahbub' }
+    ];
 
-        let allEntries = [];
-        let allLogs = [];
+    let allEntries = [];
 
-        // ================================================================
-        // KPI আপডেট ফাংশন
-        // ================================================================
-        function updateKPIs(entries) {
-            const totalEntries = entries.length;
-            let totalOutput = 0;
-            let totalTarget = 0;
-            let totalUtilSum = 0;
-            let utilCount = 0;
-            let mcCount = 0,
-                packCount = 0;
+    // ================================================================
+    // টগল ফাংশন
+    // ================================================================
+    window.toggleSection = function(contentId) {
+        const content = document.getElementById(contentId);
+        const btn = document.getElementById(contentId.replace('Content', 'Toggle'));
+        if (!content || !btn) return;
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            btn.textContent = '🙈 লুকান';
+            btn.classList.remove('hide');
+        } else {
+            content.classList.add('hidden');
+            btn.textContent = '👁️ দেখান';
+            btn.classList.add('hide');
+        }
+    };
 
-            entries.forEach(e => {
-                totalOutput += e.output || 0;
-                totalTarget += e.target || 0;
-                if (e.utilPct !== undefined) { totalUtilSum += e.utilPct;
-                    utilCount++; }
-                const deptInfo = DEPARTMENTS.find(d => d.name === e.dept);
-                if (deptInfo) {
-                    if (deptInfo.type === 'MC') mcCount++;
-                    else packCount++;
-                }
-            });
+    function getFilterDate() {
+        return document.getElementById('filterDate').value;
+    }
 
-            const avgUtil = utilCount > 0 ? totalUtilSum / utilCount : 0;
-            document.getElementById('kpiTotalEntries').textContent = totalEntries;
-            document.getElementById('kpiTotalOutput').textContent = totalOutput;
-            document.getElementById('kpiAvgUtil').textContent = avgUtil.toFixed(1) + '%';
-            document.getElementById('kpiOnlineOffline').textContent = mcCount + ' / ' + packCount;
+    function formatDateDisplay(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    function getCurrentShift() {
+        const now = new Date();
+        const hours = now.getHours();
+        return (hours >= 8 && hours < 20) ? 'Day' : 'Night';
+    }
+
+    // ================================================================
+    // রেন্ডার অল
+    // ================================================================
+    window.renderAll = function() {
+        const filterDate = getFilterDate();
+        let filtered = allEntries;
+        let dateDisplay = 'সব তারিখ';
+        if (filterDate) {
+            filtered = allEntries.filter(e => e.entryDate === filterDate);
+            dateDisplay = formatDateDisplay(filterDate);
+            document.getElementById('dateInfo').innerHTML = `📌 দেখানো হচ্ছে: ${dateDisplay}`;
+        } else {
+            document.getElementById('dateInfo').innerHTML = `📌 সব তারিখের ডেটা দেখানো হচ্ছে`;
         }
 
-        // ================================================================
-        // 📋 অ্যাডমিন অ্যাক্টিভিটি লগ
-        // ================================================================
-        function renderLogs() {
-            const container = document.getElementById('logContainer');
-            if (!allLogs || allLogs.length === 0) {
-                container.innerHTML = `<div class="empty-msg">কোনো লগ নেই</div>`;
-                return;
+        document.getElementById('shortHeading').innerHTML = `📊 শর্ট সামারি (ফিল্টার অনুযায়ী) ${filterDate ? '— ' + dateDisplay : ''}`;
+        renderShortSummary(filtered);
+
+        const today = new Date();
+        const tStr = today.toISOString().slice(0,10);
+        const currentShift = getCurrentShift();
+        const todayEntries = allEntries.filter(e => e.entryDate === tStr && e.shift === currentShift);
+        const todayDisplay = formatDateDisplay(tStr);
+        document.getElementById('todayHeading').innerHTML = `📋 ডিপার্টমেন্ট ওয়াইজ সারাংশ (আজকের শিফট — ${todayDisplay} | ${currentShift})`;
+        if (todayEntries.length === 0) {
+            document.getElementById('todaySummaryContainer').innerHTML = `<div class="empty-msg">আজকের শিফটে (${todayDisplay} - ${currentShift}) কোনো এন্ট্রি নেই</div>`;
+            window._todayTableData = null;
+        } else {
+            renderTodaySummary(todayEntries);
+        }
+
+        const startDateStr = '2026-07-01';
+        const endDateStr = tStr;
+        const rangeEntries = allEntries.filter(e => e.entryDate >= startDateStr && e.entryDate <= endDateStr);
+        const startDisplay = formatDateDisplay(startDateStr);
+        const endDisplay = formatDateDisplay(endDateStr);
+        document.getElementById('dateRangeHeading').innerHTML = `📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (${startDisplay} থেকে ${endDisplay} পর্যন্ত)`;
+        if (rangeEntries.length === 0) {
+            document.getElementById('dateRangeSummaryContainer').innerHTML = `<div class="empty-msg">এই রেঞ্জে কোনো এন্ট্রি নেই</div>`;
+            window._dateRangeTableData = null;
+        } else {
+            renderDateRangeSummary(rangeEntries);
+        }
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yStr = yesterday.toISOString().slice(0,10);
+        const yDisplay = formatDateDisplay(yStr);
+        document.getElementById('dailyHeading').innerHTML = `📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (গতকাল — ${yDisplay})`;
+        const yesterdayEntries = allEntries.filter(e => e.entryDate === yStr);
+        if (yesterdayEntries.length === 0) {
+            document.getElementById('summaryTableContainer').innerHTML = `<div class="empty-msg">গতকালের (${yDisplay}) কোনো এন্ট্রি নেই</div>`;
+            window._dailyTableData = null;
+        } else {
+            renderDailySummary(yesterdayEntries);
+        }
+
+        renderOverallSummary(allEntries);
+        populateMonthFilter(allEntries);
+        renderMonthlySummary();
+        renderLog(filtered);
+        document.getElementById('currentDate').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
+    };
+
+    // ================================================================
+    // আজকের শিফটের সারাংশ
+    // ================================================================
+    function renderTodaySummary(entries) {
+        const container = document.getElementById('todaySummaryContainer');
+        const deptMap = {};
+        entries.forEach(e => {
+            if (!deptMap[e.dept]) {
+                deptMap[e.dept] = {
+                    prodIC: e.prodIC || '',
+                    shift: e.shift,
+                    icName: e.icName || '',
+                    dayHr: 0,
+                    target: 0,
+                    output: 0,
+                    hasOutput: false
+                };
             }
-            let html = `<div class="table-wrap"><table class="log-table">
-            <thead><tr><th>সময়</th><th>অ্যাকশন</th><th>ইউজার</th><th>ডিপার্টমেন্ট</th><th>বিবরণ</th></tr></thead><tbody>`;
-            const sorted = [...allLogs].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-            sorted.slice(0, 100).forEach(log => {
-                const actionClass = log.action === 'edit' ? 'log-action-edit' : log.action === 'delete' ?
-                    'log-action-delete' : 'log-action-add';
-                const actionLabel = log.action === 'edit' ? '✏️ এডিট' : log.action === 'delete' ? '🗑️ ডিলিট' :
-                    '➕ অ্যাড';
-                html += `<tr>
-                <td>${log.time || ''}</td>
-                <td class="${actionClass}">${actionLabel}</td>
-                <td><strong>${log.user || 'অজানা'}</strong></td>
-                <td>${log.dept || '-'}</td>
-                <td>${log.details || ''}</td>
+            deptMap[e.dept].dayHr += e.dayHr;
+            deptMap[e.dept].target += e.target;
+            if (e.output && e.output > 0) {
+                deptMap[e.dept].output += e.output;
+                deptMap[e.dept].hasOutput = true;
+            }
+        });
+
+        let html = `<div class="table-wrap"><table class="today-summary-table">
+            <thead><tr>
+                <th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th><th>CTN Output</th>
+            </tr></thead><tbody>`;
+
+        let grandHr = 0, grandTarget = 0, grandOutput = 0;
+        for (const [dept, data] of Object.entries(deptMap)) {
+            grandHr += data.dayHr;
+            grandTarget += data.target;
+            grandOutput += data.output;
+            let outputDisplay = '';
+            if (data.hasOutput && data.output > 0) {
+                outputDisplay = data.output;
+            } else {
+                outputDisplay = `<span class="pending-output">0</span>`;
+            }
+            html += `<tr>
+                <td class="dept-name"><strong>${dept}</strong></td>
+                <td>${data.prodIC}</td>
+                <td>${data.shift}</td>
+                <td>${data.icName}</td>
+                <td>${data.dayHr}</td>
+                <td>${data.target}</td>
+                <td>${outputDisplay}</td>
             </tr>`;
-            });
-            html += `</tbody></table></div>`;
-            container.innerHTML = html;
+        }
+        html += `<tr class="total-row">
+            <td colspan="4"><strong>📌 মোট</strong></td>
+            <td><strong>${grandHr}</strong></td>
+            <td><strong>${grandTarget}</strong></td>
+            <td><strong>${grandOutput}</strong></td>
+        </tr></tbody></table></div>`;
+        container.innerHTML = html;
+        window._todayTableData = { deptMap, grandHr, grandTarget, grandOutput };
+    }
+
+    // ================================================================
+    // শর্ট সামারি
+    // ================================================================
+    function renderShortSummary(entries) {
+        const container = document.getElementById('shortSummaryContent');
+        if (entries.length === 0) {
+            container.innerHTML = `<div class="empty-msg">কোনো ডেটা নেই</div>`;
+            window._shortData = null;
+            return;
         }
 
-        window.refreshLog = function() {
-            renderLogs();
-        };
+        let online = { hr: 0, target: 0, output: 0, count: 0, perHr: 0, util: 0 };
+        let offline = { hr: 0, target: 0, output: 0, count: 0, perHr: 0, util: 0 };
 
-        // ================================================================
-        // লগ সেভ করার ফাংশন (ইউজারের নাম সহ)
-        // ================================================================
-        async function saveLog(action, dept, details, user) {
-            try {
-                const newLogRef = push(logRef);
-                await set(newLogRef, {
-                    action: action,
-                    dept: dept || '',
-                    details: details || '',
-                    user: user || 'অজানা',
-                    time: new Date().toLocaleString('bn-BD'),
-                    timestamp: Date.now()
-                });
-            } catch (err) {
-                console.error('লগ সেভ করতে ব্যর্থ:', err);
+        entries.forEach(e => {
+            const deptInfo = DEPARTMENTS.find(d => d.name === e.dept);
+            if (!deptInfo) return;
+            if (deptInfo.type === 'MC') {
+                online.hr += e.dayHr; online.target += e.target; online.output += e.output; online.count += 1;
+                online.perHr += e.perHr; online.util += e.utilPct || 0;
+            } else {
+                offline.hr += e.dayHr; offline.target += e.target; offline.output += e.output; offline.count += 1;
+                offline.perHr += e.perHr; offline.util += e.utilPct || 0;
             }
+        });
+
+        if (online.count > 0) { online.perHr = online.perHr / online.count; online.util = online.util / online.count; }
+        if (offline.count > 0) { offline.perHr = offline.perHr / offline.count; offline.util = offline.util / offline.count; }
+
+        const overall = {
+            hr: online.hr + offline.hr,
+            target: online.target + offline.target,
+            output: online.output + offline.output,
+            count: online.count + offline.count,
+            perHr: 0, util: 0
+        };
+        if (overall.count > 0) {
+            overall.perHr = (online.perHr * online.count + offline.perHr * offline.count) / overall.count;
+            overall.util = (online.util * online.count + offline.util * offline.count) / overall.count;
         }
 
-        // ================================================================
-        // ইউজারের নাম ও পাসওয়ার্ড চেক করার ফাংশন
-        // ================================================================
-        function getUserCredentials(actionLabel) {
-            const name = prompt(`🔑 আপনার নাম লিখুন (যিনি ${actionLabel} করছেন):`);
-            if (name === null) return null;
-            if (name.trim() === '') {
-                alert('নাম অবশ্যই দিতে হবে!');
-                return null;
-            }
-            const pwd = prompt('🔒 পাসওয়ার্ড দিন:');
-            if (pwd === null) return null;
-            if (pwd !== 'arif123') {
-                alert('❌ ভুল পাসওয়ার্ড!');
-                return null;
-            }
-            return name.trim();
+        window._shortData = { online, offline, overall };
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr><th>বিভাগ</th><th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th></tr></thead><tbody>
+            <tr class="short-online">
+                <td><strong>ONLINE PACK</strong></td>
+                <td>${online.hr}</td>
+                <td>${online.target}</td>
+                <td><strong>${online.output}</strong></td>
+                <td>${online.perHr.toFixed(2)}</td>
+                <td class="${online.util >= 80 ? 'util-high' : online.util >= 50 ? 'util-mid' : 'util-low'}">${online.util.toFixed(1)}%</td>
+            </tr>
+            <tr class="short-offline">
+                <td><strong>OFFLINE PACK</strong></td>
+                <td>${offline.hr}</td>
+                <td>${offline.target}</td>
+                <td><strong>${offline.output}</strong></td>
+                <td>${offline.perHr.toFixed(2)}</td>
+                <td class="${offline.util >= 80 ? 'util-high' : offline.util >= 50 ? 'util-mid' : 'util-low'}">${offline.util.toFixed(1)}%</td>
+            </tr>
+            <tr class="short-overall total-row">
+                <td><strong>📌 OVERALL</strong></td>
+                <td><strong>${overall.hr}</strong></td>
+                <td><strong>${overall.target}</strong></td>
+                <td><strong>${overall.output}</strong></td>
+                <td><strong>${overall.perHr.toFixed(2)}</strong></td>
+                <td><strong>${overall.util.toFixed(1)}%</strong></td>
+            </tr>
+        </tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    // ================================================================
+    // ✨ ইমেজ ক্যাপচার করে Apps Script-এ পাঠানোর ফাংশন
+    // ================================================================
+    window.sendSummaryImageEmail = function() {
+        const container = document.getElementById('summaryTableContainer');
+        if (!container || container.innerText.includes('গতকালের কোনো ডেটা নেই')) {
+            alert('গতকালের কোনো ডেটা নেই!');
+            return;
         }
 
-        // ================================================================
-        // ✏️ এডিট/ডিলিট অপশন (ইউজারের নাম সহ)
-        // ================================================================
-        window.editEntry = function(key) {
-            const userName = getUserCredentials('এডিট');
-            if (!userName) return;
+        const pwd = prompt('🔒 ইমেইল পাঠাতে পাসওয়ার্ড দিন:');
+        if (pwd === null) return;
+        if (pwd !== 'arif123') {
+            alert('❌ ভুল পাসওয়ার্ড!');
+            return;
+        }
 
-            const entry = allEntries.find(e => e.key === key);
-            if (!entry) { alert('এন্ট্রি পাওয়া যায়নি!'); return; }
+        html2canvas(container, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true
+        }).then(canvas => {
+            const dataUrl = canvas.toDataURL('image/png');
+            const base64 = dataUrl.split(',')[1];
 
-            document.getElementById('editKey').value = key;
-            document.getElementById('editDept').value = entry.dept || '';
-            document.getElementById('editProdIC').value = entry.prodIC || '';
-            document.getElementById('editShift').value = entry.shift || 'Day';
-            document.getElementById('editICName').value = entry.icName || '';
-            document.getElementById('editDayHr').value = entry.dayHr || 0;
-            document.getElementById('editTarget').value = entry.target || 0;
-            document.getElementById('editOutput').value = entry.output || 0;
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yStr = yesterday.toISOString().slice(0,10);
+            const displayDate = formatDateDisplay(yStr);
 
-            const deptSelect = document.getElementById('editDept');
-            deptSelect.innerHTML = '';
-            DEPARTMENTS.forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d.name;
-                opt.textContent = d.name;
-                if (d.name === entry.dept) opt.selected = true;
-                deptSelect.appendChild(opt);
-            });
+            const GROUP_EMAIL = "ariftusher1@gmail.com,taniatoma1030@gmail.com,mstselenaaktar7452@gmail.com,biplobchandra.me@gmail.com,dplexport12@prangroup.com,fahimsha444@gmail.com,mdsirajsae@gmail.com,ripdpl204@prangroup.com,ripdpl330@prangroup.com,ripdpl369@prangroup.com,ripdpl334@prangroup.com,ripdpl282@prangroup.com,ripdpl188@prangroup.com,ripdpl304@prangroup.com,ripdpl327@prangroup.com,ripdpl252@prangroup.com,ripdpl261@prangroup.com,ripdpl333@prangroup.com,ripdpl319@prangroup.com,ripdpl259@prangroup.com";
+            const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1awMU-wvA85L2Cq9iigbllYGUlFIIGG8cX06I9OV1MDq1V0tEIL3GYmKmSmXTlvL/exec";
 
-            window._currentEditor = userName;
-            document.getElementById('editModal').style.display = 'block';
-        };
-
-        window.closeEditModal = function() {
-            document.getElementById('editModal').style.display = 'none';
-            window._currentEditor = null;
-        };
-
-        window.saveEdit = async function() {
-            const key = document.getElementById('editKey').value;
-            const dept = document.getElementById('editDept').value;
-            const prodIC = document.getElementById('editProdIC').value.trim();
-            const shift = document.getElementById('editShift').value;
-            const icName = document.getElementById('editICName').value.trim();
-            const dayHr = parseFloat(document.getElementById('editDayHr').value) || 0;
-            const target = parseFloat(document.getElementById('editTarget').value) || 0;
-            const output = parseFloat(document.getElementById('editOutput').value) || 0;
-
-            if (!dept || !prodIC) { alert('দয়া করে সব ফিল্ড পূরণ করুন!'); return; }
-
-            const perHr = dayHr > 0 ? target / dayHr : 0;
-            const utilPct = target > 0 ? (output / target) * 100 : 0;
-
-            const updatedData = {
-                dept,
-                prodIC,
-                shift,
-                icName,
-                dayHr,
-                target,
-                output,
-                perHr: perHr,
-                utilPct: utilPct,
-                entryDate: new Date().toISOString().slice(0, 10),
-                timestamp: new Date().toLocaleString('bn-BD')
+            const payload = {
+                imageData: base64,
+                dateStr: yStr,
+                toEmail: GROUP_EMAIL,
+                subject: `📊 Daily Summary Report - ${displayDate}`
             };
 
-            try {
-                await update(ref(database, 'cartonEntries/' + key), updatedData);
-                const editor = window._currentEditor || 'অজানা';
-                await saveLog('edit', dept, `এডিট করেছেন: ${dept} (IC: ${icName})`, editor);
-                alert('✅ সফলভাবে আপডেট করা হয়েছে!');
-                closeEditModal();
-            } catch (err) {
-                alert('❌ আপডেট করতে ব্যর্থ: ' + err.message);
-            }
-        };
-
-        window.deleteEntry = async function(key) {
-            const userName = getUserCredentials('ডিলিট');
-            if (!userName) return;
-
-            if (!confirm('এই এন্ট্রি স্থায়ীভাবে মুছবেন?')) return;
-            try {
-                const entry = allEntries.find(e => e.key === key);
-                await remove(ref(database, 'cartonEntries/' + key));
-                if (entry) await saveLog('delete', entry.dept, `ডিলিট করেছেন: ${entry.dept} (IC: ${entry.icName})`,
-                    userName);
-                alert('🗑️ ডিলিট করা হয়েছে!');
-            } catch (err) {
-                alert('❌ ডিলিট করতে ব্যর্থ: ' + err.message);
-            }
-        };
-
-        // ================================================================
-        // 🗑️ সব ডেটা মুছুন (ইউজারের নাম সহ)
-        // ================================================================
-        window.clearAll = async function() {
-            const userName = getUserCredentials('সব ডেটা মুছা');
-            if (!userName) return;
-            if (!confirm('সব ডেটা স্থায়ীভাবে মুছবেন?')) return;
-            try {
-                await remove(cartonRef);
-                await saveLog('delete', 'ALL', 'পুরো ডেটাবেস মুছে ফেলা হয়েছে', userName);
-                alert('🗑️ সব ডেটা মুছে ফেলা হয়েছে!');
-            } catch (error) {
-                alert('সব ডেটা মুছতে সমস্যা: ' + error.message);
-            }
-        };
-
-        // ================================================================
-        // 🖼️ ইমেজ ইমেইল (আপডেটেড ফাংশন – CORS + JSON)
-        // ================================================================
-        window.sendSummaryImageEmail = function() {
-            const statusEl = document.getElementById('emailStatus');
-            statusEl.className = 'email-status info';
-            statusEl.textContent = '⏳ ইমেজ ক্যাপচার করা হচ্ছে...';
-            statusEl.style.display = 'block';
-
-            const container = document.getElementById('summaryTableContainer');
-            if (!container || container.innerText.includes('গতকালের কোনো ডেটা নেই')) {
-                statusEl.className = 'email-status error';
-                statusEl.textContent = '❌ গতকালের কোনো ডেটা নেই!';
-                return;
-            }
-
-            const pwd = prompt('🔒 ইমেইল পাঠাতে পাসওয়ার্ড দিন:');
-            if (pwd === null) {
-                statusEl.style.display = 'none';
-                return;
-            }
-            if (pwd !== 'arif123') {
-                statusEl.className = 'email-status error';
-                statusEl.textContent = '❌ ভুল পাসওয়ার্ড!';
-                return;
-            }
-
-            statusEl.textContent = '📸 ইমেজ রেন্ডার করা হচ্ছে...';
-
-            html2canvas(container, {
-                scale: 2,
-                backgroundColor: '#ffffff',
-                logging: false,
-                useCORS: true
-            }).then(canvas => {
-                const dataUrl = canvas.toDataURL('image/png');
-                const base64 = dataUrl.split(',')[1];
-
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(today.getDate() - 1);
-                const yStr = yesterday.toISOString().slice(0, 10);
-                const displayDate = formatDateDisplay(yStr);
-
-                const GROUP_EMAIL =
-                    "ariftusher1@gmail.com,taniatoma1030@gmail.com,mstselenaaktar7452@gmail.com,dplexport12@prangroup.com,fahimsha444@gmail.com,mdsirajsae@gmail.com,ripdpl204@prangroup.com,ripdpl330@prangroup.com,ripdpl369@prangroup.com,ripdpl334@prangroup.com,ripdpl282@prangroup.com,ripdpl188@prangroup.com,ripdpl304@prangroup.com,ripdpl327@prangroup.com,ripdpl252@prangroup.com,ripdpl261@prangroup.com,ripdpl333@prangroup.com,ripdpl319@prangroup.com,ripdpl259@prangroup.com";
-
-                // ⚠️ এখানে আপনার নতুন ডেপ্লয় URL বসান
-                const APPS_SCRIPT_URL =
-                    "https://script.google.com/macros/s/AKfycbxqhFfL-SuRvfRZ-UnU-VrQduK17hq02g7pTqInQJImgocr5mNbB2wnc0NtdMYlCMub/exec";
-
-                const payload = {
-                    imageData: base64,
-                    dateStr: yStr,
-                    toEmail: GROUP_EMAIL,
-                    subject: `📊 Daily Summary Report - ${displayDate}`
-                };
-
-                statusEl.textContent = '📤 ইমেইল পাঠানোর অনুরোধ পাঠানো হচ্ছে...';
-
-                fetch(APPS_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'cors',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data && data.success === true) {
-                            statusEl.className = 'email-status success';
-                            statusEl.textContent = `✅ ইমেইল সফলভাবে পাঠানো হয়েছে! (${displayDate})`;
-                        } else {
-                            const errMsg = data && data.error ? data.error : 'অজানা ত্রুটি';
-                            throw new Error(errMsg);
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Fetch error:', err);
-                        statusEl.className = 'email-status error';
-                        statusEl.textContent = `❌ ইমেইল পাঠাতে ব্যর্থ: ${err.message}`;
-                    });
-
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                alert('✅ ইমেইল পাঠানোর অনুরোধ করা হয়েছে! অনুগ্রহ করে আপনার ইনবক্স চেক করুন (স্প্যাম ফোল্ডারেও দেখুন)।');
             }).catch(err => {
-                statusEl.className = 'email-status error';
-                statusEl.textContent = '❌ ইমেজ ক্যাপচার করতে ব্যর্থ: ' + err.message;
+                alert('❌ ইমেইল পাঠাতে ব্যর্থ: ' + err.message);
             });
-        };
+        }).catch(err => {
+            alert('❌ ইমেজ ক্যাপচার করতে ব্যর্থ: ' + err.message);
+        });
+    };
 
-        // ================================================================
-        // টগল ফাংশন
-        // ================================================================
-        window.toggleSection = function(contentId) {
-            const content = document.getElementById(contentId);
-            const btn = document.getElementById(contentId.replace('Content', 'Toggle'));
-            if (!content || !btn) return;
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                btn.textContent = '🙈 লুকান';
-                btn.classList.remove('hide');
-            } else {
-                content.classList.add('hidden');
-                btn.textContent = '👁️ দেখান';
-                btn.classList.add('hide');
-            }
-        };
-
-        function getFilterDate() {
-            return document.getElementById('filterDate').value;
+    // ================================================================
+    // ডেইলি সামারি – গতকালের (পূর্ণ + ইমেইল বাটন)
+    // ================================================================
+    function renderDailySummary(entries) {
+        const container = document.getElementById('summaryTableContainer');
+        const result = buildDepartmentSummary(entries);
+        const tableRows = result.tableRows;
+        if (!tableRows || tableRows.length === 0) {
+            container.innerHTML = `<div class="empty-msg">গতকালের কোনো ডেটা নেই</div>`;
+            window._dailyTableData = null;
+            return;
         }
 
-        function formatDateDisplay(dateStr) {
-            if (!dateStr) return '-';
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr;
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}/${month}/${year}`;
+        let dateStr = '';
+        if (entries.length > 0) {
+            const firstEntry = entries[0];
+            dateStr = firstEntry.entryDate ? formatDateDisplay(firstEntry.entryDate) : '';
         }
 
-        function getCurrentShift() {
-            const now = new Date();
-            const hours = now.getHours();
-            return (hours >= 8 && hours < 20) ? 'Day' : 'Night';
+        let html = `<div class="table-wrap"><table>
+            <thead><tr>
+                <th rowspan="2">ডিপার্টমেন্ট</th>
+                <th rowspan="2">Prod IC</th>
+                <th rowspan="2">টাইপ</th>
+                <th colspan="6" style="background:#1a237e;">📊 ডে + নাইট (Total)</th>
+                <th colspan="5" style="background:#0d47a1;">☀️ ডে শিফট</th>
+                <th colspan="5" style="background:#1a237e;">🌙 নাইট শিফট</th>
+                <th rowspan="2">📧</th>
+            </tr>
+            <tr>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th><th>পজিশন</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+            </tr></thead><tbody>`;
+
+        const deptDataMap = {};
+
+        tableRows.forEach(row => {
+            let rowClass = '';
+            if (row.isSummary) {
+                if (row.summaryType === 'online') rowClass = 'row-online-summary';
+                else if (row.summaryType === 'offline') rowClass = 'row-offline-summary';
+                else if (row.summaryType === 'grand') rowClass = 'row-grand-total';
+            }
+            const utilColor = row.totalUtil >= 80 ? 'util-high' : (row.totalUtil >= 50 ? 'util-mid' : 'util-low');
+            html += `<tr class="${rowClass}">`;
+            html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
+            html += `<td>${row.prodIC}</td>`;
+            html += `<td>${row.typeLabel ? `<span class="${row.badgeClass || ''}">${row.typeLabel}</span>` : '-'}</td>`;
+            html += `<td><strong>${row.totalHr}</strong></td>`;
+            html += `<td>${row.totalTarget}</td>`;
+            html += `<td><strong>${row.totalOutput}</strong></td>`;
+            html += `<td>${row.totalPerHr.toFixed(2)}</td>`;
+            html += `<td class="${utilColor}">${row.totalUtil.toFixed(1)}%</td>`;
+            html += `<td class="${row.posClass || ''}"><strong>${row.position}</strong></td>`;
+            html += `<td>${row.dayHr}</td>`;
+            html += `<td>${row.dayTarget}</td>`;
+            html += `<td>${row.dayOutput}</td>`;
+            html += `<td>${row.dayPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.dayUtil.toFixed(1)}%</td>`;
+            html += `<td>${row.nightHr}</td>`;
+            html += `<td>${row.nightTarget}</td>`;
+            html += `<td>${row.nightOutput}</td>`;
+            html += `<td>${row.nightPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.nightUtil.toFixed(1)}%</td>`;
+
+            if (!row.isSummary) {
+                deptDataMap[row.dept] = {
+                    shift: row.shift || 'Day',
+                    icName: row.icName || '',
+                    dayHr: row.dayHr || 0,
+                    target: row.totalTarget || 0,
+                    output: row.totalOutput || 0,
+                    util: row.totalUtil || 0
+                };
+                html += `<td><button class="btn-email-sm" onclick="sendDepartmentEmail('${row.dept}', window._deptDataMap['${row.dept}'], '${dateStr}')">📧</button></td>`;
+            } else {
+                html += `<td>-</td>`;
+            }
+
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+        window._deptDataMap = deptDataMap;
+
+        container.innerHTML = html;
+        window._dailyTableData = tableRows;
+    }
+
+    // ================================================================
+    // buildDepartmentSummary (জেনেরিক)
+    // ================================================================
+    function buildDepartmentSummary(entries) {
+        const summary = {};
+        DEPARTMENTS.forEach(d => {
+            summary[d.name] = {
+                prodIC: d.prodIC,
+                type: d.type,
+                dayHr: 0, dayTarget: 0, dayOutput: 0, dayPerHr: 0, dayUtil: 0, dayCount: 0,
+                nightHr: 0, nightTarget: 0, nightOutput: 0, nightPerHr: 0, nightUtil: 0, nightCount: 0,
+                totalHr: 0, totalTarget: 0, totalOutput: 0, totalPerHr: 0, totalUtil: 0, totalCount: 0
+            };
+        });
+
+        entries.forEach(e => {
+            if (summary[e.dept]) {
+                const s = summary[e.dept];
+                if (e.shift === 'Day') {
+                    s.dayHr += e.dayHr; s.dayTarget += e.target; s.dayOutput += e.output;
+                    s.dayPerHr += e.perHr; s.dayUtil += e.utilPct || 0; s.dayCount += 1;
+                } else {
+                    s.nightHr += e.dayHr; s.nightTarget += e.target; s.nightOutput += e.output;
+                    s.nightPerHr += e.perHr; s.nightUtil += e.utilPct || 0; s.nightCount += 1;
+                }
+                s.totalHr += e.dayHr; s.totalTarget += e.target; s.totalOutput += e.output;
+                s.totalPerHr += e.perHr; s.totalUtil += e.utilPct || 0; s.totalCount += 1;
+            }
+        });
+
+        for (const key in summary) {
+            const s = summary[key];
+            if (s.dayCount > 0) { s.dayPerHr = s.dayPerHr / s.dayCount; s.dayUtil = s.dayUtil / s.dayCount; }
+            if (s.nightCount > 0) { s.nightPerHr = s.nightPerHr / s.nightCount; s.nightUtil = s.nightUtil / s.nightCount; }
+            if (s.totalCount > 0) { s.totalPerHr = s.totalPerHr / s.totalCount; s.totalUtil = s.totalUtil / s.totalCount; }
         }
 
-        // ================================================================
-        // রেন্ডার অল
-        // ================================================================
-        window.renderAll = function() {
-            const filterDate = getFilterDate();
-            let filtered = allEntries;
-            let dateDisplay = 'সব তারিখ';
-            if (filterDate) {
-                filtered = allEntries.filter(e => e.entryDate === filterDate);
-                dateDisplay = formatDateDisplay(filterDate);
-                document.getElementById('dateInfo').innerHTML = `📌 দেখানো হচ্ছে: ${dateDisplay}`;
-            } else {
-                document.getElementById('dateInfo').innerHTML = `📌 সব তারিখের ডেটা দেখানো হচ্ছে`;
+        let onlineTot = { totalHr:0, totalTarget:0, totalOutput:0, totalPerHr:0, totalUtil:0, totalCount:0, dayHr:0, dayTarget:0, dayOutput:0, dayPerHr:0, dayUtil:0, dayCount:0, nightHr:0, nightTarget:0, nightOutput:0, nightPerHr:0, nightUtil:0, nightCount:0 };
+        let offlineTot = { totalHr:0, totalTarget:0, totalOutput:0, totalPerHr:0, totalUtil:0, totalCount:0, dayHr:0, dayTarget:0, dayOutput:0, dayPerHr:0, dayUtil:0, dayCount:0, nightHr:0, nightTarget:0, nightOutput:0, nightPerHr:0, nightUtil:0, nightCount:0 };
+
+        for (const [dept, s] of Object.entries(summary)) {
+            if (s.type === 'MC') {
+                onlineTot.totalHr += s.totalHr; onlineTot.totalTarget += s.totalTarget; onlineTot.totalOutput += s.totalOutput; onlineTot.totalCount += s.totalCount;
+                onlineTot.totalPerHr += s.totalPerHr * s.totalCount; onlineTot.totalUtil += s.totalUtil * s.totalCount;
+                onlineTot.dayHr += s.dayHr; onlineTot.dayTarget += s.dayTarget; onlineTot.dayOutput += s.dayOutput; onlineTot.dayCount += s.dayCount;
+                onlineTot.dayPerHr += s.dayPerHr * s.dayCount; onlineTot.dayUtil += s.dayUtil * s.dayCount;
+                onlineTot.nightHr += s.nightHr; onlineTot.nightTarget += s.nightTarget; onlineTot.nightOutput += s.nightOutput; onlineTot.nightCount += s.nightCount;
+                onlineTot.nightPerHr += s.nightPerHr * s.nightCount; onlineTot.nightUtil += s.nightUtil * s.nightCount;
+            } else if (s.type === 'Packaging') {
+                offlineTot.totalHr += s.totalHr; offlineTot.totalTarget += s.totalTarget; offlineTot.totalOutput += s.totalOutput; offlineTot.totalCount += s.totalCount;
+                offlineTot.totalPerHr += s.totalPerHr * s.totalCount; offlineTot.totalUtil += s.totalUtil * s.totalCount;
+                offlineTot.dayHr += s.dayHr; offlineTot.dayTarget += s.dayTarget; offlineTot.dayOutput += s.dayOutput; offlineTot.dayCount += s.dayCount;
+                offlineTot.dayPerHr += s.dayPerHr * s.dayCount; offlineTot.dayUtil += s.dayUtil * s.dayCount;
+                offlineTot.nightHr += s.nightHr; offlineTot.nightTarget += s.nightTarget; offlineTot.nightOutput += s.nightOutput; offlineTot.nightCount += s.nightCount;
+                offlineTot.nightPerHr += s.nightPerHr * s.nightCount; offlineTot.nightUtil += s.nightUtil * s.nightCount;
             }
+        }
 
-            updateKPIs(allEntries);
+        if (onlineTot.totalCount > 0) { onlineTot.totalPerHr = onlineTot.totalPerHr / onlineTot.totalCount; onlineTot.totalUtil = onlineTot.totalUtil / onlineTot.totalCount; }
+        if (onlineTot.dayCount > 0) { onlineTot.dayPerHr = onlineTot.dayPerHr / onlineTot.dayCount; onlineTot.dayUtil = onlineTot.dayUtil / onlineTot.dayCount; }
+        if (onlineTot.nightCount > 0) { onlineTot.nightPerHr = onlineTot.nightPerHr / onlineTot.nightCount; onlineTot.nightUtil = onlineTot.nightUtil / onlineTot.nightCount; }
+        if (offlineTot.totalCount > 0) { offlineTot.totalPerHr = offlineTot.totalPerHr / offlineTot.totalCount; offlineTot.totalUtil = offlineTot.totalUtil / offlineTot.totalCount; }
+        if (offlineTot.dayCount > 0) { offlineTot.dayPerHr = offlineTot.dayPerHr / offlineTot.dayCount; offlineTot.dayUtil = offlineTot.dayUtil / offlineTot.dayCount; }
+        if (offlineTot.nightCount > 0) { offlineTot.nightPerHr = offlineTot.nightPerHr / offlineTot.nightCount; offlineTot.nightUtil = offlineTot.nightUtil / offlineTot.nightCount; }
 
-            document.getElementById('shortHeading').innerHTML =
-                `📊 শর্ট সামারি (ফিল্টার অনুযায়ী) ${filterDate ? '— ' + dateDisplay : ''}`;
-            renderShortSummary(filtered);
-
-            // আজকের ডে + নাইট শিফট
-            const today = new Date();
-            const tStr = today.toISOString().slice(0, 10);
-            const todayEntries = allEntries.filter(e => e.entryDate === tStr);
-            const todayDisplay = formatDateDisplay(tStr);
-            document.getElementById('todayHeading').innerHTML =
-                `📋 ডিপার্টমেন্ট ওয়াইজ সারাংশ (আজকের শিফট — ${todayDisplay})`;
-            renderTodaySummary(todayEntries);
-
-            const startDateStr = '2026-07-01';
-            const endDateStr = tStr;
-            const rangeEntries = allEntries.filter(e => e.entryDate >= startDateStr && e.entryDate <= endDateStr);
-            const startDisplay = formatDateDisplay(startDateStr);
-            const endDisplay = formatDateDisplay(endDateStr);
-            document.getElementById('dateRangeHeading').innerHTML =
-                `📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (${startDisplay} থেকে ${endDisplay} পর্যন্ত)`;
-            if (rangeEntries.length === 0) {
-                document.getElementById('dateRangeSummaryContainer').innerHTML =
-                    `<div class="empty-msg">এই রেঞ্জে কোনো এন্ট্রি নেই</div>`;
-                window._dateRangeTableData = null;
-            } else {
-                renderDateRangeSummary(rangeEntries);
-            }
-
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yStr = yesterday.toISOString().slice(0, 10);
-            const yDisplay = formatDateDisplay(yStr);
-            document.getElementById('dailyHeading').innerHTML =
-                `📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (গতকাল — ${yDisplay})`;
-            const yesterdayEntries = allEntries.filter(e => e.entryDate === yStr);
-            if (yesterdayEntries.length === 0) {
-                document.getElementById('summaryTableContainer').innerHTML =
-                    `<div class="empty-msg">গতকালের (${yDisplay}) কোনো ডেটা নেই</div>`;
-                window._dailyTableData = null;
-            } else {
-                renderDailySummary(yesterdayEntries);
-            }
-
-            renderOverallSummary(allEntries);
-            populateMonthFilter(allEntries);
-            renderMonthlySummary();
-            renderLogWithActions(filtered);
-            renderLogs();
-
-            document.getElementById('currentDate').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
+        const grandTot = {
+            totalHr: onlineTot.totalHr + offlineTot.totalHr,
+            totalTarget: onlineTot.totalTarget + offlineTot.totalTarget,
+            totalOutput: onlineTot.totalOutput + offlineTot.totalOutput,
+            totalCount: onlineTot.totalCount + offlineTot.totalCount,
+            totalPerHr: 0, totalUtil: 0,
+            dayHr: onlineTot.dayHr + offlineTot.dayHr,
+            dayTarget: onlineTot.dayTarget + offlineTot.dayTarget,
+            dayOutput: onlineTot.dayOutput + offlineTot.dayOutput,
+            dayCount: onlineTot.dayCount + offlineTot.dayCount,
+            dayPerHr: 0, dayUtil: 0,
+            nightHr: onlineTot.nightHr + offlineTot.nightHr,
+            nightTarget: onlineTot.nightTarget + offlineTot.nightTarget,
+            nightOutput: onlineTot.nightOutput + offlineTot.nightOutput,
+            nightCount: onlineTot.nightCount + offlineTot.nightCount,
+            nightPerHr: 0, nightUtil: 0
         };
+        if (grandTot.totalCount > 0) { grandTot.totalPerHr = (onlineTot.totalPerHr * onlineTot.totalCount + offlineTot.totalPerHr * offlineTot.totalCount) / grandTot.totalCount; grandTot.totalUtil = (onlineTot.totalUtil * onlineTot.totalCount + offlineTot.totalUtil * offlineTot.totalCount) / grandTot.totalCount; }
+        if (grandTot.dayCount > 0) { grandTot.dayPerHr = (onlineTot.dayPerHr * onlineTot.dayCount + offlineTot.dayPerHr * offlineTot.dayCount) / grandTot.dayCount; grandTot.dayUtil = (onlineTot.dayUtil * onlineTot.dayCount + offlineTot.dayUtil * offlineTot.dayCount) / grandTot.dayCount; }
+        if (grandTot.nightCount > 0) { grandTot.nightPerHr = (onlineTot.nightPerHr * onlineTot.nightCount + offlineTot.nightPerHr * offlineTot.nightCount) / grandTot.nightCount; grandTot.nightUtil = (onlineTot.nightUtil * onlineTot.nightCount + offlineTot.nightUtil * offlineTot.nightCount) / grandTot.nightCount; }
 
-        // ================================================================
-        // এন্ট্রি লগ (অ্যাডমিন অ্যাকশন সহ)
-        // ================================================================
-        function renderLogWithActions(entries) {
-            const container = document.getElementById('entryLogContainer');
-            if (entries.length === 0) {
-                container.innerHTML = `<div class="empty-msg">কোনো এন্ট্রি নেই</div>`;
-                return;
+        const sortedDepts = Object.entries(summary).filter(([dept, data]) => data.totalCount > 0).sort((a, b) => b[1].totalUtil - a[1].totalUtil);
+        const rankMap = {};
+        sortedDepts.forEach(([dept, data], idx) => { if (idx < 3) rankMap[dept] = idx + 1; });
+
+        let tableRows = [];
+
+        const mcDepts = DEPARTMENTS.filter(d => d.type === 'MC');
+        mcDepts.forEach(d => {
+            const dept = d.name;
+            const s = summary[dept];
+            if (!s) return;
+            let posDisplay = '-'; let posClass = '';
+            if (rankMap[dept] === 1) { posDisplay = '🥇 ১ম'; posClass = 'pos-1'; }
+            else if (rankMap[dept] === 2) { posDisplay = '🥈 ২য়'; posClass = 'pos-2'; }
+            else if (rankMap[dept] === 3) { posDisplay = '🥉 ৩য়'; posClass = 'pos-3'; }
+            tableRows.push({
+                isSummary: false, dept: dept, prodIC: s.prodIC, typeLabel: 'ON LINE PACK', badgeClass: 'badge-online',
+                totalHr: s.totalHr, totalTarget: s.totalTarget, totalOutput: s.totalOutput,
+                totalPerHr: s.totalPerHr, totalUtil: s.totalUtil,
+                utilColor: s.totalUtil >= 80 ? 'util-high' : (s.totalUtil >= 50 ? 'util-mid' : 'util-low'),
+                position: posDisplay, posClass: posClass,
+                dayHr: s.dayHr, dayTarget: s.dayTarget, dayOutput: s.dayOutput, dayPerHr: s.dayPerHr, dayUtil: s.dayUtil,
+                nightHr: s.nightHr, nightTarget: s.nightTarget, nightOutput: s.nightOutput, nightPerHr: s.nightPerHr, nightUtil: s.nightUtil
+            });
+        });
+
+        tableRows.push({
+            isSummary: true, summaryType: 'online',
+            dept: 'ON LINE PACK Summary', prodIC: '', typeLabel: '',
+            totalHr: onlineTot.totalHr, totalTarget: onlineTot.totalTarget, totalOutput: onlineTot.totalOutput,
+            totalPerHr: onlineTot.totalPerHr, totalUtil: onlineTot.totalUtil, position: '-',
+            dayHr: onlineTot.dayHr, dayTarget: onlineTot.dayTarget, dayOutput: onlineTot.dayOutput,
+            dayPerHr: onlineTot.dayPerHr, dayUtil: onlineTot.dayUtil,
+            nightHr: onlineTot.nightHr, nightTarget: onlineTot.nightTarget, nightOutput: onlineTot.nightOutput,
+            nightPerHr: onlineTot.nightPerHr, nightUtil: onlineTot.nightUtil
+        });
+
+        const packDepts = DEPARTMENTS.filter(d => d.type === 'Packaging');
+        packDepts.forEach(d => {
+            const dept = d.name;
+            const s = summary[dept];
+            if (!s) return;
+            let posDisplay = '-'; let posClass = '';
+            if (rankMap[dept] === 1) { posDisplay = '🥇 ১ম'; posClass = 'pos-1'; }
+            else if (rankMap[dept] === 2) { posDisplay = '🥈 ২য়'; posClass = 'pos-2'; }
+            else if (rankMap[dept] === 3) { posDisplay = '🥉 ৩য়'; posClass = 'pos-3'; }
+            tableRows.push({
+                isSummary: false, dept: dept, prodIC: s.prodIC, typeLabel: 'OFF LINE PACK', badgeClass: 'badge-offline',
+                totalHr: s.totalHr, totalTarget: s.totalTarget, totalOutput: s.totalOutput,
+                totalPerHr: s.totalPerHr, totalUtil: s.totalUtil,
+                utilColor: s.totalUtil >= 80 ? 'util-high' : (s.totalUtil >= 50 ? 'util-mid' : 'util-low'),
+                position: posDisplay, posClass: posClass,
+                dayHr: s.dayHr, dayTarget: s.dayTarget, dayOutput: s.dayOutput, dayPerHr: s.dayPerHr, dayUtil: s.dayUtil,
+                nightHr: s.nightHr, nightTarget: s.nightTarget, nightOutput: s.nightOutput, nightPerHr: s.nightPerHr, nightUtil: s.nightUtil
+            });
+        });
+
+        tableRows.push({
+            isSummary: true, summaryType: 'offline',
+            dept: 'OFF LINE PACK Summary', prodIC: '', typeLabel: '',
+            totalHr: offlineTot.totalHr, totalTarget: offlineTot.totalTarget, totalOutput: offlineTot.totalOutput,
+            totalPerHr: offlineTot.totalPerHr, totalUtil: offlineTot.totalUtil, position: '-',
+            dayHr: offlineTot.dayHr, dayTarget: offlineTot.dayTarget, dayOutput: offlineTot.dayOutput,
+            dayPerHr: offlineTot.dayPerHr, dayUtil: offlineTot.dayUtil,
+            nightHr: offlineTot.nightHr, nightTarget: offlineTot.nightTarget, nightOutput: offlineTot.nightOutput,
+            nightPerHr: offlineTot.nightPerHr, nightUtil: offlineTot.nightUtil
+        });
+
+        tableRows.push({
+            isSummary: true, summaryType: 'grand',
+            dept: '📌 গ্র্যান্ড টোটাল', prodIC: '', typeLabel: '',
+            totalHr: grandTot.totalHr, totalTarget: grandTot.totalTarget, totalOutput: grandTot.totalOutput,
+            totalPerHr: grandTot.totalPerHr, totalUtil: grandTot.totalUtil, position: '-',
+            dayHr: grandTot.dayHr, dayTarget: grandTot.dayTarget, dayOutput: grandTot.dayOutput,
+            dayPerHr: grandTot.dayPerHr, dayUtil: grandTot.dayUtil,
+            nightHr: grandTot.nightHr, nightTarget: grandTot.nightTarget, nightOutput: grandTot.nightOutput,
+            nightPerHr: grandTot.nightPerHr, nightUtil: grandTot.nightUtil
+        });
+
+        return { tableRows, grandTot, onlineTot, offlineTot, summary };
+    }
+
+    // ================================================================
+    // ডেট রেঞ্জ সারাংশ
+    // ================================================================
+    function renderDateRangeSummary(entries) {
+        const container = document.getElementById('dateRangeSummaryContainer');
+        const result = buildDepartmentSummary(entries);
+        const tableRows = result.tableRows;
+        if (!tableRows || tableRows.length === 0) {
+            container.innerHTML = `<div class="empty-msg">এই রেঞ্জে কোনো এন্ট্রি নেই</div>`;
+            window._dateRangeTableData = null;
+            return;
+        }
+        let html = buildSummaryTableHTML(tableRows);
+        container.innerHTML = html;
+        window._dateRangeTableData = tableRows;
+    }
+
+    // ================================================================
+    // buildSummaryTableHTML (পূর্ণ ১৯ কলাম)
+    // ================================================================
+    function buildSummaryTableHTML(tableRows) {
+        let html = `<div class="table-wrap"><table>
+            <thead><tr>
+                <th rowspan="2">ডিপার্টমেন্ট</th>
+                <th rowspan="2">Prod IC</th>
+                <th rowspan="2">টাইপ</th>
+                <th colspan="6" style="background:#1a237e;">📊 ডে + নাইট (Total)</th>
+                <th colspan="5" style="background:#0d47a1;">☀️ ডে শিফট</th>
+                <th colspan="5" style="background:#1a237e;">🌙 নাইট শিফট</th>
+            </tr>
+            <tr>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th><th>পজিশন</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+            </tr></thead><tbody>`;
+
+        tableRows.forEach(row => {
+            let rowClass = '';
+            if (row.isSummary) {
+                if (row.summaryType === 'online') rowClass = 'row-online-summary';
+                else if (row.summaryType === 'offline') rowClass = 'row-offline-summary';
+                else if (row.summaryType === 'grand') rowClass = 'row-grand-total';
             }
+            const utilColor = row.totalUtil >= 80 ? 'util-high' : (row.totalUtil >= 50 ? 'util-mid' : 'util-low');
+            html += `<tr class="${rowClass}">`;
+            html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
+            html += `<td>${row.prodIC}</td>`;
+            html += `<td>${row.typeLabel ? `<span class="${row.badgeClass || ''}">${row.typeLabel}</span>` : '-'}</td>`;
+            html += `<td><strong>${row.totalHr}</strong></td>`;
+            html += `<td>${row.totalTarget}</td>`;
+            html += `<td><strong>${row.totalOutput}</strong></td>`;
+            html += `<td>${row.totalPerHr.toFixed(2)}</td>`;
+            html += `<td class="${utilColor}">${row.totalUtil.toFixed(1)}%</td>`;
+            html += `<td class="${row.posClass || ''}"><strong>${row.position}</strong></td>`;
+            html += `<td>${row.dayHr}</td>`;
+            html += `<td>${row.dayTarget}</td>`;
+            html += `<td>${row.dayOutput}</td>`;
+            html += `<td>${row.dayPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.dayUtil.toFixed(1)}%</td>`;
+            html += `<td>${row.nightHr}</td>`;
+            html += `<td>${row.nightTarget}</td>`;
+            html += `<td>${row.nightOutput}</td>`;
+            html += `<td>${row.nightPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.nightUtil.toFixed(1)}%</td>`;
+            html += `</tr>`;
+        });
 
-            let html = `<div class="table-wrap"><table>
-            <thead><tr><th>#</th><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th><th>CTN Output</th><th>Per HR CTN</th><th>Utilisation %</th><th>তারিখ</th><th>সময়</th><th>অ্যাকশন</th></tr></thead><tbody>`;
+        html += `</tbody></table></div>`;
+        return html;
+    }
 
-            entries.forEach((e, idx) => {
-                const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-online' :
-                    'badge-offline';
-                const util = e.utilPct || 0;
-                const utilClass = util >= 80 ? 'util-high' : (util >= 50 ? 'util-mid' : 'util-low');
-                html += `<tr>
+    // ================================================================
+    // ওভারঅল সারাংশ
+    // ================================================================
+    function renderOverallSummary(allEntries) {
+        const container = document.getElementById('overallSummaryContainer');
+        if (allEntries.length === 0) {
+            container.innerHTML = `<div class="empty-msg">কোনো ডেটা নেই</div>`;
+            return;
+        }
+
+        const deptData = {};
+        DEPARTMENTS.forEach(d => {
+            deptData[d.name] = { prodIC: d.prodIC, totalHr: 0, totalTarget: 0, totalOutput: 0, count: 0 };
+        });
+
+        allEntries.forEach(e => {
+            if (deptData[e.dept]) {
+                deptData[e.dept].totalHr += e.dayHr;
+                deptData[e.dept].totalTarget += e.target;
+                deptData[e.dept].totalOutput += e.output;
+                deptData[e.dept].count += 1;
+            }
+        });
+
+        const deptList = [];
+        for (const [dept, data] of Object.entries(deptData)) {
+            const util = data.totalTarget > 0 ? (data.totalOutput / data.totalTarget) * 100 : 0;
+            deptList.push({
+                name: dept,
+                prodIC: data.prodIC,
+                totalHr: data.totalHr,
+                totalTarget: data.totalTarget,
+                totalOutput: data.totalOutput,
+                util: util,
+                count: data.count
+            });
+        }
+
+        deptList.sort((a, b) => b.util - a.util);
+        deptList.forEach((d, idx) => { d.position = idx + 1; });
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>Total HR</th><th>Total CTN Cap (Target)</th><th>Total Carton Output</th><th>Utilisation %</th><th>পজিশন</th></tr></thead><tbody>`;
+
+        let grandHr = 0, grandTarget = 0, grandOutput = 0;
+        deptList.forEach(d => {
+            grandHr += d.totalHr;
+            grandTarget += d.totalTarget;
+            grandOutput += d.totalOutput;
+            let posClass = '';
+            let posDisplay = d.position;
+            if (d.position === 1) { posClass = 'pos-1'; posDisplay = '🥇 ১ম'; }
+            else if (d.position === 2) { posClass = 'pos-2'; posDisplay = '🥈 ২য়'; }
+            else if (d.position === 3) { posClass = 'pos-3'; posDisplay = '🥉 ৩য়'; }
+            html += `<tr>
+                <td class="dept-name">${d.name}</td>
+                <td>${d.prodIC}</td>
+                <td>${d.totalHr}</td>
+                <td>${d.totalTarget}</td>
+                <td><strong>${d.totalOutput}</strong></td>
+                <td class="${d.util >= 80 ? 'util-high' : d.util >= 50 ? 'util-mid' : 'util-low'}">${d.util.toFixed(1)}%</td>
+                <td class="${posClass}"><strong>${posDisplay}</strong></td>
+            </tr>`;
+        });
+
+        const grandUtil = grandTarget > 0 ? (grandOutput / grandTarget) * 100 : 0;
+        html += `<tr class="total-row">
+            <td colspan="2"><strong>📌 গ্র্যান্ড টোটাল</strong></td>
+            <td><strong>${grandHr}</strong></td>
+            <td><strong>${grandTarget}</strong></td>
+            <td><strong>${grandOutput}</strong></td>
+            <td><strong>${grandUtil.toFixed(1)}%</strong></td>
+            <td><strong>-</strong></td>
+        </tr>`;
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    // ================================================================
+    // মাস ফিল্টার পপুলেট
+    // ================================================================
+    function populateMonthFilter(entries) {
+        const select = document.getElementById('monthFilter');
+        const months = new Set();
+        entries.forEach(e => {
+            if (e.entryDate) {
+                const parts = e.entryDate.split('-');
+                if (parts.length === 3) {
+                    const year = parts[0];
+                    const month = parts[1];
+                    const monthNames = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+                    const monthName = monthNames[parseInt(month) - 1];
+                    months.add(`${monthName} ${year}`);
+                }
+            }
+        });
+
+        const sortedMonths = Array.from(months).sort((a, b) => {
+            const aParts = a.split(' ');
+            const bParts = b.split(' ');
+            const monthNames = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+            const aMonth = monthNames.indexOf(aParts[0]);
+            const bMonth = monthNames.indexOf(bParts[0]);
+            const aYear = parseInt(aParts[1]);
+            const bYear = parseInt(bParts[1]);
+            if (aYear !== bYear) return aYear - bYear;
+            return aMonth - bMonth;
+        });
+
+        select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
+        sortedMonths.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            select.appendChild(opt);
+        });
+    }
+
+    // ================================================================
+    // মাস অনুযায়ী সারাংশ
+    // ================================================================
+    window.renderMonthlySummary = function() {
+        const container = document.getElementById('monthlySummaryContainer');
+        const selectedMonth = document.getElementById('monthFilter').value;
+
+        if (!selectedMonth) {
+            container.innerHTML = `<div class="empty-msg">দয়া করে একটি মাস সিলেক্ট করুন</div>`;
+            window._monthlyData = null;
+            return;
+        }
+
+        const parts = selectedMonth.split(' ');
+        const monthNames = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+        const monthIndex = monthNames.indexOf(parts[0]) + 1;
+        const year = parseInt(parts[1]);
+
+        const monthEntries = allEntries.filter(e => {
+            if (!e.entryDate) return false;
+            const dParts = e.entryDate.split('-');
+            if (dParts.length !== 3) return false;
+            const eYear = parseInt(dParts[0]);
+            const eMonth = parseInt(dParts[1]);
+            return eYear === year && eMonth === monthIndex;
+        });
+
+        if (monthEntries.length === 0) {
+            container.innerHTML = `<div class="empty-msg">এই মাসে কোনো এন্ট্রি নেই</div>`;
+            window._monthlyData = null;
+            return;
+        }
+
+        const deptData = {};
+        DEPARTMENTS.forEach(d => {
+            deptData[d.name] = { prodIC: d.prodIC, totalHr: 0, totalTarget: 0, totalOutput: 0, count: 0 };
+        });
+
+        monthEntries.forEach(e => {
+            if (deptData[e.dept]) {
+                deptData[e.dept].totalHr += e.dayHr;
+                deptData[e.dept].totalTarget += e.target;
+                deptData[e.dept].totalOutput += e.output;
+                deptData[e.dept].count += 1;
+            }
+        });
+
+        const deptList = [];
+        for (const [dept, data] of Object.entries(deptData)) {
+            const util = data.totalTarget > 0 ? (data.totalOutput / data.totalTarget) * 100 : 0;
+            deptList.push({
+                name: dept,
+                prodIC: data.prodIC,
+                totalHr: data.totalHr,
+                totalTarget: data.totalTarget,
+                totalOutput: data.totalOutput,
+                util: util,
+                count: data.count
+            });
+        }
+
+        deptList.sort((a, b) => b.util - a.util);
+        deptList.forEach((d, idx) => { d.position = idx + 1; });
+
+        window._monthlyData = { deptList, month: selectedMonth };
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>Total HR</th><th>Total CTN Cap (Target)</th><th>Total Carton Output</th><th>Utilisation %</th><th>পজিশন</th></tr></thead><tbody>`;
+
+        let grandHr = 0, grandTarget = 0, grandOutput = 0;
+        deptList.forEach(d => {
+            grandHr += d.totalHr;
+            grandTarget += d.totalTarget;
+            grandOutput += d.totalOutput;
+            let posClass = '';
+            let posDisplay = d.position;
+            if (d.position === 1) { posClass = 'pos-1'; posDisplay = '🥇 ১ম'; }
+            else if (d.position === 2) { posClass = 'pos-2'; posDisplay = '🥈 ২য়'; }
+            else if (d.position === 3) { posClass = 'pos-3'; posDisplay = '🥉 ৩য়'; }
+            html += `<tr>
+                <td class="dept-name">${d.name}</td>
+                <td>${d.prodIC}</td>
+                <td>${d.totalHr}</td>
+                <td>${d.totalTarget}</td>
+                <td><strong>${d.totalOutput}</strong></td>
+                <td class="${d.util >= 80 ? 'util-high' : d.util >= 50 ? 'util-mid' : 'util-low'}">${d.util.toFixed(1)}%</td>
+                <td class="${posClass}"><strong>${posDisplay}</strong></td>
+            </tr>`;
+        });
+
+        const grandUtil = grandTarget > 0 ? (grandOutput / grandTarget) * 100 : 0;
+        html += `<tr class="total-row">
+            <td colspan="2"><strong>📌 গ্র্যান্ড টোটাল</strong></td>
+            <td><strong>${grandHr}</strong></td>
+            <td><strong>${grandTarget}</strong></td>
+            <td><strong>${grandOutput}</strong></td>
+            <td><strong>${grandUtil.toFixed(1)}%</strong></td>
+            <td><strong>-</strong></td>
+        </tr>`;
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    };
+
+    // ================================================================
+    // 📋 এন্ট্রি লগ
+    // ================================================================
+    function renderLog(entries) {
+        const container = document.getElementById('entryLogContainer');
+        if (entries.length === 0) {
+            container.innerHTML = `<div class="empty-msg">কোনো এন্ট্রি নেই</div>`;
+            return;
+        }
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr><th>#</th><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th><th>CTN Output</th><th>Per HR CTN</th><th>Utilisation %</th><th>তারিখ</th><th>সময়</th></tr></thead><tbody>`;
+
+        entries.forEach((e, idx) => {
+            const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-online' : 'badge-offline';
+            const util = e.utilPct || 0;
+            const utilClass = util >= 80 ? 'util-high' : (util >= 50 ? 'util-mid' : 'util-low');
+            html += `<tr>
                 <td>${idx + 1}</td>
                 <td><span class="badge ${badgeClass}">${e.dept}</span></td>
                 <td>${e.prodIC}</td>
@@ -1346,615 +1190,52 @@
                 <td class="${utilClass}">${util.toFixed(1)}%</td>
                 <td>${e.entryDate}</td>
                 <td>${e.timestamp}</td>
-                <td>
-                    <button class="btn-admin" onclick="editEntry('${e.key}')">✏️</button>
-                    <button class="btn-admin btn-admin-del" onclick="deleteEntry('${e.key}')">🗑️</button>
-                </td>
             </tr>`;
-            });
+        });
 
-            html += `</tbody></table></div>`;
-            container.innerHTML = html;
-        }
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
 
-        // ================================================================
-        // রেন্ডার: Today Summary (CTN Output বাদ)
-        // ================================================================
-        function renderTodaySummary(entries) {
-            const container = document.getElementById('todaySummaryContainer');
-            const dayEntries = entries.filter(e => e.shift === 'Day');
-            const nightEntries = entries.filter(e => e.shift === 'Night');
+    // ================================================================
+    // 📥 সব ডাউনলোড ফাংশন (সম্পূর্ণ)
+    // ================================================================
 
-            let html = '';
-            html += `<h3 style="margin:15px 0 10px; color:#0d47a1;">☀️ ডে শিফট</h3>`;
-            if (dayEntries.length === 0) {
-                html += buildEmptyTodayTable('Day');
-            } else {
-                html += buildTodayTable(dayEntries, 'Day');
-            }
-            html += `<h3 style="margin:15px 0 10px; color:#1a237e;">🌙 নাইট শিফট</h3>`;
-            if (nightEntries.length === 0) {
-                html += `<div class="empty-msg" style="padding:15px;">নাইট শিফটে কোনো এন্ট্রি নেই</div>`;
-            } else {
-                html += buildTodayTable(nightEntries, 'Night');
-            }
-            container.innerHTML = html;
+    // ---- Short Summary ----
+    window.downloadShortExcel = function() {
+        const data = window._shortData;
+        if (!data) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['বিভাগ', 'HR', 'Target', 'Output', 'CTN/HR', 'Util%'];
+        const rows = [
+            ['ONLINE PACK', data.online.hr, data.online.target, data.online.output, data.online.perHr.toFixed(2), data.online.util.toFixed(1) + '%'],
+            ['OFFLINE PACK', data.offline.hr, data.offline.target, data.offline.output, data.offline.perHr.toFixed(2), data.offline.util.toFixed(1) + '%'],
+            ['OVERALL', data.overall.hr, data.overall.target, data.overall.output, data.overall.perHr.toFixed(2), data.overall.util.toFixed(1) + '%']
+        ];
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Short Summary');
+        XLSX.writeFile(wb, `Short_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
 
-            const allDayData = buildDeptMap(dayEntries);
-            const allNightData = buildDeptMap(nightEntries);
-            window._todayTableData = {
-                day: allDayData,
-                night: allNightData,
-                dayEntries: dayEntries,
-                nightEntries: nightEntries
-            };
-        }
-
-        function buildDeptMap(entries) {
-            const deptMap = {};
-            entries.forEach(e => {
-                if (!deptMap[e.dept]) {
-                    deptMap[e.dept] = {
-                        prodIC: e.prodIC || '',
-                        shift: e.shift,
-                        icName: e.icName || '',
-                        dayHr: 0,
-                        target: 0,
-                        key: e.key
-                    };
-                }
-                deptMap[e.dept].dayHr += e.dayHr;
-                deptMap[e.dept].target += e.target;
-                deptMap[e.dept].key = e.key;
-            });
-            return deptMap;
-        }
-
-        function buildTodayTable(entries, shiftLabel) {
-            const deptMap = buildDeptMap(entries);
-            let html = `<div class="table-wrap"><table class="today-summary-table">
-            <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th></tr></thead><tbody>`;
-            let grandHr = 0,
-                grandTarget = 0;
-            for (const [dept, data] of Object.entries(deptMap)) {
-                grandHr += data.dayHr;
-                grandTarget += data.target;
-                html += `<tr>
-                <td class="dept-name"><strong>${dept}</strong></td>
-                <td>${data.prodIC}</td>
-                <td>${data.shift}</td>
-                <td>${data.icName}</td>
-                <td>${data.dayHr}</td>
-                <td>${data.target}</td>
-            </tr>`;
-            }
-            html += `<tr class="total-row"><td colspan="4"><strong>📌 মোট</strong></td>
-            <td><strong>${grandHr}</strong></td>
-            <td><strong>${grandTarget}</strong></td>
-        </tr></tbody></table></div>`;
-            return html;
-        }
-
-        function buildEmptyTodayTable(shiftLabel) {
-            let html = `<div class="table-wrap"><table class="today-summary-table">
-            <thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>শিফট</th><th>IC Name</th><th>Day HR</th><th>Target (CTN)</th></tr></thead><tbody>`;
-            const depts = DEPARTMENTS.filter(d => d.type === 'MC' || d.type === 'Packaging');
-            depts.forEach(d => {
-                html += `<tr>
-                <td class="dept-name"><strong>${d.name}</strong></td>
-                <td>${d.prodIC}</td>
-                <td>${shiftLabel}</td>
-                <td>-</td>
-                <td>0</td>
-                <td>0</td>
-            </tr>`;
-            });
-            html += `<tr class="total-row"><td colspan="4"><strong>📌 মোট</strong></td>
-            <td><strong>0</strong></td>
-            <td><strong>0</strong></td>
-        </tr></tbody></table></div>`;
-            return html;
-        }
-
-        // ================================================================
-        // রেন্ডার: Short Summary
-        // ================================================================
-        function renderShortSummary(entries) {
-            const container = document.getElementById('shortSummaryContent');
-            if (entries.length === 0) { container.innerHTML =
-                `<div class="empty-msg">কোনো ডেটা নেই</div>`; window._shortData = null; return; }
-            let online = { hr: 0, target: 0, output: 0, count: 0, perHr: 0, util: 0 };
-            let offline = { hr: 0, target: 0, output: 0, count: 0, perHr: 0, util: 0 };
-            entries.forEach(e => {
-                const deptInfo = DEPARTMENTS.find(d => d.name === e.dept);
-                if (!deptInfo) return;
-                if (deptInfo.type === 'MC') {
-                    online.hr += e.dayHr;
-                    online.target += e.target;
-                    online.output += e.output;
-                    online.count += 1;
-                    online.perHr += e.perHr;
-                    online.util += e.utilPct || 0;
-                } else {
-                    offline.hr += e.dayHr;
-                    offline.target += e.target;
-                    offline.output += e.output;
-                    offline.count += 1;
-                    offline.perHr += e.perHr;
-                    offline.util += e.utilPct || 0;
-                }
-            });
-            if (online.count > 0) { online.perHr = online.perHr / online.count;
-                online.util = online.util / online.count; }
-            if (offline.count > 0) { offline.perHr = offline.perHr / offline.count;
-                offline.util = offline.util / offline.count; }
-            const overall = { hr: online.hr + offline.hr, target: online.target + offline.target, output: online.output +
-                    offline.output, count: online.count + offline.count, perHr: 0, util: 0 };
-            if (overall.count > 0) { overall.perHr = (online.perHr * online.count + offline.perHr * offline.count) / overall
-                    .count;
-                overall.util = (online.util * online.count + offline.util * offline.count) / overall.count; }
-            window._shortData = { online, offline, overall };
-            let html = `<div class="table-wrap"><table>
-            <thead><tr><th>বিভাগ</th><th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th></tr></thead><tbody>
-            <tr class="short-online"><td><strong>ONLINE PACK</strong></td><td>${online.hr}</td><td>${online.target}</td><td><strong>${online.output}</strong></td><td>${online.perHr.toFixed(2)}</td><td class="${online.util>=80?'util-high':online.util>=50?'util-mid':'util-low'}">${online.util.toFixed(1)}%</td></tr>
-            <tr class="short-offline"><td><strong>OFFLINE PACK</strong></td><td>${offline.hr}</td><td>${offline.target}</td><td><strong>${offline.output}</strong></td><td>${offline.perHr.toFixed(2)}</td><td class="${offline.util>=80?'util-high':offline.util>=50?'util-mid':'util-low'}">${offline.util.toFixed(1)}%</td></tr>
-            <tr class="short-overall total-row"><td><strong>📌 OVERALL</strong></td><td><strong>${overall.hr}</strong></td><td><strong>${overall.target}</strong></td><td><strong>${overall.output}</strong></td><td><strong>${overall.perHr.toFixed(2)}</strong></td><td><strong>${overall.util.toFixed(1)}%</strong></td></tr>
-        </tbody></table></div>`;
-            container.innerHTML = html;
-        }
-
-        // ================================================================
-        // বিল্ড ডিপার্টমেন্ট সামারি (জেনেরিক)
-        // ================================================================
-        function buildDepartmentSummary(entries) {
-            const summary = {};
-            DEPARTMENTS.forEach(d => {
-                summary[d.name] = { prodIC: d.prodIC, type: d.type, dayHr: 0, dayTarget: 0, dayOutput: 0,
-                    dayPerHr: 0, dayUtil: 0, dayCount: 0, nightHr: 0, nightTarget: 0, nightOutput: 0,
-                    nightPerHr: 0, nightUtil: 0, nightCount: 0, totalHr: 0, totalTarget: 0, totalOutput: 0,
-                    totalPerHr: 0, totalUtil: 0, totalCount: 0 };
-            });
-            entries.forEach(e => {
-                if (summary[e.dept]) {
-                    const s = summary[e.dept];
-                    if (e.shift === 'Day') { s.dayHr += e.dayHr;
-                        s.dayTarget += e.target;
-                        s.dayOutput += e.output;
-                        s.dayPerHr += e.perHr;
-                        s.dayUtil += e.utilPct || 0;
-                        s.dayCount += 1; } else { s.nightHr += e.dayHr;
-                        s.nightTarget += e.target;
-                        s.nightOutput += e.output;
-                        s.nightPerHr += e.perHr;
-                        s.nightUtil += e.utilPct || 0;
-                        s.nightCount += 1; }
-                    s.totalHr += e.dayHr;
-                    s.totalTarget += e.target;
-                    s.totalOutput += e.output;
-                    s.totalPerHr += e.perHr;
-                    s.totalUtil += e.utilPct || 0;
-                    s.totalCount += 1;
-                }
-            });
-            for (const key in summary) {
-                const s = summary[key];
-                if (s.dayCount > 0) { s.dayPerHr = s.dayPerHr / s.dayCount;
-                    s.dayUtil = s.dayUtil / s.dayCount; }
-                if (s.nightCount > 0) { s.nightPerHr = s.nightPerHr / s.nightCount;
-                    s.nightUtil = s.nightUtil / s.nightCount; }
-                if (s.totalCount > 0) { s.totalPerHr = s.totalPerHr / s.totalCount;
-                    s.totalUtil = s.totalUtil / s.totalCount; }
-            }
-            let onlineTot = { totalHr: 0, totalTarget: 0, totalOutput: 0, totalPerHr: 0, totalUtil: 0, totalCount: 0,
-                dayHr: 0, dayTarget: 0, dayOutput: 0, dayPerHr: 0, dayUtil: 0, dayCount: 0, nightHr: 0,
-                nightTarget: 0, nightOutput: 0, nightPerHr: 0, nightUtil: 0, nightCount: 0 };
-            let offlineTot = { totalHr: 0, totalTarget: 0, totalOutput: 0, totalPerHr: 0, totalUtil: 0, totalCount: 0,
-                dayHr: 0, dayTarget: 0, dayOutput: 0, dayPerHr: 0, dayUtil: 0, dayCount: 0, nightHr: 0,
-                nightTarget: 0, nightOutput: 0, nightPerHr: 0, nightUtil: 0, nightCount: 0 };
-            for (const [dept, s] of Object.entries(summary)) {
-                if (s.type === 'MC') {
-                    onlineTot.totalHr += s.totalHr;
-                    onlineTot.totalTarget += s.totalTarget;
-                    onlineTot.totalOutput += s.totalOutput;
-                    onlineTot.totalCount += s.totalCount;
-                    onlineTot.totalPerHr += s.totalPerHr * s.totalCount;
-                    onlineTot.totalUtil += s.totalUtil * s.totalCount;
-                    onlineTot.dayHr += s.dayHr;
-                    onlineTot.dayTarget += s.dayTarget;
-                    onlineTot.dayOutput += s.dayOutput;
-                    onlineTot.dayCount += s.dayCount;
-                    onlineTot.dayPerHr += s.dayPerHr * s.dayCount;
-                    onlineTot.dayUtil += s.dayUtil * s.dayCount;
-                    onlineTot.nightHr += s.nightHr;
-                    onlineTot.nightTarget += s.nightTarget;
-                    onlineTot.nightOutput += s.nightOutput;
-                    onlineTot.nightCount += s.nightCount;
-                    onlineTot.nightPerHr += s.nightPerHr * s.nightCount;
-                    onlineTot.nightUtil += s.nightUtil * s.nightCount;
-                } else if (s.type === 'Packaging') {
-                    offlineTot.totalHr += s.totalHr;
-                    offlineTot.totalTarget += s.totalTarget;
-                    offlineTot.totalOutput += s.totalOutput;
-                    offlineTot.totalCount += s.totalCount;
-                    offlineTot.totalPerHr += s.totalPerHr * s.totalCount;
-                    offlineTot.totalUtil += s.totalUtil * s.totalCount;
-                    offlineTot.dayHr += s.dayHr;
-                    offlineTot.dayTarget += s.dayTarget;
-                    offlineTot.dayOutput += s.dayOutput;
-                    offlineTot.dayCount += s.dayCount;
-                    offlineTot.dayPerHr += s.dayPerHr * s.dayCount;
-                    offlineTot.dayUtil += s.dayUtil * s.dayCount;
-                    offlineTot.nightHr += s.nightHr;
-                    offlineTot.nightTarget += s.nightTarget;
-                    offlineTot.nightOutput += s.nightOutput;
-                    offlineTot.nightCount += s.nightCount;
-                    offlineTot.nightPerHr += s.nightPerHr * s.nightCount;
-                    offlineTot.nightUtil += s.nightUtil * s.nightCount;
-                }
-            }
-            if (onlineTot.totalCount > 0) { onlineTot.totalPerHr = onlineTot.totalPerHr / onlineTot.totalCount;
-                onlineTot.totalUtil = onlineTot.totalUtil / onlineTot.totalCount; }
-            if (onlineTot.dayCount > 0) { onlineTot.dayPerHr = onlineTot.dayPerHr / onlineTot.dayCount;
-                onlineTot.dayUtil = onlineTot.dayUtil / onlineTot.dayCount; }
-            if (onlineTot.nightCount > 0) { onlineTot.nightPerHr = onlineTot.nightPerHr / onlineTot.nightCount;
-                onlineTot.nightUtil = onlineTot.nightUtil / onlineTot.nightCount; }
-            if (offlineTot.totalCount > 0) { offlineTot.totalPerHr = offlineTot.totalPerHr / offlineTot.totalCount;
-                offlineTot.totalUtil = offlineTot.totalUtil / offlineTot.totalCount; }
-            if (offlineTot.dayCount > 0) { offlineTot.dayPerHr = offlineTot.dayPerHr / offlineTot.dayCount;
-                offlineTot.dayUtil = offlineTot.dayUtil / offlineTot.dayCount; }
-            if (offlineTot.nightCount > 0) { offlineTot.nightPerHr = offlineTot.nightPerHr / offlineTot.nightCount;
-                offlineTot.nightUtil = offlineTot.nightUtil / offlineTot.nightCount; }
-            const grandTot = {
-                totalHr: onlineTot.totalHr + offlineTot.totalHr,
-                totalTarget: onlineTot.totalTarget + offlineTot.totalTarget,
-                totalOutput: onlineTot.totalOutput + offlineTot.totalOutput,
-                totalCount: onlineTot.totalCount + offlineTot.totalCount,
-                totalPerHr: 0,
-                totalUtil: 0,
-                dayHr: onlineTot.dayHr + offlineTot.dayHr,
-                dayTarget: onlineTot.dayTarget + offlineTot.dayTarget,
-                dayOutput: onlineTot.dayOutput + offlineTot.dayOutput,
-                dayCount: onlineTot.dayCount + offlineTot.dayCount,
-                dayPerHr: 0,
-                dayUtil: 0,
-                nightHr: onlineTot.nightHr + offlineTot.nightHr,
-                nightTarget: onlineTot.nightTarget + offlineTot.nightTarget,
-                nightOutput: onlineTot.nightOutput + offlineTot.nightOutput,
-                nightCount: onlineTot.nightCount + offlineTot.nightCount,
-                nightPerHr: 0,
-                nightUtil: 0
-            };
-            if (grandTot.totalCount > 0) { grandTot.totalPerHr = (onlineTot.totalPerHr * onlineTot.totalCount + offlineTot
-                    .totalPerHr * offlineTot.totalCount) / grandTot.totalCount;
-                grandTot.totalUtil = (onlineTot.totalUtil * onlineTot.totalCount + offlineTot.totalUtil * offlineTot
-                    .totalCount) / grandTot.totalCount; }
-            if (grandTot.dayCount > 0) { grandTot.dayPerHr = (onlineTot.dayPerHr * onlineTot.dayCount + offlineTot
-                    .dayPerHr * offlineTot.dayCount) / grandTot.dayCount;
-                grandTot.dayUtil = (onlineTot.dayUtil * onlineTot.dayCount + offlineTot.dayUtil * offlineTot.dayCount) /
-                    grandTot.dayCount; }
-            if (grandTot.nightCount > 0) { grandTot.nightPerHr = (onlineTot.nightPerHr * onlineTot.nightCount +
-                    offlineTot.nightPerHr * offlineTot.nightCount) / grandTot.nightCount;
-                grandTot.nightUtil = (onlineTot.nightUtil * onlineTot.nightCount + offlineTot.nightUtil * offlineTot
-                    .nightCount) / grandTot.nightCount; }
-
-            const sortedDepts = Object.entries(summary).filter(([dept, data]) => data.totalCount > 0).sort((a, b) => b[1]
-                .totalUtil - a[1].totalUtil);
-            const rankMap = {};
-            sortedDepts.forEach(([dept, data], idx) => { if (idx < 3) rankMap[dept] = idx + 1; });
-            let tableRows = [];
-            const mcDepts = DEPARTMENTS.filter(d => d.type === 'MC');
-            mcDepts.forEach(d => {
-                const dept = d.name;
-                const s = summary[dept];
-                if (!s) return;
-                let posDisplay = '-',
-                    posClass = '';
-                if (rankMap[dept] === 1) { posDisplay = '🥇 ১ম';
-                    posClass = 'pos-1'; } else if (rankMap[dept] === 2) { posDisplay = '🥈 ২য়';
-                    posClass = 'pos-2'; } else if (rankMap[dept] === 3) { posDisplay = '🥉 ৩য়';
-                    posClass = 'pos-3'; }
-                tableRows.push({ isSummary: false, dept, prodIC: s.prodIC, typeLabel: 'ON LINE PACK',
-                    badgeClass: 'badge-online',
-                    totalHr: s.totalHr, totalTarget: s.totalTarget, totalOutput: s.totalOutput,
-                    totalPerHr: s.totalPerHr, totalUtil: s.totalUtil,
-                    position: posDisplay, posClass, dayHr: s.dayHr, dayTarget: s.dayTarget,
-                    dayOutput: s.dayOutput, dayPerHr: s.dayPerHr, dayUtil: s.dayUtil,
-                    nightHr: s.nightHr, nightTarget: s.nightTarget, nightOutput: s.nightOutput,
-                    nightPerHr: s.nightPerHr, nightUtil: s.nightUtil });
-            });
-            tableRows.push({ isSummary: true, summaryType: 'online', dept: 'ON LINE PACK Summary', prodIC: '',
-                typeLabel: '', totalHr: onlineTot.totalHr, totalTarget: onlineTot.totalTarget,
-                totalOutput: onlineTot.totalOutput, totalPerHr: onlineTot.totalPerHr,
-                totalUtil: onlineTot.totalUtil, position: '-', dayHr: onlineTot.dayHr,
-                dayTarget: onlineTot.dayTarget, dayOutput: onlineTot.dayOutput,
-                dayPerHr: onlineTot.dayPerHr, dayUtil: onlineTot.dayUtil, nightHr: onlineTot.nightHr,
-                nightTarget: onlineTot.nightTarget, nightOutput: onlineTot.nightOutput,
-                nightPerHr: onlineTot.nightPerHr, nightUtil: onlineTot.nightUtil });
-            const packDepts = DEPARTMENTS.filter(d => d.type === 'Packaging');
-            packDepts.forEach(d => {
-                const dept = d.name;
-                const s = summary[dept];
-                if (!s) return;
-                let posDisplay = '-',
-                    posClass = '';
-                if (rankMap[dept] === 1) { posDisplay = '🥇 ১ম';
-                    posClass = 'pos-1'; } else if (rankMap[dept] === 2) { posDisplay = '🥈 ২য়';
-                    posClass = 'pos-2'; } else if (rankMap[dept] === 3) { posDisplay = '🥉 ৩য়';
-                    posClass = 'pos-3'; }
-                tableRows.push({ isSummary: false, dept, prodIC: s.prodIC, typeLabel: 'OFF LINE PACK',
-                    badgeClass: 'badge-offline',
-                    totalHr: s.totalHr, totalTarget: s.totalTarget, totalOutput: s.totalOutput,
-                    totalPerHr: s.totalPerHr, totalUtil: s.totalUtil,
-                    position: posDisplay, posClass, dayHr: s.dayHr, dayTarget: s.dayTarget,
-                    dayOutput: s.dayOutput, dayPerHr: s.dayPerHr, dayUtil: s.dayUtil,
-                    nightHr: s.nightHr, nightTarget: s.nightTarget, nightOutput: s.nightOutput,
-                    nightPerHr: s.nightPerHr, nightUtil: s.nightUtil });
-            });
-            tableRows.push({ isSummary: true, summaryType: 'offline', dept: 'OFF LINE PACK Summary', prodIC: '',
-                typeLabel: '', totalHr: offlineTot.totalHr, totalTarget: offlineTot.totalTarget,
-                totalOutput: offlineTot.totalOutput, totalPerHr: offlineTot.totalPerHr,
-                totalUtil: offlineTot.totalUtil, position: '-', dayHr: offlineTot.dayHr,
-                dayTarget: offlineTot.dayTarget, dayOutput: offlineTot.dayOutput,
-                dayPerHr: offlineTot.dayPerHr, dayUtil: offlineTot.dayUtil,
-                nightHr: offlineTot.nightHr, nightTarget: offlineTot.nightTarget,
-                nightOutput: offlineTot.nightOutput, nightPerHr: offlineTot.nightPerHr,
-                nightUtil: offlineTot.nightUtil });
-            tableRows.push({ isSummary: true, summaryType: 'grand', dept: '📌 গ্র্যান্ড টোটাল', prodIC: '', typeLabel: '',
-                totalHr: grandTot.totalHr, totalTarget: grandTot.totalTarget, totalOutput: grandTot
-                    .totalOutput,
-                totalPerHr: grandTot.totalPerHr, totalUtil: grandTot.totalUtil, position: '-',
-                dayHr: grandTot.dayHr, dayTarget: grandTot.dayTarget, dayOutput: grandTot.dayOutput,
-                dayPerHr: grandTot.dayPerHr, dayUtil: grandTot.dayUtil, nightHr: grandTot.nightHr,
-                nightTarget: grandTot.nightTarget, nightOutput: grandTot.nightOutput,
-                nightPerHr: grandTot.nightPerHr, nightUtil: grandTot.nightUtil });
-            return { tableRows, grandTot, onlineTot, offlineTot, summary };
-        }
-
-        function buildSummaryTableHTML(tableRows) {
-            let html = `<div class="table-wrap"><table>
-            <thead><tr><th rowspan="2">ডিপার্টমেন্ট</th><th rowspan="2">Prod IC</th><th rowspan="2">টাইপ</th>
-            <th colspan="6" style="background:#1a237e;">📊 ডে + নাইট (Total)</th>
-            <th colspan="5" style="background:#0d47a1;">☀️ ডে শিফট</th>
-            <th colspan="5" style="background:#1a237e;">🌙 নাইট শিফট</th></tr>
-            <tr><th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th><th>পজিশন</th>
-            <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
-            <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th></tr></thead><tbody>`;
-            tableRows.forEach(row => {
-                let rowClass = '';
-                if (row.isSummary) {
-                    if (row.summaryType === 'online') rowClass = 'row-online-summary';
-                    else if (row.summaryType === 'offline') rowClass = 'row-offline-summary';
-                    else if (row.summaryType === 'grand') rowClass = 'row-grand-total';
-                }
-                const utilColor = row.totalUtil >= 80 ? 'util-high' : (row.totalUtil >= 50 ? 'util-mid' :
-                    'util-low');
-                html += `<tr class="${rowClass}">`;
-                html +=
-                    `<td class="dept-name"><strong>${row.dept}</strong></td><td>${row.prodIC}</td><td>${row.typeLabel ? `<span class="${row.badgeClass||''}">${row.typeLabel}</span>` : '-'}</td>`;
-                html +=
-                    `<td><strong>${row.totalHr}</strong></td><td>${row.totalTarget}</td><td><strong>${row.totalOutput}</strong></td><td>${row.totalPerHr.toFixed(2)}</td><td class="${utilColor}">${row.totalUtil.toFixed(1)}%</td><td class="${row.posClass||''}"><strong>${row.position}</strong></td>`;
-                html +=
-                    `<td>${row.dayHr}</td><td>${row.dayTarget}</td><td>${row.dayOutput}</td><td>${row.dayPerHr.toFixed(2)}</td><td>${row.dayUtil.toFixed(1)}%</td>`;
-                html +=
-                    `<td>${row.nightHr}</td><td>${row.nightTarget}</td><td>${row.nightOutput}</td><td>${row.nightPerHr.toFixed(2)}</td><td>${row.nightUtil.toFixed(1)}%</td>`;
-                html += `</tr>`;
-            });
-            html += `</tbody></table></div>`;
-            return html;
-        }
-
-        // ================================================================
-        // রেন্ডার: Date Range Summary
-        // ================================================================
-        function renderDateRangeSummary(entries) {
-            const container = document.getElementById('dateRangeSummaryContainer');
-            const result = buildDepartmentSummary(entries);
-            const tableRows = result.tableRows;
-            if (!tableRows || tableRows.length === 0) { container.innerHTML =
-                    `<div class="empty-msg">এই রেঞ্জে কোনো এন্ট্রি নেই</div>`;
-                window._dateRangeTableData = null; return; }
-            container.innerHTML = buildSummaryTableHTML(tableRows);
-            window._dateRangeTableData = tableRows;
-        }
-
-        // ================================================================
-        // রেন্ডার: Daily Summary (গতকাল)
-        // ================================================================
-        function renderDailySummary(entries) {
-            const container = document.getElementById('summaryTableContainer');
-            const result = buildDepartmentSummary(entries);
-            const tableRows = result.tableRows;
-            if (!tableRows || tableRows.length === 0) { container.innerHTML =
-                    `<div class="empty-msg">গতকালের কোনো ডেটা নেই</div>`;
-                window._dailyTableData = null; return; }
-            container.innerHTML = buildSummaryTableHTML(tableRows);
-            window._dailyTableData = tableRows;
-        }
-
-        // ================================================================
-        // রেন্ডার: Overall Summary
-        // ================================================================
-        function renderOverallSummary(allEntries) {
-            const container = document.getElementById('overallSummaryContainer');
-            if (allEntries.length === 0) { container.innerHTML = `<div class="empty-msg">কোনো ডেটা নেই</div>`; return; }
-            const deptData = {};
-            DEPARTMENTS.forEach(d => { deptData[d.name] = { prodIC: d.prodIC, totalHr: 0, totalTarget: 0,
-                    totalOutput: 0, count: 0 }; });
-            allEntries.forEach(e => { if (deptData[e.dept]) { deptData[e.dept].totalHr += e.dayHr;
-                    deptData[e.dept].totalTarget += e.target;
-                    deptData[e.dept].totalOutput += e.output;
-                    deptData[e.dept].count += 1; } });
-            const deptList = [];
-            for (const [dept, data] of Object.entries(deptData)) { const util = data.totalTarget > 0 ? (data.totalOutput /
-                    data.totalTarget) * 100 : 0;
-                deptList.push({ name: dept, prodIC: data.prodIC, totalHr: data.totalHr, totalTarget: data.totalTarget,
-                    totalOutput: data.totalOutput, util, count: data.count }); }
-            deptList.sort((a, b) => b.util - a.util);
-            deptList.forEach((d, idx) => { d.position = idx + 1; });
-            let html =
-                `<div class="table-wrap"><table><thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>Total HR</th><th>Total CTN Cap (Target)</th><th>Total Carton Output</th><th>Utilisation %</th><th>পজিশন</th></tr></thead><tbody>`;
-            let grandHr = 0,
-                grandTarget = 0,
-                grandOutput = 0;
-            deptList.forEach(d => {
-                grandHr += d.totalHr;
-                grandTarget += d.totalTarget;
-                grandOutput += d.totalOutput;
-                let posClass = '',
-                    posDisplay = d.position;
-                if (d.position === 1) { posClass = 'pos-1';
-                    posDisplay = '🥇 ১ম'; } else if (d.position === 2) { posClass = 'pos-2';
-                    posDisplay = '🥈 ২য়'; } else if (d.position === 3) { posClass = 'pos-3';
-                    posDisplay = '🥉 ৩য়'; }
-                html +=
-                    `<tr><td class="dept-name">${d.name}</td><td>${d.prodIC}</td><td>${d.totalHr}</td><td>${d.totalTarget}</td><td><strong>${d.totalOutput}</strong></td><td class="${d.util>=80?'util-high':d.util>=50?'util-mid':'util-low'}">${d.util.toFixed(1)}%</td><td class="${posClass}"><strong>${posDisplay}</strong></td></tr>`;
-            });
-            const grandUtil = grandTarget > 0 ? (grandOutput / grandTarget) * 100 : 0;
-            html +=
-                `<tr class="total-row"><td colspan="2"><strong>📌 গ্র্যান্ড টোটাল</strong></td><td><strong>${grandHr}</strong></td><td><strong>${grandTarget}</strong></td><td><strong>${grandOutput}</strong></td><td><strong>${grandUtil.toFixed(1)}%</strong></td><td><strong>-</strong></td></tr></tbody></table></div>`;
-            container.innerHTML = html;
-        }
-
-        // ================================================================
-        // মাস ফিল্টার পপুলেট
-        // ================================================================
-        function populateMonthFilter(entries) {
-            const select = document.getElementById('monthFilter');
-            const months = new Set();
-            entries.forEach(e => {
-                if (e.entryDate) {
-                    const parts = e.entryDate.split('-');
-                    if (parts.length === 3) {
-                        const year = parts[0],
-                            month = parts[1];
-                        const monthNames = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই',
-                            'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
-                        ];
-                        months.add(`${monthNames[parseInt(month)-1]} ${year}`);
-                    }
-                }
-            });
-            const sortedMonths = Array.from(months).sort((a, b) => {
-                const aParts = a.split(' '),
-                    bParts = b.split(' ');
-                const monthNames = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই',
-                    'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
-                ];
-                const aMonth = monthNames.indexOf(aParts[0]),
-                    bMonth = monthNames.indexOf(bParts[0]);
-                const aYear = parseInt(aParts[1]),
-                    bYear = parseInt(bParts[1]);
-                if (aYear !== bYear) return aYear - bYear;
-                return aMonth - bMonth;
-            });
-            select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
-            sortedMonths.forEach(m => { const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = m;
-                select.appendChild(opt); });
-        }
-
-        // ================================================================
-        // রেন্ডার: Monthly Summary
-        // ================================================================
-        window.renderMonthlySummary = function() {
-            const container = document.getElementById('monthlySummaryContainer');
-            const selectedMonth = document.getElementById('monthFilter').value;
-            if (!selectedMonth) { container.innerHTML =
-                    `<div class="empty-msg">দয়া করে একটি মাস সিলেক্ট করুন</div>`;
-                window._monthlyData = null; return; }
-            const parts = selectedMonth.split(' ');
-            const monthNames = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই',
-                'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
-            ];
-            const monthIndex = monthNames.indexOf(parts[0]) + 1;
-            const year = parseInt(parts[1]);
-            const monthEntries = allEntries.filter(e => {
-                if (!e.entryDate) return false;
-                const dParts = e.entryDate.split('-');
-                if (dParts.length !== 3) return false;
-                return parseInt(dParts[0]) === year && parseInt(dParts[1]) === monthIndex;
-            });
-            if (monthEntries.length === 0) { container.innerHTML =
-                    `<div class="empty-msg">এই মাসে কোনো এন্ট্রি নেই</div>`;
-                window._monthlyData = null; return; }
-            const deptData = {};
-            DEPARTMENTS.forEach(d => { deptData[d.name] = { prodIC: d.prodIC, totalHr: 0, totalTarget: 0,
-                    totalOutput: 0, count: 0 }; });
-            monthEntries.forEach(e => { if (deptData[e.dept]) { deptData[e.dept].totalHr += e.dayHr;
-                    deptData[e.dept].totalTarget += e.target;
-                    deptData[e.dept].totalOutput += e.output;
-                    deptData[e.dept].count += 1; } });
-            const deptList = [];
-            for (const [dept, data] of Object.entries(deptData)) { const util = data.totalTarget > 0 ? (data.totalOutput /
-                    data.totalTarget) * 100 : 0;
-                deptList.push({ name: dept, prodIC: data.prodIC, totalHr: data.totalHr, totalTarget: data.totalTarget,
-                    totalOutput: data.totalOutput, util, count: data.count }); }
-            deptList.sort((a, b) => b.util - a.util);
-            deptList.forEach((d, idx) => { d.position = idx + 1; });
-            window._monthlyData = { deptList, month: selectedMonth };
-            let html =
-                `<div class="table-wrap"><table><thead><tr><th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>Total HR</th><th>Total CTN Cap (Target)</th><th>Total Carton Output</th><th>Utilisation %</th><th>পজিশন</th></tr></thead><tbody>`;
-            let grandHr = 0,
-                grandTarget = 0,
-                grandOutput = 0;
-            deptList.forEach(d => {
-                grandHr += d.totalHr;
-                grandTarget += d.totalTarget;
-                grandOutput += d.totalOutput;
-                let posClass = '',
-                    posDisplay = d.position;
-                if (d.position === 1) { posClass = 'pos-1';
-                    posDisplay = '🥇 ১ম'; } else if (d.position === 2) { posClass = 'pos-2';
-                    posDisplay = '🥈 ২য়'; } else if (d.position === 3) { posClass = 'pos-3';
-                    posDisplay = '🥉 ৩য়'; }
-                html +=
-                    `<tr><td class="dept-name">${d.name}</td><td>${d.prodIC}</td><td>${d.totalHr}</td><td>${d.totalTarget}</td><td><strong>${d.totalOutput}</strong></td><td class="${d.util>=80?'util-high':d.util>=50?'util-mid':'util-low'}">${d.util.toFixed(1)}%</td><td class="${posClass}"><strong>${posDisplay}</strong></td></tr>`;
-            });
-            const grandUtil = grandTarget > 0 ? (grandOutput / grandTarget) * 100 : 0;
-            html +=
-                `<tr class="total-row"><td colspan="2"><strong>📌 গ্র্যান্ড টোটাল</strong></td><td><strong>${grandHr}</strong></td><td><strong>${grandTarget}</strong></td><td><strong>${grandOutput}</strong></td><td><strong>${grandUtil.toFixed(1)}%</strong></td><td><strong>-</strong></td></tr></tbody></table></div>`;
-            container.innerHTML = html;
-        };
-
-        // ================================================================
-        // 📥 ডাউনলোড ফাংশনসমূহ (সম্পূর্ণ)
-        // ================================================================
-
-        window.downloadShortExcel = function() {
-            const data = window._shortData;
-            if (!data) { alert('কোনো ডেটা নেই!'); return; }
-            const headers = ['বিভাগ', 'HR', 'Target', 'Output', 'CTN/HR', 'Util%'];
-            const rows = [
-                ['ONLINE PACK', data.online.hr, data.online.target, data.online.output, data.online.perHr.toFixed(2),
-                    data.online.util.toFixed(1) + '%'
-                ],
-                ['OFFLINE PACK', data.offline.hr, data.offline.target, data.offline.output, data.offline.perHr
-                    .toFixed(2), data.offline.util.toFixed(1) + '%'
-                ],
-                ['OVERALL', data.overall.hr, data.overall.target, data.overall.output, data.overall.perHr.toFixed(2),
-                    data.overall.util.toFixed(1) + '%'
-                ]
-            ];
-            const aoa = [headers, ...rows];
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(aoa);
-            XLSX.utils.book_append_sheet(wb, ws, 'Short Summary');
-            XLSX.writeFile(wb, `Short_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
-        };
-        window.downloadShortImage = function() {
-            const container = document.getElementById('shortSummaryContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => { const link =
-                    document.createElement('a');
+    window.downloadShortImage = function() {
+        const container = document.getElementById('shortSummaryContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
                 link.download = `Short_Summary_${new Date().toISOString().slice(0,10)}.png`;
                 link.href = canvas.toDataURL('image/png');
-                link.click(); }).catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
-        };
-        window.downloadShortPDF = function() {
-            const container = document.getElementById('shortSummaryContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => {
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadShortPDF = function() {
+        const container = document.getElementById('shortSummaryContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('l', 'mm', 'a4');
@@ -1962,110 +1243,51 @@
                 const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(`Short_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
-            }).catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
-        };
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
 
-        window.downloadTodayExcel = function() {
-            const data = window._todayTableData;
-            if (!data) { alert('কোনো ডেটা নেই!'); return; }
+    // ---- Daily Summary ----
+    window.downloadDailyExcel = function() {
+        const rows = window._dailyTableData;
+        if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'টাইপ', 'Total HR', 'Total Target', 'Total Output', 'CTN/HR', 'Util%', 'পজিশন', 'Day HR', 'Day Target', 'Day Output', 'Day CTN/HR', 'Day Util%', 'Night HR', 'Night Target', 'Night Output', 'Night CTN/HR', 'Night Util%'];
+        const aoa = [headers];
+        rows.forEach(row => {
+            aoa.push([
+                row.dept, row.prodIC, row.typeLabel || '',
+                row.totalHr, row.totalTarget, row.totalOutput,
+                row.totalPerHr.toFixed(2), row.totalUtil.toFixed(1) + '%', row.position,
+                row.dayHr, row.dayTarget, row.dayOutput,
+                row.dayPerHr.toFixed(2), row.dayUtil.toFixed(1) + '%',
+                row.nightHr, row.nightTarget, row.nightOutput,
+                row.nightPerHr.toFixed(2), row.nightUtil.toFixed(1) + '%'
+            ]);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Daily Summary');
+        XLSX.writeFile(wb, `Daily_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
 
-            const wb = XLSX.utils.book_new();
-
-            if (data.day && Object.keys(data.day).length > 0) {
-                const dayRows = [];
-                const dayHeaders = ['ডিপার্টমেন্ট', 'Prod IC', 'শিফট', 'IC Name', 'Day HR', 'Target (CTN)'];
-                dayRows.push(dayHeaders);
-                let gHr = 0,
-                    gTarget = 0;
-                for (const [dept, vals] of Object.entries(data.day)) {
-                    gHr += vals.dayHr;
-                    gTarget += vals.target;
-                    dayRows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target]);
-                }
-                dayRows.push(['📌 মোট', '-', '-', '-', gHr, gTarget]);
-                const wsDay = XLSX.utils.aoa_to_sheet(dayRows);
-                XLSX.utils.book_append_sheet(wb, wsDay, 'Day Shift');
-            }
-
-            if (data.night && Object.keys(data.night).length > 0) {
-                const nightRows = [];
-                const nightHeaders = ['ডিপার্টমেন্ট', 'Prod IC', 'শিফট', 'IC Name', 'Day HR', 'Target (CTN)'];
-                nightRows.push(nightHeaders);
-                let gHr = 0,
-                    gTarget = 0;
-                for (const [dept, vals] of Object.entries(data.night)) {
-                    gHr += vals.dayHr;
-                    gTarget += vals.target;
-                    nightRows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target]);
-                }
-                nightRows.push(['📌 মোট', '-', '-', '-', gHr, gTarget]);
-                const wsNight = XLSX.utils.aoa_to_sheet(nightRows);
-                XLSX.utils.book_append_sheet(wb, wsNight, 'Night Shift');
-            }
-
-            XLSX.writeFile(wb, `Today_Shift_${new Date().toISOString().slice(0,10)}.xlsx`);
-        };
-
-        window.downloadTodayImage = function() {
-            const container = document.getElementById('todaySummaryContainer');
-            if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => { const link =
-                    document.createElement('a');
-                link.download = `Today_Shift_${new Date().toISOString().slice(0,10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click(); }).catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
-        };
-        window.downloadTodayPDF = function() {
-            const container = document.getElementById('todaySummaryContainer');
-            if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('l', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`Today_Shift_${new Date().toISOString().slice(0,10)}.pdf`);
-            }).catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
-        };
-
-        window.downloadDailyExcel = function() {
-            const rows = window._dailyTableData;
-            if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
-            const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'টাইপ', 'Total HR', 'Total Target', 'Total Output', 'CTN/HR',
-                'Util%', 'পজিশন', 'Day HR', 'Day Target', 'Day Output', 'Day CTN/HR', 'Day Util%', 'Night HR',
-                'Night Target', 'Night Output', 'Night CTN/HR', 'Night Util%'
-            ];
-            const aoa = [headers];
-            rows.forEach(row => {
-                aoa.push([
-                    row.dept, row.prodIC, row.typeLabel || '',
-                    row.totalHr, row.totalTarget, row.totalOutput,
-                    row.totalPerHr.toFixed(2), row.totalUtil.toFixed(1) + '%', row.position,
-                    row.dayHr, row.dayTarget, row.dayOutput,
-                    row.dayPerHr.toFixed(2), row.dayUtil.toFixed(1) + '%',
-                    row.nightHr, row.nightTarget, row.nightOutput,
-                    row.nightPerHr.toFixed(2), row.nightUtil.toFixed(1) + '%'
-                ]);
-            });
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(aoa);
-            XLSX.utils.book_append_sheet(wb, ws, 'Daily Summary');
-            XLSX.writeFile(wb, `Daily_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
-        };
-        window.downloadDailyImage = function() {
-            const container = document.getElementById('dailyReportContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => { const link =
-                    document.createElement('a');
+    window.downloadDailyImage = function() {
+        const container = document.getElementById('dailyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
                 link.download = `Daily_Summary_${new Date().toISOString().slice(0,10)}.png`;
                 link.href = canvas.toDataURL('image/png');
-                link.click(); }).catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
-        };
-        window.downloadDailyPDF = function() {
-            const container = document.getElementById('dailyReportContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => {
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadDailyPDF = function() {
+        const container = document.getElementById('dailyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('l', 'mm', 'a4');
@@ -2073,180 +1295,255 @@
                 const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(`Daily_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
-            }).catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
-        };
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
 
-        window.downloadDateRangeExcel = function() {
-            const rows = window._dateRangeTableData;
-            if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
-            const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'টাইপ', 'Total HR', 'Total Target', 'Total Output', 'CTN/HR',
-                'Util%', 'পজিশন', 'Day HR', 'Day Target', 'Day Output', 'Day CTN/HR', 'Day Util%', 'Night HR',
-                'Night Target', 'Night Output', 'Night CTN/HR', 'Night Util%'
-            ];
-            const aoa = [headers];
-            rows.forEach(row => {
-                aoa.push([
-                    row.dept, row.prodIC, row.typeLabel || '',
-                    row.totalHr, row.totalTarget, row.totalOutput,
-                    row.totalPerHr.toFixed(2), row.totalUtil.toFixed(1) + '%', row.position,
-                    row.dayHr, row.dayTarget, row.dayOutput,
-                    row.dayPerHr.toFixed(2), row.dayUtil.toFixed(1) + '%',
-                    row.nightHr, row.nightTarget, row.nightOutput,
-                    row.nightPerHr.toFixed(2), row.nightUtil.toFixed(1) + '%'
-                ]);
-            });
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(aoa);
-            XLSX.utils.book_append_sheet(wb, ws, 'Date Range');
-            XLSX.writeFile(wb, `DateRange_${new Date().toISOString().slice(0,10)}.xlsx`);
-        };
-        window.downloadDateRangeImage = function() {
-            const container = document.getElementById('dateRangeReportContainer');
-            if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => { const link =
-                    document.createElement('a');
-                link.download = `DateRange_${new Date().toISOString().slice(0,10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click(); }).catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
-        };
-        window.downloadDateRangePDF = function() {
-            const container = document.getElementById('dateRangeReportContainer');
-            if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('l', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`DateRange_${new Date().toISOString().slice(0,10)}.pdf`);
-            }).catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
-        };
-
-        window.downloadOverallExcel = function() {
-            const container = document.getElementById('overallReportContainer');
-            const table = container.querySelector('table');
-            if (!table) { alert('টেবিল পাওয়া যায়নি!'); return; }
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.table_to_sheet(table);
-            XLSX.utils.book_append_sheet(wb, ws, 'Overall');
-            XLSX.writeFile(wb, `Overall_${new Date().toISOString().slice(0,10)}.xlsx`);
-        };
-        window.downloadOverallImage = function() {
-            const container = document.getElementById('overallReportContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => { const link =
-                    document.createElement('a');
-                link.download = `Overall_${new Date().toISOString().slice(0,10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click(); }).catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
-        };
-        window.downloadOverallPDF = function() {
-            const container = document.getElementById('overallReportContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('l', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`Overall_${new Date().toISOString().slice(0,10)}.pdf`);
-            }).catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
-        };
-
-        window.downloadMonthlyExcel = function() {
-            const data = window._monthlyData;
-            if (!data || data.deptList.length === 0) { alert('কোনো ডেটা নেই!'); return; }
-            const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'Total HR', 'Total CTN Cap (Target)',
-                'Total Carton Output', 'Utilisation %', 'পজিশন'
-            ];
-            const rows = data.deptList.map(d => [
-                d.name, d.prodIC, d.totalHr, d.totalTarget, d.totalOutput,
-                d.util.toFixed(1) + '%', d.position === 1 ? '🥇 ১ম' : d.position === 2 ? '🥈 ২য়' : d.position ===
-                3 ? '🥉 ৩য়' : d.position
+    // ---- Date Range Summary ----
+    window.downloadDateRangeExcel = function() {
+        const rows = window._dateRangeTableData;
+        if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'টাইপ', 'Total HR', 'Total Target', 'Total Output', 'CTN/HR', 'Util%', 'পজিশন', 'Day HR', 'Day Target', 'Day Output', 'Day CTN/HR', 'Day Util%', 'Night HR', 'Night Target', 'Night Output', 'Night CTN/HR', 'Night Util%'];
+        const aoa = [headers];
+        rows.forEach(row => {
+            aoa.push([
+                row.dept, row.prodIC, row.typeLabel || '',
+                row.totalHr, row.totalTarget, row.totalOutput,
+                row.totalPerHr.toFixed(2), row.totalUtil.toFixed(1) + '%', row.position,
+                row.dayHr, row.dayTarget, row.dayOutput,
+                row.dayPerHr.toFixed(2), row.dayUtil.toFixed(1) + '%',
+                row.nightHr, row.nightTarget, row.nightOutput,
+                row.nightPerHr.toFixed(2), row.nightUtil.toFixed(1) + '%'
             ]);
-            const aoa = [headers, ...rows];
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(aoa);
-            XLSX.utils.book_append_sheet(wb, ws, `Month_${data.month}`);
-            XLSX.writeFile(wb, `Monthly_${data.month.replace(' ','_')}_${new Date().toISOString().slice(0,10)}.xlsx`);
-        };
-        window.downloadMonthlyImage = function() {
-            const container = document.getElementById('monthlyReportContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert(
-                    'ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => { const link =
-                    document.createElement('a');
-                link.download = `Monthly_${new Date().toISOString().slice(0,10)}.png`;
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Date Range Summary');
+        XLSX.writeFile(wb, `DateRange_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadDateRangeImage = function() {
+        const container = document.getElementById('dateRangeReportContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `DateRange_Summary_${new Date().toISOString().slice(0,10)}.png`;
                 link.href = canvas.toDataURL('image/png');
-                link.click(); }).catch(() => alert('❌ ইমেজ তৈরি ব্যর্থ!'));
-        };
-        window.downloadMonthlyPDF = function() {
-            const container = document.getElementById('monthlyReportContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert(
-                    'ডেটা নেই!'); return; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false }).then(canvas => {
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadDateRangePDF = function() {
+        const container = document.getElementById('dateRangeReportContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('l', 'mm', 'a4');
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`Monthly_${new Date().toISOString().slice(0,10)}.pdf`);
-            }).catch(() => alert('❌ PDF তৈরি ব্যর্থ!'));
-        };
+                pdf.save(`DateRange_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
 
-        // ================================================================
-        // CSV এক্সপোর্ট
-        // ================================================================
-        window.exportCSV = function() {
-            const filterDate = getFilterDate();
-            let filtered = allEntries;
-            if (filterDate) filtered = allEntries.filter(e => e.entryDate === filterDate);
-            if (filtered.length === 0) { alert('কোনো ডেটা নেই!'); return; }
-            const headers = ['Department', 'Prod IC', 'Shift', 'IC Name', 'Day HR', 'Target', 'CTN Output',
-                'Per HR CTN', 'Utilisation %', 'Entry Date', 'Timestamp'
+    // ---- Overall Summary ----
+    window.downloadOverallExcel = function() {
+        const container = document.getElementById('overallReportContainer');
+        const table = container.querySelector('table');
+        if (!table) { alert('টেবিল পাওয়া যায়নি!'); return; }
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, 'Overall Summary');
+        XLSX.writeFile(wb, `Overall_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadOverallImage = function() {
+        const container = document.getElementById('overallReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Overall_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadOverallPDF = function() {
+        const container = document.getElementById('overallReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Overall_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
+
+    // ---- Monthly Summary ----
+    window.downloadMonthlyExcel = function() {
+        const data = window._monthlyData;
+        if (!data || data.deptList.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'Total HR', 'Total CTN Cap (Target)', 'Total Carton Output', 'Utilisation %', 'পজিশন'];
+        const rows = data.deptList.map(d => [
+            d.name, d.prodIC, d.totalHr, d.totalTarget, d.totalOutput,
+            d.util.toFixed(1) + '%', d.position === 1 ? '🥇 ১ম' : d.position === 2 ? '🥈 ২য়' : d.position === 3 ? '🥉 ৩য়' : d.position
+        ]);
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, `Month_${data.month}`);
+        XLSX.writeFile(wb, `Monthly_Summary_${data.month.replace(' ', '_')}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadMonthlyImage = function() {
+        const container = document.getElementById('monthlyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Monthly_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadMonthlyPDF = function() {
+        const container = document.getElementById('monthlyReportContainer');
+        if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('সিলেক্ট করুন')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Monthly_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
+
+    // ---- Today Shift Summary ----
+    window.downloadTodayExcel = function() {
+        const data = window._todayTableData;
+        if (!data || !data.deptMap) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['ডিপার্টমেন্ট', 'Prod IC', 'শিফট', 'IC Name', 'Day HR', 'Target (CTN)', 'CTN Output'];
+        const rows = [];
+        for (const [dept, vals] of Object.entries(data.deptMap)) {
+            let outputVal = vals.hasOutput && vals.output > 0 ? vals.output : 0;
+            rows.push([dept, vals.prodIC, vals.shift, vals.icName, vals.dayHr, vals.target, outputVal]);
+        }
+        rows.push(['📌 মোট', '-', '-', '-', data.grandHr, data.grandTarget, data.grandOutput]);
+        const aoa = [headers, ...rows];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, 'Today Shift Summary');
+        XLSX.writeFile(wb, `Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+
+    window.downloadTodayImage = function() {
+        const container = document.getElementById('todaySummaryContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => { alert('❌ ইমেজ তৈরি ব্যর্থ!'); });
+    };
+
+    window.downloadTodayPDF = function() {
+        const container = document.getElementById('todaySummaryContainer');
+        if (container.innerText.includes('কোনো এন্ট্রি নেই')) { alert('ডেটা নেই!'); return; }
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
+            .then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Today_Shift_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
+            })
+            .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
+    };
+
+    // ================================================================
+    // 🗑️ সব ডেটা মুছুন
+    // ================================================================
+    window.clearAll = async function() {
+        if (!confirm('সব ডেটা স্থায়ীভাবে মুছবেন?')) return;
+        try {
+            await remove(cartonRef);
+        } catch (error) {
+            alert('সব ডেটা মুছতে সমস্যা: ' + error.message);
+        }
+    };
+
+    // ================================================================
+    // CSV এক্সপোর্ট (ফিল্টার অনুযায়ী)
+    // ================================================================
+    window.exportCSV = function() {
+        const filterDate = getFilterDate();
+        let filtered = allEntries;
+        if (filterDate) {
+            filtered = allEntries.filter(e => e.entryDate === filterDate);
+        }
+        if (filtered.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+        const headers = ['Department', 'Prod IC', 'Shift', 'IC Name', 'Day HR', 'Target', 'CTN Output', 'Per HR CTN', 'Utilisation %', 'Entry Date', 'Timestamp'];
+        let csv = headers.join(',') + '\n';
+        filtered.forEach(e => {
+            const row = [
+                `"${e.dept}"`, `"${e.prodIC}"`, `"${e.shift}"`, `"${e.icName}"`,
+                e.dayHr, e.target, e.output, e.perHr, e.utilPct ? e.utilPct.toFixed(1) : '0',
+                `"${e.entryDate}"`, `"${e.timestamp}"`
             ];
-            let csv = headers.join(',') + '\n';
-            filtered.forEach(e => { const row = [`"${e.dept}"`, `"${e.prodIC}"`, `"${e.shift}"`, `"${e.icName}"`,
-                    e.dayHr, e.target, e.output, e.perHr, e.utilPct ? e.utilPct.toFixed(1) : '0',
-                    `"${e.entryDate}"`, `"${e.timestamp}"`
-                ];
-                csv += row.join(',') + '\n'; });
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download =
-                `Carton_Report_${filterDate||'All'}_${new Date().toISOString().slice(0,10)}.csv`;
-            link.click();
-            URL.revokeObjectURL(link.href);
-        };
-
-        // ================================================================
-        // 🔴 Firebase Live Listener
-        // ================================================================
-        onValue(cartonRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) { allEntries = Object.keys(data).map(key => ({ key, ...data[key] })); } else { allEntries =
-                []; }
-            renderAll();
+            csv += row.join(',') + '\n';
         });
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Carton_Report_${filterDate || 'All'}_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    };
 
-        onValue(logRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) { allLogs = Object.keys(data).map(key => ({ key, ...data[key] })); } else { allLogs = []; }
-            renderLogs();
-        });
+    // ================================================================
+    // 🔴 Firebase Live Listener
+    // ================================================================
+    onValue(cartonRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            allEntries = Object.keys(data).map(key => ({ key, ...data[key] }));
+        } else {
+            allEntries = [];
+        }
+        renderAll();
+    });
 
-        // ================================================================
-        // INIT
-        // ================================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            const today = new Date().toISOString().slice(0, 10);
-            document.getElementById('filterDate').value = today;
-            renderAll();
-        });
-    </script>
+    // ================================================================
+    // INIT
+    // ================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().slice(0,10);
+        document.getElementById('filterDate').value = today;
+        renderAll();
+    });
+</script>
 </body>
 </html>
