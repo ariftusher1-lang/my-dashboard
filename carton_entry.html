@@ -178,6 +178,45 @@
         }
         .shift-note { font-size: 12px; color: #666; font-weight: 400; margin-top: 4px; }
 
+        /* ===== হেড ছবি ===== */
+        .head-photo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 6px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            min-height: 60px;
+        }
+        .head-photo-container img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #1976d2;
+            background: #fff;
+        }
+        .head-photo-container .info {
+            display: flex;
+            flex-direction: column;
+        }
+        .head-photo-container .info .name {
+            font-weight: 700;
+            color: #0d47a1;
+            font-size: 15px;
+        }
+        .head-photo-container .info .dept {
+            font-size: 13px;
+            color: #666;
+        }
+        .head-photo-container .no-photo {
+            color: #999;
+            font-size: 13px;
+            font-style: italic;
+        }
+
         /* ===== SUMMARY MODAL ===== */
         .summary-modal-overlay {
             display: none;
@@ -210,17 +249,6 @@
             font-size: 24px;
             text-align: center;
         }
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-            font-size: 16px;
-        }
-        .summary-item .label { font-weight: 600; color: #333; }
-        .summary-item .value { color: #0d47a1; font-weight: 700; }
-        .summary-item .value.highlight { color: #28a745; }
-        .summary-item .value.warning { color: #e65100; }
         .summary-actions {
             display: flex;
             gap: 12px;
@@ -241,7 +269,6 @@
         .btn-close-summary { background: #dc3545; color: white; }
         .btn-close-summary:hover { background: #bd2130; }
 
-        /* সারাংশ প্রিন্ট/ইমেজ স্টাইল */
         #summaryContent {
             padding: 10px 0;
         }
@@ -288,6 +315,7 @@
         @media (max-width: 480px) {
             .summary-grid { grid-template-columns: 1fr; }
             .summary-modal-box { padding: 20px; }
+            .head-photo-container img { width: 40px; height: 40px; }
         }
     </style>
 </head>
@@ -321,6 +349,15 @@
             <div class="form-group">
                 <label>👨‍💼 Prod IC (Fixed)</label>
                 <input type="text" id="prodIC" class="readonly" readonly>
+                <!-- 🔥 হেডের ছবি দেখানোর জায়গা -->
+                <div class="head-photo-container" id="headPhotoContainer">
+                    <img id="headPhoto" src="" alt="হেডের ছবি" style="display:none;">
+                    <div class="info">
+                        <span class="name" id="headName">-</span>
+                        <span class="dept" id="headDept">ডিপার্টমেন্ট সিলেক্ট করুন</span>
+                    </div>
+                    <span class="no-photo" id="noPhotoMsg">📷 ছবি নেই</span>
+                </div>
             </div>
             <div class="form-group">
                 <label>🕒 শিফট</label>
@@ -345,7 +382,7 @@
             <div class="form-group" id="ctnOutputGroup">
                 <label>📦 CTN Output <span id="outputRequired" style="color:#28a745; font-weight:400;">(ঐচ্ছিক — শিফট শেষে আপডেট করুন)</span></label>
                 <input type="number" id="ctnOutput" placeholder="যেমন 400" step="1" min="0" oninput="calculatePerHrAndUtil()">
-                <span class="shift-note" id="outputNote">শিফট শেষে Output আপডেট করতে পারবেন</span>
+                <span class="shift-note" id="outputNote">শিফট শেষে CTN Output আপডেট করতে পারবেন</span>
             </div>
             <div class="form-group">
                 <label>📊 Per HR CTN (অটো)</label>
@@ -461,21 +498,29 @@
     const cartonRef = ref(database, 'cartonEntries');
 
     const PER_HR_CAPACITY = 20;
+
+    // ================================================================
+    // 🔥 ডিপার্টমেন্ট কনফিগারেশন — এখানে হেডের ছবির URL দিন
+    // ================================================================
     const DEPARTMENTS = [
-        { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur' },
-        { id: 'mc2', name: 'RIP> DPL> Plastic-3', type: 'MC', prodIC: 'Mr. Shawon' },
-        { id: 'mc3', name: 'RIP> DPL> Plastic-6.1', type: 'MC', prodIC: 'Mr. Hazrat' },
-        { id: 'mc4', name: 'RIP> DPL> Plastic-6.2', type: 'MC', prodIC: 'Mr. Polash' },
-        { id: 'mc5', name: 'RIP> DPL> Plastic-7.1', type: 'MC', prodIC: 'Mr. Monir' },
-        { id: 'mc6', name: 'RIP> DPL> Plastic-7.2', type: 'MC', prodIC: 'Mr. Sayem' },
-        { id: 'mc7', name: 'RIP> DPL> Plastic-7.3', type: 'MC', prodIC: 'Mr. Saddam' },
-        { id: 'mc8', name: 'RIP> DPL> Plastic-7.4', type: 'MC', prodIC: 'Mr. Awal' },
-        { id: 'p1', name: 'Plastic Packaging-01', type: 'Packaging', prodIC: 'Mr. Mahbub' },
-        { id: 'p2', name: 'Plastic Packaging-02', type: 'Packaging', prodIC: 'Mr. Rakib' },
-        { id: 'p3', name: 'Plastic Packaging-03', type: 'Packaging', prodIC: 'Mr. Mahbub' }
+        { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur', photo: 'https://i.ibb.co/placeholder/head1.jpg' },
+        { id: 'mc2', name: 'RIP> DPL> Plastic-3', type: 'MC', prodIC: 'Mr. Shawon', photo: 'https://i.ibb.co/placeholder/head2.jpg' },
+        { id: 'mc3', name: 'RIP> DPL> Plastic-6.1', type: 'MC', prodIC: 'Mr. Hazrat', photo: 'https://i.ibb.co/placeholder/head3.jpg' },
+        { id: 'mc4', name: 'RIP> DPL> Plastic-6.2', type: 'MC', prodIC: 'Mr. Polash', photo: 'https://i.ibb.co/placeholder/head4.jpg' },
+        { id: 'mc5', name: 'RIP> DPL> Plastic-7.1', type: 'MC', prodIC: 'Mr. Monir', photo: 'https://i.ibb.co/placeholder/head5.jpg' },
+        { id: 'mc6', name: 'RIP> DPL> Plastic-7.2', type: 'MC', prodIC: 'Mr. Sayem', photo: 'https://i.ibb.co/placeholder/head6.jpg' },
+        { id: 'mc7', name: 'RIP> DPL> Plastic-7.3', type: 'MC', prodIC: 'Mr. Saddam', photo: 'https://i.ibb.co/placeholder/head7.jpg' },
+        { id: 'mc8', name: 'RIP> DPL> Plastic-7.4', type: 'MC', prodIC: 'Mr. Awal', photo: 'https://i.ibb.co/placeholder/head8.jpg' },
+        { id: 'p1', name: 'Plastic Packaging-01', type: 'Packaging', prodIC: 'Mr. Mahbub', photo: 'https://i.ibb.co/9cJxLwD/head-1.jpg' },
+        { id: 'p2', name: 'Plastic Packaging-02', type: 'Packaging', prodIC: 'Mr. Rakib', photo: 'https://i.ibb.co/placeholder/head10.jpg' },
+        { id: 'p3', name: 'Plastic Packaging-03', type: 'Packaging', prodIC: 'Mr. Mahbub', photo: 'https://i.ibb.co/placeholder/head11.jpg' }
     ];
     const DEPT_NAME_TO_IC = {};
-    DEPARTMENTS.forEach(d => { DEPT_NAME_TO_IC[d.name] = d.prodIC; });
+    const DEPT_NAME_TO_PHOTO = {};
+    DEPARTMENTS.forEach(d => {
+        DEPT_NAME_TO_IC[d.name] = d.prodIC;
+        DEPT_NAME_TO_PHOTO[d.name] = d.photo;
+    });
 
     let allEntries = [];
     const alertBox = document.getElementById('alertMessage');
@@ -494,11 +539,52 @@
         });
     };
 
+    // ===== হেডের ছবি আপডেট =====
+    function updateHeadPhoto(deptName) {
+        const img = document.getElementById('headPhoto');
+        const nameEl = document.getElementById('headName');
+        const deptEl = document.getElementById('headDept');
+        const noPhotoMsg = document.getElementById('noPhotoMsg');
+
+        if (!deptName || deptName === '') {
+            img.style.display = 'none';
+            nameEl.textContent = '-';
+            deptEl.textContent = 'ডিপার্টমেন্ট সিলেক্ট করুন';
+            noPhotoMsg.style.display = 'inline';
+            return;
+        }
+
+        const photoUrl = DEPT_NAME_TO_PHOTO[deptName] || '';
+        const icName = DEPT_NAME_TO_IC[deptName] || '';
+
+        nameEl.textContent = icName;
+        deptEl.textContent = deptName;
+
+        if (photoUrl && photoUrl.trim() !== '' && !photoUrl.includes('placeholder')) {
+            img.src = photoUrl;
+            img.style.display = 'block';
+            noPhotoMsg.style.display = 'none';
+            // ছবি লোড না হলে প্লেসহোল্ডার দেখান
+            img.onerror = function() {
+                this.style.display = 'none';
+                noPhotoMsg.style.display = 'inline';
+                noPhotoMsg.textContent = '📷 ছবি লোড হয়নি';
+            };
+        } else {
+            img.style.display = 'none';
+            noPhotoMsg.style.display = 'inline';
+            noPhotoMsg.textContent = '📷 ছবি নেই';
+        }
+    }
+
     window.updateProdIC = function() {
         const dept = document.getElementById('deptSelect').value;
-        document.getElementById('prodIC').value = (dept && DEPT_NAME_TO_IC[dept]) ? DEPT_NAME_TO_IC[dept] : '';
+        const icInput = document.getElementById('prodIC');
+        icInput.value = (dept && DEPT_NAME_TO_IC[dept]) ? DEPT_NAME_TO_IC[dept] : '';
         calculateTargetAndUtil();
         calculatePerHrAndUtil();
+        // 🔥 ছবি আপডেট
+        updateHeadPhoto(dept);
     };
 
     window.calculateTargetAndUtil = function() {
@@ -517,13 +603,11 @@
         document.getElementById('utilDisplay').innerHTML = `Utilisation: ${utilPct.toFixed(1)}%`;
     };
 
-    // ===== শিফট পরিবর্তনে CTN Output লেবেল পরিবর্তন (এখন দুই শিফটেই ঐচ্ছিক) =====
     window.onShiftChange = function() {
         const shift = document.getElementById('shiftSelect').value;
         const outputLabel = document.getElementById('outputRequired');
         const outputNote = document.getElementById('outputNote');
         const ctnInput = document.getElementById('ctnOutput');
-        // এখন ডে ও নাইট—উভয় শিফটেই CTN Output ঐচ্ছিক
         outputLabel.style.display = 'inline';
         outputLabel.textContent = '(ঐচ্ছিক — শিফট শেষে আপডেট করুন)';
         outputLabel.style.color = '#28a745';
@@ -569,7 +653,7 @@
         speakText(msg, 1.2, 0.85);
     }
 
-    // ===== সারাংশ মডাল শো =====
+    // ===== সারাংশ মডাল =====
     function showSummary(entry) {
         const container = document.getElementById('summaryContent');
         const utilColor = entry.utilPct >= 80 ? 'highlight' : (entry.utilPct >= 50 ? 'warning' : '');
@@ -597,7 +681,6 @@
         document.getElementById('summaryModal').classList.remove('show');
     };
 
-    // ===== ইমেজ ডাউনলোড =====
     window.downloadSummaryImage = function() {
         const container = document.getElementById('summaryContent');
         if (!container) { alert('সারাংশ পাওয়া যায়নি!'); return; }
@@ -639,8 +722,6 @@
         if (!entryDate) { showAlert('দয়া করে একটি তারিখ নির্বাচন করুন!', 'error'); return; }
         if (!dept) { showAlert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!', 'error'); return; }
         if (dayHr <= 0) { showAlert('Day HR অবশ্যই ০-এর বেশি হতে হবে!', 'error'); return; }
-
-        // এখন ডে শিফটে CTN Output বাধ্যতামূলক নয় — তাই এই চেক সরানো হলো
 
         let nightOutputNote = '';
         if (shift === 'Night' && output > 0) {
@@ -693,7 +774,6 @@
         try {
             await push(cartonRef, newEntry);
             
-            // ফর্ম রিসেট
             document.getElementById('deptSelect').value = '';
             document.getElementById('prodIC').value = '';
             document.getElementById('icName').value = '';
@@ -706,11 +786,11 @@
             document.getElementById('entryDate').value = today;
             autoSelectShift();
             updateProdIC();
+            // ছবি রিসেট
+            updateHeadPhoto('');
 
             showAlert(`✅ ${shift} Shift-এর এন্ট্রি সফলভাবে যোগ হয়েছে!${nightOutputNote}`, 'success');
             speakSuccess();
-
-            // 🔥 সারাংশ মডাল দেখান
             showSummary(newEntry);
 
             setTimeout(() => {
@@ -1014,6 +1094,8 @@
         }
         document.getElementById('shiftSelect').addEventListener('change', onShiftChange);
         onShiftChange();
+        // প্রাথমিক ছবি লুকান
+        updateHeadPhoto('');
     });
 </script>
 </body>
