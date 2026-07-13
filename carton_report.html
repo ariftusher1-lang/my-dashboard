@@ -21,7 +21,7 @@
         .header .right-group a:hover { background: #1e7e34; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
         .card h2 { color: #0d47a1; margin-bottom: 15px; border-bottom: 2px solid #1976d2; padding-bottom: 8px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .card h2 .btn-group-small { display: flex; gap: 8px; flex-wrap: wrap; }
+        .card h2 .btn-group-small { display: flex; gap: 8px; }
         .btn-group-small .btn-sm { padding: 4px 12px; font-size: 12px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
         .btn-excel-sm { background: #1e7e34; color: white; }
         .btn-excel-sm:hover { background: #136b2a; }
@@ -109,31 +109,6 @@
         }
         .btn-email-image:hover {
             background: #1da851;
-        }
-        .email-status {
-            font-size: 13px;
-            margin-top: 6px;
-            padding: 6px 12px;
-            border-radius: 6px;
-            display: none;
-        }
-        .email-status.success {
-            display: block;
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .email-status.error {
-            display: block;
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .email-status.info {
-            display: block;
-            background: #cce5ff;
-            color: #004085;
-            border: 1px solid #b8daff;
         }
     </style>
 </head>
@@ -228,7 +203,6 @@
         </h2>
         <div id="dailyContent" class="section-content">
             <div id="summaryTableContainer"><div class="empty-msg">গতকালের কোনো ডেটা নেই</div></div>
-            <div id="emailStatus" class="email-status"></div>
         </div>
     </div>
 
@@ -303,7 +277,7 @@
     // 🔥 Firebase Config
     // ================================================================
     import { initializeApp } from "firebase-app";
-    import { getDatabase, ref, onValue, remove } from "firebase-database";
+    import { getDatabase, ref, onValue, remove, update } from "firebase-database";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAHMH9uGLQfXsCppY1xwbY91wbMcOMUUE",
@@ -323,6 +297,7 @@
     // ================================================================
     // কনফিগারেশন
     // ================================================================
+    const PER_HR_CAPACITY = 40;
     const DEPARTMENTS = [
         { id: 'mc1', name: 'RIP> DPL> Plastic-1', type: 'MC', prodIC: 'Mr. Atiqur' },
         { id: 'mc2', name: 'RIP> DPL> Plastic-3', type: 'MC', prodIC: 'Mr. Shawon' },
@@ -378,92 +353,7 @@
     }
 
     // ================================================================
-    // 🖼️ ইমেইল ফাংশন (CORS-মুক্ত)
-    // ================================================================
-    window.sendSummaryImageEmail = function() {
-        const statusEl = document.getElementById('emailStatus');
-        statusEl.className = 'email-status info';
-        statusEl.textContent = '⏳ ইমেজ ক্যাপচার করা হচ্ছে...';
-        statusEl.style.display = 'block';
-
-        const container = document.getElementById('summaryTableContainer');
-        if (!container || container.innerText.includes('গতকালের কোনো ডেটা নেই')) {
-            statusEl.className = 'email-status error';
-            statusEl.textContent = '❌ গতকালের কোনো ডেটা নেই!';
-            return;
-        }
-
-        const pwd = prompt('🔒 ইমেইল পাঠাতে পাসওয়ার্ড দিন:');
-        if (pwd === null) {
-            statusEl.style.display = 'none';
-            return;
-        }
-        if (pwd !== 'arif123') {
-            statusEl.className = 'email-status error';
-            statusEl.textContent = '❌ ভুল পাসওয়ার্ড!';
-            return;
-        }
-
-        statusEl.textContent = '📸 ইমেজ রেন্ডার করা হচ্ছে...';
-
-        const tableElement = container.querySelector('table');
-        const elementToCapture = tableElement || container;
-
-        html2canvas(elementToCapture, {
-            scale: 2,
-            backgroundColor: '#ffffff',
-            logging: false,
-            useCORS: true,
-            allowTaint: true,
-            foreignObjectRendering: true
-        }).then(canvas => {
-            const dataUrl = canvas.toDataURL('image/png');
-            const base64 = dataUrl.split(',')[1];
-
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            const yStr = yesterday.toISOString().slice(0,10);
-            const displayDate = formatDateDisplay(yStr);
-
-            const GROUP_EMAIL = "ariftusher1@gmail.com,dplexport12@prangroup.com,ripdpl204@prangroup.com,ripdpl330@prangroup.com,ripdpl369@prangroup.com,ripdpl334@prangroup.com,ripdpl282@prangroup.com,ripdpl188@prangroup.com,ripdpl304@prangroup.com,ripdpl327@prangroup.com,ripdpl252@prangroup.com,ripdpl261@prangroup.com,ripdpl333@prangroup.com,ripdpl319@prangroup.com,ripdpl259@prangroup.com";
-
-            const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxjlvCISJEe_6KCNo7WpLRlNGMZe9phtKeDnfujJuBOpS5P3IUPGFVBwZuIwUhv7ve/exec";
-
-            const payload = {
-                imageData: base64,
-                dateStr: yStr,
-                toEmail: GROUP_EMAIL,
-                subject: `📊 Daily Summary Report - ${displayDate}`
-            };
-
-            statusEl.textContent = '📤 ইমেইল পাঠানো হচ্ছে...';
-
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors', // CORS সমস্যা এড়াতে
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(() => {
-                statusEl.className = 'email-status success';
-                statusEl.textContent = `✅ ইমেইল পাঠানোর অনুরোধ করা হয়েছে! (${displayDate})`;
-            })
-            .catch(err => {
-                console.error('Fetch error:', err);
-                statusEl.className = 'email-status error';
-                statusEl.textContent = `❌ ইমেইল পাঠাতে ব্যর্থ: ${err.message}`;
-            });
-
-        }).catch(err => {
-            console.error('html2canvas error:', err);
-            statusEl.className = 'email-status error';
-            statusEl.textContent = '❌ ইমেজ ক্যাপচার করতে ব্যর্থ: ' + err.message;
-        });
-    };
-
-    // ================================================================
-    // রেন্ডার অল (সম্পূর্ণ রিপোর্ট)
+    // রেন্ডার অল
     // ================================================================
     window.renderAll = function() {
         const filterDate = getFilterDate();
@@ -527,7 +417,7 @@
     };
 
     // ================================================================
-    // আজকের শিফট সারাংশ
+    // আজকের শিফটের সারাংশ
     // ================================================================
     function renderTodaySummary(entries) {
         const container = document.getElementById('todaySummaryContainer');
@@ -562,7 +452,12 @@
             grandHr += data.dayHr;
             grandTarget += data.target;
             grandOutput += data.output;
-            let outputDisplay = data.hasOutput && data.output > 0 ? data.output : `<span class="pending-output">0</span>`;
+            let outputDisplay = '';
+            if (data.hasOutput && data.output > 0) {
+                outputDisplay = data.output;
+            } else {
+                outputDisplay = `<span class="pending-output">0</span>`;
+            }
             html += `<tr>
                 <td class="dept-name"><strong>${dept}</strong></td>
                 <td>${data.prodIC}</td>
@@ -628,15 +523,93 @@
 
         let html = `<div class="table-wrap"><table>
             <thead><tr><th>বিভাগ</th><th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th></tr></thead><tbody>
-            <tr class="short-online"><td><strong>ONLINE PACK</strong></td><td>${online.hr}</td><td>${online.target}</td><td><strong>${online.output}</strong></td><td>${online.perHr.toFixed(2)}</td><td class="${online.util >= 80 ? 'util-high' : online.util >= 50 ? 'util-mid' : 'util-low'}">${online.util.toFixed(1)}%</td></tr>
-            <tr class="short-offline"><td><strong>OFFLINE PACK</strong></td><td>${offline.hr}</td><td>${offline.target}</td><td><strong>${offline.output}</strong></td><td>${offline.perHr.toFixed(2)}</td><td class="${offline.util >= 80 ? 'util-high' : offline.util >= 50 ? 'util-mid' : 'util-low'}">${offline.util.toFixed(1)}%</td></tr>
-            <tr class="short-overall total-row"><td><strong>📌 OVERALL</strong></td><td><strong>${overall.hr}</strong></td><td><strong>${overall.target}</strong></td><td><strong>${overall.output}</strong></td><td><strong>${overall.perHr.toFixed(2)}</strong></td><td><strong>${overall.util.toFixed(1)}%</strong></td></tr>
+            <tr class="short-online">
+                <td><strong>ONLINE PACK</strong></td>
+                <td>${online.hr}</td>
+                <td>${online.target}</td>
+                <td><strong>${online.output}</strong></td>
+                <td>${online.perHr.toFixed(2)}</td>
+                <td class="${online.util >= 80 ? 'util-high' : online.util >= 50 ? 'util-mid' : 'util-low'}">${online.util.toFixed(1)}%</td>
+            </tr>
+            <tr class="short-offline">
+                <td><strong>OFFLINE PACK</strong></td>
+                <td>${offline.hr}</td>
+                <td>${offline.target}</td>
+                <td><strong>${offline.output}</strong></td>
+                <td>${offline.perHr.toFixed(2)}</td>
+                <td class="${offline.util >= 80 ? 'util-high' : offline.util >= 50 ? 'util-mid' : 'util-low'}">${offline.util.toFixed(1)}%</td>
+            </tr>
+            <tr class="short-overall total-row">
+                <td><strong>📌 OVERALL</strong></td>
+                <td><strong>${overall.hr}</strong></td>
+                <td><strong>${overall.target}</strong></td>
+                <td><strong>${overall.output}</strong></td>
+                <td><strong>${overall.perHr.toFixed(2)}</strong></td>
+                <td><strong>${overall.util.toFixed(1)}%</strong></td>
+            </tr>
         </tbody></table></div>`;
         container.innerHTML = html;
     }
 
     // ================================================================
-    // ডেইলি সামারি (গতকালের)
+    // ✨ ইমেজ ক্যাপচার করে Apps Script-এ পাঠানোর ফাংশন
+    // ================================================================
+    window.sendSummaryImageEmail = function() {
+        const container = document.getElementById('summaryTableContainer');
+        if (!container || container.innerText.includes('গতকালের কোনো ডেটা নেই')) {
+            alert('গতকালের কোনো ডেটা নেই!');
+            return;
+        }
+
+        const pwd = prompt('🔒 ইমেইল পাঠাতে পাসওয়ার্ড দিন:');
+        if (pwd === null) return;
+        if (pwd !== 'arif123') {
+            alert('❌ ভুল পাসওয়ার্ড!');
+            return;
+        }
+
+        html2canvas(container, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true
+        }).then(canvas => {
+            const dataUrl = canvas.toDataURL('image/png');
+            const base64 = dataUrl.split(',')[1];
+
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yStr = yesterday.toISOString().slice(0,10);
+            const displayDate = formatDateDisplay(yStr);
+
+            const GROUP_EMAIL = "ariftusher1@gmail.com,taniatoma1030@gmail.com,mstselenaaktar7452@gmail.com,biplobchandra.me@gmail.com,dplexport12@prangroup.com,fahimsha444@gmail.com,mdsirajsae@gmail.com,ripdpl204@prangroup.com,ripdpl330@prangroup.com,ripdpl369@prangroup.com,ripdpl334@prangroup.com,ripdpl282@prangroup.com,ripdpl188@prangroup.com,ripdpl304@prangroup.com,ripdpl327@prangroup.com,ripdpl252@prangroup.com,ripdpl261@prangroup.com,ripdpl333@prangroup.com,ripdpl319@prangroup.com,ripdpl259@prangroup.com";
+            const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxeSntgazM9YSLC4t1R-6INlb1XWu1Sh1D5OdU5He2uMzUU3sQsykfEoahbhTWW3_ay/exec";
+
+            const payload = {
+                imageData: base64,
+                dateStr: yStr,
+                toEmail: GROUP_EMAIL,
+                subject: `📊 Daily Summary Report - ${displayDate}`
+            };
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                alert('✅ ইমেইল পাঠানোর অনুরোধ করা হয়েছে! অনুগ্রহ করে আপনার ইনবক্স চেক করুন (স্প্যাম ফোল্ডারেও দেখুন)।');
+            }).catch(err => {
+                alert('❌ ইমেইল পাঠাতে ব্যর্থ: ' + err.message);
+            });
+        }).catch(err => {
+            alert('❌ ইমেজ ক্যাপচার করতে ব্যর্থ: ' + err.message);
+        });
+    };
+
+    // ================================================================
+    // ডেইলি সামারি – গতকালের (পূর্ণ + ইমেইল বাটন)
     // ================================================================
     function renderDailySummary(entries) {
         const container = document.getElementById('summaryTableContainer');
@@ -648,26 +621,81 @@
             return;
         }
 
-        let html = buildSummaryTableHTML(tableRows);
+        let dateStr = '';
+        if (entries.length > 0) {
+            const firstEntry = entries[0];
+            dateStr = firstEntry.entryDate ? formatDateDisplay(firstEntry.entryDate) : '';
+        }
+
+        let html = `<div class="table-wrap"><table>
+            <thead><tr>
+                <th rowspan="2">ডিপার্টমেন্ট</th>
+                <th rowspan="2">Prod IC</th>
+                <th rowspan="2">টাইপ</th>
+                <th colspan="6" style="background:#1a237e;">📊 ডে + নাইট (Total)</th>
+                <th colspan="5" style="background:#0d47a1;">☀️ ডে শিফট</th>
+                <th colspan="5" style="background:#1a237e;">🌙 নাইট শিফট</th>
+                <th rowspan="2">📧</th>
+            </tr>
+            <tr>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th><th>পজিশন</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+                <th>HR</th><th>Target</th><th>Output</th><th>CTN/HR</th><th>Util%</th>
+            </tr></thead><tbody>`;
+
+        const deptDataMap = {};
+
+        tableRows.forEach(row => {
+            let rowClass = '';
+            if (row.isSummary) {
+                if (row.summaryType === 'online') rowClass = 'row-online-summary';
+                else if (row.summaryType === 'offline') rowClass = 'row-offline-summary';
+                else if (row.summaryType === 'grand') rowClass = 'row-grand-total';
+            }
+            const utilColor = row.totalUtil >= 80 ? 'util-high' : (row.totalUtil >= 50 ? 'util-mid' : 'util-low');
+            html += `<tr class="${rowClass}">`;
+            html += `<td class="dept-name"><strong>${row.dept}</strong></td>`;
+            html += `<td>${row.prodIC}</td>`;
+            html += `<td>${row.typeLabel ? `<span class="${row.badgeClass || ''}">${row.typeLabel}</span>` : '-'}</td>`;
+            html += `<td><strong>${row.totalHr}</strong></td>`;
+            html += `<td>${row.totalTarget}</td>`;
+            html += `<td><strong>${row.totalOutput}</strong></td>`;
+            html += `<td>${row.totalPerHr.toFixed(2)}</td>`;
+            html += `<td class="${utilColor}">${row.totalUtil.toFixed(1)}%</td>`;
+            html += `<td class="${row.posClass || ''}"><strong>${row.position}</strong></td>`;
+            html += `<td>${row.dayHr}</td>`;
+            html += `<td>${row.dayTarget}</td>`;
+            html += `<td>${row.dayOutput}</td>`;
+            html += `<td>${row.dayPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.dayUtil.toFixed(1)}%</td>`;
+            html += `<td>${row.nightHr}</td>`;
+            html += `<td>${row.nightTarget}</td>`;
+            html += `<td>${row.nightOutput}</td>`;
+            html += `<td>${row.nightPerHr.toFixed(2)}</td>`;
+            html += `<td>${row.nightUtil.toFixed(1)}%</td>`;
+
+            if (!row.isSummary) {
+                deptDataMap[row.dept] = {
+                    shift: row.shift || 'Day',
+                    icName: row.icName || '',
+                    dayHr: row.dayHr || 0,
+                    target: row.totalTarget || 0,
+                    output: row.totalOutput || 0,
+                    util: row.totalUtil || 0
+                };
+                html += `<td><button class="btn-email-sm" onclick="sendDepartmentEmail('${row.dept}', window._deptDataMap['${row.dept}'], '${dateStr}')">📧</button></td>`;
+            } else {
+                html += `<td>-</td>`;
+            }
+
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+        window._deptDataMap = deptDataMap;
+
         container.innerHTML = html;
         window._dailyTableData = tableRows;
-    }
-
-    // ================================================================
-    // ডেট রেঞ্জ সারাংশ
-    // ================================================================
-    function renderDateRangeSummary(entries) {
-        const container = document.getElementById('dateRangeSummaryContainer');
-        const result = buildDepartmentSummary(entries);
-        const tableRows = result.tableRows;
-        if (!tableRows || tableRows.length === 0) {
-            container.innerHTML = `<div class="empty-msg">এই রেঞ্জে কোনো এন্ট্রি নেই</div>`;
-            window._dateRangeTableData = null;
-            return;
-        }
-        let html = buildSummaryTableHTML(tableRows);
-        container.innerHTML = html;
-        window._dateRangeTableData = tableRows;
     }
 
     // ================================================================
@@ -775,6 +803,7 @@
                 isSummary: false, dept: dept, prodIC: s.prodIC, typeLabel: 'ON LINE PACK', badgeClass: 'badge-online',
                 totalHr: s.totalHr, totalTarget: s.totalTarget, totalOutput: s.totalOutput,
                 totalPerHr: s.totalPerHr, totalUtil: s.totalUtil,
+                utilColor: s.totalUtil >= 80 ? 'util-high' : (s.totalUtil >= 50 ? 'util-mid' : 'util-low'),
                 position: posDisplay, posClass: posClass,
                 dayHr: s.dayHr, dayTarget: s.dayTarget, dayOutput: s.dayOutput, dayPerHr: s.dayPerHr, dayUtil: s.dayUtil,
                 nightHr: s.nightHr, nightTarget: s.nightTarget, nightOutput: s.nightOutput, nightPerHr: s.nightPerHr, nightUtil: s.nightUtil
@@ -805,6 +834,7 @@
                 isSummary: false, dept: dept, prodIC: s.prodIC, typeLabel: 'OFF LINE PACK', badgeClass: 'badge-offline',
                 totalHr: s.totalHr, totalTarget: s.totalTarget, totalOutput: s.totalOutput,
                 totalPerHr: s.totalPerHr, totalUtil: s.totalUtil,
+                utilColor: s.totalUtil >= 80 ? 'util-high' : (s.totalUtil >= 50 ? 'util-mid' : 'util-low'),
                 position: posDisplay, posClass: posClass,
                 dayHr: s.dayHr, dayTarget: s.dayTarget, dayOutput: s.dayOutput, dayPerHr: s.dayPerHr, dayUtil: s.dayUtil,
                 nightHr: s.nightHr, nightTarget: s.nightTarget, nightOutput: s.nightOutput, nightPerHr: s.nightPerHr, nightUtil: s.nightUtil
@@ -834,6 +864,23 @@
         });
 
         return { tableRows, grandTot, onlineTot, offlineTot, summary };
+    }
+
+    // ================================================================
+    // ডেট রেঞ্জ সারাংশ
+    // ================================================================
+    function renderDateRangeSummary(entries) {
+        const container = document.getElementById('dateRangeSummaryContainer');
+        const result = buildDepartmentSummary(entries);
+        const tableRows = result.tableRows;
+        if (!tableRows || tableRows.length === 0) {
+            container.innerHTML = `<div class="empty-msg">এই রেঞ্জে কোনো এন্ট্রি নেই</div>`;
+            window._dateRangeTableData = null;
+            return;
+        }
+        let html = buildSummaryTableHTML(tableRows);
+        container.innerHTML = html;
+        window._dateRangeTableData = tableRows;
     }
 
     // ================================================================
@@ -1151,8 +1198,10 @@
     }
 
     // ================================================================
-    // 📥 ডাউনলোড ফাংশনসমূহ (সম্পূর্ণ)
+    // 📥 সব ডাউনলোড ফাংশন (সম্পূর্ণ)
     // ================================================================
+
+    // ---- Short Summary ----
     window.downloadShortExcel = function() {
         const data = window._shortData;
         if (!data) { alert('কোনো ডেটা নেই!'); return; }
@@ -1198,6 +1247,7 @@
             .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
     };
 
+    // ---- Daily Summary ----
     window.downloadDailyExcel = function() {
         const rows = window._dailyTableData;
         if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
@@ -1249,6 +1299,7 @@
             .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
     };
 
+    // ---- Date Range Summary ----
     window.downloadDateRangeExcel = function() {
         const rows = window._dateRangeTableData;
         if (!rows || rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
@@ -1300,6 +1351,7 @@
             .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
     };
 
+    // ---- Overall Summary ----
     window.downloadOverallExcel = function() {
         const container = document.getElementById('overallReportContainer');
         const table = container.querySelector('table');
@@ -1339,6 +1391,7 @@
             .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
     };
 
+    // ---- Monthly Summary ----
     window.downloadMonthlyExcel = function() {
         const data = window._monthlyData;
         if (!data || data.deptList.length === 0) { alert('কোনো ডেটা নেই!'); return; }
@@ -1383,6 +1436,7 @@
             .catch(err => { alert('❌ PDF তৈরি ব্যর্থ!'); });
     };
 
+    // ---- Today Shift Summary ----
     window.downloadTodayExcel = function() {
         const data = window._todayTableData;
         if (!data || !data.deptMap) { alert('কোনো ডেটা নেই!'); return; }
@@ -1476,10 +1530,8 @@
         const data = snapshot.val();
         if (data) {
             allEntries = Object.keys(data).map(key => ({ key, ...data[key] }));
-            console.log("✅ Data loaded:", allEntries.length, "entries");
         } else {
             allEntries = [];
-            console.log("⚠️ No data found in Firebase");
         }
         renderAll();
     });
