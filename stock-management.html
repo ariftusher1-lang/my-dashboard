@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Export Packaging-01 Accessories Stock & Report Monitoring</title>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- html2pdf & XLSX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* (style same as before, unchanged) */
+        /* ===== আপনার আগের স্টাইল ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 15px; }
         .container { max-width: 1400px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -131,7 +135,7 @@
         </div>
     </form>
 
-    <!-- 📊 রিপোর্ট & ফিল্টার (শুধু বাটন, ফিল্টার ইনপুট নেই) -->
+    <!-- রিপোর্ট বাটন -->
     <h2>📊 রিপোর্ট</h2>
     <div class="filter-section">
         <div><button class="btn-purple" onclick="openJ0Report()" style="width:100%;">📊 JO রিপোর্ট</button></div>
@@ -166,7 +170,7 @@
     </div>
 
     <button id="clearDataBtn" class="clear-btn" onclick="clearAllDataWithPassword()">🗑️ সমস্ত ডেটা মুছুন (পাসওয়ার্ড প্রয়োজন)</button>
-    <div class="footer-note">ডেটা আপনার ব্রাউজারে সংরক্ষিত থাকে (Local Storage) | ডিফল্ট পাসওয়ার্ড: <strong>admin123</strong></div>
+    <div class="footer-note">ডেটা Firebase Realtime Database-এ সংরক্ষিত | ডিফল্ট পাসওয়ার্ড: <strong>admin123</strong></div>
 </div>
 
 <!-- ===== পাসওয়ার্ড মোডাল ===== -->
@@ -234,7 +238,7 @@
     </div>
 </div>
 
-<!-- ===== ইস্যু হিস্ট্রি মোডাল (রিসিভ ও ইস্যু উভয়) ===== -->
+<!-- ===== ইতিহাস মোডাল ===== -->
 <div class="modal" id="historyModal">
     <div class="modal-content">
         <h3>📜 রিসিভ ও ইস্যু হিস্ট্রি</h3>
@@ -299,28 +303,169 @@
 
 <script>
     // =========================================================
+    //  🔥 Firebase কনফিগারেশন
+    // =========================================================
+    const firebaseConfig = {
+        apiKey: "AIZaSyAHWH9uGLQfXsCppY1xbmY91bwMcObMUUE",
+        authDomain: "carton-management.firebaseapp.com",
+        databaseURL: "https://carton-management-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "carton-management",
+        storageBucket: "carton-management.firebasestorage.app",
+        messagingSenderId: "610163022584",
+        appId: "1:610163022584:web:6b8a7ca0ffc7f0fd6390d",
+        measurementId: "G-V3RVPWDTE7"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const dbRef = database.ref('stockItems');  // Realtime Database-এ 'stockItems' নামে নোড
+
+    // =========================================================
     //  কনফিগারেশন
     // =========================================================
     const APP_PASSWORD = 'admin123';
-    const STORAGE_KEY = 'stockManagementData';
-
-    // =========================================================
-    //  ডেটা হ্যান্ডলিং
-    // =========================================================
-    function getData() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-    }
-
-    function saveData(data) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
+    let allData = [];           // ফায়ারবেস থেকে পাওয়া ডেটা সংরক্ষণ
+    let dataLoaded = false;
 
     let filterJobOrder = '';
     let filterItem = '';
     let currentEditItemIndex = null;
     let currentEditRecordIndex = null;
     let currentEditRecordType = null; // 'receive' or 'issue'
+
+    // =========================================================
+    //  📥 ডেটা রিড (Firebase থেকে লাইভ সিঙ্ক)
+    // =========================================================
+    function startListening() {
+        dbRef.on('value', (snapshot) => {
+            const val = snapshot.val();
+            if (val) {
+                // Firebase থেকে array আকারে ডেটা নেওয়া
+                const dataArray = Object.values(val);
+                // প্রতিটি আইটেমে তার নিজের key সংরক্ষণ (পরবর্তী আপডেট/ডিলিটের জন্য)
+                const keys = Object.keys(val);
+                allData = dataArray.map((item, idx) => {
+                    return { ...item, _firebaseKey: keys[idx] };
+                });
+            } else {
+                allData = [];
+            }
+            dataLoaded = true;
+            renderTable();
+        }, (error) => {
+            console.error('Firebase read error:', error);
+            alert('ডেটা লোড করতে ব্যর্থ! ইন্টারনেট সংযোগ চেক করুন।');
+        });
+    }
+
+    // =========================================================
+    //  📤 ডেটা রাইট (Firebase-এ সেভ)
+    // =========================================================
+    function saveDataToFirebase(dataArray) {
+        // Firebase-এ array সংরক্ষণ করার জন্য object এ রূপান্তর
+        const obj = {};
+        dataArray.forEach((item, index) => {
+            // প্রতিটি আইটেমের _firebaseKey থাকলে সেটি ব্যবহার করি, না হলে নতুন key তৈরি করি
+            const key = item._firebaseKey || dbRef.push().key;
+            // _firebaseKey ডেটার সাথে সংরক্ষণ করি না (শুধু লোকাল ট্র্যাকিং)
+            const { _firebaseKey, ...cleanItem } = item;
+            obj[key] = cleanItem;
+        });
+        dbRef.set(obj)
+            .then(() => {
+                console.log('ডেটা Firebase-এ সেভ করা হয়েছে।');
+            })
+            .catch((err) => {
+                console.error('Firebase write error:', err);
+                alert('ডেটা সেভ করতে ব্যর্থ!');
+            });
+    }
+
+    // =========================================================
+    //  🗑️ একটি আইটেম ডিলিট (Firebase)
+    // =========================================================
+    function deleteItemFromFirebase(key) {
+        if (!key) return;
+        dbRef.child(key).remove()
+            .then(() => {
+                console.log('আইটেম ডিলিট করা হয়েছে।');
+            })
+            .catch((err) => {
+                console.error('Delete error:', err);
+                alert('ডিলিট করতে ব্যর্থ!');
+            });
+    }
+
+    // =========================================================
+    //  স্ট্যাটাস ক্যালকুলেশন
+    // =========================================================
+    function getStatus(prQty, received, totalIssued) {
+        const present = received - totalIssued;
+        if (present < 0) return { text: '⚠️ Over Issue', class: 'status-over' };
+        if (received >= prQty) return { text: '✅ Complete', class: 'status-complete' };
+        return { text: '⏳ Pending', class: 'status-pending' };
+    }
+
+    // =========================================================
+    //  রেন্ডার টেবিল
+    // =========================================================
+    function renderTable() {
+        const data = allData;
+        const filtered = data;
+
+        const tbody = document.getElementById('stockBody');
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#999; padding:20px;">কোনো ডেটা নেই</td></tr>`;
+        } else {
+            let html = '';
+            filtered.forEach((item, index) => {
+                const presentStock = item.received - (item.totalIssued || 0);
+                const pendingQty = item.prQty - item.received;
+                const status = getStatus(item.prQty, item.received, item.totalIssued || 0);
+
+                let stockClass = 'stock-ok';
+                if (presentStock <= 0) stockClass = 'stock-out';
+                else if (presentStock < 5) stockClass = 'stock-low';
+
+                html += `<tr>
+                    <td>${index + 1}</td>
+                    <td>${item.floorName || ''}</td>
+                    <td>${item.irPerson || ''}</td>
+                    <td>${item.irDate || ''}</td>
+                    <td>${item.jobOrder}</td>
+                    <td>${item.itemCode}</td>
+                    <td style="text-align:left; padding-left:8px;">${item.itemName}</td>
+                    <td>${item.prQty}</td>
+                    <td>${item.received}</td>
+                    <td style="font-weight:bold; color:${pendingQty > 0 ? '#d32f2f' : '#2e7d32'};">${pendingQty}</td>
+                    <td>${item.totalIssued || 0}</td>
+                    <td><span class="stock-badge ${stockClass}">${presentStock}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-primary" onclick="openReceiveModal(${index})">📥</button>
+                            <button class="btn-warning" onclick="openIssueModal(${index})">📤</button>
+                            <button class="btn-info" onclick="openHistoryModal(${index})">📜</button>
+                            <button class="btn-danger" onclick="deleteItem(${index})">🗑️</button>
+                        </div>
+                    </td>
+                    <td><span class="status-badge ${status.class}">${status.text}</span></td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+        updateSummary(data);
+    }
+
+    function updateSummary(data) {
+        document.getElementById('totalItems').textContent = data.length;
+        const totalReceived = data.reduce((sum, i) => sum + (i.received || 0), 0);
+        const totalIssued = data.reduce((sum, i) => sum + (i.totalIssued || 0), 0);
+        const totalStock = data.reduce((sum, i) => sum + ((i.received || 0) - (i.totalIssued || 0)), 0);
+        document.getElementById('totalReceived').textContent = totalReceived;
+        document.getElementById('totalIssued').textContent = totalIssued;
+        document.getElementById('totalStock').textContent = totalStock;
+    }
 
     // =========================================================
     //  পাসওয়ার্ড মোডাল
@@ -354,86 +499,12 @@
             document.getElementById('passwordInput').focus();
         }
     }
-
     document.getElementById('passwordInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') verifyPassword();
     });
 
     // =========================================================
-    //  স্ট্যাটাস ক্যালকুলেশন
-    // =========================================================
-    function getStatus(prQty, received, totalIssued) {
-        const present = received - totalIssued;
-        if (present < 0) return { text: '⚠️ Over Issue', class: 'status-over' };
-        if (received >= prQty) return { text: '✅ Complete', class: 'status-complete' };
-        return { text: '⏳ Pending', class: 'status-pending' };
-    }
-
-    // =========================================================
-    //  রেন্ডার টেবিল (ফিল্টার বাদ)
-    // =========================================================
-    function renderTable() {
-        const data = getData();
-        // ফিল্টার আর নেই, সব ডেটা দেখাবে
-        const filtered = data;
-
-        const tbody = document.getElementById('stockBody');
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#999; padding:20px;">কোনো ডেটা নেই</td></tr>`;
-        } else {
-            let html = '';
-            filtered.forEach((item, index) => {
-                const presentStock = item.received - (item.totalIssued || 0);
-                const pendingQty = item.prQty - item.received;
-                const status = getStatus(item.prQty, item.received, item.totalIssued || 0);
-
-                let stockClass = 'stock-ok';
-                if (presentStock <= 0) stockClass = 'stock-out';
-                else if (presentStock < 5) stockClass = 'stock-low';
-
-                const realIndex = data.indexOf(item);
-
-                html += `<tr>
-                    <td>${index + 1}</td>
-                    <td>${item.floorName || ''}</td>
-                    <td>${item.irPerson || ''}</td>
-                    <td>${item.irDate || ''}</td>
-                    <td>${item.jobOrder}</td>
-                    <td>${item.itemCode}</td>
-                    <td style="text-align:left; padding-left:8px;">${item.itemName}</td>
-                    <td>${item.prQty}</td>
-                    <td>${item.received}</td>
-                    <td style="font-weight:bold; color:${pendingQty > 0 ? '#d32f2f' : '#2e7d32'};">${pendingQty}</td>
-                    <td>${item.totalIssued || 0}</td>
-                    <td><span class="stock-badge ${stockClass}">${presentStock}</span></td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-primary" onclick="openReceiveModal(${realIndex})">📥</button>
-                            <button class="btn-warning" onclick="openIssueModal(${realIndex})">📤</button>
-                            <button class="btn-info" onclick="openHistoryModal(${realIndex})">📜</button>
-                            <button class="btn-danger" onclick="deleteItem(${realIndex})">🗑️</button>
-                        </div>
-                    </td>
-                    <td><span class="status-badge ${status.class}">${status.text}</span></td>
-                </tr>`;
-            });
-            tbody.innerHTML = html;
-        }
-        updateSummary(data);
-    }
-
-    function updateSummary(data) {
-        document.getElementById('totalItems').textContent = data.length;
-        const totalReceived = data.reduce((sum, i) => sum + (i.received || 0), 0);
-        const totalIssued = data.reduce((sum, i) => sum + (i.totalIssued || 0), 0);
-        const totalStock = data.reduce((sum, i) => sum + ((i.received || 0) - (i.totalIssued || 0)), 0);
-        document.getElementById('totalReceived').textContent = totalReceived;
-        document.getElementById('totalIssued').textContent = totalIssued;
-        document.getElementById('totalStock').textContent = totalStock;
-    }
-
-    // =========================================================
-    //  আইটেম এন্ট্রি
+    //  আইটেম এন্ট্রি (Firebase)
     // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -450,16 +521,19 @@
             return;
         }
 
-        const data = getData();
-        const existing = data.findIndex(i => i.jobOrder === jobOrder && i.itemCode === itemCode);
-        if (existing !== -1) {
+        // চেক: একই JO + Item Code থাকলে আপডেট
+        const existingIndex = allData.findIndex(i => i.jobOrder === jobOrder && i.itemCode === itemCode);
+        if (existingIndex !== -1) {
             if (!confirm(`"${itemName}" এর জন্য ইতিমধ্যে এন্ট্রি আছে! PR QTY আপডেট করবেন?`)) return;
-            data[existing].prQty += prQty;
-            if (floorName) data[existing].floorName = floorName;
-            if (irPerson) data[existing].irPerson = irPerson;
-            if (irDate) data[existing].irDate = irDate;
+            const existingItem = allData[existingIndex];
+            existingItem.prQty += prQty;
+            if (floorName) existingItem.floorName = floorName;
+            if (irPerson) existingItem.irPerson = irPerson;
+            if (irDate) existingItem.irDate = irDate;
+            // Firebase-এ আপডেট
+            saveDataToFirebase(allData);
         } else {
-            data.push({
+            const newItem = {
                 floorName: floorName || '',
                 irPerson: irPerson || '',
                 irDate: irDate || '',
@@ -471,11 +545,11 @@
                 totalIssued: 0,
                 history: [],
                 receiveHistory: []
-            });
+            };
+            allData.push(newItem);
+            saveDataToFirebase(allData);
         }
 
-        saveData(data);
-        renderTable();
         // ফর্ম রিসেট
         document.getElementById('floorName').value = '';
         document.getElementById('irPerson').value = '';
@@ -501,7 +575,7 @@
     }
 
     // =========================================================
-    //  📥 Excel Import
+    //  📥 Excel Import (Firebase)
     // =========================================================
     function importExcel(event) {
         const file = event.target.files[0];
@@ -537,10 +611,9 @@
                 }
 
                 let added = 0;
-                const allData = getData();
                 let lastRow = null;
 
-                rows.forEach((row, idx) => {
+                rows.forEach((row) => {
                     const floorName = (row[headerMap['floor name']] || '').toString().trim();
                     const irPerson = (row[headerMap['ir person']] || '').toString().trim();
                     let irDate = (row[headerMap['ir date']] || '').toString().trim();
@@ -557,12 +630,13 @@
                         irDate = jsDate.toISOString().slice(0, 10);
                     }
 
-                    const existing = allData.findIndex(i => i.jobOrder === jobOrder && i.itemCode === itemCode);
-                    if (existing !== -1) {
-                        allData[existing].prQty += prQty;
-                        if (floorName) allData[existing].floorName = floorName;
-                        if (irPerson) allData[existing].irPerson = irPerson;
-                        if (irDate) allData[existing].irDate = irDate;
+                    const existingIndex = allData.findIndex(i => i.jobOrder === jobOrder && i.itemCode === itemCode);
+                    if (existingIndex !== -1) {
+                        const existingItem = allData[existingIndex];
+                        existingItem.prQty += prQty;
+                        if (floorName) existingItem.floorName = floorName;
+                        if (irPerson) existingItem.irPerson = irPerson;
+                        if (irDate) existingItem.irDate = irDate;
                     } else {
                         allData.push({
                             floorName: floorName || '',
@@ -587,8 +661,7 @@
                     return;
                 }
 
-                saveData(allData);
-                renderTable();
+                saveDataToFirebase(allData);
 
                 if (lastRow) {
                     document.getElementById('floorName').value = lastRow.floorName || '';
@@ -600,11 +673,11 @@
                     document.getElementById('prQty').value = lastRow.prQty || '';
                 }
 
-                alert(`✅ ${added} টি আইটেম ইমপোর্ট করা হয়েছে!\nশেষ আইটেমের ডেটা ফর্মে অটো ফিল করা হয়েছে।`);
+                alert(`✅ ${added} টি আইটেম ইমপোর্ট করা হয়েছে!`);
                 document.getElementById('excelFileInput').value = '';
 
             } catch (err) {
-                alert('❌ Excel ফাইল পড়তে ব্যর্থ! ফাইলটি সঠিক ফরম্যাটে আছে কিনা চেক করুন।');
+                alert('❌ Excel ফাইল পড়তে ব্যর্থ!');
                 console.error(err);
             }
         };
@@ -617,8 +690,7 @@
     let receiveIndex = null;
 
     function openReceiveModal(index) {
-        const data = getData();
-        const item = data[index];
+        const item = allData[index];
         if (!item) return;
         receiveIndex = index;
 
@@ -651,8 +723,7 @@
 
         if (isNaN(qty) || qty <= 0 || !date || !receiver) { alert('সঠিক তথ্য দিন!'); return; }
 
-        const data = getData();
-        const item = data[receiveIndex];
+        const item = allData[receiveIndex];
         item.received = (item.received || 0) + qty;
 
         if (!item.receiveHistory) item.receiveHistory = [];
@@ -660,8 +731,7 @@
         const recordId = Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         item.receiveHistory.push({ id: recordId, qty, date, shift, receiver, time: timestamp });
 
-        saveData(data);
-        renderTable();
+        saveDataToFirebase(allData);
         closeReceiveModal();
         alert(`✅ ${qty} টি রিসিভ করা হয়েছে!`);
     }
@@ -672,8 +742,7 @@
     let issueIndex = null;
 
     function openIssueModal(index) {
-        const data = getData();
-        const item = data[index];
+        const item = allData[index];
         if (!item) return;
         issueIndex = index;
 
@@ -705,8 +774,7 @@
 
         if (isNaN(qty) || qty <= 0 || !date || !by) { alert('সঠিক তথ্য দিন!'); return; }
 
-        const data = getData();
-        const item = data[issueIndex];
+        const item = allData[issueIndex];
         const currentStock = item.received - (item.totalIssued || 0);
         if (qty > currentStock) { alert(`⚠️ যথেষ্ট স্টক নেই! বর্তমান স্টক: ${currentStock}`); return; }
 
@@ -717,8 +785,7 @@
         item.history.push(record);
         item.totalIssued = (item.totalIssued || 0) + qty;
 
-        saveData(data);
-        renderTable();
+        saveDataToFirebase(allData);
         closeIssueModal();
         alert(`✅ ${qty} টি ইস্যু করা হয়েছে!`);
     }
@@ -729,8 +796,7 @@
     let historyIndex = null;
 
     function openHistoryModal(index) {
-        const data = getData();
-        const item = data[index];
+        const item = allData[index];
         if (!item) return;
         historyIndex = index;
         document.getElementById('historyItemName').textContent = `${item.itemName} (${item.itemCode})`;
@@ -797,8 +863,7 @@
     //  ✏️ রেকর্ড এডিট (পাসওয়ার্ড সহ)
     // =========================================================
     function openEditRecord(itemIndex, type, recordIndex) {
-        const data = getData();
-        const item = data[itemIndex];
+        const item = allData[itemIndex];
         if (!item) return;
 
         let record;
@@ -841,8 +906,7 @@
         if (isNaN(qty) || qty < 0 || !date || !person) { alert('সব ফিল্ড সঠিকভাবে পূরণ করুন!'); return; }
 
         openPasswordModal('✏️ রেকর্ড এডিট করতে পাসওয়ার্ড দিন', () => {
-            const data = getData();
-            const item = data[currentEditItemIndex];
+            const item = allData[currentEditItemIndex];
             if (!item) return;
 
             let record;
@@ -866,8 +930,7 @@
                 record.by = person;
             }
 
-            saveData(data);
-            renderTable();
+            saveDataToFirebase(allData);
             closeEditModal();
             openHistoryModal(currentEditItemIndex);
             alert('✅ রেকর্ড আপডেট করা হয়েছে!');
@@ -880,8 +943,7 @@
     function deleteRecord(itemIndex, type, recordIndex) {
         openPasswordModal('🗑️ রেকর্ড ডিলিট করতে পাসওয়ার্ড দিন', () => {
             if (!confirm('এই রেকর্ড মুছবেন?')) return;
-            const data = getData();
-            const item = data[itemIndex];
+            const item = allData[itemIndex];
             if (!item) return;
 
             if (type === 'receive') {
@@ -896,8 +958,7 @@
                 item.history.splice(recordIndex, 1);
             }
 
-            saveData(data);
-            renderTable();
+            saveDataToFirebase(allData);
             openHistoryModal(itemIndex);
             alert('🗑️ রেকর্ড মুছে ফেলা হয়েছে!');
         });
@@ -908,11 +969,16 @@
     // =========================================================
     function deleteItem(index) {
         if (!confirm('এই এন্ট্রি মুছবেন? (সব ইস্যু/রিসিভ হিস্ট্রিও মুছে যাবে)')) return;
-        const data = getData();
-        if (index >= 0 && index < data.length) {
-            data.splice(index, 1);
-            saveData(data);
-            renderTable();
+        const item = allData[index];
+        if (item) {
+            const key = item._firebaseKey;
+            if (key) {
+                deleteItemFromFirebase(key);
+            } else {
+                // লোকাল ডিলিট (যদি কোনো কারণে key না থাকে)
+                allData.splice(index, 1);
+                saveDataToFirebase(allData);
+            }
             alert('🗑️ আইটেম মুছে ফেলা হয়েছে!');
         } else {
             alert('আইটেম পাওয়া যায়নি!');
@@ -927,9 +993,16 @@
         if (userPass === null) return;
         if (userPass.trim() === APP_PASSWORD) {
             if (confirm('⚠️ সতর্কতা: সমস্ত ডেটা স্থায়ীভাবে মুছে যাবে! আপনি কি নিশ্চিত?')) {
-                localStorage.removeItem(STORAGE_KEY);
-                renderTable();
-                alert('🗑️ সমস্ত ডেটা মুছে ফেলা হয়েছে!');
+                dbRef.remove()
+                    .then(() => {
+                        allData = [];
+                        renderTable();
+                        alert('🗑️ সমস্ত ডেটা মুছে ফেলা হয়েছে!');
+                    })
+                    .catch((err) => {
+                        alert('ডেটা মুছতে ব্যর্থ!');
+                        console.error(err);
+                    });
             }
         } else {
             alert('❌ ভুল পাসওয়ার্ড!');
@@ -943,12 +1016,11 @@
     let currentReportJO = '';
 
     function openJ0Report() {
-        const data = getData();
-        if (data.length === 0) {
+        if (allData.length === 0) {
             alert('কোনো ডেটা নেই! প্রথমে এন্ট্রি করুন।');
             return;
         }
-        const joList = [...new Set(data.map(i => i.jobOrder))];
+        const joList = [...new Set(allData.map(i => i.jobOrder))];
         const select = document.getElementById('joSelect');
         select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
         joList.forEach(jo => {
@@ -977,8 +1049,7 @@
             return;
         }
 
-        const data = getData();
-        const items = data.filter(i => i.jobOrder === jo);
+        const items = allData.filter(i => i.jobOrder === jo);
         if (items.length === 0) {
             document.getElementById('joReportContent').innerHTML = `<p style="color:#999;">"${jo}"-তে কোনো আইটেম নেই</p>`;
             currentReportItems = [];
@@ -1106,7 +1177,7 @@
     }
 
     // =========================================================
-    //  PDF, Image, Excel ডাউনলোড
+    //  PDF, Image, Excel ডাউনলোড (আগের মতো)
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
@@ -1198,13 +1269,12 @@
     //  CSV রিপোর্ট
     // =========================================================
     function exportReport() {
-        const data = getData();
-        if (data.length === 0) {
+        if (allData.length === 0) {
             alert('কোনো ডেটা নেই!');
             return;
         }
         let csv = 'Floor Name,IR Person,IR Date,JOB ORDER,ITEM CODE,ITEM NAME,PR QTY,RECEIVED,PENDING QTY,TOTAL ISSUES,PRESENT STOCK,STATUS\n';
-        data.forEach(item => {
+        allData.forEach(item => {
             const present = item.received - (item.totalIssued || 0);
             const pending = item.prQty - item.received;
             const status = getStatus(item.prQty, item.received, item.totalIssued || 0).text;
@@ -1242,12 +1312,12 @@
     });
 
     // =========================================================
-    //  ইনিশিয়াল লোড
+    //  ইনিশিয়াল লোড – Firebase Listening শুরু
     // =========================================================
     document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().slice(0, 10);
         document.getElementById('irDate').value = today;
-        renderTable();
+        startListening();  // Firebase থেকে ডেটা লোড শুরু
     });
 </script>
 </body>
