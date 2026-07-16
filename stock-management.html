@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Export Packaging-01 Accessories Stock & Report Monitoring</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 15px; }
+        .container { max-width: 1400px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #0d47a1; border-bottom: 2px solid #0d47a1; padding-bottom: 8px; margin-top: 20px; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 15px 0; }
+        .form-row > div { flex: 1; min-width: 140px; }
+        label { font-weight: bold; display: block; font-size: 13px; margin-bottom: 4px; color: #333; }
+        input, select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        button { background: #0d47a1; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #0a3a7a; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #1e7e34; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #b02a37; }
+        .btn-warning { background: #ffc107; color: #000; }
+        .btn-warning:hover { background: #e0a800; }
+        .btn-info { background: #17a2b8; color: #fff; }
+        .btn-info:hover { background: #138496; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #5a6268; }
+        .btn-primary { background: #007bff; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-purple { background: #6f42c1; }
+        .btn-purple:hover { background: #5a32a3; }
+        .btn-edit { background: #ff9800; color: #fff; }
+        .btn-edit:hover { background: #e68900; }
+        .btn-excel { background: #1d6f42; color: #fff; }
+        .btn-excel:hover { background: #145a33; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
+        th { background: #0d47a1; color: white; position: sticky; top: 0; white-space: nowrap; font-size: 12px; }
+        td { background: #fff; }
+        .stock-badge { font-weight: bold; padding: 4px 10px; border-radius: 20px; }
+        .stock-ok { background: #d4edda; color: #155724; }
+        .stock-low { background: #fff3cd; color: #856404; }
+        .stock-out { background: #f8d7da; color: #721c24; }
+        .status-badge { font-weight: bold; padding: 3px 10px; border-radius: 20px; font-size: 12px; }
+        .status-complete { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-over { background: #f8d7da; color: #721c24; }
+        .action-buttons { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+        .action-buttons button { padding: 2px 6px; font-size: 10px; white-space: nowrap; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 999; }
+        .modal-content { background: #fff; padding: 30px; border-radius: 12px; width: 95%; max-width: 900px; max-height: 85vh; overflow-y: auto; }
+        .modal-content h3 { margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+        .modal-content input, .modal-content select { margin-bottom: 12px; }
+        .modal-content .btn-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+        .modal-content .history-item { background: #f8f9fa; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; border-left: 3px solid #0d47a1; font-size: 13px; }
+        .summary-card { background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; display: flex; flex-wrap: wrap; gap: 20px; }
+        .summary-card .item { flex: 1; min-width: 120px; }
+        .summary-card .label { font-size: 13px; color: #555; }
+        .summary-card .value { font-size: 22px; font-weight: 700; color: #0d47a1; }
+        .filter-section { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+        .filter-section > div { flex: 1; min-width: 150px; }
+        .filter-section label { font-size: 13px; }
+        .clear-btn { background: #6c757d; margin-top: 10px; }
+        .clear-btn:hover { background: #5a6268; }
+        .footer-note { margin-top: 20px; font-size: 12px; color: #777; text-align: center; }
+        .readonly-input { background: #f0f0f0; font-weight: bold; color: #0d47a1; cursor: default; }
+        .table-wrapper { max-height: 450px; overflow-y: auto; }
+        .report-summary { background: #d4edda; padding: 12px; border-radius: 8px; margin: 10px 0; display: flex; gap: 30px; flex-wrap: wrap; }
+        .report-summary span { font-weight: bold; }
+        .history-table { width: 100%; margin-top: 10px; font-size: 13px; }
+        .history-table th { background: #17a2b8; }
+        .sub-table { margin-top: 20px; }
+        .sub-table h4 { background: #f1f1f1; padding: 6px 12px; border-radius: 4px; margin: 10px 0 5px 0; }
+        .password-modal .modal-content { max-width: 380px; }
+        .password-modal input { margin-bottom: 12px; }
+        .import-section { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+        .import-section input[type="file"] { display: none; }
+        @media (max-width: 600px) {
+            .form-row > div, .filter-section > div { min-width: 100%; }
+            table { font-size: 10px; }
+            th, td { padding: 2px 3px; }
+            .modal-content { padding: 20px; }
+            .action-buttons button { font-size: 9px; padding: 2px 4px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h1>📦 Export Packaging-01 Accessories Stock & Report Monitoring</h1>
+
+    <!-- সারাংশ -->
+    <div class="summary-card" id="summaryCard">
+        <div class="item"><span class="label">মোট আইটেম</span><div class="value" id="totalItems">0</div></div>
+        <div class="item"><span class="label">মোট রিসিভ</span><div class="value" id="totalReceived">0</div></div>
+        <div class="item"><span class="label">মোট ইস্যু</span><div class="value" id="totalIssued">0</div></div>
+        <div class="item"><span class="label">বর্তমান স্টক</span><div class="value" id="totalStock">0</div></div>
+    </div>
+
+    <!-- এন্ট্রি ফর্ম -->
+    <h2>➕ নতুন আইটেম এন্ট্রি</h2>
+    <form id="entryForm">
+        <div class="form-row">
+            <div><label>Floor Name</label>
+                <select id="floorName">
+                    <option value="">-- সিলেক্ট করুন --</option>
+                    <option value="Export Pack-1">Export Pack-1</option>
+                    <option value="Export Pack-2">Export Pack-2</option>
+                    <option value="Export Pack-3">Export Pack-3</option>
+                </select>
+            </div>
+            <div><label>IR Person</label><input type="text" id="irPerson" placeholder="যেমন: করিম"></div>
+            <div><label>IR Date</label><input type="date" id="irDate"></div>
+        </div>
+        <div class="form-row">
+            <div><label>JOB ORDER *</label><input type="text" id="jobOrder" placeholder="JO-2026-001" required></div>
+            <div><label>ITEM CODE *</label><input type="text" id="itemCode" placeholder="IC-001" required></div>
+            <div><label>ITEM NAME *</label><input type="text" id="itemName" placeholder="পণ্যের নাম" required></div>
+        </div>
+        <div class="form-row">
+            <div><label>PR QTY *</label><input type="number" id="prQty" placeholder="প্ল্যান QTY" required></div>
+            <div style="display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;">
+                <button type="submit" class="btn-success" style="flex:1; min-width:120px;">➕ আইটেম যোগ করুন</button>
+                <button type="button" class="btn-excel" onclick="downloadTemplate()" style="flex:1; min-width:120px;">📄 Template</button>
+                <button type="button" class="btn-excel" onclick="document.getElementById('excelFileInput').click()" style="flex:1; min-width:120px;">📥 Excel Import</button>
+                <input type="file" id="excelFileInput" accept=".xlsx,.xls" onchange="importExcel(event)">
+            </div>
+        </div>
+    </form>
+
+    <!-- ফিল্টার + রিপোর্ট -->
+    <h2>📊 রিপোর্ট & ফিল্টার</h2>
+    <div class="filter-section">
+        <div><label>🔍 JOB ORDER</label><input type="text" id="filterJobOrder" placeholder="JO-2026-001" oninput="applyFilter()"></div>
+        <div><label>🔍 আইটেম কোড/নাম</label><input type="text" id="filterItem" placeholder="কোড বা নাম" oninput="applyFilter()"></div>
+        <div><button class="btn-purple" onclick="openJ0Report()" style="width:100%;">📊 JO রিপোর্ট</button></div>
+        <div><button class="btn-info" onclick="exportReport()" style="width:100%;">📥 CSV</button></div>
+    </div>
+
+    <!-- ডেটা টেবিল -->
+    <div class="table-wrapper">
+        <table id="stockTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Floor Name</th>
+                    <th>IR Person</th>
+                    <th>IR Date</th>
+                    <th>JOB ORDER</th>
+                    <th>ITEM CODE</th>
+                    <th>ITEM NAME</th>
+                    <th>PR QTY</th>
+                    <th>Received</th>
+                    <th>Pending QTY</th>
+                    <th>Total Issues</th>
+                    <th>Present Stock</th>
+                    <th>Action</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="stockBody">
+                <!-- ডায়নামিক -->
+            </tbody>
+        </table>
+    </div>
+
+    <button id="clearDataBtn" class="clear-btn" onclick="clearAllDataWithPassword()">🗑️ সমস্ত ডেটা মুছুন (পাসওয়ার্ড প্রয়োজন)</button>
+    <div class="footer-note">ডেটা আপনার ব্রাউজারে সংরক্ষিত থাকে (Local Storage) | ডিফল্ট পাসওয়ার্ড: <strong>admin123</strong></div>
+</div>
+
+<!-- ===== পাসওয়ার্ড মোডাল (শুধু রেকর্ড এডিট/ডিলিট) ===== -->
+<div class="modal password-modal" id="passwordModal">
+    <div class="modal-content">
+        <h3>🔑 পাসওয়ার্ড প্রয়োজন</h3>
+        <p id="passwordActionText" style="margin-bottom:10px;">এই কাজটি করতে পাসওয়ার্ড দিন</p>
+        <label>পাসওয়ার্ড:</label>
+        <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড দিন" style="margin-bottom:12px;">
+        <div class="btn-group">
+            <button class="btn-danger" onclick="closePasswordModal()">বাতিল</button>
+            <button class="btn-success" onclick="verifyPassword()">✅ নিশ্চিত করুন</button>
+        </div>
+        <p id="passwordError" style="color:red; font-size:13px; margin-top:8px; display:none;">❌ ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।</p>
+    </div>
+</div>
+
+<!-- ===== JO রিপোর্ট মোডাল ===== -->
+<div class="modal" id="joReportModal">
+    <div class="modal-content">
+        <h3>📊 JOB ORDER রিপোর্ট</h3>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:15px;">
+            <div style="flex:2; min-width:200px;">
+                <label>JOB ORDER সিলেক্ট করুন:</label>
+                <select id="joSelect" style="width:100%; padding:8px;" onchange="loadJoReport()">
+                    <option value="">-- সিলেক্ট করুন --</option>
+                </select>
+            </div>
+            <div style="flex:1; min-width:100px; display:flex; align-items:flex-end; gap:5px; flex-wrap:wrap;">
+                <button class="btn-secondary" onclick="closeJoReport()" style="flex:1; min-width:60px;">বন্ধ</button>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+            <button class="btn-info" onclick="downloadReportPDF()">📄 PDF</button>
+            <button class="btn-success" onclick="downloadReportImage()">🖼️ Image</button>
+            <button class="btn-primary" onclick="downloadReportExcel()">📊 Excel</button>
+        </div>
+        <div id="joReportContent">
+            <p style="color:#999;">একটি JOB ORDER সিলেক্ট করুন</p>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Edit মোডাল (শুধু রিসিভ ও ইস্যু এডিট) ===== -->
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <h3>✏️ রিসিভ/ইস্যু এডিট</h3>
+        <p><strong>আইটেম:</strong> <span id="editItemNameDisplay"></span></p>
+        <p><strong>রেকর্ড টাইপ:</strong> <span id="editRecordType"></span></p>
+        <label>QTY:</label>
+        <input type="number" id="editQty" placeholder="QTY" min="0">
+        <label>তারিখ:</label>
+        <input type="date" id="editDate">
+        <label>শিফট:</label>
+        <select id="editShift">
+            <option value="Day">☀️ Day</option>
+            <option value="Night">🌙 Night</option>
+        </select>
+        <label>ব্যক্তির নাম:</label>
+        <input type="text" id="editPerson" placeholder="যেমন: করিম">
+        <div class="btn-group">
+            <button class="btn-danger" onclick="closeEditModal()">বাতিল</button>
+            <button class="btn-success" onclick="confirmEditRecord()">💾 সংরক্ষণ করুন</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ইস্যু হিস্ট্রি মোডাল (এখন রিসিভ ও ইস্যু উভয় ইতিহাস দেখাবে) ===== -->
+<div class="modal" id="historyModal">
+    <div class="modal-content">
+        <h3>📜 রিসিভ ও ইস্যু হিস্ট্রি</h3>
+        <p><strong>আইটেম:</strong> <span id="historyItemName"></span></p>
+        <div id="historyList" style="margin-top:12px;"></div>
+        <div class="btn-group">
+            <button class="btn-danger" onclick="closeHistoryModal()">বন্ধ করুন</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== রিসিভ মোডাল ===== -->
+<div class="modal" id="receiveModal">
+    <div class="modal-content">
+        <h3>📥 রিসিভ করুন</h3>
+        <p><strong>আইটেম:</strong> <span id="receiveItemName"></span></p>
+        <p><strong>PR QTY:</strong> <span id="receivePrQty"></span></p>
+        <p><strong>বর্তমান রিসিভ:</strong> <span id="receiveCurrentReceived"></span></p>
+        <p><strong>পেন্ডিং QTY:</strong> <span id="receivePendingQty"></span></p>
+        <label>রিসিভ QTY:</label>
+        <input type="number" id="receiveQtyInput" placeholder="QTY" min="1">
+        <label>📅 তারিখ:</label>
+        <input type="date" id="receiveDate">
+        <label>শিফট:</label>
+        <select id="receiveShift">
+            <option value="Day">☀️ Day</option>
+            <option value="Night">🌙 Night</option>
+        </select>
+        <label>রিসিভকারীর নাম:</label>
+        <input type="text" id="receiveByName" placeholder="যেমন: করিম" required>
+        <div class="btn-group">
+            <button class="btn-danger" onclick="closeReceiveModal()">বাতিল</button>
+            <button class="btn-success" onclick="confirmReceive()">✅ রিসিভ করুন</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ইস্যু মোডাল ===== -->
+<div class="modal" id="issueModal">
+    <div class="modal-content">
+        <h3>📤 ইস্যু করুন</h3>
+        <p><strong>আইটেম:</strong> <span id="issueItemName"></span></p>
+        <p><strong>PR QTY:</strong> <span id="issuePrQty"></span></p>
+        <p><strong>বর্তমান স্টক:</strong> <span id="issueCurrentStock"></span></p>
+        <label>ইস্যু QTY:</label>
+        <input type="number" id="issueQtyInput" placeholder="QTY" min="1">
+        <label>📅 তারিখ:</label>
+        <input type="date" id="issueDate">
+        <label>শিফট:</label>
+        <select id="issueShift">
+            <option value="Day">☀️ Day</option>
+            <option value="Night">🌙 Night</option>
+        </select>
+        <label>ইস্যুকারীর নাম:</label>
+        <input type="text" id="issueByName" placeholder="যেমন: আরিফ" required>
+        <div class="btn-group">
+            <button class="btn-danger" onclick="closeIssueModal()">বাতিল</button>
+            <button class="btn-success" onclick="confirmIssue()">✅ ইস্যু করুন</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =========================================================
+    //  কনফিগারেশন
+    // =========================================================
+    const APP_PASSWORD = 'admin123';
+    const STORAGE_KEY = 'stockManagementData';
+
+    // =========================================================
+    //  ডেটা হ্যান্ডলিং
+    // =========================================================
+    function getData() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    }
+
+    function saveData(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    let filterJobOrder = '';
+    let filterItem = '';
+    let currentEditItemIndex = null;
+    let currentEditRecordIndex = null;
+    let currentEditRecordType = null; // 'receive' or 'issue'
+
+    // =========================================================
+    //  পাসওয়ার্ড মোডাল
+    // =========================================================
+    function openPasswordModal(actionText, callback) {
+        document.getElementById('passwordActionText').textContent = actionText;
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('passwordError').style.display = 'none';
+        window._passwordCallback = callback;
+        document.getElementById('passwordModal').style.display = 'flex';
+        document.getElementById('passwordInput').focus();
+    }
+
+    function closePasswordModal() {
+        document.getElementById('passwordModal').style.display = 'none';
+        window._passwordCallback = null;
+    }
+
+    function verifyPassword() {
+        const input = document.getElementById('passwordInput').value;
+        if (input.trim() === APP_PASSWORD) {
+            closePasswordModal();
+            if (typeof window._passwordCallback === 'function') {
+                const cb = window._passwordCallback;
+                window._passwordCallback = null;
+                cb();
+            }
+        } else {
+            document.getElementById('passwordError').style.display = 'block';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }
+
+    document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') verifyPassword();
+    });
+
+    // =========================================================
+    //  স্ট্যাটাস ক্যালকুলেশন
+    // =========================================================
+    function getStatus(prQty, received, totalIssued) {
+        const present = received - totalIssued;
+        if (present < 0) return { text: '⚠️ Over Issue', class: 'status-over' };
+        if (received >= prQty) return { text: '✅ Complete', class: 'status-complete' };
+        return { text: '⏳ Pending', class: 'status-pending' };
+    }
+
+    // =========================================================
+    //  রেন্ডার টেবিল
+    // =========================================================
+    function renderTable() {
+        const data = getData();
+        const filtered = data.filter(item => {
+            const matchJob = filterJobOrder === '' || item.jobOrder.toLowerCase().includes(filterJobOrder.toLowerCase());
+            const matchItem = filterItem === '' || 
+                item.itemCode.toLowerCase().includes(filterItem.toLowerCase()) || 
+                item.itemName.toLowerCase().includes(filterItem.toLowerCase());
+            return matchJob && matchItem;
+        });
+
+        const tbody = document.getElementById('stockBody');
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#999; padding:20px;">কোনো ডেটা নেই</td></tr>`;
+        } else {
+            let html = '';
+            filtered.forEach((item, index) => {
+                const presentStock = item.received - (item.totalIssued || 0);
+                const pendingQty = item.prQty - item.received;
+                const status = getStatus(item.prQty, item.received, item.totalIssued || 0);
+
+                let stockClass = 'stock-ok';
+                if (presentStock <= 0) stockClass = 'stock-out';
+                else if (presentStock < 5) stockClass = 'stock-low';
+
+                const realIndex = data.indexOf(item);
+
+                html += `<tr>
+                    <td>${index + 1}</td>
+                    <td>${item.floorName || ''}</td>
+                    <td>${item.irPerson || ''}</td>
+                    <td>${item.irDate || ''}</td>
+                    <td>${item.jobOrder}</td>
+                    <td>${item.itemCode}</td>
+                    <td style="text-align:left; padding-left:8px;">${item.itemName}</td>
+                    <td>${item.prQty}</td>
+                    <td>${item.received}</td>
+                    <td style="font-weight:bold; color:${pendingQty > 0 ? '#d32f2f' : '#2e7d32'};">${pendingQty}</td>
+                    <td>${item.totalIssued || 0}</td>
+                    <td><span class="stock-badge ${stockClass}">${presentStock}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-primary" onclick="openReceiveModal(${realIndex})">📥</button>
+                            <button class="btn-warning" onclick="openIssueModal(${realIndex})">📤</button>
+                            <button class="btn-info" onclick="openHistoryModal(${realIndex})">📜</button>
+                            <button class="btn-danger" onclick="deleteItem(${realIndex})">🗑️</button>
+                        </div>
+                    </td>
+                    <td><span class="status-badge ${status.class}">${status.text}</span></td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+        updateSummary(data);
+    }
+
+    function updateSummary(data) {
+        document.getElementById('totalItems').textContent = data.length;
+        const totalReceived = data.reduce((sum, i) => sum + (i.received || 0), 0);
+        const totalIssued = data.reduce((sum, i) => sum + (i.totalIssued || 0), 0);
+        const totalStock = data.reduce((sum, i) => sum + ((i.received || 0) - (i.totalIssued || 0)), 0);
+        document.getElementById('totalReceived').textContent = totalReceived;
+        document.getElementById('totalIssued').textContent = totalIssued;
+        document.getElementById('totalStock').textContent = totalStock;
+    }
+
+    // =========================================================
+    //  ফিল্টার
+    // =========================================================
+    function applyFilter() {
+        filterJobOrder = document.getElementById('filterJobOrder').value.trim();
+        filterItem = document.getElementById('filterItem').value.trim();
+        renderTable();
+    }
+
+    // =========================================================
+    //  আইটেম এন্ট্রি
+    // =========================================================
+    document.getElementById('entryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const floorName = document.getElementById('floorName').value;
+        const irPerson = document.getElementById('irPerson').value.trim();
+        const irDate = document.getElementById('irDate').value;
+        const jobOrder = document.getElementById('jobOrder').value.trim();
+        const itemCode = document.getElementById('itemCode').value.trim();
+        const itemName = document.getElementById('itemName').value.trim();
+        const prQty = parseInt(document.getElementById('prQty').value);
+
+        if (!jobOrder || !itemCode || !itemName || isNaN(prQty) || prQty <= 0) {
+            alert('দয়া করে JOB ORDER, ITEM CODE, ITEM NAME ও PR QTY সঠিকভাবে পূরণ করুন!');
+            return;
+        }
+
+        const data = getData();
+        const existing = data.findIndex(i => i.jobOrder === jobOrder && i.itemCode === itemCode);
+        if (existing !== -1) {
+            if (!confirm(`"${itemName}" এর জন্য ইতিমধ্যে এন্ট্রি আছে! PR QTY আপডেট করবেন?`)) return;
+            data[existing].prQty += prQty;
+            if (floorName) data[existing].floorName = floorName;
+            if (irPerson) data[existing].irPerson = irPerson;
+            if (irDate) data[existing].irDate = irDate;
+        } else {
+            data.push({
+                floorName: floorName || '',
+                irPerson: irPerson || '',
+                irDate: irDate || '',
+                jobOrder,
+                itemCode,
+                itemName,
+                prQty,
+                received: 0,
+                totalIssued: 0,
+                history: [],
+                receiveHistory: []
+            });
+        }
+
+        saveData(data);
+        renderTable();
+        // ফর্ম রিসেট
+        document.getElementById('floorName').value = '';
+        document.getElementById('irPerson').value = '';
+        document.getElementById('jobOrder').value = '';
+        document.getElementById('itemCode').value = '';
+        document.getElementById('itemName').value = '';
+        document.getElementById('prQty').value = '';
+        document.getElementById('irDate').value = new Date().toISOString().slice(0, 10);
+        alert('✅ আইটেম যোগ করা হয়েছে!');
+    });
+
+    // =========================================================
+    //  📄 Excel Template Download
+    // =========================================================
+    function downloadTemplate() {
+        const headers = ['Floor Name', 'IR Person', 'IR Date', 'JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'PR QTY'];
+        const sampleRow = ['Export Pack-1', 'করিম', new Date().toISOString().slice(0,10), 'BIRGMA-26-03', '0729916357', 'STICKER FOR COMFORT STOOL-ASS-GIRGMA', 13864];
+        const wsData = [headers, sampleRow];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, 'Stock_Entry_Template.xlsx');
+    }
+
+    // =========================================================
+    //  📥 Excel Import
+    // =========================================================
+    function importExcel(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            alert('কোনো ফাইল সিলেক্ট করা হয়নি!');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+                if (rows.length === 0) {
+                    alert('Excel ফাইলে কোনো ডেটা নেই!');
+                    return;
+                }
+
+                const headerMap = {};
+                const firstRowKeys = Object.keys(rows[0]);
+                firstRowKeys.forEach(key => {
+                    headerMap[key.trim().toLowerCase()] = key;
+                });
+
+                const required = ['floor name', 'ir person', 'ir date', 'job order', 'item code', 'item name', 'pr qty'];
+                const missing = required.filter(req => !(req in headerMap));
+                if (missing.length > 0) {
+                    alert(`❌ Excel ফাইলে নিচের কলামগুলো পাওয়া যায়নি: ${missing.join(', ')}\n\nটেমপ্লেট ডাউনলোড করে সঠিক ফরম্যাট ব্যবহার করুন।`);
+                    return;
+                }
+
+                let added = 0;
+                const allData = getData();
+                let lastRow = null;
+
+                rows.forEach((row, idx) => {
+                    const floorName = (row[headerMap['floor name']] || '').toString().trim();
+                    const irPerson = (row[headerMap['ir person']] || '').toString().trim();
+                    let irDate = (row[headerMap['ir date']] || '').toString().trim();
+                    const jobOrder = (row[headerMap['job order']] || '').toString().trim();
+                    const itemCode = (row[headerMap['item code']] || '').toString().trim();
+                    const itemName = (row[headerMap['item name']] || '').toString().trim();
+                    let prQty = parseInt((row[headerMap['pr qty']] || '').toString().replace(/,/g, '')) || 0;
+
+                    if (!jobOrder || !itemCode || !itemName || prQty <= 0) return;
+
+                    if (irDate && !isNaN(irDate) && irDate.length === 5) {
+                        const excelDate = parseInt(irDate);
+                        const jsDate = new Date((excelDate - 25569) * 86400 * 1000);
+                        irDate = jsDate.toISOString().slice(0, 10);
+                    }
+
+                    const existing = allData.findIndex(i => i.jobOrder === jobOrder && i.itemCode === itemCode);
+                    if (existing !== -1) {
+                        allData[existing].prQty += prQty;
+                        if (floorName) allData[existing].floorName = floorName;
+                        if (irPerson) allData[existing].irPerson = irPerson;
+                        if (irDate) allData[existing].irDate = irDate;
+                    } else {
+                        allData.push({
+                            floorName: floorName || '',
+                            irPerson: irPerson || '',
+                            irDate: irDate || '',
+                            jobOrder,
+                            itemCode,
+                            itemName,
+                            prQty,
+                            received: 0,
+                            totalIssued: 0,
+                            history: [],
+                            receiveHistory: []
+                        });
+                    }
+                    added++;
+                    lastRow = { floorName, irPerson, irDate, jobOrder, itemCode, itemName, prQty };
+                });
+
+                if (added === 0) {
+                    alert('⚠️ কোনো বৈধ ডেটা পাওয়া যায়নি! Excel ফাইলের ডেটা চেক করুন।');
+                    return;
+                }
+
+                saveData(allData);
+                renderTable();
+
+                if (lastRow) {
+                    document.getElementById('floorName').value = lastRow.floorName || '';
+                    document.getElementById('irPerson').value = lastRow.irPerson || '';
+                    document.getElementById('irDate').value = lastRow.irDate || new Date().toISOString().slice(0, 10);
+                    document.getElementById('jobOrder').value = lastRow.jobOrder || '';
+                    document.getElementById('itemCode').value = lastRow.itemCode || '';
+                    document.getElementById('itemName').value = lastRow.itemName || '';
+                    document.getElementById('prQty').value = lastRow.prQty || '';
+                }
+
+                alert(`✅ ${added} টি আইটেম ইমপোর্ট করা হয়েছে!\nশেষ আইটেমের ডেটা ফর্মে অটো ফিল করা হয়েছে।`);
+                document.getElementById('excelFileInput').value = '';
+
+            } catch (err) {
+                alert('❌ Excel ফাইল পড়তে ব্যর্থ! ফাইলটি সঠিক ফরম্যাটে আছে কিনা চেক করুন।');
+                console.error(err);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // =========================================================
+    //  📥 রিসিভ (পাসওয়ার্ড নেই)
+    // =========================================================
+    let receiveIndex = null;
+
+    function openReceiveModal(index) {
+        const data = getData();
+        const item = data[index];
+        if (!item) return;
+        receiveIndex = index;
+
+        document.getElementById('receiveItemName').textContent = `${item.itemName} (${item.itemCode})`;
+        document.getElementById('receivePrQty').textContent = item.prQty;
+        document.getElementById('receiveCurrentReceived').textContent = item.received;
+        document.getElementById('receivePendingQty').textContent = item.prQty - item.received;
+        document.getElementById('receiveQtyInput').value = '';
+        document.getElementById('receiveByName').value = '';
+
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('receiveDate').value = today;
+        const hours = new Date().getHours();
+        document.getElementById('receiveShift').value = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
+
+        document.getElementById('receiveModal').style.display = 'flex';
+    }
+
+    function closeReceiveModal() {
+        document.getElementById('receiveModal').style.display = 'none';
+        receiveIndex = null;
+    }
+
+    function confirmReceive() {
+        if (receiveIndex === null) return;
+        const qty = parseInt(document.getElementById('receiveQtyInput').value);
+        const date = document.getElementById('receiveDate').value;
+        const shift = document.getElementById('receiveShift').value;
+        const receiver = document.getElementById('receiveByName').value.trim();
+
+        if (isNaN(qty) || qty <= 0 || !date || !receiver) { alert('সঠিক তথ্য দিন!'); return; }
+
+        const data = getData();
+        const item = data[receiveIndex];
+        item.received = (item.received || 0) + qty;
+
+        if (!item.receiveHistory) item.receiveHistory = [];
+        const timestamp = new Date().toLocaleString('bn-BD', { timeZone: 'Asia/Dhaka' });
+        // প্রতিটি রেকর্ডে ইউনিক আইডি যোগ করি
+        const recordId = Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        item.receiveHistory.push({ id: recordId, qty, date, shift, receiver, time: timestamp });
+
+        saveData(data);
+        renderTable();
+        closeReceiveModal();
+        alert(`✅ ${qty} টি রিসিভ করা হয়েছে!`);
+    }
+
+    // =========================================================
+    //  📤 ইস্যু (পাসওয়ার্ড নেই)
+    // =========================================================
+    let issueIndex = null;
+
+    function openIssueModal(index) {
+        const data = getData();
+        const item = data[index];
+        if (!item) return;
+        issueIndex = index;
+
+        document.getElementById('issueItemName').textContent = `${item.itemName} (${item.itemCode})`;
+        document.getElementById('issuePrQty').textContent = item.prQty;
+        document.getElementById('issueCurrentStock').textContent = item.received - (item.totalIssued || 0);
+        document.getElementById('issueQtyInput').value = '';
+        document.getElementById('issueByName').value = '';
+
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('issueDate').value = today;
+        const hours = new Date().getHours();
+        document.getElementById('issueShift').value = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
+
+        document.getElementById('issueModal').style.display = 'flex';
+    }
+
+    function closeIssueModal() {
+        document.getElementById('issueModal').style.display = 'none';
+        issueIndex = null;
+    }
+
+    function confirmIssue() {
+        if (issueIndex === null) return;
+        const qty = parseInt(document.getElementById('issueQtyInput').value);
+        const date = document.getElementById('issueDate').value;
+        const shift = document.getElementById('issueShift').value;
+        const by = document.getElementById('issueByName').value.trim();
+
+        if (isNaN(qty) || qty <= 0 || !date || !by) { alert('সঠিক তথ্য দিন!'); return; }
+
+        const data = getData();
+        const item = data[issueIndex];
+        const currentStock = item.received - (item.totalIssued || 0);
+        if (qty > currentStock) { alert(`⚠️ যথেষ্ট স্টক নেই! বর্তমান স্টক: ${currentStock}`); return; }
+
+        const timestamp = new Date().toLocaleString('bn-BD', { timeZone: 'Asia/Dhaka' });
+        const recordId = Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        const record = { id: recordId, qty, date, shift, by, time: timestamp };
+        if (!item.history) item.history = [];
+        item.history.push(record);
+        item.totalIssued = (item.totalIssued || 0) + qty;
+
+        saveData(data);
+        renderTable();
+        closeIssueModal();
+        alert(`✅ ${qty} টি ইস্যু করা হয়েছে!`);
+    }
+
+    // =========================================================
+    //  📜 ইতিহাস (রিসিভ ও ইস্যু উভয়)
+    // =========================================================
+    let historyIndex = null;
+
+    function openHistoryModal(index) {
+        const data = getData();
+        const item = data[index];
+        if (!item) return;
+        historyIndex = index;
+        document.getElementById('historyItemName').textContent = `${item.itemName} (${item.itemCode})`;
+
+        const container = document.getElementById('historyList');
+        let html = '';
+
+        // রিসিভ ইতিহাস
+        html += `<h4 style="color:#28a745; margin-top:10px;">📥 রিসিভ ইতিহাস</h4>`;
+        if (item.receiveHistory && item.receiveHistory.length > 0) {
+            html += `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>QTY</th><th>রিসিভকারী</th><th>সময়</th><th>অ্যাকশন</th></tr></thead><tbody>`;
+            item.receiveHistory.forEach((rec, i) => {
+                html += `<tr>
+                    <td>${i+1}</td>
+                    <td>${rec.date}</td>
+                    <td>${rec.shift}</td>
+                    <td>${rec.qty}</td>
+                    <td>${rec.receiver}</td>
+                    <td style="font-size:11px;">${rec.time}</td>
+                    <td>
+                        <button class="btn-edit" style="font-size:10px; padding:2px 6px;" onclick="openEditRecord(${historyIndex}, 'receive', ${i})">✏️</button>
+                        <button class="btn-danger" style="font-size:10px; padding:2px 6px;" onclick="deleteRecord(${historyIndex}, 'receive', ${i})">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+        } else {
+            html += `<p style="color:#999;">কোনো রিসিভ রেকর্ড নেই</p>`;
+        }
+
+        // ইস্যু ইতিহাস
+        html += `<h4 style="color:#d32f2f; margin-top:15px;">📤 ইস্যু ইতিহাস</h4>`;
+        if (item.history && item.history.length > 0) {
+            html += `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>QTY</th><th>ইস্যুকারী</th><th>সময়</th><th>অ্যাকশন</th></tr></thead><tbody>`;
+            item.history.forEach((rec, i) => {
+                html += `<tr>
+                    <td>${i+1}</td>
+                    <td>${rec.date}</td>
+                    <td>${rec.shift}</td>
+                    <td>${rec.qty}</td>
+                    <td>${rec.by}</td>
+                    <td style="font-size:11px;">${rec.time}</td>
+                    <td>
+                        <button class="btn-edit" style="font-size:10px; padding:2px 6px;" onclick="openEditRecord(${historyIndex}, 'issue', ${i})">✏️</button>
+                        <button class="btn-danger" style="font-size:10px; padding:2px 6px;" onclick="deleteRecord(${historyIndex}, 'issue', ${i})">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+        } else {
+            html += `<p style="color:#999;">কোনো ইস্যু রেকর্ড নেই</p>`;
+        }
+
+        container.innerHTML = html;
+        document.getElementById('historyModal').style.display = 'flex';
+    }
+
+    function closeHistoryModal() {
+        document.getElementById('historyModal').style.display = 'none';
+        historyIndex = null;
+    }
+
+    // =========================================================
+    //  ✏️ রেকর্ড এডিট (পাসওয়ার্ড সহ)
+    // =========================================================
+    function openEditRecord(itemIndex, type, recordIndex) {
+        const data = getData();
+        const item = data[itemIndex];
+        if (!item) return;
+
+        let record;
+        if (type === 'receive') {
+            record = item.receiveHistory[recordIndex];
+        } else {
+            record = item.history[recordIndex];
+        }
+        if (!record) return;
+
+        currentEditItemIndex = itemIndex;
+        currentEditRecordIndex = recordIndex;
+        currentEditRecordType = type;
+
+        document.getElementById('editItemNameDisplay').textContent = `${item.itemName} (${item.itemCode})`;
+        document.getElementById('editRecordType').textContent = type === 'receive' ? 'রিসিভ' : 'ইস্যু';
+        document.getElementById('editQty').value = record.qty;
+        document.getElementById('editDate').value = record.date;
+        document.getElementById('editShift').value = record.shift;
+        document.getElementById('editPerson').value = type === 'receive' ? record.receiver : record.by;
+
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        currentEditItemIndex = null;
+        currentEditRecordIndex = null;
+        currentEditRecordType = null;
+    }
+
+    function confirmEditRecord() {
+        if (currentEditItemIndex === null || currentEditRecordIndex === null || currentEditRecordType === null) return;
+
+        const qty = parseInt(document.getElementById('editQty').value);
+        const date = document.getElementById('editDate').value;
+        const shift = document.getElementById('editShift').value;
+        const person = document.getElementById('editPerson').value.trim();
+
+        if (isNaN(qty) || qty < 0 || !date || !person) { alert('সব ফিল্ড সঠিকভাবে পূরণ করুন!'); return; }
+
+        // পাসওয়ার্ড চেক
+        openPasswordModal('✏️ রেকর্ড এডিট করতে পাসওয়ার্ড দিন', () => {
+            const data = getData();
+            const item = data[currentEditItemIndex];
+            if (!item) return;
+
+            let record;
+            if (currentEditRecordType === 'receive') {
+                record = item.receiveHistory[currentEditRecordIndex];
+                if (!record) return;
+                // মোট রিসিভ আপডেট
+                const diff = qty - record.qty;
+                item.received += diff;
+                record.qty = qty;
+                record.date = date;
+                record.shift = shift;
+                record.receiver = person;
+            } else {
+                record = item.history[currentEditRecordIndex];
+                if (!record) return;
+                const diff = qty - record.qty;
+                item.totalIssued += diff;
+                record.qty = qty;
+                record.date = date;
+                record.shift = shift;
+                record.by = person;
+            }
+
+            saveData(data);
+            renderTable();
+            closeEditModal();
+            // ইতিহাস মোডাল রিফ্রেশ
+            openHistoryModal(currentEditItemIndex);
+            alert('✅ রেকর্ড আপডেট করা হয়েছে!');
+        });
+    }
+
+    // =========================================================
+    //  🗑️ রেকর্ড ডিলিট (পাসওয়ার্ড সহ)
+    // =========================================================
+    function deleteRecord(itemIndex, type, recordIndex) {
+        openPasswordModal('🗑️ রেকর্ড ডিলিট করতে পাসওয়ার্ড দিন', () => {
+            if (!confirm('এই রেকর্ড মুছবেন?')) return;
+            const data = getData();
+            const item = data[itemIndex];
+            if (!item) return;
+
+            if (type === 'receive') {
+                const record = item.receiveHistory[recordIndex];
+                if (!record) return;
+                item.received -= record.qty;
+                item.receiveHistory.splice(recordIndex, 1);
+            } else {
+                const record = item.history[recordIndex];
+                if (!record) return;
+                item.totalIssued -= record.qty;
+                item.history.splice(recordIndex, 1);
+            }
+
+            saveData(data);
+            renderTable();
+            // ইতিহাস মোডাল রিফ্রেশ
+            openHistoryModal(itemIndex);
+            alert('🗑️ রেকর্ড মুছে ফেলা হয়েছে!');
+        });
+    }
+
+    // =========================================================
+    //  🗑️ আইটেম ডিলিট (পাসওয়ার্ড নেই)
+    // =========================================================
+    function deleteItem(index) {
+        if (!confirm('এই এন্ট্রি মুছবেন? (সব ইস্যু/রিসিভ হিস্ট্রিও মুছে যাবে)')) return;
+        const data = getData();
+        if (index >= 0 && index < data.length) {
+            data.splice(index, 1);
+            saveData(data);
+            renderTable();
+            alert('🗑️ আইটেম মুছে ফেলা হয়েছে!');
+        } else {
+            alert('আইটেম পাওয়া যায়নি!');
+        }
+    }
+
+    // =========================================================
+    //  সমস্ত ডেটা মুছুন (পাসওয়ার্ড)
+    // =========================================================
+    function clearAllDataWithPassword() {
+        const userPass = prompt('🗑️ সমস্ত ডেটা মুছতে পাসওয়ার্ড দিন:');
+        if (userPass === null) return;
+        if (userPass.trim() === APP_PASSWORD) {
+            if (confirm('⚠️ সতর্কতা: সমস্ত ডেটা স্থায়ীভাবে মুছে যাবে! আপনি কি নিশ্চিত?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                renderTable();
+                alert('🗑️ সমস্ত ডেটা মুছে ফেলা হয়েছে!');
+            }
+        } else {
+            alert('❌ ভুল পাসওয়ার্ড!');
+        }
+    }
+
+    // =========================================================
+    //  📊 JO রিপোর্ট
+    // =========================================================
+    let currentReportItems = [];
+    let currentReportJO = '';
+
+    function openJ0Report() {
+        const data = getData();
+        if (data.length === 0) {
+            alert('কোনো ডেটা নেই! প্রথমে এন্ট্রি করুন।');
+            return;
+        }
+        const joList = [...new Set(data.map(i => i.jobOrder))];
+        const select = document.getElementById('joSelect');
+        select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
+        joList.forEach(jo => {
+            const opt = document.createElement('option');
+            opt.value = jo;
+            opt.textContent = jo;
+            select.appendChild(opt);
+        });
+        document.getElementById('joReportContent').innerHTML = '<p style="color:#999;">একটি JOB ORDER সিলেক্ট করুন</p>';
+        document.getElementById('joReportModal').style.display = 'flex';
+        currentReportItems = [];
+        currentReportJO = '';
+    }
+
+    function closeJoReport() {
+        document.getElementById('joReportModal').style.display = 'none';
+    }
+
+    function loadJoReport() {
+        const select = document.getElementById('joSelect');
+        const jo = select.value;
+        if (!jo) {
+            document.getElementById('joReportContent').innerHTML = '<p style="color:#999;">একটি JOB ORDER সিলেক্ট করুন</p>';
+            currentReportItems = [];
+            currentReportJO = '';
+            return;
+        }
+
+        const data = getData();
+        const items = data.filter(i => i.jobOrder === jo);
+        if (items.length === 0) {
+            document.getElementById('joReportContent').innerHTML = `<p style="color:#999;">"${jo}"-তে কোনো আইটেম নেই</p>`;
+            currentReportItems = [];
+            currentReportJO = '';
+            return;
+        }
+
+        currentReportItems = items;
+        currentReportJO = jo;
+
+        let html = '';
+        let totalReceive = 0, totalIssue = 0, totalStock = 0, totalPending = 0;
+
+        html += `<div class="report-summary" style="background:#cce5ff; border:2px solid #007bff;">
+            <span style="font-size:20px; font-weight:700;">📋 রিপোর্ট: ${jo}</span>
+        </div>`;
+
+        // রিসিভ ও ইস্যু হিস্ট্রি
+        let allReceiveHistory = [];
+        let allIssueHistory = [];
+
+        items.forEach(item => {
+            if (item.receiveHistory && item.receiveHistory.length > 0) {
+                item.receiveHistory.forEach(rec => {
+                    allReceiveHistory.push({
+                        itemCode: item.itemCode,
+                        itemName: item.itemName,
+                        ...rec
+                    });
+                });
+            }
+            if (item.history && item.history.length > 0) {
+                item.history.forEach(rec => {
+                    allIssueHistory.push({
+                        itemCode: item.itemCode,
+                        itemName: item.itemName,
+                        ...rec
+                    });
+                });
+            }
+        });
+
+        allReceiveHistory.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+        allIssueHistory.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+
+        html += `<div style="margin-top:20px; border:1px solid #28a745; border-radius:8px; padding:12px; background:#f0fff4;">`;
+        html += `<h4 style="color:#28a745;">📥 রিসিভ হিস্ট্রি (সকল আইটেম)</h4>`;
+        if (allReceiveHistory.length === 0) {
+            html += `<p style="color:#999;">কোনো রিসিভ রেকর্ড নেই</p>`;
+        } else {
+            html += `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>ITEM CODE</th><th>ITEM NAME</th><th>QTY</th><th>রিসিভকারী</th><th>সময়</th></tr></thead><tbody>`;
+            allReceiveHistory.forEach((rec, i) => {
+                html += `<tr><td>${i+1}</td><td>${rec.date}</td><td>${rec.shift}</td><td>${rec.itemCode}</td><td>${rec.itemName}</td><td>${rec.qty}</td><td>${rec.receiver}</td><td style="font-size:11px;">${rec.time}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+        }
+        html += `</div>`;
+
+        html += `<div style="margin-top:20px; border:1px solid #ffc107; border-radius:8px; padding:12px; background:#fff8e1;">`;
+        html += `<h4 style="color:#d32f2f;">📤 ইস্যু হিস্ট্রি (সকল আইটেম)</h4>`;
+        if (allIssueHistory.length === 0) {
+            html += `<p style="color:#999;">কোনো ইস্যু রেকর্ড নেই</p>`;
+        } else {
+            html += `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>ITEM CODE</th><th>ITEM NAME</th><th>QTY</th><th>ইস্যুকারী</th><th>সময়</th></tr></thead><tbody>`;
+            allIssueHistory.forEach((rec, i) => {
+                html += `<tr><td>${i+1}</td><td>${rec.date}</td><td>${rec.shift}</td><td>${rec.itemCode}</td><td>${rec.itemName}</td><td>${rec.qty}</td><td>${rec.by}</td><td style="font-size:11px;">${rec.time}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+        }
+        html += `</div>`;
+
+        // আইটেম ডিটেইলস টেবিল
+        html += `<div style="margin-top:20px; border:1px solid #0d47a1; border-radius:8px; padding:12px; background:#e3f2fd;">`;
+        html += `<h4 style="color:#0d47a1;">📋 আইটেম ডিটেইলস</h4>`;
+        html += `<table class="history-table" style="font-size:12px;"><thead><tr>
+            <th>#</th>
+            <th>ITEM CODE</th>
+            <th>ITEM NAME</th>
+            <th>Floor</th>
+            <th>IR Person</th>
+            <th>IR Date</th>
+            <th>PR QTY</th>
+            <th>রিসিভ</th>
+            <th>পেন্ডিং</th>
+            <th>ইস্যু</th>
+            <th>স্টক</th>
+            <th>স্ট্যাটাস</th>
+        </tr></thead><tbody>`;
+
+        items.forEach((item, idx) => {
+            const present = item.received - (item.totalIssued || 0);
+            const pending = item.prQty - item.received;
+            const status = getStatus(item.prQty, item.received, item.totalIssued || 0);
+            totalReceive += item.received;
+            totalIssue += (item.totalIssued || 0);
+            totalStock += present;
+            totalPending += pending > 0 ? pending : 0;
+
+            html += `<tr>
+                <td>${idx+1}</td>
+                <td>${item.itemCode}</td>
+                <td style="text-align:left;">${item.itemName}</td>
+                <td>${item.floorName||''}</td>
+                <td>${item.irPerson||''}</td>
+                <td>${item.irDate||''}</td>
+                <td>${item.prQty}</td>
+                <td>${item.received}</td>
+                <td style="font-weight:bold; color:${pending>0?'#d32f2f':'#2e7d32'}">${pending}</td>
+                <td>${item.totalIssued||0}</td>
+                <td style="font-weight:bold; color:${present<0?'red':'green'}">${present}</td>
+                <td><span class="status-badge ${status.class}">${status.text}</span></td>
+            </tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+
+        html = `<div class="report-summary">
+            <span>📦 JO: <strong>${jo}</strong></span>
+            <span>📥 মোট রিসিভ: <strong>${totalReceive}</strong></span>
+            <span>📤 মোট ইস্যু: <strong>${totalIssue}</strong></span>
+            <span>📊 বর্তমান স্টক: <strong style="color:${totalStock<0?'red':'green'}">${totalStock}</strong></span>
+            <span>⏳ মোট পেন্ডিং: <strong style="color:${totalPending>0?'#d32f2f':'#2e7d32'}">${totalPending}</strong></span>
+            <span>📋 মোট আইটেম: <strong>${items.length}</strong></span>
+        </div>` + html;
+
+        document.getElementById('joReportContent').innerHTML = html;
+    }
+
+    // =========================================================
+    //  PDF, Image, Excel ডাউনলোড (আগের মতো)
+    // =========================================================
+    function downloadReportPDF() {
+        const content = document.getElementById('joReportContent');
+        if (!content || content.innerHTML.trim() === '' || content.innerHTML.includes('সিলেক্ট করুন')) {
+            alert('প্রথমে একটি JOB ORDER সিলেক্ট করুন!');
+            return;
+        }
+        const btns = content.previousElementSibling;
+        if (btns && btns.tagName === 'DIV' && btns.style) {
+            btns.style.display = 'none';
+        }
+        const opt = {
+            margin: [0.5, 0.5, 0.5, 0.5],
+            filename: `JO_Report_${currentReportJO}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(content).save().then(function() {
+            if (btns && btns.tagName === 'DIV') { btns.style.display = 'flex'; }
+        }).catch(function(err) {
+            console.error(err);
+            if (btns && btns.tagName === 'DIV') { btns.style.display = 'flex'; }
+            alert('PDF তৈরি করতে ব্যর্থ!');
+        });
+    }
+
+    function downloadReportImage() {
+        const content = document.getElementById('joReportContent');
+        if (!content || content.innerHTML.trim() === '' || content.innerHTML.includes('সিলেক্ট করুন')) {
+            alert('প্রথমে একটি JOB ORDER সিলেক্ট করুন!');
+            return;
+        }
+        const btns = content.previousElementSibling;
+        if (btns && btns.tagName === 'DIV' && btns.style) { btns.style.display = 'none'; }
+        html2canvas(content, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `JO_Report_${currentReportJO}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            if (btns && btns.tagName === 'DIV') { btns.style.display = 'flex'; }
+        }).catch(err => {
+            console.error(err);
+            if (btns && btns.tagName === 'DIV') { btns.style.display = 'flex'; }
+            alert('Image তৈরি করতে ব্যর্থ!');
+        });
+    }
+
+    function downloadReportExcel() {
+        if (currentReportItems.length === 0) {
+            alert('প্রথমে একটি JOB ORDER সিলেক্ট করুন!');
+            return;
+        }
+        const rows = [
+            ['#', 'ITEM CODE', 'ITEM NAME', 'Floor', 'IR Person', 'IR Date', 'PR QTY', 'রিসিভ', 'পেন্ডিং', 'ইস্যু', 'স্টক', 'স্ট্যাটাস']
+        ];
+        currentReportItems.forEach((item, idx) => {
+            const present = item.received - (item.totalIssued || 0);
+            const pending = item.prQty - item.received;
+            const status = getStatus(item.prQty, item.received, item.totalIssued || 0).text;
+            rows.push([
+                idx+1,
+                item.itemCode,
+                item.itemName,
+                item.floorName || '',
+                item.irPerson || '',
+                item.irDate || '',
+                item.prQty,
+                item.received,
+                pending,
+                item.totalIssued || 0,
+                present,
+                status
+            ]);
+        });
+        const totalReceive = currentReportItems.reduce((s, i) => s + i.received, 0);
+        const totalIssue = currentReportItems.reduce((s, i) => s + (i.totalIssued || 0), 0);
+        const totalStock = currentReportItems.reduce((s, i) => s + (i.received - (i.totalIssued || 0)), 0);
+        const totalPending = currentReportItems.reduce((s, i) => s + (i.prQty - i.received > 0 ? i.prQty - i.received : 0), 0);
+        rows.push([]);
+        rows.push(['মোট', '', '', '', '', '', '', totalReceive, totalPending, totalIssue, totalStock, '']);
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, 'JO Report');
+        XLSX.writeFile(wb, `JO_Report_${currentReportJO}.xlsx`);
+    }
+
+    // =========================================================
+    //  CSV রিপোর্ট
+    // =========================================================
+    function exportReport() {
+        const data = getData();
+        if (data.length === 0) {
+            alert('কোনো ডেটা নেই!');
+            return;
+        }
+        let csv = 'Floor Name,IR Person,IR Date,JOB ORDER,ITEM CODE,ITEM NAME,PR QTY,RECEIVED,PENDING QTY,TOTAL ISSUES,PRESENT STOCK,STATUS\n';
+        data.forEach(item => {
+            const present = item.received - (item.totalIssued || 0);
+            const pending = item.prQty - item.received;
+            const status = getStatus(item.prQty, item.received, item.totalIssued || 0).text;
+            csv += `${item.floorName||''},${item.irPerson||''},${item.irDate||''},${item.jobOrder},${item.itemCode},${item.itemName},${item.prQty},${item.received},${pending},${item.totalIssued||0},${present},${status}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Stock_Report_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        alert('✅ রিপোর্ট ডাউনলোড শুরু হয়েছে!');
+    }
+
+    // =========================================================
+    //  মোডাল বন্ধ
+    // =========================================================
+    document.getElementById('receiveModal').addEventListener('click', function(e) {
+        if (e.target === this) closeReceiveModal();
+    });
+    document.getElementById('issueModal').addEventListener('click', function(e) {
+        if (e.target === this) closeIssueModal();
+    });
+    document.getElementById('historyModal').addEventListener('click', function(e) {
+        if (e.target === this) closeHistoryModal();
+    });
+    document.getElementById('joReportModal').addEventListener('click', function(e) {
+        if (e.target === this) closeJoReport();
+    });
+    document.getElementById('passwordModal').addEventListener('click', function(e) {
+        if (e.target === this) closePasswordModal();
+    });
+    document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) closeEditModal();
+    });
+
+    // =========================================================
+    //  ইনিশিয়াল লোড
+    // =========================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('irDate').value = today;
+        renderTable();
+    });
+</script>
+</body>
+</html>
