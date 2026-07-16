@@ -7,6 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* (style same as before, unchanged) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 15px; }
         .container { max-width: 1400px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -100,7 +101,7 @@
     </div>
 
     <!-- এন্ট্রি ফর্ম -->
-    <h2>New Entry</h2>
+    <h2>➕ নতুন আইটেম এন্ট্রি</h2>
     <form id="entryForm">
         <div class="form-row">
             <div><label>Floor Name</label>
@@ -130,11 +131,9 @@
         </div>
     </form>
 
-    <!-- ফিল্টার + রিপোর্ট -->
-    <h2>📊 রিপোর্ট & ফিল্টার</h2>
+    <!-- 📊 রিপোর্ট & ফিল্টার (শুধু বাটন, ফিল্টার ইনপুট নেই) -->
+    <h2>📊 রিপোর্ট</h2>
     <div class="filter-section">
-        <div><label>🔍 JOB ORDER</label><input type="text" id="filterJobOrder" placeholder="JO-2026-001" oninput="applyFilter()"></div>
-        <div><label>🔍 আইটেম কোড/নাম</label><input type="text" id="filterItem" placeholder="কোড বা নাম" oninput="applyFilter()"></div>
         <div><button class="btn-purple" onclick="openJ0Report()" style="width:100%;">📊 JO রিপোর্ট</button></div>
         <div><button class="btn-info" onclick="exportReport()" style="width:100%;">📥 CSV</button></div>
     </div>
@@ -170,7 +169,7 @@
     <div class="footer-note">ডেটা আপনার ব্রাউজারে সংরক্ষিত থাকে (Local Storage) | ডিফল্ট পাসওয়ার্ড: <strong>admin123</strong></div>
 </div>
 
-<!-- ===== পাসওয়ার্ড মোডাল (শুধু রেকর্ড এডিট/ডিলিট) ===== -->
+<!-- ===== পাসওয়ার্ড মোডাল ===== -->
 <div class="modal password-modal" id="passwordModal">
     <div class="modal-content">
         <h3>🔑 পাসওয়ার্ড প্রয়োজন</h3>
@@ -211,7 +210,7 @@
     </div>
 </div>
 
-<!-- ===== Edit মোডাল (শুধু রিসিভ ও ইস্যু এডিট) ===== -->
+<!-- ===== Edit মোডাল (শুধু রিসিভ/ইস্যু এডিট) ===== -->
 <div class="modal" id="editModal">
     <div class="modal-content">
         <h3>✏️ রিসিভ/ইস্যু এডিট</h3>
@@ -235,7 +234,7 @@
     </div>
 </div>
 
-<!-- ===== ইস্যু হিস্ট্রি মোডাল (এখন রিসিভ ও ইস্যু উভয় ইতিহাস দেখাবে) ===== -->
+<!-- ===== ইস্যু হিস্ট্রি মোডাল (রিসিভ ও ইস্যু উভয়) ===== -->
 <div class="modal" id="historyModal">
     <div class="modal-content">
         <h3>📜 রিসিভ ও ইস্যু হিস্ট্রি</h3>
@@ -371,17 +370,12 @@
     }
 
     // =========================================================
-    //  রেন্ডার টেবিল
+    //  রেন্ডার টেবিল (ফিল্টার বাদ)
     // =========================================================
     function renderTable() {
         const data = getData();
-        const filtered = data.filter(item => {
-            const matchJob = filterJobOrder === '' || item.jobOrder.toLowerCase().includes(filterJobOrder.toLowerCase());
-            const matchItem = filterItem === '' || 
-                item.itemCode.toLowerCase().includes(filterItem.toLowerCase()) || 
-                item.itemName.toLowerCase().includes(filterItem.toLowerCase());
-            return matchJob && matchItem;
-        });
+        // ফিল্টার আর নেই, সব ডেটা দেখাবে
+        const filtered = data;
 
         const tbody = document.getElementById('stockBody');
         if (filtered.length === 0) {
@@ -436,15 +430,6 @@
         document.getElementById('totalReceived').textContent = totalReceived;
         document.getElementById('totalIssued').textContent = totalIssued;
         document.getElementById('totalStock').textContent = totalStock;
-    }
-
-    // =========================================================
-    //  ফিল্টার
-    // =========================================================
-    function applyFilter() {
-        filterJobOrder = document.getElementById('filterJobOrder').value.trim();
-        filterItem = document.getElementById('filterItem').value.trim();
-        renderTable();
     }
 
     // =========================================================
@@ -672,7 +657,6 @@
 
         if (!item.receiveHistory) item.receiveHistory = [];
         const timestamp = new Date().toLocaleString('bn-BD', { timeZone: 'Asia/Dhaka' });
-        // প্রতিটি রেকর্ডে ইউনিক আইডি যোগ করি
         const recordId = Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         item.receiveHistory.push({ id: recordId, qty, date, shift, receiver, time: timestamp });
 
@@ -856,7 +840,6 @@
 
         if (isNaN(qty) || qty < 0 || !date || !person) { alert('সব ফিল্ড সঠিকভাবে পূরণ করুন!'); return; }
 
-        // পাসওয়ার্ড চেক
         openPasswordModal('✏️ রেকর্ড এডিট করতে পাসওয়ার্ড দিন', () => {
             const data = getData();
             const item = data[currentEditItemIndex];
@@ -866,7 +849,6 @@
             if (currentEditRecordType === 'receive') {
                 record = item.receiveHistory[currentEditRecordIndex];
                 if (!record) return;
-                // মোট রিসিভ আপডেট
                 const diff = qty - record.qty;
                 item.received += diff;
                 record.qty = qty;
@@ -887,7 +869,6 @@
             saveData(data);
             renderTable();
             closeEditModal();
-            // ইতিহাস মোডাল রিফ্রেশ
             openHistoryModal(currentEditItemIndex);
             alert('✅ রেকর্ড আপডেট করা হয়েছে!');
         });
@@ -917,7 +898,6 @@
 
             saveData(data);
             renderTable();
-            // ইতিহাস মোডাল রিফ্রেশ
             openHistoryModal(itemIndex);
             alert('🗑️ রেকর্ড মুছে ফেলা হয়েছে!');
         });
@@ -1016,7 +996,6 @@
             <span style="font-size:20px; font-weight:700;">📋 রিপোর্ট: ${jo}</span>
         </div>`;
 
-        // রিসিভ ও ইস্যু হিস্ট্রি
         let allReceiveHistory = [];
         let allIssueHistory = [];
 
@@ -1070,7 +1049,6 @@
         }
         html += `</div>`;
 
-        // আইটেম ডিটেইলস টেবিল
         html += `<div style="margin-top:20px; border:1px solid #0d47a1; border-radius:8px; padding:12px; background:#e3f2fd;">`;
         html += `<h4 style="color:#0d47a1;">📋 আইটেম ডিটেইলস</h4>`;
         html += `<table class="history-table" style="font-size:12px;"><thead><tr>
@@ -1128,7 +1106,7 @@
     }
 
     // =========================================================
-    //  PDF, Image, Excel ডাউনলোড (আগের মতো)
+    //  PDF, Image, Excel ডাউনলোড
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
