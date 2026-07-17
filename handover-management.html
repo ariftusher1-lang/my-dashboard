@@ -9,7 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* আপনার আগের CSS ঠিক আছে, স্পেস বাঁচাতে বাদ দিচ্ছি */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -117,7 +116,7 @@
         </div>
     </div>
 
-    <!-- ===== Excel Import ===== -->
+    <!-- ===== Excel Import (হেডার: Order Name, Acc Code, Item Name, Color, Demand) ===== -->
     <div class="master-import-section">
         <h3>📂 Excel দিয়ে মাস্টার ডেটা</h3>
         <div class="form-row">
@@ -126,7 +125,7 @@
             <div><button class="btn-danger" onclick="clearMasterData()">🗑️ মাস্টার মুছুন</button></div>
             <input type="file" id="masterFileInput" accept=".xlsx,.xls" onchange="importMasterExcel(event)" style="display:none;">
         </div>
-        <p style="font-size:11px; color:#777;">হেডার: Order Name, Acc Code, Item Name, Color, Demand (যেকোনো ক্রমে বসাতে পারেন)</p>
+        <p style="font-size:11px; color:#777;">হেডার: <strong>Order Name, Acc Code, Item Name, Color, Demand</strong></p>
     </div>
 
     <!-- ===== এন্ট্রি ফর্ম ===== -->
@@ -393,16 +392,12 @@
     }
 
     // =========================================================
-    // 📥 Excel Import (স্মার্ট হেডার ডিটেক্ট)
+    // 📥 Excel Import (হেডার: Order Name, Acc Code, Item Name, Color, Demand)
     // =========================================================
     function downloadMasterTemplate() {
-        // টেমপ্লেটে ৫টি হেডার ও ২টি নমুনা সারি
+        // হুবহু এই হেডারগুলো থাকবে
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
-        const ws = XLSX.utils.aoa_to_sheet([
-            headers,
-            ['JO-001', 'IC-001', 'পণ্য-১', 'লাল', 100],
-            ['JO-002', 'IC-002', 'পণ্য-২', 'নীল', 200]
-        ]);
+        const ws = XLSX.utils.aoa_to_sheet([headers, ['JO-001', 'IC-001', 'পণ্য', 'লাল', 100]]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
         XLSX.writeFile(wb, 'Master_Template.xlsx');
@@ -429,49 +424,55 @@
                     return;
                 }
 
-                // হেডার অটো-ডিটেক্ট (কেস ইনসেনসিটিভ)
+                // =========================================================
+                // 🔍 হেডার অটো-ডিটেক্ট (ঠিক আপনার চাওয়া অনুযায়ী)
+                // =========================================================
                 const originalHeaders = Object.keys(rows[0]);
                 const headerMap = {};
 
                 originalHeaders.forEach(h => {
                     const clean = h.trim().toLowerCase().replace(/\s+/g, ' ');
-                    // JOB ORDER খোঁজ
-                    if (clean.includes('order') || clean.includes('jo') || clean.includes('job')) {
+                    
+                    // "Order Name" → "JOB ORDER"
+                    if (clean.includes('order name') || clean.includes('order_name') || clean.includes('job order') || clean.includes('jo')) {
                         headerMap['JOB ORDER'] = h;
                     }
-                    // ITEM CODE খোঁজ
-                    else if (clean.includes('acc code') || clean.includes('code') || clean.includes('item code') || clean.includes('sfg code')) {
+                    // "Acc Code" বা "ITEM CODE" → "ITEM CODE"
+                    else if (clean.includes('acc code') || clean.includes('acc_code') || clean.includes('item code') || clean.includes('item_code') || clean.includes('code')) {
                         headerMap['ITEM CODE'] = h;
                     }
-                    // ITEM NAME খোঁজ
-                    else if (clean.includes('item name') || clean.includes('sfg name') || clean.includes('name')) {
+                    // "Item Name" → "ITEM NAME"
+                    else if (clean.includes('item name') || clean.includes('item_name') || clean.includes('name')) {
                         headerMap['ITEM NAME'] = h;
                     }
-                    // COLOR খোঁজ
-                    else if (clean.includes('color') || clean.includes('colour')) {
+                    // "Color" → "COLOR"
+                    else if (clean.includes('color')) {
                         headerMap['COLOR'] = h;
                     }
-                    // DEMAND খোঁজ
-                    else if (clean.includes('demand') || clean.includes('qty') || clean.includes('due') || clean.includes('quantity')) {
+                    // "Demand" → "DEMAND QTY"
+                    else if (clean.includes('demand') || clean.includes('qty') || clean.includes('due')) {
                         headerMap['DEMAND QTY'] = h;
                     }
                 });
 
-                // প্রয়োজনীয় কলাম চেক
+                // চেক করা দরকারি হেডারগুলো আছে কিনা
                 const required = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'DEMAND QTY'];
                 const missing = required.filter(r => !headerMap[r]);
 
                 if (missing.length > 0) {
                     alert('❌ মিসিং কলাম: ' + missing.join(', ') + 
-                          '\n\nআপনার ফাইলের হেডারগুলো দেখুন। নিচের যেকোনো নাম ব্যবহার করতে পারেন:\n' +
-                          '- Order Name / JO / JOB ORDER\n' +
-                          '- Acc Code / Code / ITEM CODE / SFG Code\n' +
-                          '- Item Name / SFG Name / Name\n' +
-                          '- Color / Colour\n' +
-                          '- Demand / Qty / Due / Quantity');
+                          '\n\nদয়া করে আপনার Excel ফাইলের হেডারগুলো ঠিক করুন:' +
+                          '\n✅ Order Name' +
+                          '\n✅ Acc Code' +
+                          '\n✅ Item Name' +
+                          '\n✅ Color (optional)' +
+                          '\n✅ Demand');
                     return;
                 }
 
+                // =========================================================
+                // 📥 ডেটা পড়া ও ম্যাপ করা
+                // =========================================================
                 let added = 0;
                 rows.forEach(row => {
                     const jo = (row[headerMap['JOB ORDER']] || '').toString().trim();
@@ -493,7 +494,7 @@
                 });
 
                 if (added === 0) {
-                    alert('⚠️ কোনো নতুন ডেটা যোগ হয়নি (হয়তো সব ডুপ্লিকেট বা ডেটা ফরম্যাট ঠিক নেই)');
+                    alert('⚠️ কোনো নতুন ডেটা যোগ হয়নি (হয়তো ডুপ্লিকেট)');
                     return;
                 }
 
