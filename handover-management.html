@@ -53,10 +53,40 @@
         .modal-content h3 { margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; font-size: 18px; }
         .modal-content .btn-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
         .modal-content .btn-group button { width: auto; padding: 8px 20px; }
-        .summary-card { background: #e3f2fd; padding: 12px; border-radius: 8px; margin: 12px 0; display: flex; flex-wrap: wrap; gap: 15px; }
-        .summary-card .item { flex: 1; min-width: 80px; }
-        .summary-card .label { font-size: 12px; color: #555; }
-        .summary-card .value { font-size: 20px; font-weight: 700; color: #0d47a1; }
+        .summary-card { 
+            background: #e3f2fd; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin: 12px 0; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 12px; 
+            border: 1px solid #bbdefb;
+        }
+        .summary-card .item { 
+            background: #fff; 
+            padding: 10px 12px; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            text-align: center;
+        }
+        .summary-card .label { 
+            font-size: 11px; 
+            color: #555; 
+            display: block;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .summary-card .value { 
+            font-size: 22px; 
+            font-weight: 700; 
+            color: #0d47a1; 
+            margin-top: 4px;
+        }
+        .summary-card .value.done { color: #2e7d32; }
+        .summary-card .value.pending { color: #b71c1c; }
+        .summary-card .value.total { color: #0d47a1; }
         .filter-section { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; padding: 12px; background: #f8f9fa; border-radius: 8px; }
         .filter-section > div { flex: 1; min-width: 120px; }
         .filter-section button { width: 100%; }
@@ -85,7 +115,9 @@
             .form-row > div { min-width: 100%; }
             .handover-info > div { min-width: 100%; }
             .filter-section > div { min-width: 100%; }
-            .summary-card .item { min-width: 100%; }
+            .summary-card { grid-template-columns: repeat(2, 1fr); }
+            .summary-card .item { padding: 8px; }
+            .summary-card .value { font-size: 18px; }
             .modal-content { max-width: 100%; padding: 15px; }
             table { font-size: 11px; }
             th, td { padding: 3px 4px; }
@@ -98,10 +130,32 @@
 
     <h1>📦 হ্যান্ডওভার ম্যানেজমেন্ট</h1>
 
+    <!-- নতুন আপডেটেড সারাংশ কার্ড -->
     <div class="summary-card" id="summaryCard">
-        <div class="item"><span class="label">মোট আইটেম</span><div class="value" id="totalMasterItems">0</div></div>
-        <div class="item"><span class="label">মোট হ্যান্ডওভার</span><div class="value" id="totalHandover">0</div></div>
-        <div class="item"><span class="label">মোট Demand</span><div class="value" id="totalDue">0</div></div>
+        <div class="item">
+            <span class="label">📋 মোট JO</span>
+            <div class="value total" id="totalJO">0</div>
+        </div>
+        <div class="item">
+            <span class="label">⏳ পেন্ডিং JO</span>
+            <div class="value pending" id="pendingJO">0</div>
+        </div>
+        <div class="item">
+            <span class="label">✅ ডোন JO</span>
+            <div class="value done" id="doneJO">0</div>
+        </div>
+        <div class="item">
+            <span class="label">📦 মোট আইটেম</span>
+            <div class="value total" id="totalItems">0</div>
+        </div>
+        <div class="item">
+            <span class="label">✅ ডোন আইটেম</span>
+            <div class="value done" id="doneItems">0</div>
+        </div>
+        <div class="item">
+            <span class="label">⏳ পেন্ডিং আইটেম</span>
+            <div class="value pending" id="pendingItems">0</div>
+        </div>
     </div>
 
     <!-- ম্যানুয়াল মাস্টার এন্ট্রি -->
@@ -119,7 +173,7 @@
         </div>
     </div>
 
-    <!-- মাস্টার ডেটা ম্যানেজ -->
+    <!-- Excel Import + একক মুছুন + Demand Edit -->
     <div class="master-import-section">
         <h3>📂 মাস্টার ডেটা ম্যানেজ</h3>
         <div class="form-row">
@@ -132,13 +186,13 @@
             <div><button class="btn-delete-single" onclick="deleteSingleMasterItem()">🗑️ একক আইটেম মুছুন</button></div>
             <div><button class="btn-edit-demand" onclick="editDemand()">✏️ Demand এডিট</button></div>
             <div style="flex:1; font-size:12px; color:#555; display:flex; align-items:center;">
-                ⚡ Job Order (আবশ্যক) ও Item Code (আবশ্যক)
+                ⚡ Job Order (আবশ্যক) ও Item Code (ঐচ্ছিক)
             </div>
         </div>
         <p style="font-size:11px; color:#777;">হেডার: <strong>Order Name, Acc Code, Item Name, Color, Demand</strong> (Unit Wt-ও চলে)</p>
     </div>
 
-    <!-- এন্ট্রি ফর্ম -->
+    <!-- এন্ট্রি ফর্ম (হ্যান্ডওভারকারী ড্রপডাউন সহ) -->
     <h2>➕ নতুন হ্যান্ডওভার এন্ট্রি</h2>
     <form id="entryForm">
         <div class="form-row">
@@ -170,10 +224,10 @@
             <div><label>HANDOVER QTY *</label><input type="number" id="handoverQty" placeholder="আজকের QTY" required min="1"></div>
             <div><label>হ্যান্ডওভারকারী *</label>
                 <select id="handoverPerson" required>
-                    <option value="">-- নির্বাচন করুন --</option>
+                    <option value="">-- সিলেক্ট করুন --</option>
                     <option value="Mr. Mohon">Mr. Mohon</option>
                     <option value="Mr. Ahamed">Mr. Ahamed</option>
-                    <option value="Mr. Pobittra">Mr. Pobittra</option>
+                    <option value="Mr. Pobitra">Mr. Pobitra</option>
                     <option value="Mr. Shawon">Mr. Shawon</option>
                 </select>
             </div>
@@ -377,7 +431,7 @@
     }
 
     // =========================================================
-    // 📥 Excel Import
+    // 📥 Excel Import (শুধু নতুন যোগ হবে, পুরোনো থাকবে)
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
@@ -456,12 +510,14 @@
                 }
 
                 let added = 0;
+                let updated = 0;
                 groupedItems.forEach(g => {
                     const exist = masterItems.find(i => i.jobOrder === g.jobOrder && i.itemCode === g.itemCode);
                     if (exist) {
                         exist.demandQty = g.demandQty;
                         if (g.color) exist.color = g.color;
                         if (g.itemName) exist.itemName = g.itemName;
+                        updated++;
                     } else {
                         masterItems.push({ jobOrder: g.jobOrder, itemCode: g.itemCode, itemName: g.itemName, color: g.color || '', demandQty: g.demandQty });
                         added++;
@@ -473,7 +529,8 @@
                 saveMaster()
                     .then(() => {
                         populateJobOrderDropdown();
-                        alert('✅ ' + added + ' টি নতুন আইটেম যোগ হয়েছে এবং বাকিগুলো আপডেট হয়েছে!');
+                        updateSummary();
+                        alert(`✅ ${added} টি নতুন আইটেম যোগ হয়েছে এবং ${updated} টি আইটেম আপডেট হয়েছে!`);
                         btn.value = '';
                     })
                     .catch(() => {
@@ -546,7 +603,7 @@
     }
 
     // =========================================================
-    // ✏️ Demand এডিট (আপডেটেড রিপোর্টে দেখাবে)
+    // ✏️ Demand এডিট
     // =========================================================
     function editDemand() {
         const jo = prompt('🔍 কোন Job Order-এর Demand পরিবর্তন করতে চান? (আবশ্যক)');
@@ -733,7 +790,7 @@
     }
 
     // =========================================================
-    // ফর্ম সাবমিট (হ্যান্ডওভারকারী ড্রপডাউন থেকে নেওয়া)
+    // ফর্ম সাবমিট
     // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -742,7 +799,7 @@
         const name = document.getElementById('itemNameDisplay').value;
         const color = document.getElementById('colorDisplay').value;
         const qty = parseFloat(document.getElementById('handoverQty').value);
-        const person = document.getElementById('handoverPerson').value; // ড্রপডাউন থেকে
+        const person = document.getElementById('handoverPerson').value;
         const shift = document.getElementById('handoverShift').value;
         if (!jo || !code || !name || !qty || qty <= 0 || !person) { alert('সব * ফিল্ড পূরণ করুন!'); return; }
         const master = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
@@ -785,12 +842,58 @@
         tbody.innerHTML = html;
     }
 
+    // =========================================================
+    // 📊 আপডেটেড সারাংশ ফাংশন
+    // =========================================================
     function updateSummary() {
-        document.getElementById('totalMasterItems').textContent = masterItems.length;
-        document.getElementById('totalHandover').textContent = handoverData.reduce((s, i) => s + i.handoverQty, 0);
-        document.getElementById('totalDue').textContent = masterItems.reduce((s, i) => s + (i.demandQty||0), 0);
+        // মোট আইটেম
+        document.getElementById('totalItems').textContent = masterItems.length;
+
+        // মোট JO (ইউনিক)
+        const joSet = new Set(masterItems.map(i => i.jobOrder));
+        document.getElementById('totalJO').textContent = joSet.size;
+
+        // প্রতি JO-তে কতটি আইটেম Done হয়েছে তা বের করি
+        const joStatus = {};
+        joSet.forEach(jo => {
+            const items = masterItems.filter(i => i.jobOrder === jo);
+            let doneCount = 0;
+            items.forEach(item => {
+                const asOf = handoverData
+                    .filter(h => h.jobOrder === jo && h.itemCode === item.itemCode)
+                    .reduce((sum, h) => sum + (h.handoverQty || 0), 0);
+                if (asOf >= item.demandQty && item.demandQty > 0) {
+                    doneCount++;
+                }
+            });
+            joStatus[jo] = { total: items.length, done: doneCount };
+        });
+
+        let totalDoneJO = 0;
+        let totalPendingJO = 0;
+        let totalDoneItems = 0;
+        let totalPendingItems = 0;
+
+        joSet.forEach(jo => {
+            const { total, done } = joStatus[jo];
+            if (done === total && total > 0) {
+                totalDoneJO++;
+            } else {
+                totalPendingJO++;
+            }
+            totalDoneItems += done;
+            totalPendingItems += (total - done);
+        });
+
+        document.getElementById('doneJO').textContent = totalDoneJO;
+        document.getElementById('pendingJO').textContent = totalPendingJO;
+        document.getElementById('doneItems').textContent = totalDoneItems;
+        document.getElementById('pendingItems').textContent = totalPendingItems;
     }
 
+    // =========================================================
+    // বাকি সব ফাংশন (এডিট, ডিলিট, রিপোর্ট ইত্যাদি) আগের মতোই
+    // =========================================================
     function openEditModal(index) {
         const item = handoverData[index];
         if (!item) return;
@@ -837,7 +940,7 @@
     }
 
     // =========================================================
-    // 📊 JO Report – masterItems থেকে সরাসরি পড়ে (আপডেটেড Demand দেখাবে)
+    // 📊 JO Report (আগের মতো)
     // =========================================================
     let currentReportJO = '';
 
