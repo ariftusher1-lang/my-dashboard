@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Plastic-03 SFG Handover & Record Management System</title>
+    <title>Plastic-03 For Handover SFG Inventory Management System</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -44,6 +44,10 @@
         .btn-edit-demand:hover { background: #00695c; }
         .btn-toggle-master { background: #6c757d; color: #fff; width: auto; padding: 10px 20px; margin-bottom: 10px; }
         .btn-toggle-master:hover { background: #5a6268; }
+        .btn-toggle-manual { background: #2e7d32; color: #fff; width: auto; padding: 10px 20px; margin-bottom: 10px; }
+        .btn-toggle-manual:hover { background: #1b5e20; }
+        .btn-jo-list { background: #0d47a1; color: #fff; width: auto; padding: 4px 12px; font-size: 13px; border-radius: 4px; margin-left: 8px; }
+        .btn-jo-list:hover { background: #0a3a7a; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
         th { background: #0d47a1; color: white; position: sticky; top: 0; font-size: 12px; }
@@ -53,6 +57,7 @@
         .modal-content h3 { margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; font-size: 18px; }
         .modal-content .btn-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
         .modal-content .btn-group button { width: auto; padding: 8px 20px; }
+        .modal-content .jo-list-item { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
         .summary-card { 
             background: #e3f2fd; 
             padding: 15px; 
@@ -69,6 +74,7 @@
             border-radius: 8px; 
             box-shadow: 0 1px 4px rgba(0,0,0,0.06);
             text-align: center;
+            position: relative;
         }
         .summary-card .label { 
             font-size: 11px; 
@@ -99,9 +105,21 @@
             border-radius: 8px; 
             border: 1px solid #ffc107; 
             margin-bottom: 15px; 
-            display: none;  /* ডিফল্ট লুকানো */
+            display: none;
         }
         .master-import-section h3 { font-size: 16px; color: #d32f2f; margin-bottom: 8px; }
+        .manual-master-section {
+            background: #e8f5e9;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #4caf50;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .manual-master-section h3 { font-size: 16px; color: #2e7d32; margin-bottom: 8px; }
+        .manual-master-section .form-row input { background: #fff; }
+        .manual-master-section .form-row button { background: #28a745; }
+        .manual-master-section .form-row button:hover { background: #1e7e34; }
         .table-wrapper { max-height: 400px; overflow-y: auto; }
         .history-table { font-size: 12px; }
         .history-table th { background: #17a2b8; }
@@ -114,6 +132,7 @@
         .status-done { background: #d4edda; color: #155724; border: 1px solid #28a745; }
         .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
         .toggle-wrapper { text-align: center; margin: 10px 0; }
+        .jo-list-modal .modal-content { max-width: 400px; }
         @media (max-width: 600px) {
             .form-row > div { min-width: 100%; }
             .handover-info > div { min-width: 100%; }
@@ -131,13 +150,14 @@
 <body>
 <div class="container">
 
-    <h1>🏭 Plastic-03 SFG Handover & Record Management System</h1>
+    <h1>🏭 Plastic-03 For Handover SFG Inventory Management System</h1>
 
     <!-- সারাংশ কার্ড -->
     <div class="summary-card" id="summaryCard">
         <div class="item">
             <span class="label">📋 মোট JO</span>
             <div class="value total" id="totalJO">0</div>
+            <button class="btn-jo-list" onclick="showJOList()">Show/Hide</button>
         </div>
         <div class="item">
             <span class="label">⏳ পেন্ডিং JO</span>
@@ -161,7 +181,27 @@
         </div>
     </div>
 
-    <!-- ===== টগল বাটন ===== -->
+    <!-- ===== টগল বাটন: ম্যানুয়াল মাস্টার এন্ট্রি ===== -->
+    <div class="toggle-wrapper">
+        <button class="btn-toggle-manual" id="toggleManualBtn" onclick="toggleManualMaster()">📝 Show Manual Master Entry</button>
+    </div>
+
+    <!-- ===== ম্যানুয়াল মাস্টার এন্ট্রি সেকশন (ডিফল্ট লুকানো) ===== -->
+    <div class="manual-master-section" id="manualMasterSection">
+        <h3>📝 ম্যানুয়াল মাস্টার এন্ট্রি</h3>
+        <div class="form-row">
+            <div><label>JOB ORDER *</label><input type="text" id="manualJo" placeholder="JO-2026-001"></div>
+            <div><label>ITEM CODE *</label><input type="text" id="manualCode" placeholder="IC-001"></div>
+            <div><label>ITEM NAME *</label><input type="text" id="manualName" placeholder="পণ্যের নাম"></div>
+            <div><label>COLOR</label><input type="text" id="manualColor" placeholder="লাল/নীল"></div>
+            <div><label>DEMAND QTY *</label><input type="number" id="manualDemand" placeholder="100"></div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="button" class="btn-add-master" onclick="addManualMaster()" style="width:100%;">➕ মাস্টার যোগ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== টগল বাটন: মাস্টার ডেটা ম্যানেজ ===== -->
     <div class="toggle-wrapper">
         <button class="btn-toggle-master" id="toggleMasterBtn" onclick="toggleMasterData()">📂 Show Master Data Manage</button>
     </div>
@@ -255,6 +295,19 @@
     <div class="footer-note">Firebase</div>
 </div>
 
+<!-- ===== JO লিস্ট মোডাল ===== -->
+<div class="modal jo-list-modal" id="joListModal">
+    <div class="modal-content">
+        <h3>📋 Job Order লিস্ট</h3>
+        <div id="joListContainer">
+            <p style="color:#999;">লোড হচ্ছে...</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn-secondary" onclick="closeJOList()">বন্ধ</button>
+        </div>
+    </div>
+</div>
+
 <!-- মোডালগুলি -->
 <div class="modal" id="detailModal">
     <div class="modal-content">
@@ -330,7 +383,8 @@
     let masterItems = [];
     let handoverData = [];
     let editIndex = null;
-    let masterDataVisible = false;  // ট্র্যাক রাখার জন্য
+    let masterDataVisible = false;
+    let manualMasterVisible = false;
 
     // =========================================================
     // Listeners
@@ -376,21 +430,89 @@
     }
 
     // =========================================================
-    // 📂 মাস্টার ডেটা টগল ফাংশন (পাসওয়ার্ড সুরক্ষিত)
+    // 📝 ম্যানুয়াল মাস্টার এন্ট্রি (টগল + ফাংশন)
+    // =========================================================
+    function toggleManualMaster() {
+        const section = document.getElementById('manualMasterSection');
+        const btn = document.getElementById('toggleManualBtn');
+
+        if (section.style.display === 'block') {
+            section.style.display = 'none';
+            btn.textContent = '📝 Show Manual Master Entry';
+            manualMasterVisible = false;
+        } else {
+            const pwd = prompt('🔑 পাসওয়ার্ড দিন:');
+            if (pwd === null) return;
+            if (pwd === '123') {
+                section.style.display = 'block';
+                btn.textContent = '📝 Hide Manual Master Entry';
+                manualMasterVisible = true;
+            } else {
+                alert('❌ ভুল পাসওয়ার্ড!');
+            }
+        }
+    }
+
+    function addManualMaster() {
+        const jo = document.getElementById('manualJo').value.trim();
+        const code = document.getElementById('manualCode').value.trim();
+        const name = document.getElementById('manualName').value.trim();
+        const color = document.getElementById('manualColor').value.trim();
+        const demand = parseFloat(document.getElementById('manualDemand').value);
+
+        if (!jo || !code || !name || !demand || demand <= 0) {
+            alert('দয়া করে JOB ORDER, ITEM CODE, ITEM NAME ও DEMAND QTY সঠিকভাবে পূরণ করুন!');
+            return;
+        }
+
+        const exists = masterItems.some(i => i.jobOrder === jo && i.itemCode === code);
+        if (exists) {
+            alert(`⚠️ "${jo}" - "${code}" ইতিমধ্যে মাস্টার লিস্টে আছে!`);
+            return;
+        }
+
+        masterItems.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand });
+
+        const btn = document.querySelector('.btn-add-master');
+        btn.textContent = '⏳ সেভ...';
+        btn.disabled = true;
+
+        saveMaster()
+            .then(() => {
+                populateJobOrderDropdown();
+                updateSummary();
+                document.getElementById('manualJo').value = '';
+                document.getElementById('manualCode').value = '';
+                document.getElementById('manualName').value = '';
+                document.getElementById('manualColor').value = '';
+                document.getElementById('manualDemand').value = '';
+                alert(`✅ "${jo}" - "${code}" যোগ হয়েছে!`);
+            })
+            .catch(err => {
+                alert('❌ সেভ ব্যর্থ! ' + err.message);
+                const idx = masterItems.findIndex(i => i.jobOrder === jo && i.itemCode === code);
+                if (idx !== -1) masterItems.splice(idx, 1);
+            })
+            .finally(() => {
+                btn.textContent = '➕ মাস্টার যোগ করুন';
+                btn.disabled = false;
+            });
+    }
+
+    // =========================================================
+    // 📂 মাস্টার ডেটা টগল ফাংশন
     // =========================================================
     function toggleMasterData() {
         const section = document.getElementById('masterDataSection');
         const btn = document.getElementById('toggleMasterBtn');
 
         if (section.style.display === 'block') {
-            // লুকান
             section.style.display = 'none';
             btn.textContent = '📂 Show Master Data Manage';
             masterDataVisible = false;
         } else {
-            // খোলার চেষ্টা – পাসওয়ার্ড চেক
             const pwd = prompt('🔑 পাসওয়ার্ড দিন:');
-            if (pwd === null) return; // বাতিল
+            if (pwd === null) return;
             if (pwd === '123') {
                 section.style.display = 'block';
                 btn.textContent = '📂 Hide Master Data Manage';
@@ -402,7 +524,35 @@
     }
 
     // =========================================================
-    // 📥 Excel Import (শুধু নতুন যোগ হবে, পুরোনো থাকবে)
+    // 📋 JO লিস্ট Show/Hide
+    // =========================================================
+    function showJOList() {
+        const modal = document.getElementById('joListModal');
+        const container = document.getElementById('joListContainer');
+        
+        const joSet = new Set(masterItems.map(i => i.jobOrder));
+        const joArray = Array.from(joSet).sort();
+
+        if (joArray.length === 0) {
+            container.innerHTML = '<p style="color:#999;">কোনো JO আপলোড করা হয়নি।</p>';
+        } else {
+            let html = '';
+            joArray.forEach((jo, idx) => {
+                const itemCount = masterItems.filter(i => i.jobOrder === jo).length;
+                html += `<div class="jo-list-item">${idx+1}. ${jo} (${itemCount}টি আইটেম)</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closeJOList() {
+        document.getElementById('joListModal').style.display = 'none';
+    }
+
+    // =========================================================
+    // 📥 Excel Import
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
@@ -619,7 +769,7 @@
     }
 
     // =========================================================
-    // ✅ populateJobOrderDropdown – শুধু pending JO দেখাবে
+    // ✅ populateJobOrderDropdown
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -1191,6 +1341,7 @@
     document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
     document.getElementById('joReportModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeJoReport(); });
     document.getElementById('detailModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetailModal(); });
+    document.getElementById('joListModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeJOList(); });
 
     // =========================================================
     // Init
