@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Plastic-03 For Handover SFG Inventory Management System</title>
+    <title>Plastic-03 SFG Handover & Record Management System</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -42,6 +42,8 @@
         .btn-delete-single:hover { background: #d35400; }
         .btn-edit-demand { background: #00897b; color: #fff; }
         .btn-edit-demand:hover { background: #00695c; }
+        .btn-toggle-master { background: #6c757d; color: #fff; width: auto; padding: 10px 20px; margin-bottom: 10px; }
+        .btn-toggle-master:hover { background: #5a6268; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
         th { background: #0d47a1; color: white; position: sticky; top: 0; font-size: 12px; }
@@ -91,7 +93,14 @@
         .handover-info { background: #e3f2fd; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
         .handover-info > div { flex: 1; min-width: 80px; }
         .handover-info input { background: #fff; }
-        .master-import-section { background: #fff8e1; padding: 12px; border-radius: 8px; border: 1px solid #ffc107; margin-bottom: 15px; }
+        .master-import-section { 
+            background: #fff8e1; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid #ffc107; 
+            margin-bottom: 15px; 
+            display: none;  /* ডিফল্ট লুকানো */
+        }
         .master-import-section h3 { font-size: 16px; color: #d32f2f; margin-bottom: 8px; }
         .table-wrapper { max-height: 400px; overflow-y: auto; }
         .history-table { font-size: 12px; }
@@ -104,6 +113,7 @@
         .status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; }
         .status-done { background: #d4edda; color: #155724; border: 1px solid #28a745; }
         .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .toggle-wrapper { text-align: center; margin: 10px 0; }
         @media (max-width: 600px) {
             .form-row > div { min-width: 100%; }
             .handover-info > div { min-width: 100%; }
@@ -121,8 +131,7 @@
 <body>
 <div class="container">
 
-    <!-- ✅ নতুন নাম বসানো হলো -->
-    <h1>🏭 Plastic-03 For Handover SFG Inventory Management System</h1>
+    <h1>🏭 Plastic-03 SFG Handover & Record Management System</h1>
 
     <!-- সারাংশ কার্ড -->
     <div class="summary-card" id="summaryCard">
@@ -152,10 +161,13 @@
         </div>
     </div>
 
-    <!-- ===== 📝 ম্যানুয়াল মাস্টার এন্ট্রি সরানো হয়েছে ===== -->
+    <!-- ===== টগল বাটন ===== -->
+    <div class="toggle-wrapper">
+        <button class="btn-toggle-master" id="toggleMasterBtn" onclick="toggleMasterData()">📂 Show Master Data Manage</button>
+    </div>
 
-    <!-- Excel Import + একক মুছুন + Demand Edit -->
-    <div class="master-import-section">
+    <!-- ===== মাস্টার ডেটা ম্যানেজ সেকশন (ডিফল্ট লুকানো) ===== -->
+    <div class="master-import-section" id="masterDataSection">
         <h3>📂 মাস্টার ডেটা ম্যানেজ</h3>
         <div class="form-row">
             <div><button class="btn-excel" onclick="downloadMasterTemplate()">📄 Template</button></div>
@@ -173,7 +185,7 @@
         <p style="font-size:11px; color:#777;">হেডার: <strong>Order Name, Acc Code, Item Name, Color, Demand</strong> (Unit Wt-ও চলে)</p>
     </div>
 
-    <!-- ===== New Data Entry (নতুন নাম) ===== -->
+    <!-- ===== New Data Entry ===== -->
     <h2>📝 New Data Entry</h2>
     <form id="entryForm">
         <div class="form-row">
@@ -318,6 +330,7 @@
     let masterItems = [];
     let handoverData = [];
     let editIndex = null;
+    let masterDataVisible = false;  // ট্র্যাক রাখার জন্য
 
     // =========================================================
     // Listeners
@@ -360,6 +373,32 @@
             obj[key] = clean;
         });
         return database.ref('handoverEntries').set(obj);
+    }
+
+    // =========================================================
+    // 📂 মাস্টার ডেটা টগল ফাংশন (পাসওয়ার্ড সুরক্ষিত)
+    // =========================================================
+    function toggleMasterData() {
+        const section = document.getElementById('masterDataSection');
+        const btn = document.getElementById('toggleMasterBtn');
+
+        if (section.style.display === 'block') {
+            // লুকান
+            section.style.display = 'none';
+            btn.textContent = '📂 Show Master Data Manage';
+            masterDataVisible = false;
+        } else {
+            // খোলার চেষ্টা – পাসওয়ার্ড চেক
+            const pwd = prompt('🔑 পাসওয়ার্ড দিন:');
+            if (pwd === null) return; // বাতিল
+            if (pwd === '123') {
+                section.style.display = 'block';
+                btn.textContent = '📂 Hide Master Data Manage';
+                masterDataVisible = true;
+            } else {
+                alert('❌ ভুল পাসওয়ার্ড!');
+            }
+        }
     }
 
     // =========================================================
