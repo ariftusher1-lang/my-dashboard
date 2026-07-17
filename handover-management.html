@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* CSS ঠিক আগের মতোই আছে, স্পেস বাঁচাতে বাদ দিলাম */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -125,7 +126,7 @@
             <div><button class="btn-danger" onclick="clearMasterData()">🗑️ মাস্টার মুছুন</button></div>
             <input type="file" id="masterFileInput" accept=".xlsx,.xls" onchange="importMasterExcel(event)" style="display:none;">
         </div>
-        <p style="font-size:11px; color:#777;">হেডার: JOB ORDER, ITEM CODE, ITEM NAME, COLOR, DEMAND QTY</p>
+        <p style="font-size:11px; color:#777;">হেডার: Order Name, Acc Code, Item Name, Color, Demand</p>
     </div>
 
     <!-- ===== এন্ট্রি ফর্ম ===== -->
@@ -392,10 +393,11 @@
     }
 
     // =========================================================
-    // 📥 Excel Import
+    // 📥 Excel Import (হেডার ম্যাপিং আপডেট করা হয়েছে)
     // =========================================================
     function downloadMasterTemplate() {
-        const headers = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'COLOR', 'DEMAND QTY'];
+        // নতুন হেডার: Order Name, Acc Code, Item Name, Color, Demand
+        const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
         const ws = XLSX.utils.aoa_to_sheet([headers, ['JO-001', 'IC-001', 'পণ্য', 'লাল', 100]]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
@@ -427,9 +429,10 @@
                 const headerMap = {};
                 originalHeaders.forEach(h => {
                     const clean = h.trim().toLowerCase().replace(/\s+/g, ' ');
-                    if (clean.includes('job order') || clean.includes('jo')) headerMap['JOB ORDER'] = h;
-                    else if (clean.includes('item code') || clean.includes('code')) headerMap['ITEM CODE'] = h;
-                    else if (clean.includes('item name') || clean.includes('name')) headerMap['ITEM NAME'] = h;
+                    // ম্যাপিং: Order Name → JOB ORDER, Acc Code → ITEM CODE, Item Name → ITEM NAME, Color → COLOR, Demand → DEMAND QTY
+                    if (clean.includes('order name') || clean.includes('order_name')) headerMap['JOB ORDER'] = h;
+                    else if (clean.includes('acc code') || clean.includes('acc_code') || clean.includes('item code') || clean.includes('item_code')) headerMap['ITEM CODE'] = h;
+                    else if (clean.includes('item name') || clean.includes('item_name')) headerMap['ITEM NAME'] = h;
                     else if (clean.includes('color')) headerMap['COLOR'] = h;
                     else if (clean.includes('demand') || clean.includes('qty') || clean.includes('due')) headerMap['DEMAND QTY'] = h;
                 });
@@ -437,7 +440,7 @@
                 const required = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'DEMAND QTY'];
                 const missing = required.filter(r => !headerMap[r]);
                 if (missing.length > 0) {
-                    alert('❌ মিসিং কলাম: ' + missing.join(', '));
+                    alert('❌ মিসিং কলাম: ' + missing.join(', ') + '\nদয়া করে হেডারগুলো ঠিক করুন: Order Name, Acc Code, Item Name, Color, Demand');
                     return;
                 }
 
@@ -490,7 +493,7 @@
     }
 
     // =========================================================
-    // UI ফাংশন
+    // UI ফাংশন (অপরিবর্তিত)
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -740,7 +743,7 @@
     }
 
     // =========================================================
-    // 📊 JO Report
+    // 📊 JO Report (অপরিবর্তিত)
     // =========================================================
     let currentReportJO = '';
     function openJ0Report() {
@@ -896,7 +899,7 @@
     }
 
     // =========================================================
-    // PDF, Image, Excel Download
+    // PDF, Image, Excel Download (অপরিবর্তিত)
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
