@@ -308,7 +308,6 @@
     function testFirebase() {
         alert('🔍 Firebase টেস্ট শুরু হচ্ছে...');
         
-        // সংযোগ চেক
         const connectedRef = database.ref('.info/connected');
         connectedRef.once('value').then(snap => {
             const isConnected = snap.val();
@@ -318,24 +317,13 @@
             }
             alert('✅ Firebase সংযোগ ঠিক আছে!');
             
-            // টেস্ট ডেটা লেখা
             const testRef = database.ref('testConnection');
-            const testData = {
-                message: 'Hello Firebase!',
-                time: new Date().toISOString()
-            };
-            
-            testRef.set(testData)
+            testRef.set({ message: 'Hello Firebase!', time: new Date().toISOString() })
                 .then(() => {
-                    alert('✅ টেস্ট ডেটা Firebase-এ সেভ হয়েছে!\n\nতারপর ডিলিট করা হবে...');
-                    // ডেটা ডিলিট
+                    alert('✅ টেস্ট ডেটা Firebase-এ সেভ হয়েছে!');
                     testRef.remove()
-                        .then(() => {
-                            alert('✅ টেস্ট ডেটা ডিলিট করা হয়েছে।\n\nFirebase পুরোপুরি কাজ করছে!');
-                        })
-                        .catch(err => {
-                            alert('⚠️ টেস্ট ডেটা ডিলিট করতে ব্যর্থ! কিন্তু সেভ হয়েছে।\nError: ' + err.message);
-                        });
+                        .then(() => alert('✅ টেস্ট ডেটা ডিলিট করা হয়েছে।\n\nFirebase পুরোপুরি কাজ করছে!'))
+                        .catch(err => alert('⚠️ টেস্ট ডেটা ডিলিট করতে ব্যর্থ!\nError: ' + err.message));
                 })
                 .catch(err => {
                     alert('❌ টেস্ট ডেটা সেভ করতে ব্যর্থ!\nError: ' + err.message + '\n\nআপনার Firebase Rules চেক করুন।');
@@ -406,159 +394,37 @@
             return;
         }
 
+        // লোকাল অ্যারেতে যোগ
         masterItems.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand });
         
         const btn = document.querySelector('.btn-add-master');
         btn.textContent = '⏳ সেভ হচ্ছে...';
         btn.disabled = true;
 
-        saveMaster().then(() => {
-            populateJobOrderDropdown();
-            updateSummary();
-            document.getElementById('manualJo').value = '';
-            document.getElementById('manualCode').value = '';
-            document.getElementById('manualName').value = '';
-            document.getElementById('manualColor').value = '';
-            document.getElementById('manualDemand').value = '';
-            alert(`✅ "${jo}" - "${code}" যোগ হয়েছে!`);
-        }).catch(err => {
-            alert('❌ Firebase-এ সেভ করতে ব্যর্থ! Error: ' + err.message);
-        }).finally(() => {
-            btn.textContent = '➕ মাস্টার যোগ করুন';
-            btn.disabled = false;
-        });
-    }
-
-    // =========================================================
-    // Excel Import (Alert-ভিত্তিক ডিবাগ)
-    // =========================================================
-    function downloadMasterTemplate() {
-        const headers = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'COLOR', 'DEMAND QTY'];
-        const ws = XLSX.utils.aoa_to_sheet([headers, ['JO-001', 'IC-001', 'পণ্য', 'লাল', 100]]);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, 'Master_Template.xlsx');
-    }
-
-    function importMasterExcel(event) {
-        const file = event.target.files[0];
-        if (!file) {
-            alert('কোনো ফাইল সিলেক্ট করা হয়নি!');
-            return;
-        }
-
-        alert('📁 ফাইল সিলেক্ট করা হয়েছে: ' + file.name);
-
-        const reader = new FileReader();
-        reader.onload = e => {
-            try {
-                alert('📖 ফাইল পড়া শুরু...');
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                alert('📊 ওয়ার্কবুক লোড হয়েছে, শীট সংখ্যা: ' + workbook.SheetNames.length);
-                
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
-
-                if (!rows || rows.length === 0) {
-                    alert('❌ ফাইল খালি অথবা ডেটা পড়া যায়নি!');
-                    return;
-                }
-
-                alert('📌 Excel থেকে মোট রো পাওয়া গেছে: ' + rows.length);
-
-                // হেডার বের করা
-                const originalHeaders = Object.keys(rows[0]);
-                alert('📌 আসল হেডারগুলো:\n' + originalHeaders.join(', '));
-
-                // স্পষ্ট হেডার ম্যাপিং
-                const expectedMap = {
-                    'job order': ['job order', 'joborder', 'job', 'অর্ডার', 'জব অর্ডার', 'jo'],
-                    'item code': ['item code', 'itemcode', 'code', 'আইটেম কোড', 'কোড', 'item_code'],
-                    'item name': ['item name', 'itemname', 'name', 'পণ্যের নাম', 'আইটেম নাম', 'নাম', 'item_name'],
-                    'color': ['color', 'colour', 'রং', 'কালার'],
-                    'demand qty': ['demand qty', 'demand', 'qty', 'quantity', 'due', 'ডিমান্ড', 'চাহিদা', 'পরিমাণ', 'demand_qty']
-                };
-
-                const headerMap = {};
-                let foundCount = 0;
-
-                originalHeaders.forEach(h => {
-                    const clean = h.trim().toLowerCase().replace(/\s+/g, ' ');
-                    for (const [key, patterns] of Object.entries(expectedMap)) {
-                        if (patterns.some(p => clean.includes(p))) {
-                            headerMap[key] = h;
-                            foundCount++;
-                            break;
-                        }
-                    }
-                });
-
-                alert('📌 মোট ম্যাপ পাওয়া গেছে: ' + foundCount + ' টি');
-
-                const required = ['job order', 'item code', 'item name', 'demand qty'];
-                const missing = required.filter(r => !headerMap[r]);
-
-                if (missing.length > 0) {
-                    alert('❌ আবশ্যক কলাম পাওয়া যায়নি:\n' + missing.map(m => m.toUpperCase()).join(', ') + 
-                          '\n\nআপনার Excel-এ যেসব কলাম আছে:\n' + originalHeaders.join(', '));
-                    return;
-                }
-
-                alert('✅ সব আবশ্যক কলাম পাওয়া গেছে!');
-
-                let added = 0;
-                rows.forEach((row, idx) => {
-                    const jo = (row[headerMap['job order']] || '').toString().trim();
-                    const code = (row[headerMap['item code']] || '').toString().trim();
-                    const name = (row[headerMap['item name']] || '').toString().trim();
-                    const color = (row[headerMap['color']] || '').toString().trim();
-                    const qtyStr = (row[headerMap['demand qty']] || '').toString().replace(/,/g, '').trim();
-                    const qty = parseInt(qtyStr) || 0;
-
-                    if (!jo || !code || !name || qty <= 0) {
-                        console.log('⚠️ রো ' + (idx+1) + ' স্কিপ করা হয়েছে');
-                        return;
-                    }
-
-                    const exist = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
-                    if (exist) {
-                        exist.demandQty = qty;
-                        if (color) exist.color = color;
-                    } else {
-                        masterItems.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: qty });
-                        added++;
-                    }
-                });
-
-                if (added === 0) {
-                    alert('⚠️ কোনো নতুন ডেটা যোগ করা হয়নি (হয়তো ডুপ্লিকেট অথবা ডেটা ফরম্যাট ঠিক নেই)');
-                    return;
-                }
-
-                alert('✅ ' + added + ' টি নতুন আইটেম যোগ হবে। সেভ হচ্ছে...');
-
-                const btn = document.getElementById('masterFileInput');
-                btn.value = '⏳ সেভ হচ্ছে...';
-                btn.disabled = true;
-
-                saveMaster().then(() => {
-                    populateJobOrderDropdown();
-                    alert('✅ ' + added + ' টি নতুন মাস্টার আইটেম যোগ হয়েছে!');
-                    btn.value = '';
-                }).catch(err => {
-                    alert('❌ Firebase-এ সেভ করতে ব্যর্থ! Error: ' + err.message);
-                    btn.value = '';
-                }).finally(() => {
-                    btn.disabled = false;
-                });
-
-            } catch (err) {
-                alert('❌ Excel Import ব্যর্থ!\n\n' + err.message);
-                console.error(err);
-            }
-        };
-        reader.readAsArrayBuffer(file);
+        // Firebase-এ সেভ
+        saveMaster()
+            .then(() => {
+                alert('✅ Firebase-এ ডেটা সেভ হয়েছে!');
+                populateJobOrderDropdown();
+                updateSummary();
+                // ফর্ম রিসেট
+                document.getElementById('manualJo').value = '';
+                document.getElementById('manualCode').value = '';
+                document.getElementById('manualName').value = '';
+                document.getElementById('manualColor').value = '';
+                document.getElementById('manualDemand').value = '';
+                alert(`✅ "${jo}" - "${code}" যোগ হয়েছে!`);
+            })
+            .catch(err => {
+                alert('❌ Firebase-এ সেভ করতে ব্যর্থ! Error: ' + err.message);
+                // রোলব্যাক
+                const idx = masterItems.findIndex(i => i.jobOrder === jo && i.itemCode === code);
+                if (idx !== -1) masterItems.splice(idx, 1);
+            })
+            .finally(() => {
+                btn.textContent = '➕ মাস্টার যোগ করুন';
+                btn.disabled = false;
+            });
     }
 
     // =========================================================
