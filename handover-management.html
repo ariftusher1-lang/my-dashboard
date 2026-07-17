@@ -9,7 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* CSS - আগের মতোই */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -43,6 +42,8 @@
         .btn-add-master:hover { background: #1e7e34; }
         .btn-delete-single { background: #e67e22; color: #fff; }
         .btn-delete-single:hover { background: #d35400; }
+        .btn-edit-demand { background: #00897b; color: #fff; }
+        .btn-edit-demand:hover { background: #00695c; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
         th { background: #0d47a1; color: white; position: sticky; top: 0; font-size: 12px; }
@@ -118,25 +119,26 @@
         </div>
     </div>
 
-    <!-- Excel Import + একক মুছুন -->
+    <!-- Excel Import + একক মুছুন + Demand Edit -->
     <div class="master-import-section">
-        <h3>📂 Excel দিয়ে মাস্টার ডেটা</h3>
+        <h3>📂 মাস্টার ডেটা ম্যানেজ</h3>
         <div class="form-row">
             <div><button class="btn-excel" onclick="downloadMasterTemplate()">📄 Template</button></div>
             <div><button class="btn-excel" onclick="document.getElementById('masterFileInput').click()">📥 Import</button></div>
-            <div><button class="btn-danger" onclick="clearMasterData()">🗑️ সব মাস্টার মুছুন</button></div>
+            <div><button class="btn-danger" onclick="clearMasterData()">🗑️ সব মুছুন</button></div>
             <input type="file" id="masterFileInput" accept=".xlsx,.xls" onchange="importMasterExcel(event)" style="display:none;">
         </div>
         <div class="form-row" style="margin-top:8px;">
             <div><button class="btn-delete-single" onclick="deleteSingleMasterItem()">🗑️ একক আইটেম মুছুন</button></div>
-            <div style="flex:2; font-size:12px; color:#555; display:flex; align-items:center;">
-                ⚡ Job Order (আবশ্যক) ও Item Code (ঐচ্ছিক) দিন
+            <div><button class="btn-edit-demand" onclick="editDemand()">✏️ Demand এডিট</button></div>
+            <div style="flex:1; font-size:12px; color:#555; display:flex; align-items:center;">
+                ⚡ Job Order (আবশ্যক) ও Item Code (ঐচ্ছিক)
             </div>
         </div>
         <p style="font-size:11px; color:#777;">হেডার: <strong>Order Name, Acc Code, Item Name, Color, Demand</strong> (Unit Wt-ও চলে)</p>
     </div>
 
-    <!-- 🔥 এন্ট্রি ফর্ম (Demand এখন এডিটেবল) -->
+    <!-- এন্ট্রি ফর্ম -->
     <h2>➕ নতুন হ্যান্ডওভার এন্ট্রি</h2>
     <form id="entryForm">
         <div class="form-row">
@@ -156,11 +158,7 @@
             <div><label>COLOR</label><input type="text" id="colorDisplay" readonly></div>
         </div>
         <div class="handover-info">
-            <div>
-                <label>📌 Demand</label>
-                <!-- ✅ readonly সরানো হয়েছে, onchange যোগ করা হয়েছে -->
-                <input type="number" id="dueQtyDisplay" onchange="updateDemand()" style="background:#fff; font-weight:bold; color:#0d47a1;">
-            </div>
+            <div><label>📌 Demand</label><input type="number" id="dueQtyDisplay" readonly></div>
             <div style="display:flex; align-items:center; gap:6px;">
                 <label>📊 As of</label>
                 <input type="number" id="asOfHandoverDisplay" readonly style="flex:1;">
@@ -540,7 +538,55 @@
     }
 
     // =========================================================
-    // populateJobOrderDropdown (শুধু pending JO দেখাবে)
+    // ✏️ Demand এডিট (নতুন ফিচার)
+    // =========================================================
+    function editDemand() {
+        const jo = prompt('🔍 কোন Job Order-এর Demand পরিবর্তন করতে চান? (আবশ্যক)');
+        if (jo === null) return;
+        const trimmedJo = jo.trim();
+        if (!trimmedJo) {
+            alert('❌ Job Order লিখতে হবে!');
+            return;
+        }
+
+        const codeInput = prompt('🔍 Item Code দিন (আবশ্যক)');
+        if (codeInput === null) return;
+        const trimmedCode = codeInput.trim();
+        if (!trimmedCode) {
+            alert('❌ Item Code লিখতে হবে!');
+            return;
+        }
+
+        // আইটেম খোঁজ
+        const item = masterItems.find(i => i.jobOrder === trimmedJo && i.itemCode === trimmedCode);
+        if (!item) {
+            alert(`⚠️ "${trimmedJo}" - "${trimmedCode}" মাস্টার লিস্টে পাওয়া যায়নি!`);
+            return;
+        }
+
+        const newDemand = prompt(`📌 বর্তমান Demand: ${item.demandQty}\nনতুন Demand দিন:`);
+        if (newDemand === null) return;
+        const newDemandNum = parseFloat(newDemand.trim());
+        if (isNaN(newDemandNum) || newDemandNum < 0) {
+            alert('❌ সঠিক সংখ্যা দিন!');
+            return;
+        }
+
+        // আপডেট
+        item.demandQty = newDemandNum;
+        saveMaster()
+            .then(() => {
+                populateJobOrderDropdown();
+                updateSummary();
+                alert(`✅ Demand আপডেট হয়েছে: ${newDemandNum}`);
+            })
+            .catch(err => {
+                alert('❌ আপডেট ব্যর্থ! ' + err.message);
+            });
+    }
+
+    // =========================================================
+    // ✅ populateJobOrderDropdown – শুধু pending JO দেখাবে
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -613,9 +659,6 @@
         });
     }
 
-    // =========================================================
-    // 🔥 loadItemDetails (এডিটেবল Demand)
-    // =========================================================
     function loadItemDetails() {
         const jo = document.getElementById('jobOrderSelect').value;
         const code = document.getElementById('itemCodeSelect').value;
@@ -632,43 +675,6 @@
             document.getElementById('dueQtyDisplay').value = due;
             document.getElementById('asOfHandoverDisplay').value = asOf;
             document.getElementById('remainingDisplay').value = due - asOf < 0 ? 0 : due - asOf;
-        }
-    }
-
-    // =========================================================
-    // ✅ নতুন ফাংশন: Demand আপডেট করা
-    // =========================================================
-    function updateDemand() {
-        const jo = document.getElementById('jobOrderSelect').value;
-        const code = document.getElementById('itemCodeSelect').value;
-        if (!jo || !code) {
-            alert('প্রথমে JO ও CODE সিলেক্ট করুন!');
-            return;
-        }
-
-        const newDemand = parseFloat(document.getElementById('dueQtyDisplay').value);
-        if (isNaN(newDemand) || newDemand < 0) {
-            alert('সঠিক Demand দিন (০-এর বেশি)');
-            return;
-        }
-
-        const item = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
-        if (item) {
-            item.demandQty = newDemand;
-            saveMaster().then(() => {
-                // রিমেইনিং আপডেট
-                const asOf = handoverData.filter(h => h.jobOrder === jo && h.itemCode === code)
-                                .reduce((s, h) => s + (h.handoverQty || 0), 0);
-                document.getElementById('remainingDisplay').value = newDemand - asOf < 0 ? 0 : newDemand - asOf;
-                updateSummary();
-                // ড্রপডাউন রিফ্রেশ (pending status আপডেট)
-                populateJobOrderDropdown();
-                alert('✅ Demand আপডেট হয়েছে!');
-            }).catch(err => {
-                alert('❌ আপডেট ব্যর্থ! ' + err.message);
-            });
-        } else {
-            alert('❌ আইটেম পাওয়া যায়নি!');
         }
     }
 
@@ -825,7 +831,7 @@
     }
 
     // =========================================================
-    // 📊 JO Report (সব JO দেখাবে)
+    // 📊 JO Report
     // =========================================================
     let currentReportJO = '';
 
@@ -852,6 +858,7 @@
         }
         currentReportJO = jo;
 
+        // 🔥 এখানে masterItems থেকে সরাসরি ডেটা নেওয়া হচ্ছে – তাই আপডেটেড Demand আসবে
         const masterJOItems = masterItems.filter(i => i.jobOrder === jo);
         if (!masterJOItems.length) {
             document.getElementById('joReportContent').innerHTML = `<p style="color:#999;">"${jo}"-তে কোনো আইটেম নেই</p>`;
@@ -866,7 +873,7 @@
                     itemCode: item.itemCode,
                     itemName: item.itemName,
                     color: item.color || '',
-                    demandQty: item.demandQty || 0,
+                    demandQty: 0,
                     asOfQty: 0
                 };
             }
