@@ -278,20 +278,27 @@
 
 <script>
     // =========================================================
-    // Firebase Config
+    // 🔥 Firebase কনফিগারেশন (আপনার নতুন প্রকল্প)
     // =========================================================
     const firebaseConfig = {
-        apiKey: "AIZaSyAHWH9uGLQfXsCppY1xbmY91bwMcObMUUE",
-        authDomain: "carton-management.firebaseapp.com",
-        databaseURL: "https://carton-management-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "carton-management",
-        storageBucket: "carton-management.firebasestorage.app",
-        messagingSenderId: "610163022584",
-        appId: "1:610163022584:web:6b8a7ca0ffc7f0fd6390d",
-        measurementId: "G-V3RVPWDTE7"
+        apiKey: "AIzaSyChtp5KhoZOX7uHiY8Rz1BqNOarNshbDXo",
+        authDomain: "handover-management.firebaseapp.com",
+        projectId: "handover-management",
+        storageBucket: "handover-management.firebasestorage.app",
+        messagingSenderId: "447999039089",
+        appId: "1:447999039089:web:fcab1d43da515f89f367b8",
+        measurementId: "G-YWY3X02MEN"
     };
+
+    // Realtime Database URL – আপনার প্রকল্পের URL দিন
+    // যদি না জানেন, তাহলে Firebase Console → Realtime Database → ডেটাবেস URL কপি করুন
+    const DATABASE_URL = "https://handover-management-default-rtdb.firebaseio.com";
+
+    // =========================================================
+    // Firebase Initialize
+    // =========================================================
     firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    const database = firebase.database(DATABASE_URL);
 
     const APP_PASSWORD = 'admin123';
     let masterItems = [], handoverData = [], editIndex = null;
@@ -371,7 +378,7 @@
     }
 
     // =========================================================
-    // পেন্ডিং JO শুধু ড্রপডাউনে (আপডেটেড)
+    // পেন্ডিং JO শুধু ড্রপডাউনে
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -537,31 +544,27 @@
     }
 
     // =========================================================
-    // 🔥 সব হ্যান্ডওভার মুছুন (পাসওয়ার্ড-সুরক্ষিত - ফিক্সড)
+    // সব হ্যান্ডওভার মুছুন (পাসওয়ার্ড-সুরক্ষিত)
     // =========================================================
     function clearAllHandoverWithPassword() {
         openPasswordModal('🗑️ সব হ্যান্ডওভার ডেটা মুছতে পাসওয়ার্ড দিন', () => {
             if (!confirm('⚠️ সতর্কতা: সমস্ত হ্যান্ডওভার ডেটা স্থায়ীভাবে মুছে যাবে! আপনি কি নিশ্চিত?')) return;
-            
-            console.log('🔄 হ্যান্ডওভার ডেটা ডিলিট করা হচ্ছে...');
-            
             database.ref('handoverEntries').remove()
                 .then(() => {
                     handoverData = [];
                     renderTable();
                     updateSummary();
                     alert('🗑️ সব হ্যান্ডওভার ডেটা মুছে গেছে!');
-                    console.log('✅ ডেটা ডিলিট সফল!');
                 })
                 .catch((err) => {
                     alert('❌ ডেটা মুছতে ব্যর্থ! Error: ' + err.message);
-                    console.error('❌ Firebase ডিলিট error:', err);
+                    console.error(err);
                 });
         });
     }
 
     // =========================================================
-    // পাসওয়ার্ড মোডাল (সর্বজনীন)
+    // পাসওয়ার্ড মোডাল
     // =========================================================
     function openPasswordModal(text, cb) {
         document.getElementById('passwordActionText').textContent = text;
@@ -571,31 +574,18 @@
         document.getElementById('passwordModal').style.display = 'flex';
         document.getElementById('passwordInput').focus();
     }
-    
-    function closePasswordModal() { 
-        document.getElementById('passwordModal').style.display = 'none'; 
-        window._pwcb = null; 
-    }
-    
+    function closePasswordModal() { document.getElementById('passwordModal').style.display = 'none'; window._pwcb = null; }
     function verifyPassword() {
-        const input = document.getElementById('passwordInput').value.trim();
-        if (input === APP_PASSWORD) {
+        if (document.getElementById('passwordInput').value.trim() === APP_PASSWORD) {
             closePasswordModal();
-            if (typeof window._pwcb === 'function') {
-                const cb = window._pwcb;
-                window._pwcb = null;
-                cb();
-            }
+            if (typeof window._pwcb === 'function') { window._pwcb(); window._pwcb = null; }
         } else {
             document.getElementById('passwordError').style.display = 'block';
             document.getElementById('passwordInput').value = '';
             document.getElementById('passwordInput').focus();
         }
     }
-    
-    document.getElementById('passwordInput').addEventListener('keydown', e => { 
-        if (e.key === 'Enter') verifyPassword(); 
-    });
+    document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') verifyPassword(); });
 
     // =========================================================
     // Entry Submit
