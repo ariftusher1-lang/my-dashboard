@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* CSS - আগের মতোই (সংক্ষিপ্ত) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -197,7 +198,7 @@
     <div class="footer-note">Firebase</div>
 </div>
 
-<!-- মোডালগুলি -->
+<!-- মোডালগুলি (আগের মতো) -->
 <div class="modal" id="detailModal">
     <div class="modal-content">
         <h3>📋 হ্যান্ডওভার ডিটেইলস</h3>
@@ -481,32 +482,27 @@
     }
 
     // =========================================================
-    // 🗑️ একক আইটেম মুছুন (নতুন ফিচার)
+    // 🗑️ একক আইটেম মুছুন
     // =========================================================
     function deleteSingleMasterItem() {
-        // প্রথমে ব্যবহারকারীর কাছ থেকে ইনপুট নেওয়া
         const jo = prompt('🔍 কোন Job Order মুছতে চান? (আবশ্যক)');
-        if (jo === null) return; // বাতিল করলে
+        if (jo === null) return;
         const trimmedJo = jo.trim();
         if (!trimmedJo) {
             alert('❌ Job Order লিখতে হবে!');
             return;
         }
 
-        // Item Code ঐচ্ছিক
         const codeInput = prompt('🔍 Item Code দিন (ঐচ্ছিক – শুধু একটি নির্দিষ্ট আইটেম মুছতে)');
         let trimmedCode = '';
         if (codeInput !== null) {
             trimmedCode = codeInput.trim();
         }
 
-        // মাস্টার লিস্টে খোঁজ
         let itemsToDelete = [];
         if (trimmedCode) {
-            // নির্দিষ্ট Item Code
             itemsToDelete = masterItems.filter(i => i.jobOrder === trimmedJo && i.itemCode === trimmedCode);
         } else {
-            // পুরো Job Order
             itemsToDelete = masterItems.filter(i => i.jobOrder === trimmedJo);
         }
 
@@ -515,21 +511,17 @@
             return;
         }
 
-        // কনফার্মেশন
         const msg = `⚠️ ${itemsToDelete.length} টি আইটেম মুছে যাবে!\nJO: ${trimmedJo}${trimmedCode ? '\nCode: '+trimmedCode : ''}\n\nআপনি কি নিশ্চিত?`;
         if (!confirm(msg)) return;
 
-        // মুছে ফেলা
         const keysToRemove = itemsToDelete.map(item => item._firebaseKey).filter(k => k);
         if (keysToRemove.length > 0) {
-            // Firebase থেকে সরাসরি ডিলিট (একাধিক)
             const updates = {};
             keysToRemove.forEach(key => {
                 updates[`masterItems/${key}`] = null;
             });
             database.ref().update(updates)
                 .then(() => {
-                    // লোকাল অ্যারে থেকেও সরানো
                     masterItems = masterItems.filter(i => !keysToRemove.includes(i._firebaseKey));
                     populateJobOrderDropdown();
                     updateSummary();
@@ -539,41 +531,54 @@
                     alert('❌ ডিলিট ব্যর্থ! ' + err.message);
                 });
         } else {
-            // যদি কোনো _firebaseKey না থাকে (তাত্ত্বিকভাবে হওয়া উচিত নয়)
             alert('❌ কিছু ভুল হয়েছে! রিফ্রেশ করে আবার চেষ্টা করুন।');
         }
     }
 
     // =========================================================
-    // UI ফাংশন
+    // ✅ আপডেটেড populateJobOrderDropdown – শুধু pending JO দেখাবে
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
         const current = select.value;
         const joList = [...new Set(masterItems.map(i => i.jobOrder))];
         const joStatus = {};
+        
         joList.forEach(jo => {
             const items = masterItems.filter(i => i.jobOrder === jo);
             let pending = 0;
             items.forEach(item => {
-                const asOf = handoverData.filter(h => h.jobOrder === jo && h.itemCode === item.itemCode)
-                                .reduce((s, h) => s + (h.handoverQty || 0), 0);
-                if (asOf < item.demandQty) pending++;
+                const asOf = handoverData
+                    .filter(h => h.jobOrder === jo && h.itemCode === item.itemCode)
+                    .reduce((sum, h) => sum + (h.handoverQty || 0), 0);
+                if (asOf < item.demandQty) {
+                    pending++;
+                }
             });
             joStatus[jo] = { total: items.length, pending };
         });
 
         const pendingJoList = joList.filter(jo => joStatus[jo].pending > 0);
+        
         select.innerHTML = '<option value="">-- JO সিলেক্ট করুন --</option>';
-        pendingJoList.forEach(jo => {
+        if (pendingJoList.length === 0) {
             const opt = document.createElement('option');
-            opt.value = jo;
-            opt.textContent = `${jo} (বাকি ${joStatus[jo].pending}/${joStatus[jo].total})`;
+            opt.value = '';
+            opt.textContent = '✅ সব JO Done!';
+            opt.disabled = true;
             select.appendChild(opt);
-        });
+        } else {
+            pendingJoList.forEach(jo => {
+                const opt = document.createElement('option');
+                opt.value = jo;
+                opt.textContent = `${jo} (বাকি ${joStatus[jo].pending}/${joStatus[jo].total})`;
+                select.appendChild(opt);
+            });
+        }
 
-        if (current && pendingJoList.includes(current)) select.value = current;
-        else {
+        if (current && pendingJoList.includes(current)) {
+            select.value = current;
+        } else {
             document.getElementById('itemCodeSelect').innerHTML = '<option value="">-- CODE --</option>';
             document.getElementById('itemNameDisplay').value = '';
             document.getElementById('colorDisplay').value = '';
@@ -776,7 +781,7 @@
     }
 
     // =========================================================
-    // 📊 JO Report
+    // 📊 JO Report (এখানে সব JO দেখাবে)
     // =========================================================
     let currentReportJO = '';
 
@@ -933,7 +938,7 @@
     }
 
     // =========================================================
-    // PDF, Image, Excel Download (রিপোর্ট ডাউনলোড)
+    // PDF, Image, Excel Download
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
@@ -1036,7 +1041,7 @@
     }
 
     // =========================================================
-    // CSV Export (সব হ্যান্ডওভার)
+    // CSV Export
     // =========================================================
     function exportReport() {
         if (!handoverData.length) {
