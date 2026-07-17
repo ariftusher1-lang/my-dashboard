@@ -42,10 +42,12 @@
         .btn-delete-single:hover { background: #d35400; }
         .btn-edit-demand { background: #00897b; color: #fff; }
         .btn-edit-demand:hover { background: #00695c; }
-        .btn-toggle-master { background: #6c757d; color: #fff; width: auto; padding: 10px 20px; margin-bottom: 10px; }
-        .btn-toggle-master:hover { background: #5a6268; }
-        .btn-toggle-manual { background: #2e7d32; color: #fff; width: auto; padding: 10px 20px; margin-bottom: 10px; }
+        .btn-toggle { background: #0d47a1; color: #fff; width: auto; padding: 8px 16px; margin-bottom: 8px; border-radius: 6px; font-size: 15px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-toggle:hover { background: #0a3a7a; }
+        .btn-toggle-manual { background: #2e7d32; }
         .btn-toggle-manual:hover { background: #1b5e20; }
+        .btn-toggle-master { background: #6c757d; }
+        .btn-toggle-master:hover { background: #5a6268; }
         .btn-jo-list { background: #0d47a1; color: #fff; width: auto; padding: 4px 12px; font-size: 13px; border-radius: 4px; margin-left: 8px; }
         .btn-jo-list:hover { background: #0a3a7a; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
@@ -131,16 +133,13 @@
         .status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; }
         .status-done { background: #d4edda; color: #155724; border: 1px solid #28a745; }
         .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
-        /* ✅ বাম দিকে সরানোর জন্য স্টাইল */
         .toggle-wrapper {
             text-align: left;
-            margin: 8px 0;
+            margin: 6px 0;
             padding-left: 5px;
         }
-        .toggle-wrapper button {
+        .toggle-wrapper .btn-toggle {
             margin-right: 12px;
-            display: inline-block;
-            width: auto;
         }
         .jo-list-modal .modal-content { max-width: 400px; }
         @media (max-width: 600px) {
@@ -154,7 +153,7 @@
             table { font-size: 11px; }
             th, td { padding: 3px 4px; }
             .btn-detail { font-size: 14px; padding: 4px 10px; }
-            .toggle-wrapper button { width: 100%; margin-right: 0; }
+            .toggle-wrapper .btn-toggle { width: 100%; margin-right: 0; }
         }
     </style>
 </head>
@@ -192,9 +191,9 @@
         </div>
     </div>
 
-    <!-- টগল বাটন ১: ম্যানুয়াল মাস্টার এন্ট্রি (বাম দিকে) -->
+    <!-- ===== টগল বাটন: ম্যানুয়াল মাস্টার এন্ট্রি (প্লাস/মাইনাস) ===== -->
     <div class="toggle-wrapper">
-        <button class="btn-toggle-manual" id="toggleManualBtn" onclick="toggleManualMaster()">📝 Show Manual Master Entry</button>
+        <button class="btn-toggle btn-toggle-manual" id="toggleManualBtn" onclick="toggleManualMaster()">➕ Manual Master Entry</button>
     </div>
 
     <!-- ম্যানুয়াল মাস্টার এন্ট্রি সেকশন (ডিফল্ট লুকানো) -->
@@ -212,9 +211,9 @@
         </div>
     </div>
 
-    <!-- টগল বাটন ২: মাস্টার ডেটা ম্যানেজ (বাম দিকে) -->
+    <!-- ===== টগল বাটন: মাস্টার ডেটা ম্যানেজ (প্লাস/মাইনাস) ===== -->
     <div class="toggle-wrapper">
-        <button class="btn-toggle-master" id="toggleMasterBtn" onclick="toggleMasterData()">📂 Show Master Data Manage</button>
+        <button class="btn-toggle btn-toggle-master" id="toggleMasterBtn" onclick="toggleMasterData()">➕ Master Data Manage</button>
     </div>
 
     <!-- মাস্টার ডেটা ম্যানেজ সেকশন (ডিফল্ট লুকানো) -->
@@ -396,8 +395,6 @@
     let masterItems = [];
     let handoverData = [];
     let editIndex = null;
-    let masterDataVisible = false;
-    let manualMasterVisible = false;
 
     // =========================================================
     // Listeners
@@ -443,7 +440,7 @@
     }
 
     // =========================================================
-    // 📝 ম্যানুয়াল মাস্টার এন্ট্রি (টগল + ফাংশন)
+    // 📝 ম্যানুয়াল মাস্টার এন্ট্রি (প্লাস/মাইনাস টগল)
     // =========================================================
     function toggleManualMaster() {
         const section = document.getElementById('manualMasterSection');
@@ -451,15 +448,13 @@
 
         if (section.style.display === 'block') {
             section.style.display = 'none';
-            btn.textContent = '📝 Show Manual Master Entry';
-            manualMasterVisible = false;
+            btn.innerHTML = '➕ Manual Master Entry';
         } else {
             const pwd = prompt('🔑 পাসওয়ার্ড দিন:');
             if (pwd === null) return;
             if (pwd === '123') {
                 section.style.display = 'block';
-                btn.textContent = '📝 Hide Manual Master Entry';
-                manualMasterVisible = true;
+                btn.innerHTML = '➖ Manual Master Entry';
             } else {
                 alert('❌ ভুল পাসওয়ার্ড!');
             }
@@ -513,7 +508,7 @@
     }
 
     // =========================================================
-    // 📂 মাস্টার ডেটা টগল ফাংশন
+    // 📂 মাস্টার ডেটা টগল (প্লাস/মাইনাস)
     // =========================================================
     function toggleMasterData() {
         const section = document.getElementById('masterDataSection');
@@ -521,15 +516,13 @@
 
         if (section.style.display === 'block') {
             section.style.display = 'none';
-            btn.textContent = '📂 Show Master Data Manage';
-            masterDataVisible = false;
+            btn.innerHTML = '➕ Master Data Manage';
         } else {
             const pwd = prompt('🔑 পাসওয়ার্ড দিন:');
             if (pwd === null) return;
             if (pwd === '123') {
                 section.style.display = 'block';
-                btn.textContent = '📂 Hide Master Data Manage';
-                masterDataVisible = true;
+                btn.innerHTML = '➖ Master Data Manage';
             } else {
                 alert('❌ ভুল পাসওয়ার্ড!');
             }
