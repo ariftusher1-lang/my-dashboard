@@ -42,20 +42,7 @@
         .btn-delete-single:hover { background: #d35400; }
         .btn-edit-demand { background: #00897b; color: #fff; }
         .btn-edit-demand:hover { background: #00695c; }
-        .btn-toggle { 
-            background: #0d47a1; 
-            color: #fff; 
-            width: auto; 
-            padding: 8px 16px; 
-            margin-bottom: 8px; 
-            border-radius: 6px; 
-            font-size: 15px; 
-            border: none; 
-            cursor: pointer; 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 8px; 
-        }
+        .btn-toggle { background: #0d47a1; color: #fff; width: auto; padding: 8px 16px; margin-bottom: 8px; border-radius: 6px; font-size: 15px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
         .btn-toggle:hover { background: #0a3a7a; }
         .btn-toggle-manual { background: #2e7d32; }
         .btn-toggle-manual:hover { background: #1b5e20; }
@@ -158,6 +145,7 @@
         .jo-list-modal .modal-content { max-width: 420px; }
         .detail-modal .modal-content { max-width: 550px; }
         .clickable { cursor: pointer; }
+        .date-display { font-weight: bold; color: #0d47a1; }
         @media (max-width: 600px) {
             .form-row > div { min-width: 100%; }
             .handover-info > div { min-width: 100%; }
@@ -207,9 +195,9 @@
         </div>
     </div>
 
-    <!-- Toggle: Manual Master Entry (Password Protected) – শুধু + দেখাবে -->
+    <!-- Toggle: Manual Master Entry (Password Protected) -->
     <div class="toggle-wrapper">
-        <button class="btn-toggle btn-toggle-manual" id="toggleManualBtn" onclick="toggleManualMaster()">➕</button>
+        <button class="btn-toggle btn-toggle-manual" id="toggleManualBtn" onclick="toggleManualMaster()">➕ Manual Master Entry</button>
     </div>
 
     <!-- Manual Master Entry Section (Hidden by default) -->
@@ -227,9 +215,9 @@
         </div>
     </div>
 
-    <!-- Toggle: Master Data Manage (Password Protected) – শুধু + দেখাবে -->
+    <!-- Toggle: Master Data Manage (Password Protected) -->
     <div class="toggle-wrapper">
-        <button class="btn-toggle btn-toggle-master" id="toggleMasterBtn" onclick="toggleMasterData()">➕</button>
+        <button class="btn-toggle btn-toggle-master" id="toggleMasterBtn" onclick="toggleMasterData()">➕ Master Data Manage</button>
     </div>
 
     <!-- Master Data Manage Section (Hidden by default) -->
@@ -280,6 +268,9 @@
             <div><label>⏳ Remaining</label><input type="number" id="remainingDisplay" readonly></div>
         </div>
         <div class="form-row">
+            <div><label>Date</label>
+                <input type="text" id="currentDateDisplay" readonly style="font-weight:bold; color:#0d47a1;">
+            </div>
             <div><label>HANDOVER QTY *</label><input type="number" id="handoverQty" placeholder="Today's QTY" required min="1"></div>
             <div><label>Handover By *</label>
                 <select id="handoverPerson" required>
@@ -469,7 +460,7 @@
     }
 
     // =========================================================
-    // Toggle: Manual Master Entry (Password: 123) – শুধু ➕ / ➖
+    // Toggle: Manual Master Entry (Password: 123)
     // =========================================================
     function toggleManualMaster() {
         const section = document.getElementById('manualMasterSection');
@@ -477,15 +468,13 @@
 
         if (section.style.display === 'block') {
             section.style.display = 'none';
-            btn.innerHTML = '➕';
-            btn.title = 'Open Manual Master Entry';
+            btn.innerHTML = '➕ Manual Master Entry';
         } else {
             const pwd = prompt('🔑 Enter Password:');
             if (pwd === null) return;
             if (pwd === '123') {
                 section.style.display = 'block';
-                btn.innerHTML = '➖';
-                btn.title = 'Close Manual Master Entry';
+                btn.innerHTML = '➖ Manual Master Entry';
             } else {
                 alert('❌ Wrong Password!');
             }
@@ -493,7 +482,7 @@
     }
 
     // =========================================================
-    // Toggle: Master Data Manage (Password: 123) – শুধু ➕ / ➖
+    // Toggle: Master Data Manage (Password: 123)
     // =========================================================
     function toggleMasterData() {
         const section = document.getElementById('masterDataSection');
@@ -501,15 +490,13 @@
 
         if (section.style.display === 'block') {
             section.style.display = 'none';
-            btn.innerHTML = '➕';
-            btn.title = 'Open Master Data Manage';
+            btn.innerHTML = '➕ Master Data Manage';
         } else {
             const pwd = prompt('🔑 Enter Password:');
             if (pwd === null) return;
             if (pwd === '123') {
                 section.style.display = 'block';
-                btn.innerHTML = '➖';
-                btn.title = 'Close Master Data Manage';
+                btn.innerHTML = '➖ Master Data Manage';
             } else {
                 alert('❌ Wrong Password!');
             }
@@ -597,7 +584,7 @@
     // View JO Detail (Full Status)
     // =========================================================
     function viewJODetail(jo) {
-        closeJOList(); // close the list modal
+        closeJOList();
         
         const modal = document.getElementById('joDetailModal');
         const container = document.getElementById('joDetailContent');
@@ -1524,11 +1511,23 @@
     document.getElementById('joDetailModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeJODetail(); });
 
     // =========================================================
-    // Init
+    // Init - Set current date & auto shift
     // =========================================================
     document.addEventListener('DOMContentLoaded', function() {
-        const hours = new Date().getHours();
-        document.getElementById('handoverShift').value = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
+        // Set current date
+        const today = new Date();
+        const dateStr = today.toISOString().slice(0,10);
+        document.getElementById('currentDateDisplay').value = dateStr;
+
+        // Auto shift based on time
+        const hours = today.getHours();
+        // 8 AM to 8 PM = Day, rest = Night
+        if (hours >= 8 && hours < 20) {
+            document.getElementById('handoverShift').value = 'Day';
+        } else {
+            document.getElementById('handoverShift').value = 'Night';
+        }
+
         startListening();
     });
 </script>
