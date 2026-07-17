@@ -287,22 +287,10 @@
         measurementId: "G-YWY3X02MEN"
     };
 
-    // ✅ সঠিক DATABASE_URL
     const DATABASE_URL = "https://handover-management-default-rtdb.asia-southeast1.firebasedatabase.app";
 
-    // =========================================================
-    // Firebase Initialize
-    // =========================================================
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database(DATABASE_URL);
-
-    // ✅ Firebase সংযোগ টেস্ট
-    database.ref('.info/connected').on('value', snap => {
-        console.log('🔥 Firebase Connection:', snap.val() ? '✅ Connected' : '❌ Disconnected');
-        if (!snap.val()) {
-            alert('⚠️ Firebase সংযোগ স্থাপন করা যাচ্ছে না! ইন্টারনেট চেক করুন।');
-        }
-    });
 
     const APP_PASSWORD = 'admin123';
     let masterItems = [], handoverData = [], editIndex = null;
@@ -311,34 +299,22 @@
     // Firebase Listeners
     // =========================================================
     function startListening() {
-        console.log('🔄 Firebase Listening Started...');
-
         database.ref('masterItems').on('value', snap => {
             const val = snap.val();
             masterItems = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
-            console.log('📦 Master Items Updated:', masterItems.length);
             populateJobOrderDropdown();
             updateSummary();
-        }, error => {
-            console.error('❌ Master Items Error:', error);
-            alert('ডেটা লোড করতে ব্যর্থ! Firebase সংযোগ চেক করুন।');
         });
-
         database.ref('handoverEntries').on('value', snap => {
             const val = snap.val();
             handoverData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
-            console.log('📋 Handover Data Updated:', handoverData.length);
             renderTable();
             updateSummary();
             const code = document.getElementById('itemCodeSelect').value;
             if (code) loadItemDetails();
-        }, error => {
-            console.error('❌ Handover Data Error:', error);
-            alert('ডেটা লোড করতে ব্যর্থ! Firebase সংযোগ চেক করুন।');
         });
     }
 
-    // ✅ এরর হ্যান্ডলিং সহ Save Functions
     function saveMaster() {
         const obj = {};
         masterItems.forEach(item => {
@@ -346,13 +322,7 @@
             const { _firebaseKey, ...clean } = item;
             obj[key] = clean;
         });
-        return database.ref('masterItems').set(obj)
-            .then(() => console.log('✅ Master saved successfully'))
-            .catch(err => {
-                console.error('❌ Master save error:', err);
-                alert('❌ Firebase-এ মাস্টার ডেটা সেভ করতে ব্যর্থ!\nError: ' + err.message);
-                throw err;
-            });
+        return database.ref('masterItems').set(obj);
     }
 
     function saveHandover() {
@@ -362,17 +332,11 @@
             const { _firebaseKey, ...clean } = item;
             obj[key] = clean;
         });
-        return database.ref('handoverEntries').set(obj)
-            .then(() => console.log('✅ Handover saved successfully'))
-            .catch(err => {
-                console.error('❌ Handover save error:', err);
-                alert('❌ Firebase-এ হ্যান্ডওভার ডেটা সেভ করতে ব্যর্থ!\nError: ' + err.message);
-                throw err;
-            });
+        return database.ref('handoverEntries').set(obj);
     }
 
     // =========================================================
-    // ম্যানুয়াল মাস্টার এন্ট্রি (এরর হ্যান্ডলিং সহ)
+    // ম্যানুয়াল মাস্টার এন্ট্রি
     // =========================================================
     function addManualMaster() {
         const jo = document.getElementById('manualJo').value.trim();
@@ -394,7 +358,6 @@
 
         masterItems.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand });
         
-        // সেভ করার সময় লোডিং ইন্ডিকেটর
         const btn = document.querySelector('.btn-add-master');
         btn.textContent = '⏳ সেভ হচ্ছে...';
         btn.disabled = true;
@@ -408,8 +371,8 @@
             document.getElementById('manualColor').value = '';
             document.getElementById('manualDemand').value = '';
             alert(`✅ "${jo}" - "${code}" যোগ হয়েছে!`);
-        }).catch(() => {
-            // Error already shown in saveMaster
+        }).catch(err => {
+            alert('❌ Firebase-এ সেভ করতে ব্যর্থ! Error: ' + err.message);
         }).finally(() => {
             btn.textContent = '➕ মাস্টার যোগ করুন';
             btn.disabled = false;
@@ -417,7 +380,7 @@
     }
 
     // =========================================================
-    // Excel Import (Fuzzy Header Match + Error Handling)
+    // Excel Import (সরল ও কার্যকরী)
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'COLOR', 'DEMAND QTY'];
@@ -440,20 +403,21 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
 
                 if (!rows || rows.length === 0) {
                     alert('ফাইল খালি অথবা ডেটা পড়া যায়নি!');
                     return;
                 }
 
+                // হেডার চিহ্নিত করা
                 const originalHeaders = Object.keys(rows[0]);
-                console.log('📌 Excel এ পাওয়া হেডারগুলো:', originalHeaders);
+                console.log('Excel হেডার:', originalHeaders);
 
-                // Fuzzy Header Mapping
+                // সঠিক হেডার ম্যাপিং (কেস-ইনসেনসিটিভ)
                 const headerMap = {};
                 originalHeaders.forEach(h => {
-                    const clean = h.trim().toLowerCase().replace(/\s+/g, ' ');
+                    const clean = h.trim().toLowerCase();
                     if (clean.includes('job order') || clean.includes('joborder') || clean === 'job') headerMap['JOB ORDER'] = h;
                     else if (clean.includes('item code') || clean.includes('itemcode') || (clean.includes('code') && clean.includes('item'))) headerMap['ITEM CODE'] = h;
                     else if (clean.includes('item name') || clean.includes('itemname') || (clean.includes('name') && clean.includes('item'))) headerMap['ITEM NAME'] = h;
@@ -463,8 +427,9 @@
 
                 const required = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'DEMAND QTY'];
                 const missing = required.filter(r => !headerMap[r]);
+
                 if (missing.length > 0) {
-                    alert(`❌ প্রয়োজনীয় কলাম পাওয়া যায়নি: ${missing.join(', ')}\n\nExcel এ যেসব কলাম আছে:\n${originalHeaders.join(', ')}`);
+                    alert(`❌ আবশ্যক কলাম পাওয়া যায়নি: ${missing.join(', ')}\n\nআপনার Excel-এ যেসব কলাম আছে:\n${originalHeaders.join(', ')}`);
                     return;
                 }
 
@@ -474,7 +439,7 @@
                     const code = (row[headerMap['ITEM CODE']] || '').toString().trim();
                     const name = (row[headerMap['ITEM NAME']] || '').toString().trim();
                     const color = (row[headerMap['COLOR']] || '').toString().trim();
-                    let qty = parseInt((row[headerMap['DEMAND QTY']] || '').toString().replace(/,/g, '')) || 0;
+                    const qty = parseInt((row[headerMap['DEMAND QTY']] || '').toString().replace(/,/g, '')) || 0;
 
                     if (!jo || !code || !name || qty <= 0) return;
 
@@ -493,15 +458,19 @@
                     return;
                 }
 
-                // সেভ করা
                 const btn = document.getElementById('masterFileInput');
+                btn.disabled = true;
+                btn.value = '⏳ সেভ হচ্ছে...';
+
                 saveMaster().then(() => {
                     populateJobOrderDropdown();
                     alert(`✅ ${added} টি নতুন মাস্টার আইটেম যোগ হয়েছে!`);
                     btn.value = '';
-                }).catch(() => {
-                    // Error already shown in saveMaster
+                }).catch(err => {
+                    alert('❌ Firebase-এ সেভ করতে ব্যর্থ! Error: ' + err.message);
                     btn.value = '';
+                }).finally(() => {
+                    btn.disabled = false;
                 });
 
             } catch (err) {
@@ -703,6 +672,8 @@
             document.getElementById('handoverPerson').value = '';
             loadItemDetails();
             alert('✅ হ্যান্ডওভার সফল!');
+        }).catch(err => {
+            alert('❌ সেভ ব্যর্থ! Error: ' + err.message);
         }).finally(() => {
             btn.textContent = '➕ এন্ট্রি';
             btn.disabled = false;
@@ -745,7 +716,7 @@
     }
 
     // =========================================================
-    // Edit, Delete, Report Functions (আগের মতোই)
+    // Edit, Delete, Report Functions
     // =========================================================
     function openEditModal(index) {
         const item = handoverData[index];
@@ -793,7 +764,7 @@
     }
 
     // =========================================================
-    // JO Report (সব JO দেখাবে, Done সহ)
+    // JO Report
     // =========================================================
     let currentReportJO = '';
     function openJ0Report() {
