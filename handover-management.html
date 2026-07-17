@@ -264,6 +264,7 @@
     let masterItems = [];
     let handoverData = [];
     let editIndex = null;
+    let currentReportJO = '';
 
     // =========================================================
     // 📡 Firebase Listeners
@@ -389,7 +390,6 @@
                     return;
                 }
 
-                // হেডার ডিটেক্ট
                 const originalHeaders = Object.keys(rows[0]);
                 const headerMap = {};
                 originalHeaders.forEach(h => {
@@ -413,9 +413,7 @@
                     return;
                 }
 
-                // =========================================================
-                // 📦 গ্রুপিং – একই Order+Code-এর Demand যোগ করব
-                // =========================================================
+                // গ্রুপিং – একই Order+Code-এর Demand যোগ করব
                 const groupMap = {};
                 rows.forEach(row => {
                     const jo = (row[headerMap['JOB ORDER']] || '').toString().trim();
@@ -431,24 +429,18 @@
                         groupMap[key] = { jobOrder: jo, itemCode: code, itemName: name, color: color, demandQty: 0 };
                     }
                     groupMap[key].demandQty += qty;
-                    // যদি নাম বা কালার পরে আসে, আপডেট না করলেও চলে – তবে প্রথমটাই রাখি
                 });
 
-                // এখন groupMap থেকে array বানাই
                 const groupedItems = Object.values(groupMap);
                 if (groupedItems.length === 0) {
                     alert('⚠️ কোনো বৈধ ডেটা পাওয়া যায়নি!');
                     return;
                 }
 
-                // =========================================================
-                // 📥 মাস্টার লিস্টে যোগ/আপডেট
-                // =========================================================
                 let added = 0;
                 groupedItems.forEach(g => {
                     const exist = masterItems.find(i => i.jobOrder === g.jobOrder && i.itemCode === g.itemCode);
                     if (exist) {
-                        // আপডেট (ডিমান্ড রিপ্লেস করব – কারণ ইমপোর্টে যা এসেছে সেটাই চূড়ান্ত)
                         exist.demandQty = g.demandQty;
                         if (g.color) exist.color = g.color;
                         if (g.itemName) exist.itemName = g.itemName;
@@ -486,7 +478,7 @@
     }
 
     // =========================================================
-    // UI ফাংশন (পূর্বের মতো)
+    // UI ফাংশন
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -717,9 +709,8 @@
     }
 
     // =========================================================
-    // 📊 JO Report (সংক্ষিপ্ত – আগের মতোই)
+    // 📊 JO Report (সম্পূর্ণ)
     // =========================================================
-    let currentReportJO = '';
     function openJ0Report() {
         if (!masterItems.length) { alert('কোনো ডেটা নেই!'); return; }
         const select = document.getElementById('joSelect');
@@ -730,18 +721,266 @@
         document.getElementById('joReportModal').style.display = 'flex';
         currentReportJO = '';
     }
+
     function closeJoReport() { document.getElementById('joReportModal').style.display = 'none'; }
 
     function loadJoReport() {
-        const jo = document.getElementById('joSelect').value;
-        if (!jo) { document.getElementById('joReportContent').innerHTML = '<p style="color:#999;">JO সিলেক্ট করুন</p>'; currentReportJO = ''; return; }
+        const select = document.getElementById('joSelect');
+        const jo = select.value;
+        if (!jo) {
+            document.getElementById('joReportContent').innerHTML = '<p style="color:#999;">JO সিলেক্ট করুন</p>';
+            currentReportJO = '';
+            return;
+        }
         currentReportJO = jo;
-        // রিপোর্ট তৈরির কোড (আগের মতোই – এখানে বাদ দিলাম কিন্তু পুরো কাজ করবে)
-        // সম্পূর্ণ কোডে এই ফাংশন পুরোপুরি থাকবে
-        // সংক্ষিপ্ততার জন্য এখানে শুধু ডামি
-        document.getElementById('joReportContent').innerHTML = `<p>রিপোর্ট লোড হচ্ছে...</p>`;
-        // বাস্তবে সম্পূর্ণ রিপোর্ট ফাংশন আগের কোডে ছিল – এখনও আছে
-        // আমি পুরো কোড দিচ্ছি, তাই রিপোর্ট কাজ করবে।
+
+        const masterJOItems = masterItems.filter(i => i.jobOrder === jo);
+        if (!masterJOItems.length) {
+            document.getElementById('joReportContent').innerHTML = `<p style="color:#999;">"${jo}"-তে কোনো আইটেম নেই</p>`;
+            return;
+        }
+
+        const grouped = {};
+        masterJOItems.forEach(item => {
+            const key = `${item.itemCode}_${item.itemName}_${item.color || ''}`;
+            if (!grouped[key]) {
+                grouped[key] = {
+                    itemCode: item.itemCode,
+                    itemName: item.itemName,
+                    color: item.color || '',
+                    demandQty: item.demandQty || 0,
+                    asOfQty: 0
+                };
+            }
+            grouped[key].demandQty += item.demandQty || 0;
+        });
+
+        const handoverJO = handoverData.filter(h => h.jobOrder === jo);
+        handoverJO.forEach(h => {
+            const key = `${h.itemCode}_${h.itemName}_${h.color || ''}`;
+            if (grouped[key]) {
+                grouped[key].asOfQty += h.handoverQty || 0;
+            } else {
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        itemCode: h.itemCode,
+                        itemName: h.itemName,
+                        color: h.color || '',
+                        demandQty: 0,
+                        asOfQty: h.handoverQty || 0
+                    };
+                }
+            }
+        });
+
+        const arr = Object.values(grouped);
+        let html = `<div class="report-summary" style="background:#cce5ff;padding:12px;border-radius:8px;margin-bottom:12px;display:flex;justify-content:space-between;flex-wrap:wrap;">
+            <span style="font-size:18px;font-weight:700;">📋 রিপোর্ট: ${jo}</span>
+            <span>মোট আইটেম: <strong>${arr.length}</strong></span>
+        </div>`;
+
+        html += `<table class="history-table"><thead><tr>
+            <th>#</th>
+            <th>ITEM CODE</th>
+            <th>ITEM NAME</th>
+            <th>COLOR</th>
+            <th>📌 Demand</th>
+            <th>📊 As of</th>
+            <th>⏳ বাকি</th>
+            <th>স্ট্যাটাস</th>
+        </tr></thead><tbody>`;
+
+        let totalDemand = 0, totalAsOf = 0, totalRemaining = 0;
+        let allDone = true;
+
+        arr.forEach((g, idx) => {
+            const remaining = g.demandQty - g.asOfQty;
+            const isDone = (g.asOfQty >= g.demandQty && g.demandQty > 0);
+            if (!isDone) allDone = false;
+            totalDemand += g.demandQty;
+            totalAsOf += g.asOfQty;
+            totalRemaining += remaining;
+
+            const statusText = isDone ? '✅ Done' : '⏳ Pending';
+            const statusClass = isDone ? 'status-done' : 'status-pending';
+
+            html += `<tr>
+                <td>${idx+1}</td>
+                <td>${g.itemCode}</td>
+                <td style="text-align:left;">${g.itemName}</td>
+                <td>${g.color}</td>
+                <td><strong>${g.demandQty}</strong></td>
+                <td><strong style="color:#0d47a1;">${g.asOfQty}</strong></td>
+                <td><strong style="color:${remaining < 0 ? 'red' : remaining > 0 ? '#d32f2f' : '#2e7d32'};">${remaining < 0 ? 0 : remaining}</strong></td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+
+        const orderStatus = allDone ? '✅ Complete' : '⏳ In Progress';
+        const orderClass = allDone ? 'status-done' : 'status-pending';
+
+        html += `<div style="margin-top:15px;display:flex;gap:30px;flex-wrap:wrap;font-weight:bold;background:#e3f2fd;padding:12px;border-radius:8px;align-items:center;">
+            <span>📌 মোট Demand: <strong>${totalDemand}</strong></span>
+            <span>📊 মোট As of: <strong style="color:#0d47a1;">${totalAsOf}</strong></span>
+            <span>⏳ মোট বাকি: <strong style="color:${totalRemaining < 0 ? 'red' : totalRemaining > 0 ? '#d32f2f' : '#2e7d32'};">${totalRemaining < 0 ? 0 : totalRemaining}</strong></span>
+            <span style="font-size:18px;">অর্ডার স্ট্যাটাস: <span class="status-badge ${orderClass}" style="font-size:16px;padding:6px 16px;">${orderStatus}</span></span>
+        </div>`;
+
+        // বিস্তারিত লিস্ট
+        html += `<div style="margin-top:20px;border-top:2px solid #0d47a1;padding-top:15px;">`;
+        html += `<h4 style="color:#0d47a1;">📋 বিস্তারিত হ্যান্ডওভার লিস্ট</h4>`;
+        if (handoverJO.length === 0) {
+            html += `<p style="color:#999;">কোনো হ্যান্ডওভার রেকর্ড নেই</p>`;
+        } else {
+            html += `<table class="history-table"><thead><tr>
+                <th>#</th>
+                <th>ITEM CODE</th>
+                <th>ITEM NAME</th>
+                <th>COLOR</th>
+                <th>QTY</th>
+                <th>হ্যান্ডওভারকারী</th>
+                <th>শিফট</th>
+                <th>তারিখ/সময়</th>
+            </tr></thead><tbody>`;
+            handoverJO.forEach((item, idx) => {
+                html += `<tr>
+                    <td>${idx+1}</td>
+                    <td>${item.itemCode}</td>
+                    <td style="text-align:left;">${item.itemName}</td>
+                    <td>${item.color || ''}</td>
+                    <td>${item.handoverQty}</td>
+                    <td>${item.handoverPerson}</td>
+                    <td>${item.shift || ''}</td>
+                    <td>${item.entryDate || ''} ${item.entryTime || ''}</td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+        }
+        html += `</div>`;
+
+        document.getElementById('joReportContent').innerHTML = html;
+    }
+
+    // =========================================================
+    // PDF, Image, Excel Download
+    // =========================================================
+    function downloadReportPDF() {
+        const content = document.getElementById('joReportContent');
+        if (!content || content.innerHTML.includes('সিলেক্ট করুন')) {
+            alert('প্রথমে একটি JOB ORDER সিলেক্ট করুন!');
+            return;
+        }
+        const btns = content.previousElementSibling;
+        if (btns && btns.style) btns.style.display = 'none';
+        html2pdf().set({
+            margin: 0.5,
+            filename: `Handover_${currentReportJO}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        }).from(content).save().then(() => {
+            if (btns && btns.style) btns.style.display = 'flex';
+        }).catch(() => {
+            if (btns && btns.style) btns.style.display = 'flex';
+            alert('PDF তৈরি করতে ব্যর্থ!');
+        });
+    }
+
+    function downloadReportImage() {
+        const content = document.getElementById('joReportContent');
+        if (!content || content.innerHTML.includes('সিলেক্ট করুন')) {
+            alert('প্রথমে একটি JOB ORDER সিলেক্ট করুন!');
+            return;
+        }
+        const btns = content.previousElementSibling;
+        if (btns && btns.style) btns.style.display = 'none';
+        html2canvas(content, { scale: 2, useCORS: true, backgroundColor: '#fff' }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Handover_${currentReportJO}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            if (btns && btns.style) btns.style.display = 'flex';
+        }).catch(() => {
+            if (btns && btns.style) btns.style.display = 'flex';
+            alert('Image তৈরি করতে ব্যর্থ!');
+        });
+    }
+
+    function downloadReportExcel() {
+        if (!currentReportJO) {
+            alert('প্রথমে একটি JOB ORDER সিলেক্ট করুন!');
+            return;
+        }
+        const grouped = {};
+        masterItems.filter(i => i.jobOrder === currentReportJO).forEach(item => {
+            const key = `${item.itemCode}_${item.itemName}_${item.color||''}`;
+            if (!grouped[key]) {
+                grouped[key] = {
+                    itemCode: item.itemCode,
+                    itemName: item.itemName,
+                    color: item.color||'',
+                    demandQty: 0,
+                    asOfQty: 0
+                };
+            }
+            grouped[key].demandQty += item.demandQty || 0;
+        });
+        handoverData.filter(h => h.jobOrder === currentReportJO).forEach(h => {
+            const key = `${h.itemCode}_${h.itemName}_${h.color||''}`;
+            if (grouped[key]) {
+                grouped[key].asOfQty += h.handoverQty;
+            } else {
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        itemCode: h.itemCode,
+                        itemName: h.itemName,
+                        color: h.color||'',
+                        demandQty: 0,
+                        asOfQty: h.handoverQty || 0
+                    };
+                }
+            }
+        });
+        const arr = Object.values(grouped);
+        const rows = [['CODE','NAME','COLOR','Demand','As of','বাকি','Status']];
+        let td=0, ta=0, tr=0;
+        arr.forEach(g => {
+            const rem = g.demandQty - g.asOfQty;
+            const done = (g.asOfQty >= g.demandQty && g.demandQty > 0) ? 'Done' : 'Pending';
+            td += g.demandQty; ta += g.asOfQty; tr += rem;
+            rows.push([g.itemCode, g.itemName, g.color, g.demandQty, g.asOfQty, rem, done]);
+        });
+        const allDone = arr.every(g => g.asOfQty >= g.demandQty && g.demandQty > 0);
+        rows.push([], ['মোট','','', td, ta, tr, '']);
+        rows.push(['Order Status:', allDone ? 'Complete' : 'In Progress']);
+        rows.push([], ['===== বিস্তারিত =====']);
+        rows.push(['#','CODE','NAME','COLOR','QTY','কারী','শিফট','তারিখ']);
+        handoverData.filter(h => h.jobOrder === currentReportJO).forEach((h,i) => {
+            rows.push([i+1, h.itemCode, h.itemName, h.color||'', h.handoverQty, h.handoverPerson, h.shift||'', h.entryDate||'']);
+        });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'JO Report');
+        XLSX.writeFile(wb, `Handover_${currentReportJO}.xlsx`);
+        alert('✅ Excel ডাউনলোড শুরু!');
+    }
+
+    function exportReport() {
+        if (!handoverData.length) {
+            alert('কোনো ডেটা নেই!');
+            return;
+        }
+        let csv = 'JO,CODE,NAME,COLOR,QTY,কারী,শিফট,তারিখ,সময়\n';
+        handoverData.forEach(h => {
+            csv += `${h.jobOrder},${h.itemCode},${h.itemName},${h.color||''},${h.handoverQty},${h.handoverPerson},${h.shift||''},${h.entryDate||''},${h.entryTime||''}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Handover_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        alert('✅ CSV ডাউনলোড শুরু!');
     }
 
     // =========================================================
