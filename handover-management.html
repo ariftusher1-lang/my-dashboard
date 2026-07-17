@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>হ্যান্ডওভার ম্যানেজমেন্ট</title>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <!-- html2pdf & XLSX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* (আপনার আগের স্টাইল ঠিক থাকবে, আমি সংক্ষেপে দিচ্ছি) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -40,7 +39,6 @@
         .btn-excel { background: #1d6f42; color: #fff; }
         .btn-excel:hover { background: #145a33; }
         .btn-detail { background: #17a2b8; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 16px; cursor: pointer; width: auto; }
-        .btn-detail:hover { background: #138496; }
         .btn-add-master { background: #28a745; color: #fff; }
         .btn-add-master:hover { background: #1e7e34; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
@@ -278,7 +276,7 @@
 
 <script>
     // =========================================================
-    // 🔥 Firebase কনফিগারেশন (আপনার স্ক্রিনশট থেকে নেওয়া URL)
+    // 🔥 Firebase কনফিগারেশন (আপনার প্রকল্প)
     // =========================================================
     const firebaseConfig = {
         apiKey: "AIzaSyChtp5KhoZOX7uHiY8Rz1BqNOarNshbDXo",
@@ -290,7 +288,7 @@
         measurementId: "G-YWY3X02MEN"
     };
 
-    // ✅ সঠিক DATABASE_URL (আপনার স্ক্রিনশট থেকে)
+    // ✅ সঠিক DATABASE_URL (আপনার Firebase কনসোল থেকে)
     const DATABASE_URL = "https://handover-management-default-rtdb.asia-southeast1.firebasedatabase.app";
 
     // =========================================================
@@ -495,7 +493,7 @@
     function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
 
     // =========================================================
-    // Excel Import (ডুপ্লিকেট চেক সহ)
+    // Excel Import (হেডার কেস-সেন্সিটিভ সমস্যা সমাধান)
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'COLOR', 'DEMAND QTY'];
@@ -511,31 +509,54 @@
             alert('কোনো ফাইল সিলেক্ট করা হয়নি!');
             return;
         }
+
         const reader = new FileReader();
         reader.onload = e => {
             try {
-                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                if (!rows.length) { alert('ফাইল খালি!'); return; }
-                
-                const keys = Object.keys(rows[0]).map(k => k.trim().toLowerCase());
-                const required = ['job order', 'item code', 'item name', 'color', 'demand qty'];
-                const missing = required.filter(r => !keys.includes(r));
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+                if (rows.length === 0) {
+                    alert('Excel ফাইলে কোনো ডেটা নেই!');
+                    return;
+                }
+
+                // প্রথম রো থেকে আসল হেডার নেওয়া
+                const firstRow = rows[0];
+                const originalHeaders = Object.keys(firstRow);
+
+                // আমাদের প্রত্যাশিত হেডার
+                const expected = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'COLOR', 'DEMAND QTY'];
+                // কেস-ইনসেনসিটিভ ম্যাপিং
+                const headerMap = {};
+                originalHeaders.forEach(h => {
+                    const lower = h.trim().toLowerCase();
+                    expected.forEach(exp => {
+                        if (lower === exp.toLowerCase()) {
+                            headerMap[exp] = h; // আসল হেডারের নাম ম্যাপ
+                        }
+                    });
+                });
+
+                // চেক করি সব রিকোয়ার্ড হেডার পাওয়া গেছে কিনা
+                const missing = expected.filter(exp => !headerMap[exp]);
                 if (missing.length > 0) {
                     alert(`❌ নিচের কলামগুলো পাওয়া যায়নি: ${missing.join(', ')}\n\nটেমপ্লেট ডাউনলোড করে ব্যবহার করুন।`);
                     return;
                 }
-                
+
                 let added = 0;
                 rows.forEach(row => {
-                    const jo = (row['JOB ORDER'] || '').toString().trim();
-                    const code = (row['ITEM CODE'] || '').toString().trim();
-                    const name = (row['ITEM NAME'] || '').toString().trim();
-                    const color = (row['COLOR'] || '').toString().trim();
-                    const qty = parseInt((row['DEMAND QTY'] || '').toString().replace(/,/g, '')) || 0;
-                    
+                    const jo = (row[headerMap['JOB ORDER']] || '').toString().trim();
+                    const code = (row[headerMap['ITEM CODE']] || '').toString().trim();
+                    const name = (row[headerMap['ITEM NAME']] || '').toString().trim();
+                    const color = (row[headerMap['COLOR']] || '').toString().trim();
+                    const qty = parseInt((row[headerMap['DEMAND QTY']] || '').toString().replace(/,/g, '')) || 0;
+
                     if (!jo || !code || !name || qty <= 0) return;
-                    
+
                     const exist = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
                     if (exist) {
                         exist.demandQty = qty;
@@ -545,12 +566,12 @@
                         added++;
                     }
                 });
-                
+
                 if (added === 0) {
                     alert('⚠️ কোনো নতুন ডেটা যোগ করা হয়নি (হয়তো ডুপ্লিকেট)');
                     return;
                 }
-                
+
                 saveMaster();
                 populateJobOrderDropdown();
                 alert(`✅ ${added} টি নতুন মাস্টার আইটেম যোগ হয়েছে!`);
