@@ -101,7 +101,7 @@
         <div class="item"><span class="label">মোট Demand</span><div class="value" id="totalDue">0</div></div>
     </div>
 
-    <!-- ===== ম্যানুয়াল মাস্টার এন্ট্রি ===== -->
+    <!-- ম্যানুয়াল মাস্টার এন্ট্রি -->
     <div class="master-manual-section">
         <h3>📝 ম্যানুয়াল মাস্টার এন্ট্রি</h3>
         <div class="form-row">
@@ -116,7 +116,7 @@
         </div>
     </div>
 
-    <!-- ===== Excel Import ===== -->
+    <!-- Excel Import -->
     <div class="master-import-section">
         <h3>📂 Excel দিয়ে মাস্টার ডেটা</h3>
         <div class="form-row">
@@ -128,7 +128,7 @@
         <p style="font-size:11px; color:#777;">হেডার: JOB ORDER, ITEM CODE, ITEM NAME, COLOR, DEMAND QTY</p>
     </div>
 
-    <!-- ===== এন্ট্রি ফর্ম ===== -->
+    <!-- এন্ট্রি ফর্ম -->
     <h2>➕ নতুন হ্যান্ডওভার এন্ট্রি</h2>
     <form id="entryForm">
         <div class="form-row">
@@ -169,14 +169,14 @@
         </div>
     </form>
 
-    <!-- ===== রিপোর্ট ===== -->
+    <!-- রিপোর্ট -->
     <h2>📊 রিপোর্ট</h2>
     <div class="filter-section">
         <div><button class="btn-purple" onclick="openJ0Report()">📊 JO রিপোর্ট</button></div>
         <div><button class="btn-info" onclick="exportReport()">📥 CSV</button></div>
     </div>
 
-    <!-- ===== হ্যান্ডওভার টেবিল ===== -->
+    <!-- হ্যান্ডওভার টেবিল -->
     <div class="table-wrapper">
         <table id="stockTable">
             <thead>
@@ -380,7 +380,7 @@
     }
 
     // =========================================================
-    // Excel Import (সরল ও কার্যকরী)
+    // Excel Import (ফাজি ম্যাচিং + ডিবাগ)
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'COLOR', 'DEMAND QTY'];
@@ -388,6 +388,7 @@
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
         XLSX.writeFile(wb, 'Master_Template.xlsx');
+        console.log('📄 টেমপ্লেট ডাউনলোড করা হয়েছে।');
     }
 
     function importMasterExcel(event) {
@@ -397,51 +398,63 @@
             return;
         }
 
+        console.log('📁 ফাইল:', file.name);
         const reader = new FileReader();
         reader.onload = e => {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet);
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
 
                 if (!rows || rows.length === 0) {
-                    alert('ফাইল খালি অথবা ডেটা পড়া যায়নি!');
+                    alert('❌ ফাইল খালি বা ডেটা পড়া যায়নি!');
                     return;
                 }
 
-                // হেডার চিহ্নিত করা
                 const originalHeaders = Object.keys(rows[0]);
-                console.log('Excel হেডার:', originalHeaders);
+                console.log('📌 আসল হেডার:', originalHeaders);
 
-                // সঠিক হেডার ম্যাপিং (কেস-ইনসেনসিটিভ)
+                // ১. স্পষ্ট ম্যাপিং
                 const headerMap = {};
+                const mapping = {
+                    'job order': ['job order', 'joborder', 'job', 'অর্ডার', 'জব অর্ডার', 'jo'],
+                    'item code': ['item code', 'itemcode', 'code', 'আইটেম কোড', 'কোড', 'ic'],
+                    'item name': ['item name', 'itemname', 'name', 'পণ্যের নাম', 'আইটেম নাম', 'নাম'],
+                    'color': ['color', 'colour', 'রং', 'কালার'],
+                    'demand qty': ['demand qty', 'demand', 'qty', 'quantity', 'due', 'ডিমান্ড', 'চাহিদা', 'পরিমাণ']
+                };
+
                 originalHeaders.forEach(h => {
-                    const clean = h.trim().toLowerCase();
-                    if (clean.includes('job order') || clean.includes('joborder') || clean === 'job') headerMap['JOB ORDER'] = h;
-                    else if (clean.includes('item code') || clean.includes('itemcode') || (clean.includes('code') && clean.includes('item'))) headerMap['ITEM CODE'] = h;
-                    else if (clean.includes('item name') || clean.includes('itemname') || (clean.includes('name') && clean.includes('item'))) headerMap['ITEM NAME'] = h;
-                    else if (clean.includes('color')) headerMap['COLOR'] = h;
-                    else if (clean.includes('demand') || clean.includes('qty') || clean.includes('quantity') || clean.includes('due')) headerMap['DEMAND QTY'] = h;
+                    const clean = h.trim().toLowerCase().replace(/\s+/g, ' ');
+                    for (const [key, patterns] of Object.entries(mapping)) {
+                        if (patterns.some(p => clean.includes(p))) {
+                            headerMap[key] = h;
+                            console.log(`✅ ম্যাপ: "${key}" → "${h}"`);
+                            break;
+                        }
+                    }
                 });
 
-                const required = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'DEMAND QTY'];
+                const required = ['job order', 'item code', 'item name', 'demand qty'];
                 const missing = required.filter(r => !headerMap[r]);
-
                 if (missing.length > 0) {
-                    alert(`❌ আবশ্যক কলাম পাওয়া যায়নি: ${missing.join(', ')}\n\nআপনার Excel-এ যেসব কলাম আছে:\n${originalHeaders.join(', ')}`);
+                    alert(`❌ আবশ্যক কলাম পাওয়া যায়নি: ${missing.map(m => m.toUpperCase()).join(', ')}\n\nআপনার হেডার: ${originalHeaders.join(', ')}`);
                     return;
                 }
 
                 let added = 0;
-                rows.forEach(row => {
-                    const jo = (row[headerMap['JOB ORDER']] || '').toString().trim();
-                    const code = (row[headerMap['ITEM CODE']] || '').toString().trim();
-                    const name = (row[headerMap['ITEM NAME']] || '').toString().trim();
-                    const color = (row[headerMap['COLOR']] || '').toString().trim();
-                    const qty = parseInt((row[headerMap['DEMAND QTY']] || '').toString().replace(/,/g, '')) || 0;
+                rows.forEach((row, idx) => {
+                    const jo = (row[headerMap['job order']] || '').toString().trim();
+                    const code = (row[headerMap['item code']] || '').toString().trim();
+                    const name = (row[headerMap['item name']] || '').toString().trim();
+                    const color = (row[headerMap['color']] || '').toString().trim();
+                    const qty = parseInt((row[headerMap['demand qty']] || '').toString().replace(/,/g, '')) || 0;
 
-                    if (!jo || !code || !name || qty <= 0) return;
+                    if (!jo || !code || !name || qty <= 0) {
+                        console.log(`⚠️ রো ${idx+1} স্কিপ (অসম্পূর্ণ)`);
+                        return;
+                    }
 
                     const exist = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
                     if (exist) {
@@ -459,22 +472,22 @@
                 }
 
                 const btn = document.getElementById('masterFileInput');
-                btn.disabled = true;
                 btn.value = '⏳ সেভ হচ্ছে...';
+                btn.disabled = true;
 
                 saveMaster().then(() => {
                     populateJobOrderDropdown();
                     alert(`✅ ${added} টি নতুন মাস্টার আইটেম যোগ হয়েছে!`);
                     btn.value = '';
                 }).catch(err => {
-                    alert('❌ Firebase-এ সেভ করতে ব্যর্থ! Error: ' + err.message);
+                    alert('❌ Firebase-এ সেভ করতে ব্যর্থ! ' + err.message);
                     btn.value = '';
                 }).finally(() => {
                     btn.disabled = false;
                 });
 
             } catch (err) {
-                console.error('Import Error:', err);
+                console.error('❌ Import Error:', err);
                 alert('❌ Excel Import ব্যর্থ!\n' + err.message);
             }
         };
@@ -482,7 +495,7 @@
     }
 
     // =========================================================
-    // অন্যান্য ফাংশন (পেন্ডিং JO, লোড আইটেম, ডিটেইলস, ইত্যাদি)
+    // অন্যান্য ফাংশন
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -585,7 +598,7 @@
     function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
 
     // =========================================================
-    // মাস্টার ডেটা মুছুন (পাসওয়ার্ড-সুরক্ষিত)
+    // মাস্টার ডেটা মুছুন
     // =========================================================
     function clearMasterData() {
         openPasswordModal('🗑️ মাস্টার ডেটা মুছতে পাসওয়ার্ড দিন', () => {
@@ -600,7 +613,7 @@
     }
 
     // =========================================================
-    // সব হ্যান্ডওভার মুছুন (পাসওয়ার্ড-সুরক্ষিত)
+    // সব হ্যান্ডওভার মুছুন
     // =========================================================
     function clearAllHandoverWithPassword() {
         openPasswordModal('🗑️ সব হ্যান্ডওভার ডেটা মুছতে পাসওয়ার্ড দিন', () => {
@@ -716,7 +729,7 @@
     }
 
     // =========================================================
-    // Edit, Delete, Report Functions
+    // Edit, Delete
     // =========================================================
     function openEditModal(index) {
         const item = handoverData[index];
