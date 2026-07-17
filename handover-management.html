@@ -40,6 +40,8 @@
         .btn-detail { background: #17a2b8; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 16px; cursor: pointer; width: auto; }
         .btn-add-master { background: #28a745; color: #fff; }
         .btn-add-master:hover { background: #1e7e34; }
+        .btn-delete-single { background: #e67e22; color: #fff; }
+        .btn-delete-single:hover { background: #d35400; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
         th { background: #0d47a1; color: white; position: sticky; top: 0; font-size: 12px; }
@@ -115,14 +117,20 @@
         </div>
     </div>
 
-    <!-- Excel Import -->
+    <!-- Excel Import + একক মুছুন -->
     <div class="master-import-section">
-        <h3>📂 Excel দিয়ে মাস্টার ডেটা (একই Order+Code-এর Demand যোগ হবে)</h3>
+        <h3>📂 Excel দিয়ে মাস্টার ডেটা</h3>
         <div class="form-row">
             <div><button class="btn-excel" onclick="downloadMasterTemplate()">📄 Template</button></div>
             <div><button class="btn-excel" onclick="document.getElementById('masterFileInput').click()">📥 Import</button></div>
-            <div><button class="btn-danger" onclick="clearMasterData()">🗑️ মাস্টার মুছুন</button></div>
+            <div><button class="btn-danger" onclick="clearMasterData()">🗑️ সব মাস্টার মুছুন</button></div>
             <input type="file" id="masterFileInput" accept=".xlsx,.xls" onchange="importMasterExcel(event)" style="display:none;">
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+            <div><button class="btn-delete-single" onclick="deleteSingleMasterItem()">🗑️ একক আইটেম মুছুন</button></div>
+            <div style="flex:2; font-size:12px; color:#555; display:flex; align-items:center;">
+                ⚡ Job Order (আবশ্যক) ও Item Code (ঐচ্ছিক) দিন
+            </div>
         </div>
         <p style="font-size:11px; color:#777;">হেডার: <strong>Order Name, Acc Code, Item Name, Color, Demand</strong> (Unit Wt-ও চলে)</p>
     </div>
@@ -245,7 +253,7 @@
 
 <script>
     // =========================================================
-    // 🔥 Firebase Config
+    // Firebase Config
     // =========================================================
     const firebaseConfig = {
         apiKey: "AIzaSyDbT-5voxU6UGWvzJ3i0VgZhagQICr2EBk",
@@ -264,10 +272,9 @@
     let masterItems = [];
     let handoverData = [];
     let editIndex = null;
-    let currentReportJO = '';
 
     // =========================================================
-    // 📡 Firebase Listeners
+    // Listeners
     // =========================================================
     function startListening() {
         database.ref('masterItems').on('value', snap => {
@@ -310,7 +317,7 @@
     }
 
     // =========================================================
-    // 📝 ম্যানুয়াল মাস্টার এন্ট্রি
+    // ম্যানুয়াল মাস্টার
     // =========================================================
     function addManualMaster() {
         const jo = document.getElementById('manualJo').value.trim();
@@ -359,7 +366,7 @@
     }
 
     // =========================================================
-    // 📥 Excel Import – সমান Order+Code-এর Demand যোগ হবে
+    // 📥 Excel Import
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
@@ -450,10 +457,6 @@
                     }
                 });
 
-                if (added === 0 && groupedItems.length > 0) {
-                    alert('⚠️ কোনো নতুন আইটেম যোগ হয়নি (শুধু আপডেট হয়েছে)');
-                }
-
                 const btn = document.getElementById('masterFileInput');
                 btn.disabled = true;
                 saveMaster()
@@ -475,6 +478,70 @@
             }
         };
         reader.readAsArrayBuffer(file);
+    }
+
+    // =========================================================
+    // 🗑️ একক আইটেম মুছুন (নতুন ফিচার)
+    // =========================================================
+    function deleteSingleMasterItem() {
+        // প্রথমে ব্যবহারকারীর কাছ থেকে ইনপুট নেওয়া
+        const jo = prompt('🔍 কোন Job Order মুছতে চান? (আবশ্যক)');
+        if (jo === null) return; // বাতিল করলে
+        const trimmedJo = jo.trim();
+        if (!trimmedJo) {
+            alert('❌ Job Order লিখতে হবে!');
+            return;
+        }
+
+        // Item Code ঐচ্ছিক
+        const codeInput = prompt('🔍 Item Code দিন (ঐচ্ছিক – শুধু একটি নির্দিষ্ট আইটেম মুছতে)');
+        let trimmedCode = '';
+        if (codeInput !== null) {
+            trimmedCode = codeInput.trim();
+        }
+
+        // মাস্টার লিস্টে খোঁজ
+        let itemsToDelete = [];
+        if (trimmedCode) {
+            // নির্দিষ্ট Item Code
+            itemsToDelete = masterItems.filter(i => i.jobOrder === trimmedJo && i.itemCode === trimmedCode);
+        } else {
+            // পুরো Job Order
+            itemsToDelete = masterItems.filter(i => i.jobOrder === trimmedJo);
+        }
+
+        if (itemsToDelete.length === 0) {
+            alert(`⚠️ "${trimmedJo}"${trimmedCode ? ' - "'+trimmedCode+'"' : ''} মাস্টার লিস্টে পাওয়া যায়নি!`);
+            return;
+        }
+
+        // কনফার্মেশন
+        const msg = `⚠️ ${itemsToDelete.length} টি আইটেম মুছে যাবে!\nJO: ${trimmedJo}${trimmedCode ? '\nCode: '+trimmedCode : ''}\n\nআপনি কি নিশ্চিত?`;
+        if (!confirm(msg)) return;
+
+        // মুছে ফেলা
+        const keysToRemove = itemsToDelete.map(item => item._firebaseKey).filter(k => k);
+        if (keysToRemove.length > 0) {
+            // Firebase থেকে সরাসরি ডিলিট (একাধিক)
+            const updates = {};
+            keysToRemove.forEach(key => {
+                updates[`masterItems/${key}`] = null;
+            });
+            database.ref().update(updates)
+                .then(() => {
+                    // লোকাল অ্যারে থেকেও সরানো
+                    masterItems = masterItems.filter(i => !keysToRemove.includes(i._firebaseKey));
+                    populateJobOrderDropdown();
+                    updateSummary();
+                    alert(`✅ ${itemsToDelete.length} টি আইটেম মুছে গেছে!`);
+                })
+                .catch(err => {
+                    alert('❌ ডিলিট ব্যর্থ! ' + err.message);
+                });
+        } else {
+            // যদি কোনো _firebaseKey না থাকে (তাত্ত্বিকভাবে হওয়া উচিত নয়)
+            alert('❌ কিছু ভুল হয়েছে! রিফ্রেশ করে আবার চেষ্টা করুন।');
+        }
     }
 
     // =========================================================
@@ -580,7 +647,7 @@
     function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
 
     // =========================================================
-    // 🗑️ মুছুন (পাসওয়ার্ড ছাড়া)
+    // মুছুন (সব)
     // =========================================================
     function clearMasterData() {
         if (!confirm('⚠️ সমস্ত মাস্টার ডেটা মুছবেন?')) return;
@@ -605,7 +672,7 @@
     }
 
     // =========================================================
-    // ফর্ম সাবমিট ও টেবিল রেন্ডার
+    // ফর্ম সাবমিট
     // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -709,8 +776,10 @@
     }
 
     // =========================================================
-    // 📊 JO Report (সম্পূর্ণ)
+    // 📊 JO Report
     // =========================================================
+    let currentReportJO = '';
+
     function openJ0Report() {
         if (!masterItems.length) { alert('কোনো ডেটা নেই!'); return; }
         const select = document.getElementById('joSelect');
@@ -828,7 +897,7 @@
             <span style="font-size:18px;">অর্ডার স্ট্যাটাস: <span class="status-badge ${orderClass}" style="font-size:16px;padding:6px 16px;">${orderStatus}</span></span>
         </div>`;
 
-        // বিস্তারিত লিস্ট
+        // বিস্তারিত হ্যান্ডওভার লিস্ট
         html += `<div style="margin-top:20px;border-top:2px solid #0d47a1;padding-top:15px;">`;
         html += `<h4 style="color:#0d47a1;">📋 বিস্তারিত হ্যান্ডওভার লিস্ট</h4>`;
         if (handoverJO.length === 0) {
@@ -864,7 +933,7 @@
     }
 
     // =========================================================
-    // PDF, Image, Excel Download
+    // PDF, Image, Excel Download (রিপোর্ট ডাউনলোড)
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
@@ -966,6 +1035,9 @@
         alert('✅ Excel ডাউনলোড শুরু!');
     }
 
+    // =========================================================
+    // CSV Export (সব হ্যান্ডওভার)
+    // =========================================================
     function exportReport() {
         if (!handoverData.length) {
             alert('কোনো ডেটা নেই!');
