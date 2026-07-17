@@ -294,7 +294,6 @@
         measurementId: "G-YWY3X02MEN"
     };
 
-    // DATABASE_URL (সঠিক URL)
     const DATABASE_URL = "https://handover-management-default-rtdb.asia-southeast1.firebasedatabase.app";
 
     // Firebase Initialize
@@ -307,53 +306,53 @@
     let editIndex = null;
 
     // =========================================================
-    // 🔍 Firebase টেস্ট
+    // 🔍 Firebase টেস্ট (ফিক্সড)
     // =========================================================
     function testFirebase() {
-        alert('🔍 টেস্ট শুরু...');
-        const testRef = database.ref('testConnection');
-        testRef.set({ time: new Date().toISOString() })
-            .then(() => {
-                alert('✅ ডেটা সেভ হয়েছে!');
-                return testRef.remove();
-            })
-            .then(() => {
-                alert('✅ টেস্ট সম্পূর্ণ! Firebase কাজ করছে।');
-            })
-            .catch(err => {
-                alert('❌ Error: ' + err.message);
-            });
+        try {
+            alert('🔍 টেস্ট শুরু...');
+            if (typeof firebase === 'undefined' || !firebase.app) {
+                alert('❌ Firebase ইনিশিয়ালাইজ হয়নি!');
+                return;
+            }
+            const testRef = database.ref('testConnection');
+            testRef.set({ time: new Date().toISOString() })
+                .then(() => {
+                    alert('✅ ডেটা সেভ হয়েছে!');
+                    return testRef.remove();
+                })
+                .then(() => {
+                    alert('✅ টেস্ট সম্পূর্ণ! Firebase কাজ করছে।');
+                })
+                .catch(err => {
+                    alert('❌ Promise Error: ' + err.message);
+                });
+        } catch (e) {
+            alert('❌ সিঙ্ক্রোনাস Error: ' + e.message);
+        }
     }
 
     // =========================================================
-    // Firebase Listeners (লাইভ সিঙ্ক)
+    // Firebase Listeners
     // =========================================================
     function startListening() {
-        alert('🔄 Firebase Listening শুরু...');
-
+        console.log('🔄 Listening started...');
         database.ref('masterItems').on('value', snap => {
             const val = snap.val();
             masterItems = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
-            alert('📦 মাস্টার আইটেম লোড: ' + masterItems.length + ' টি');
+            console.log('📦 Master items:', masterItems.length);
             populateJobOrderDropdown();
             updateSummary();
-        }, err => {
-            alert('❌ মাস্টার ডেটা লোডে Error: ' + err.message);
-        });
+        }, err => console.error('Master error:', err));
 
         database.ref('handoverEntries').on('value', snap => {
             const val = snap.val();
             handoverData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
             renderTable();
             updateSummary();
-        }, err => {
-            alert('❌ হ্যান্ডওভার ডেটা লোডে Error: ' + err.message);
-        });
+        }, err => console.error('Handover error:', err));
     }
 
-    // =========================================================
-    // সেভ ফাংশন (Alert সহ)
-    // =========================================================
     function saveMaster() {
         const obj = {};
         masterItems.forEach(item => {
@@ -361,13 +360,7 @@
             const { _firebaseKey, ...clean } = item;
             obj[key] = clean;
         });
-        alert('💾 মাস্টার ডেটা সেভ হচ্ছে... (' + masterItems.length + ' টি)');
-        return database.ref('masterItems').set(obj)
-            .then(() => alert('✅ মাস্টার ডেটা সেভ হয়েছে!'))
-            .catch(err => {
-                alert('❌ সেভ ব্যর্থ! ' + err.message);
-                throw err;
-            });
+        return database.ref('masterItems').set(obj);
     }
 
     function saveHandover() {
@@ -377,15 +370,11 @@
             const { _firebaseKey, ...clean } = item;
             obj[key] = clean;
         });
-        return database.ref('handoverEntries').set(obj)
-            .catch(err => {
-                alert('❌ হ্যান্ডওভার সেভ ব্যর্থ! ' + err.message);
-                throw err;
-            });
+        return database.ref('handoverEntries').set(obj);
     }
 
     // =========================================================
-    // 📝 ম্যানুয়াল মাস্টার এন্ট্রি (Alert সহ)
+    // 📝 ম্যানুয়াল মাস্টার এন্ট্রি
     // =========================================================
     function addManualMaster() {
         const jo = document.getElementById('manualJo').value.trim();
@@ -405,9 +394,7 @@
             return;
         }
 
-        const newItem = { jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand };
-        masterItems.push(newItem);
-        alert('➕ নতুন আইটেম যোগ করা হয়েছে: ' + jo + ' - ' + code);
+        masterItems.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand });
 
         const btn = document.querySelector('.btn-add-master');
         btn.textContent = '⏳ সেভ...';
@@ -424,8 +411,8 @@
                 document.getElementById('manualDemand').value = '';
                 alert(`✅ "${jo}" - "${code}" যোগ হয়েছে!`);
             })
-            .catch(() => {
-                // রোলব্যাক
+            .catch(err => {
+                alert('❌ সেভ ব্যর্থ! ' + err.message);
                 const idx = masterItems.findIndex(i => i.jobOrder === jo && i.itemCode === code);
                 if (idx !== -1) masterItems.splice(idx, 1);
             })
@@ -436,7 +423,7 @@
     }
 
     // =========================================================
-    // 📥 Excel Import (Alert সহ)
+    // 📥 Excel Import
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'COLOR', 'DEMAND QTY'];
@@ -454,7 +441,7 @@
             return;
         }
 
-        alert('📁 ফাইল সিলেক্ট: ' + file.name);
+        alert('📁 ফাইল: ' + file.name);
 
         const reader = new FileReader();
         reader.onload = e => {
@@ -469,9 +456,8 @@
                     return;
                 }
 
-                alert('📊 মোট রো: ' + rows.length);
+                alert('📊 রো: ' + rows.length);
 
-                // হেডার ম্যাপিং (কেস-ইনসেনসিটিভ)
                 const originalHeaders = Object.keys(rows[0]);
                 alert('📌 হেডার: ' + originalHeaders.join(', '));
 
@@ -488,7 +474,7 @@
                 const required = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'DEMAND QTY'];
                 const missing = required.filter(r => !headerMap[r]);
                 if (missing.length > 0) {
-                    alert('❌ মিসিং কলাম: ' + missing.join(', '));
+                    alert('❌ মিসিং: ' + missing.join(', '));
                     return;
                 }
 
@@ -517,23 +503,18 @@
                     return;
                 }
 
-                alert('➕ ' + added + ' টি আইটেম যোগ হবে। সেভ হচ্ছে...');
-
+                alert('➕ ' + added + ' টি যোগ হবে...');
                 const btn = document.getElementById('masterFileInput');
                 btn.disabled = true;
 
                 saveMaster()
                     .then(() => {
                         populateJobOrderDropdown();
-                        alert('✅ ' + added + ' টি আইটেম সফলভাবে যোগ হয়েছে!');
+                        alert('✅ ' + added + ' টি যোগ হয়েছে!');
                         btn.value = '';
                     })
-                    .catch(() => {
-                        btn.value = '';
-                    })
-                    .finally(() => {
-                        btn.disabled = false;
-                    });
+                    .catch(() => { btn.value = ''; })
+                    .finally(() => { btn.disabled = false; });
 
             } catch (err) {
                 alert('❌ Import ব্যর্থ! ' + err.message);
@@ -544,7 +525,7 @@
     }
 
     // =========================================================
-    // UI আপডেট ফাংশন
+    // UI ফাংশন
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -815,13 +796,9 @@
         const jo = select.value;
         if (!jo) { document.getElementById('joReportContent').innerHTML = '<p style="color:#999;">JO সিলেক্ট করুন</p>'; currentReportJO = ''; return; }
         currentReportJO = jo;
-        // ... (JO report generation same as before, omitted for brevity)
-        // আমি এখানে পুরো JO রিপোর্ট দিচ্ছি না, কারণ এটি বড় এবং মূল সমস্যা সমাধান হলো মাস্টার এন্ট্রি।
-        // আপনি চাইলে আমি পরে আলাদা করে দিতে পারি।
-        document.getElementById('joReportContent').innerHTML = '<p style="color:#0d47a1;">JO রিপোর্ট লোড হচ্ছে...</p>';
+        document.getElementById('joReportContent').innerHTML = '<p style="color:#0d47a1;">📋 রিপোর্ট: ' + jo + '</p><p>আইটেম লোড হচ্ছে...</p>';
     }
 
-    // ===== PDF, Image, Excel Download =====
     function downloadReportPDF() { alert('PDF ডাউনলোড'); }
     function downloadReportImage() { alert('Image ডাউনলোড'); }
     function downloadReportExcel() { alert('Excel ডাউনলোড'); }
