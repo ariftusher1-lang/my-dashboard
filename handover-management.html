@@ -199,22 +199,8 @@
         </table>
     </div>
 
-    <button class="clear-btn" onclick="clearAllHandoverWithPassword()">🗑️ সব হ্যান্ডওভার মুছুন</button>
-    <div class="footer-note">Firebase | পাসওয়ার্ড: admin123</div>
-</div>
-
-<!-- ===== পাসওয়ার্ড মোডাল ===== -->
-<div class="modal" id="passwordModal">
-    <div class="modal-content">
-        <h3>🔑 পাসওয়ার্ড</h3>
-        <p id="passwordActionText" style="margin-bottom:10px;">পাসওয়ার্ড দিন</p>
-        <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড" style="width:100%; padding:10px; margin-bottom:12px;">
-        <div class="btn-group">
-            <button class="btn-secondary" onclick="closePasswordModal()">বাতিল</button>
-            <button class="btn-success" onclick="verifyPassword()">✅ নিশ্চিত</button>
-        </div>
-        <p id="passwordError" style="color:red; font-size:13px; display:none;">❌ ভুল!</p>
-    </div>
+    <button class="clear-btn" onclick="clearAllHandover()">🗑️ সব হ্যান্ডওভার মুছুন</button>
+    <div class="footer-note">Firebase</div>
 </div>
 
 <!-- ===== ডিটেইলস মোডাল (➕) ===== -->
@@ -291,7 +277,6 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    const APP_PASSWORD = 'admin123';
     let masterItems = [];
     let handoverData = [];
     let editIndex = null;
@@ -395,7 +380,6 @@
     // 📥 Excel Import (হেডার: Order Name, Acc Code, Item Name, Color, Demand)
     // =========================================================
     function downloadMasterTemplate() {
-        // হুবহু এই হেডারগুলো থাকবে
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
         const ws = XLSX.utils.aoa_to_sheet([headers, ['JO-001', 'IC-001', 'পণ্য', 'লাল', 100]]);
         const wb = XLSX.utils.book_new();
@@ -424,38 +408,28 @@
                     return;
                 }
 
-                // =========================================================
-                // 🔍 হেডার অটো-ডিটেক্ট (ঠিক আপনার চাওয়া অনুযায়ী)
-                // =========================================================
                 const originalHeaders = Object.keys(rows[0]);
                 const headerMap = {};
 
                 originalHeaders.forEach(h => {
                     const clean = h.trim().toLowerCase().replace(/\s+/g, ' ');
-                    
-                    // "Order Name" → "JOB ORDER"
                     if (clean.includes('order name') || clean.includes('order_name') || clean.includes('job order') || clean.includes('jo')) {
                         headerMap['JOB ORDER'] = h;
                     }
-                    // "Acc Code" বা "ITEM CODE" → "ITEM CODE"
                     else if (clean.includes('acc code') || clean.includes('acc_code') || clean.includes('item code') || clean.includes('item_code') || clean.includes('code')) {
                         headerMap['ITEM CODE'] = h;
                     }
-                    // "Item Name" → "ITEM NAME"
                     else if (clean.includes('item name') || clean.includes('item_name') || clean.includes('name')) {
                         headerMap['ITEM NAME'] = h;
                     }
-                    // "Color" → "COLOR"
                     else if (clean.includes('color')) {
                         headerMap['COLOR'] = h;
                     }
-                    // "Demand" → "DEMAND QTY"
                     else if (clean.includes('demand') || clean.includes('qty') || clean.includes('due')) {
                         headerMap['DEMAND QTY'] = h;
                     }
                 });
 
-                // চেক করা দরকারি হেডারগুলো আছে কিনা
                 const required = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'DEMAND QTY'];
                 const missing = required.filter(r => !headerMap[r]);
 
@@ -470,9 +444,6 @@
                     return;
                 }
 
-                // =========================================================
-                // 📥 ডেটা পড়া ও ম্যাপ করা
-                // =========================================================
                 let added = 0;
                 rows.forEach(row => {
                     const jo = (row[headerMap['JOB ORDER']] || '').toString().trim();
@@ -522,7 +493,7 @@
     }
 
     // =========================================================
-    // UI ফাংশন (অপরিবর্তিত)
+    // UI ফাংশন
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -623,52 +594,35 @@
 
     function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
 
+    // =========================================================
+    // 🗑️ মাস্টার ডেটা মুছুন (পাসওয়ার্ড ছাড়া)
+    // =========================================================
     function clearMasterData() {
-        openPasswordModal('🗑️ মাস্টার ডেটা মুছতে পাসওয়ার্ড দিন', () => {
-            if (!confirm('সমস্ত মাস্টার ডেটা মুছবেন?')) return;
-            masterItems = [];
-            saveMaster().then(() => {
-                populateJobOrderDropdown();
+        if (!confirm('⚠️ সমস্ত মাস্টার ডেটা মুছবেন?')) return;
+        masterItems = [];
+        saveMaster().then(() => {
+            populateJobOrderDropdown();
+            updateSummary();
+            alert('🗑️ মাস্টার ডেটা মুছে গেছে!');
+        }).catch(err => {
+            alert('❌ মুছতে ব্যর্থ! ' + err.message);
+        });
+    }
+
+    // =========================================================
+    // 🗑️ সব হ্যান্ডওভার মুছুন (পাসওয়ার্ড ছাড়া)
+    // =========================================================
+    function clearAllHandover() {
+        if (!confirm('⚠️ সব হ্যান্ডওভার ডেটা মুছে যাবে! নিশ্চিত?')) return;
+        database.ref('handoverEntries').remove()
+            .then(() => {
+                handoverData = [];
+                renderTable();
                 updateSummary();
-                alert('🗑️ মাস্টার ডেটা মুছে গেছে!');
-            });
-        });
+                alert('🗑️ সব হ্যান্ডওভার ডেটা মুছে গেছে!');
+            })
+            .catch(err => alert('❌ ডেটা মুছতে ব্যর্থ! ' + err.message));
     }
-
-    function clearAllHandoverWithPassword() {
-        openPasswordModal('🗑️ সব হ্যান্ডওভার ডেটা মুছতে পাসওয়ার্ড দিন', () => {
-            if (!confirm('⚠️ সব হ্যান্ডওভার ডেটা মুছে যাবে! নিশ্চিত?')) return;
-            database.ref('handoverEntries').remove()
-                .then(() => {
-                    handoverData = [];
-                    renderTable();
-                    updateSummary();
-                    alert('🗑️ সব হ্যান্ডওভার ডেটা মুছে গেছে!');
-                })
-                .catch(err => alert('❌ ডেটা মুছতে ব্যর্থ! ' + err.message));
-        });
-    }
-
-    function openPasswordModal(text, cb) {
-        document.getElementById('passwordActionText').textContent = text;
-        document.getElementById('passwordInput').value = '';
-        document.getElementById('passwordError').style.display = 'none';
-        window._pwcb = cb;
-        document.getElementById('passwordModal').style.display = 'flex';
-        document.getElementById('passwordInput').focus();
-    }
-    function closePasswordModal() { document.getElementById('passwordModal').style.display = 'none'; window._pwcb = null; }
-    function verifyPassword() {
-        if (document.getElementById('passwordInput').value.trim() === APP_PASSWORD) {
-            closePasswordModal();
-            if (typeof window._pwcb === 'function') { window._pwcb(); window._pwcb = null; }
-        } else {
-            document.getElementById('passwordError').style.display = 'block';
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('passwordInput').focus();
-        }
-    }
-    document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') verifyPassword(); });
 
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -772,7 +726,7 @@
     }
 
     // =========================================================
-    // 📊 JO Report (অপরিবর্তিত)
+    // 📊 JO Report
     // =========================================================
     let currentReportJO = '';
     function openJ0Report() {
@@ -892,7 +846,6 @@
             <span style="font-size:18px;">অর্ডার স্ট্যাটাস: <span class="status-badge ${orderClass}" style="font-size:16px;padding:6px 16px;">${orderStatus}</span></span>
         </div>`;
 
-        // বিস্তারিত লিস্ট
         html += `<div style="margin-top:20px;border-top:2px solid #0d47a1;padding-top:15px;">`;
         html += `<h4 style="color:#0d47a1;">📋 বিস্তারিত হ্যান্ডওভার লিস্ট</h4>`;
         if (handoverJO.length === 0) {
@@ -928,7 +881,7 @@
     }
 
     // =========================================================
-    // PDF, Image, Excel Download (অপরিবর্তিত)
+    // PDF, Image, Excel Download
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
@@ -1050,9 +1003,6 @@
     // =========================================================
     // Modal Close
     // =========================================================
-    document.getElementById('passwordModal').addEventListener('click', e => {
-        if (e.target === e.currentTarget) closePasswordModal();
-    });
     document.getElementById('editModal').addEventListener('click', e => {
         if (e.target === e.currentTarget) closeEditModal();
     });
