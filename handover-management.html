@@ -119,7 +119,7 @@
         </div>
     </div>
 
-    <!-- Excel Import + একক মুছুন + Demand Edit -->
+    <!-- মাস্টার ডেটা ম্যানেজ -->
     <div class="master-import-section">
         <h3>📂 মাস্টার ডেটা ম্যানেজ</h3>
         <div class="form-row">
@@ -132,7 +132,7 @@
             <div><button class="btn-delete-single" onclick="deleteSingleMasterItem()">🗑️ একক আইটেম মুছুন</button></div>
             <div><button class="btn-edit-demand" onclick="editDemand()">✏️ Demand এডিট</button></div>
             <div style="flex:1; font-size:12px; color:#555; display:flex; align-items:center;">
-                ⚡ Job Order (আবশ্যক) ও Item Code (ঐচ্ছিক)
+                ⚡ Job Order (আবশ্যক) ও Item Code (আবশ্যক)
             </div>
         </div>
         <p style="font-size:11px; color:#777;">হেডার: <strong>Order Name, Acc Code, Item Name, Color, Demand</strong> (Unit Wt-ও চলে)</p>
@@ -168,7 +168,15 @@
         </div>
         <div class="form-row">
             <div><label>HANDOVER QTY *</label><input type="number" id="handoverQty" placeholder="আজকের QTY" required min="1"></div>
-            <div><label>হ্যান্ডওভারকারী *</label><input type="text" id="handoverPerson" placeholder="নাম" required></div>
+            <div><label>হ্যান্ডওভারকারী *</label>
+                <select id="handoverPerson" required>
+                    <option value="">-- নির্বাচন করুন --</option>
+                    <option value="Mr. Mohon">Mr. Mohon</option>
+                    <option value="Mr. Ahamed">Mr. Ahamed</option>
+                    <option value="Mr. Pobittra">Mr. Pobittra</option>
+                    <option value="Mr. Shawon">Mr. Shawon</option>
+                </select>
+            </div>
             <div><label>শিফট</label>
                 <select id="handoverShift">
                     <option value="Day">☀️ Day</option>
@@ -538,7 +546,7 @@
     }
 
     // =========================================================
-    // ✏️ Demand এডিট (নতুন ফিচার)
+    // ✏️ Demand এডিট (আপডেটেড রিপোর্টে দেখাবে)
     // =========================================================
     function editDemand() {
         const jo = prompt('🔍 কোন Job Order-এর Demand পরিবর্তন করতে চান? (আবশ্যক)');
@@ -557,7 +565,6 @@
             return;
         }
 
-        // আইটেম খোঁজ
         const item = masterItems.find(i => i.jobOrder === trimmedJo && i.itemCode === trimmedCode);
         if (!item) {
             alert(`⚠️ "${trimmedJo}" - "${trimmedCode}" মাস্টার লিস্টে পাওয়া যায়নি!`);
@@ -572,7 +579,6 @@
             return;
         }
 
-        // আপডেট
         item.demandQty = newDemandNum;
         saveMaster()
             .then(() => {
@@ -727,7 +733,7 @@
     }
 
     // =========================================================
-    // ফর্ম সাবমিট
+    // ফর্ম সাবমিট (হ্যান্ডওভারকারী ড্রপডাউন থেকে নেওয়া)
     // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -736,7 +742,7 @@
         const name = document.getElementById('itemNameDisplay').value;
         const color = document.getElementById('colorDisplay').value;
         const qty = parseFloat(document.getElementById('handoverQty').value);
-        const person = document.getElementById('handoverPerson').value.trim();
+        const person = document.getElementById('handoverPerson').value; // ড্রপডাউন থেকে
         const shift = document.getElementById('handoverShift').value;
         if (!jo || !code || !name || !qty || qty <= 0 || !person) { alert('সব * ফিল্ড পূরণ করুন!'); return; }
         const master = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
@@ -831,7 +837,7 @@
     }
 
     // =========================================================
-    // 📊 JO Report
+    // 📊 JO Report – masterItems থেকে সরাসরি পড়ে (আপডেটেড Demand দেখাবে)
     // =========================================================
     let currentReportJO = '';
 
@@ -858,7 +864,6 @@
         }
         currentReportJO = jo;
 
-        // 🔥 এখানে masterItems থেকে সরাসরি ডেটা নেওয়া হচ্ছে – তাই আপডেটেড Demand আসবে
         const masterJOItems = masterItems.filter(i => i.jobOrder === jo);
         if (!masterJOItems.length) {
             document.getElementById('joReportContent').innerHTML = `<p style="color:#999;">"${jo}"-তে কোনো আইটেম নেই</p>`;
