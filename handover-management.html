@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>হ্যান্ডওভার ম্যানেজমেন্ট</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- html2pdf & XLSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
+        .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 22px; color: #0d47a1; border-bottom: 2px solid #0d47a1; padding-bottom: 8px; margin-bottom: 15px; }
+        h2 { font-size: 18px; color: #0d47a1; border-bottom: 1px solid #0d47a1; padding-bottom: 6px; margin: 15px 0 10px; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+        .form-row > div { flex: 1; min-width: 120px; }
+        label { font-weight: bold; display: block; font-size: 13px; margin-bottom: 3px; color: #333; }
+        input, select { width: 100%; padding: 10px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; background: #fff; }
+        input[readonly] { background: #f0f0f0; font-weight: bold; color: #0d47a1; cursor: default; }
+        button { background: #0d47a1; color: white; border: none; padding: 12px 18px; border-radius: 6px; font-size: 16px; cursor: pointer; transition: 0.3s; width: 100%; }
+        button:hover { background: #0a3a7a; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #1e7e34; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #b02a37; }
+        .btn-warning { background: #ffc107; color: #000; }
+        .btn-warning:hover { background: #e0a800; }
+        .btn-info { background: #17a2b8; }
+        .btn-info:hover { background: #138496; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #5a6268; }
+        .btn-purple { background: #6f42c1; }
+        .btn-purple:hover { background: #5a32a3; }
+        .btn-edit { background: #ff9800; color: #fff; }
+        .btn-edit:hover { background: #e68900; }
+        .btn-excel { background: #1d6f42; color: #fff; }
+        .btn-excel:hover { background: #145a33; }
+        .btn-detail { background: #17a2b8; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 16px; cursor: pointer; width: auto; }
+        .btn-detail:hover { background: #138496; }
+        .btn-add-master { background: #28a745; color: #fff; }
+        .btn-add-master:hover { background: #1e7e34; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+        th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
+        th { background: #0d47a1; color: white; position: sticky; top: 0; font-size: 12px; }
+        td { background: #fff; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 999; padding: 15px; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 10px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
+        .modal-content h3 { margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; font-size: 18px; }
+        .modal-content .btn-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+        .modal-content .btn-group button { width: auto; padding: 8px 20px; }
+        .summary-card { background: #e3f2fd; padding: 12px; border-radius: 8px; margin: 12px 0; display: flex; flex-wrap: wrap; gap: 15px; }
+        .summary-card .item { flex: 1; min-width: 80px; }
+        .summary-card .label { font-size: 12px; color: #555; }
+        .summary-card .value { font-size: 20px; font-weight: 700; color: #0d47a1; }
+        .filter-section { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; padding: 12px; background: #f8f9fa; border-radius: 8px; }
+        .filter-section > div { flex: 1; min-width: 120px; }
+        .filter-section button { width: 100%; }
+        .handover-info { background: #e3f2fd; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+        .handover-info > div { flex: 1; min-width: 80px; }
+        .handover-info input { background: #fff; }
+        .master-import-section { background: #fff8e1; padding: 12px; border-radius: 8px; border: 1px solid #ffc107; margin-bottom: 15px; }
+        .master-import-section h3 { font-size: 16px; color: #d32f2f; margin-bottom: 8px; }
+        .master-manual-section { background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #4caf50; margin-bottom: 15px; }
+        .master-manual-section h3 { font-size: 16px; color: #2e7d32; margin-bottom: 8px; }
+        .master-manual-section .form-row input { background: #fff; }
+        .master-manual-section .form-row button { background: #28a745; }
+        .master-manual-section .form-row button:hover { background: #1e7e34; }
+        .table-wrapper { max-height: 400px; overflow-y: auto; }
+        .history-table { font-size: 12px; }
+        .history-table th { background: #17a2b8; }
+        .footer-note { margin-top: 15px; font-size: 12px; color: #777; text-align: center; }
+        .action-buttons { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+        .action-buttons button { padding: 4px 8px; font-size: 12px; width: auto; }
+        .clear-btn { background: #6c757d; margin-top: 10px; }
+        .clear-btn:hover { background: #5a6268; }
+        .status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; }
+        .status-done { background: #d4edda; color: #155724; border: 1px solid #28a745; }
+        .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        @media (max-width: 600px) {
+            .form-row > div { min-width: 100%; }
+            .handover-info > div { min-width: 100%; }
+            .filter-section > div { min-width: 100%; }
+            .summary-card .item { min-width: 100%; }
+            .modal-content { max-width: 100%; padding: 15px; }
+            table { font-size: 11px; }
+            th, td { padding: 3px 4px; }
+            .btn-detail { font-size: 14px; padding: 4px 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h1>📦 হ্যান্ডওভার ম্যানেজমেন্ট</h1>
+
+    <!-- সারাংশ -->
+    <div class="summary-card" id="summaryCard">
+        <div class="item"><span class="label">মোট আইটেম</span><div class="value" id="totalMasterItems">0</div></div>
+        <div class="item"><span class="label">মোট হ্যান্ডওভার</span><div class="value" id="totalHandover">0</div></div>
+        <div class="item"><span class="label">মোট Demand</span><div class="value" id="totalDue">0</div></div>
+    </div>
+
+    <!-- ===== ম্যানুয়াল মাস্টার এন্ট্রি ===== -->
+    <div class="master-manual-section">
+        <h3>📝 ম্যানুয়াল মাস্টার এন্ট্রি</h3>
+        <div class="form-row">
+            <div><label>JOB ORDER *</label><input type="text" id="manualJo" placeholder="JO-2026-001"></div>
+            <div><label>ITEM CODE *</label><input type="text" id="manualCode" placeholder="IC-001"></div>
+            <div><label>ITEM NAME *</label><input type="text" id="manualName" placeholder="পণ্যের নাম"></div>
+            <div><label>COLOR</label><input type="text" id="manualColor" placeholder="লাল/নীল"></div>
+            <div><label>DEMAND QTY *</label><input type="number" id="manualDemand" placeholder="100"></div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="button" class="btn-add-master" onclick="addManualMaster()" style="width:100%;">➕ মাস্টার যোগ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Excel Import ===== -->
+    <div class="master-import-section">
+        <h3>📂 Excel দিয়ে মাস্টার ডেটা</h3>
+        <div class="form-row">
+            <div><button class="btn-excel" onclick="downloadMasterTemplate()">📄 Template</button></div>
+            <div><button class="btn-excel" onclick="document.getElementById('masterFileInput').click()">📥 Import</button></div>
+            <div><button class="btn-danger" onclick="clearMasterData()">🗑️ মাস্টার মুছুন</button></div>
+            <input type="file" id="masterFileInput" accept=".xlsx,.xls" onchange="importMasterExcel(event)" style="display:none;">
+        </div>
+        <p style="font-size:11px; color:#777;">হেডার: JOB ORDER, ITEM CODE, ITEM NAME, COLOR, DEMAND QTY</p>
+    </div>
+
+    <!-- ===== এন্ট্রি ফর্ম ===== -->
+    <h2>➕ নতুন হ্যান্ডওভার এন্ট্রি</h2>
+    <form id="entryForm">
+        <div class="form-row">
+            <div><label>JOB ORDER *</label>
+                <select id="jobOrderSelect" required onchange="loadItemsByJobOrder()">
+                    <option value="">-- JO সিলেক্ট করুন --</option>
+                </select>
+            </div>
+            <div><label>ITEM CODE *</label>
+                <select id="itemCodeSelect" required onchange="loadItemDetails()">
+                    <option value="">-- CODE সিলেক্ট করুন --</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div><label>ITEM NAME</label><input type="text" id="itemNameDisplay" readonly></div>
+            <div><label>COLOR</label><input type="text" id="colorDisplay" readonly></div>
+        </div>
+        <div class="handover-info">
+            <div><label>📌 Demand</label><input type="number" id="dueQtyDisplay" readonly></div>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <label>📊 As of</label>
+                <input type="number" id="asOfHandoverDisplay" readonly style="flex:1;">
+                <button type="button" class="btn-detail" onclick="showHandoverDetails()">➕</button>
+            </div>
+            <div><label>⏳ বাকি</label><input type="number" id="remainingDisplay" readonly></div>
+        </div>
+        <div class="form-row">
+            <div><label>HANDOVER QTY *</label><input type="number" id="handoverQty" placeholder="আজকের QTY" required min="1"></div>
+            <div><label>হ্যান্ডওভারকারী *</label><input type="text" id="handoverPerson" placeholder="নাম" required></div>
+            <div><label>শিফট</label>
+                <select id="handoverShift">
+                    <option value="Day">☀️ Day</option>
+                    <option value="Night">🌙 Night</option>
+                </select>
+            </div>
+            <div><button type="submit" class="btn-success">➕ এন্ট্রি</button></div>
+        </div>
+    </form>
+
+    <!-- ===== রিপোর্ট ===== -->
+    <h2>📊 রিপোর্ট</h2>
+    <div class="filter-section">
+        <div><button class="btn-purple" onclick="openJ0Report()">📊 JO রিপোর্ট</button></div>
+        <div><button class="btn-info" onclick="exportReport()">📥 CSV</button></div>
+    </div>
+
+    <!-- ===== হ্যান্ডওভার টেবিল ===== -->
+    <div class="table-wrapper">
+        <table id="stockTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>JO</th>
+                    <th>CODE</th>
+                    <th>NAME</th>
+                    <th>COLOR</th>
+                    <th>QTY</th>
+                    <th>কারী</th>
+                    <th>শিফট</th>
+                    <th>তারিখ</th>
+                    <th>অ্যাকশন</th>
+                </tr>
+            </thead>
+            <tbody id="stockBody">
+                <!-- ডায়নামিক -->
+            </tbody>
+        </table>
+    </div>
+
+    <button class="clear-btn" onclick="clearAllHandoverWithPassword()">🗑️ সব হ্যান্ডওভার মুছুন</button>
+    <div class="footer-note">Firebase | পাসওয়ার্ড: admin123</div>
+</div>
+
+<!-- ===== পাসওয়ার্ড মোডাল ===== -->
+<div class="modal" id="passwordModal">
+    <div class="modal-content">
+        <h3>🔑 পাসওয়ার্ড</h3>
+        <p id="passwordActionText" style="margin-bottom:10px;">পাসওয়ার্ড দিন</p>
+        <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড" style="width:100%; padding:10px; margin-bottom:12px;">
+        <div class="btn-group">
+            <button class="btn-secondary" onclick="closePasswordModal()">বাতিল</button>
+            <button class="btn-success" onclick="verifyPassword()">✅ নিশ্চিত</button>
+        </div>
+        <p id="passwordError" style="color:red; font-size:13px; display:none;">❌ ভুল!</p>
+    </div>
+</div>
+
+<!-- ===== ডিটেইলস মোডাল (➕) ===== -->
+<div class="modal" id="detailModal">
+    <div class="modal-content">
+        <h3>📋 হ্যান্ডওভার ডিটেইলস</h3>
+        <p><strong>JO:</strong> <span id="detailJobOrder"></span> | <strong>CODE:</strong> <span id="detailItemCode"></span></p>
+        <p><strong>ITEM:</strong> <span id="detailItemName"></span></p>
+        <div id="detailTableContainer" style="margin-top:10px;"></div>
+        <div style="margin-top:12px; font-weight:bold; text-align:right;">মোট: <span id="detailTotalQty">0</span> Pcs</div>
+        <div class="btn-group">
+            <button class="btn-secondary" onclick="closeDetailModal()">বন্ধ</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== JO রিপোর্ট মোডাল ===== -->
+<div class="modal" id="joReportModal">
+    <div class="modal-content">
+        <h3>📊 JO রিপোর্ট</h3>
+        <div class="form-row">
+            <div><label>JOB ORDER</label>
+                <select id="joSelect" onchange="loadJoReport()">
+                    <option value="">-- সিলেক্ট --</option>
+                </select>
+            </div>
+            <div><button class="btn-secondary" onclick="closeJoReport()" style="width:100%;">বন্ধ</button></div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;">
+            <button class="btn-info" onclick="downloadReportPDF()" style="flex:1;">📄 PDF</button>
+            <button class="btn-success" onclick="downloadReportImage()" style="flex:1;">🖼️ Image</button>
+            <button class="btn-primary" onclick="downloadReportExcel()" style="flex:1;">📊 Excel</button>
+        </div>
+        <div id="joReportContent"><p style="color:#999;">JO সিলেক্ট করুন</p></div>
+    </div>
+</div>
+
+<!-- ===== Edit মোডাল ===== -->
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <h3>✏️ এডিট</h3>
+        <p><strong>আইটেম:</strong> <span id="editItemDisplay"></span></p>
+        <label>QTY:</label>
+        <input type="number" id="editHandoverQty" min="0">
+        <label>কারী:</label>
+        <input type="text" id="editHandoverPerson">
+        <label>শিফট:</label>
+        <select id="editShift">
+            <option value="Day">Day</option>
+            <option value="Night">Night</option>
+        </select>
+        <div class="btn-group">
+            <button class="btn-danger" onclick="closeEditModal()">বাতিল</button>
+            <button class="btn-success" onclick="confirmEdit()">💾 সেভ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =========================================================
+    // Firebase Config
+    // =========================================================
+    const firebaseConfig = {
+        apiKey: "AIZaSyAHWH9uGLQfXsCppY1xbmY91bwMcObMUUE",
+        authDomain: "carton-management.firebaseapp.com",
+        databaseURL: "https://carton-management-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "carton-management",
+        storageBucket: "carton-management.firebasestorage.app",
+        messagingSenderId: "610163022584",
+        appId: "1:610163022584:web:6b8a7ca0ffc7f0fd6390d",
+        measurementId: "G-V3RVPWDTE7"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const APP_PASSWORD = 'admin123';
+    let masterItems = [], handoverData = [], editIndex = null;
+
+    // =========================================================
+    // Firebase Listeners
+    // =========================================================
+    function startListening() {
+        database.ref('masterItems').on('value', snap => {
+            const val = snap.val();
+            masterItems = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
+            populateJobOrderDropdown();
+            updateSummary();
+        });
+        database.ref('handoverEntries').on('value', snap => {
+            const val = snap.val();
+            handoverData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
+            renderTable();
+            updateSummary();
+            const code = document.getElementById('itemCodeSelect').value;
+            if (code) loadItemDetails();
+        });
+    }
+
+    function saveMaster() {
+        const obj = {};
+        masterItems.forEach(item => {
+            const key = item._firebaseKey || database.ref('masterItems').push().key;
+            const { _firebaseKey, ...clean } = item;
+            obj[key] = clean;
+        });
+        database.ref('masterItems').set(obj);
+    }
+
+    function saveHandover() {
+        const obj = {};
+        handoverData.forEach(item => {
+            const key = item._firebaseKey || database.ref('handoverEntries').push().key;
+            const { _firebaseKey, ...clean } = item;
+            obj[key] = clean;
+        });
+        database.ref('handoverEntries').set(obj);
+    }
+
+    // =========================================================
+    // ম্যানুয়াল মাস্টার এন্ট্রি (ডুপ্লিকেট চেক সহ)
+    // =========================================================
+    function addManualMaster() {
+        const jo = document.getElementById('manualJo').value.trim();
+        const code = document.getElementById('manualCode').value.trim();
+        const name = document.getElementById('manualName').value.trim();
+        const color = document.getElementById('manualColor').value.trim();
+        const demand = parseInt(document.getElementById('manualDemand').value);
+
+        if (!jo || !code || !name || !demand || demand <= 0) {
+            alert('দয়া করে JOB ORDER, ITEM CODE, ITEM NAME ও DEMAND QTY সঠিকভাবে পূরণ করুন!');
+            return;
+        }
+
+        const exists = masterItems.some(i => i.jobOrder === jo && i.itemCode === code);
+        if (exists) {
+            alert(`⚠️ "${jo}" - "${code}" ইতিমধ্যে মাস্টার লিস্টে আছে!`);
+            return;
+        }
+
+        masterItems.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand });
+        saveMaster();
+        populateJobOrderDropdown();
+        updateSummary();
+
+        document.getElementById('manualJo').value = '';
+        document.getElementById('manualCode').value = '';
+        document.getElementById('manualName').value = '';
+        document.getElementById('manualColor').value = '';
+        document.getElementById('manualDemand').value = '';
+        alert(`✅ "${jo}" - "${code}" যোগ হয়েছে!`);
+    }
+
+    // =========================================================
+    // পেন্ডিং JO শুধু ড্রপডাউনে (আপডেটেড)
+    // =========================================================
+    function populateJobOrderDropdown() {
+        const select = document.getElementById('jobOrderSelect');
+        const current = select.value;
+        const joList = [...new Set(masterItems.map(i => i.jobOrder))];
+        
+        const joStatus = {};
+        joList.forEach(jo => {
+            const items = masterItems.filter(i => i.jobOrder === jo);
+            let pending = 0;
+            items.forEach(item => {
+                const asOf = handoverData.filter(h => h.jobOrder === jo && h.itemCode === item.itemCode)
+                                .reduce((s, h) => s + (h.handoverQty || 0), 0);
+                if (asOf < item.demandQty) pending++;
+            });
+            joStatus[jo] = { total: items.length, pending };
+        });
+
+        const pendingJoList = joList.filter(jo => joStatus[jo].pending > 0);
+        select.innerHTML = '<option value="">-- JO সিলেক্ট করুন --</option>';
+        pendingJoList.forEach(jo => {
+            const opt = document.createElement('option');
+            opt.value = jo;
+            opt.textContent = `${jo} (বাকি ${joStatus[jo].pending}/${joStatus[jo].total})`;
+            select.appendChild(opt);
+        });
+
+        if (current && pendingJoList.includes(current)) select.value = current;
+        else {
+            document.getElementById('itemCodeSelect').innerHTML = '<option value="">-- CODE --</option>';
+            document.getElementById('itemNameDisplay').value = '';
+            document.getElementById('colorDisplay').value = '';
+            document.getElementById('dueQtyDisplay').value = '';
+            document.getElementById('asOfHandoverDisplay').value = '';
+            document.getElementById('remainingDisplay').value = '';
+        }
+        loadItemsByJobOrder();
+    }
+
+    function loadItemsByJobOrder() {
+        const jo = document.getElementById('jobOrderSelect').value;
+        const sel = document.getElementById('itemCodeSelect');
+        sel.innerHTML = '<option value="">-- CODE --</option>';
+        document.getElementById('itemNameDisplay').value = '';
+        document.getElementById('colorDisplay').value = '';
+        document.getElementById('dueQtyDisplay').value = '';
+        document.getElementById('asOfHandoverDisplay').value = '';
+        document.getElementById('remainingDisplay').value = '';
+        if (!jo) return;
+        const items = masterItems.filter(i => i.jobOrder === jo);
+        [...new Set(items.map(i => i.itemCode))].forEach(code => {
+            const opt = document.createElement('option');
+            opt.value = code;
+            const item = items.find(i => i.itemCode === code);
+            opt.textContent = `${code} - ${item ? item.itemName : ''}`;
+            sel.appendChild(opt);
+        });
+    }
+
+    function loadItemDetails() {
+        const jo = document.getElementById('jobOrderSelect').value;
+        const code = document.getElementById('itemCodeSelect').value;
+        if (!jo || !code) {
+            ['itemNameDisplay','colorDisplay','dueQtyDisplay','asOfHandoverDisplay','remainingDisplay'].forEach(id => document.getElementById(id).value = '');
+            return;
+        }
+        const item = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
+        if (item) {
+            document.getElementById('itemNameDisplay').value = item.itemName || '';
+            document.getElementById('colorDisplay').value = item.color || '';
+            const due = item.demandQty || 0;
+            const asOf = handoverData.filter(h => h.jobOrder === jo && h.itemCode === code).reduce((s, h) => s + (h.handoverQty || 0), 0);
+            document.getElementById('dueQtyDisplay').value = due;
+            document.getElementById('asOfHandoverDisplay').value = asOf;
+            document.getElementById('remainingDisplay').value = due - asOf < 0 ? 0 : due - asOf;
+        }
+    }
+
+    function showHandoverDetails() {
+        const jo = document.getElementById('jobOrderSelect').value;
+        const code = document.getElementById('itemCodeSelect').value;
+        if (!jo || !code) { alert('JO ও CODE সিলেক্ট করুন!'); return; }
+        const details = handoverData.filter(h => h.jobOrder === jo && h.itemCode === code);
+        if (!details.length) { alert('কোনো রেকর্ড নেই!'); return; }
+        document.getElementById('detailJobOrder').textContent = jo;
+        document.getElementById('detailItemCode').textContent = code;
+        document.getElementById('detailItemName').textContent = masterItems.find(i => i.jobOrder === jo && i.itemCode === code)?.itemName || '';
+        let html = `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>কারী</th><th>QTY</th><th>সময়</th></tr></thead><tbody>`;
+        let total = 0;
+        details.forEach((d, i) => {
+            total += d.handoverQty;
+            html += `<tr><td>${i+1}</td><td>${d.entryDate||''}</td><td>${d.shift||''}</td><td>${d.handoverPerson}</td><td>${d.handoverQty}</td><td>${d.entryTime||''}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        document.getElementById('detailTableContainer').innerHTML = html;
+        document.getElementById('detailTotalQty').textContent = total;
+        document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
+
+    // =========================================================
+    // Excel Import (ডুপ্লিকেট চেক সহ)
+    // =========================================================
+    function downloadMasterTemplate() {
+        const headers = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'COLOR', 'DEMAND QTY'];
+        const ws = XLSX.utils.aoa_to_sheet([headers, ['JO-001', 'IC-001', 'পণ্য', 'লাল', 100]]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, 'Master_Template.xlsx');
+    }
+
+    function importMasterExcel(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                if (!rows.length) { alert('ফাইল খালি!'); return; }
+                const keys = Object.keys(rows[0]).map(k => k.trim().toLowerCase());
+                const required = ['job order', 'item code', 'item name', 'color', 'demand qty'];
+                if (required.some(r => !keys.includes(r))) { alert('ভুল হেডার! টেমপ্লেট ব্যবহার করুন।'); return; }
+                let added = 0;
+                rows.forEach(row => {
+                    const jo = (row['JOB ORDER'] || '').trim();
+                    const code = (row['ITEM CODE'] || '').trim();
+                    const name = (row['ITEM NAME'] || '').trim();
+                    const color = (row['COLOR'] || '').trim();
+                    const qty = parseInt((row['DEMAND QTY'] || '').toString().replace(/,/g, '')) || 0;
+                    if (!jo || !code || !name || !qty) return;
+                    const exist = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
+                    if (exist) {
+                        if (exist.demandQty !== qty) exist.demandQty = qty;
+                    } else {
+                        masterItems.push({ jobOrder: jo, itemCode: code, itemName: name, color, demandQty: qty });
+                        added++;
+                    }
+                });
+                if (!added) { alert('সব ডেটা ইতিমধ্যে আছে!'); return; }
+                saveMaster();
+                populateJobOrderDropdown();
+                alert(`✅ ${added} টি নতুন যোগ হয়েছে!`);
+                document.getElementById('masterFileInput').value = '';
+            } catch (err) { alert('Import ব্যর্থ!'); console.error(err); }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // =========================================================
+    // মাস্টার ডেটা মুছুন (পাসওয়ার্ড-সুরক্ষিত)
+    // =========================================================
+    function clearMasterData() {
+        openPasswordModal('🗑️ মাস্টার ডেটা মুছতে পাসওয়ার্ড দিন', () => {
+            if (!confirm('সমস্ত মাস্টার ডেটা মুছবেন? (হ্যান্ডওভার ডেটা অক্ষত থাকবে)')) return;
+            masterItems = [];
+            saveMaster();
+            populateJobOrderDropdown();
+            updateSummary();
+            alert('🗑️ মাস্টার ডেটা মুছে গেছে!');
+        });
+    }
+
+    // =========================================================
+    // 🔥 সব হ্যান্ডওভার মুছুন (পাসওয়ার্ড-সুরক্ষিত - ফিক্সড)
+    // =========================================================
+    function clearAllHandoverWithPassword() {
+        openPasswordModal('🗑️ সব হ্যান্ডওভার ডেটা মুছতে পাসওয়ার্ড দিন', () => {
+            if (!confirm('⚠️ সতর্কতা: সমস্ত হ্যান্ডওভার ডেটা স্থায়ীভাবে মুছে যাবে! আপনি কি নিশ্চিত?')) return;
+            
+            console.log('🔄 হ্যান্ডওভার ডেটা ডিলিট করা হচ্ছে...');
+            
+            database.ref('handoverEntries').remove()
+                .then(() => {
+                    handoverData = [];
+                    renderTable();
+                    updateSummary();
+                    alert('🗑️ সব হ্যান্ডওভার ডেটা মুছে গেছে!');
+                    console.log('✅ ডেটা ডিলিট সফল!');
+                })
+                .catch((err) => {
+                    alert('❌ ডেটা মুছতে ব্যর্থ! Error: ' + err.message);
+                    console.error('❌ Firebase ডিলিট error:', err);
+                });
+        });
+    }
+
+    // =========================================================
+    // পাসওয়ার্ড মোডাল (সর্বজনীন)
+    // =========================================================
+    function openPasswordModal(text, cb) {
+        document.getElementById('passwordActionText').textContent = text;
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('passwordError').style.display = 'none';
+        window._pwcb = cb;
+        document.getElementById('passwordModal').style.display = 'flex';
+        document.getElementById('passwordInput').focus();
+    }
+    
+    function closePasswordModal() { 
+        document.getElementById('passwordModal').style.display = 'none'; 
+        window._pwcb = null; 
+    }
+    
+    function verifyPassword() {
+        const input = document.getElementById('passwordInput').value.trim();
+        if (input === APP_PASSWORD) {
+            closePasswordModal();
+            if (typeof window._pwcb === 'function') {
+                const cb = window._pwcb;
+                window._pwcb = null;
+                cb();
+            }
+        } else {
+            document.getElementById('passwordError').style.display = 'block';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }
+    
+    document.getElementById('passwordInput').addEventListener('keydown', e => { 
+        if (e.key === 'Enter') verifyPassword(); 
+    });
+
+    // =========================================================
+    // Entry Submit
+    // =========================================================
+    document.getElementById('entryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const jo = document.getElementById('jobOrderSelect').value;
+        const code = document.getElementById('itemCodeSelect').value;
+        const name = document.getElementById('itemNameDisplay').value;
+        const color = document.getElementById('colorDisplay').value;
+        const qty = parseInt(document.getElementById('handoverQty').value);
+        const person = document.getElementById('handoverPerson').value.trim();
+        const shift = document.getElementById('handoverShift').value;
+        if (!jo || !code || !name || !qty || qty <= 0 || !person) { alert('সব * ফিল্ড পূরণ করুন!'); return; }
+        const master = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
+        const due = master ? master.demandQty : 0;
+        const asOf = handoverData.filter(h => h.jobOrder === jo && h.itemCode === code).reduce((s, h) => s + h.handoverQty, 0);
+        if (asOf + qty > due) { alert(`⚠️ Demand (${due}) এর বেশি হ্যান্ডওভার করা যাবে না!`); return; }
+        const entry = { jobOrder: jo, itemCode: code, itemName: name, color, handoverQty: qty, handoverPerson: person, shift, entryDate: new Date().toISOString().slice(0,10), entryTime: new Date().toLocaleTimeString('bn-BD', {hour:'2-digit',minute:'2-digit'}) };
+        handoverData.push(entry);
+        saveHandover();
+        document.getElementById('handoverQty').value = '';
+        document.getElementById('handoverPerson').value = '';
+        loadItemDetails();
+        alert('✅ হ্যান্ডওভার সফল!');
+    });
+
+    // =========================================================
+    // Render Table & Summary
+    // =========================================================
+    function renderTable() {
+        const tbody = document.getElementById('stockBody');
+        if (!handoverData.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#999;padding:15px;">কোনো ডেটা নেই</td></tr>'; return; }
+        let html = '';
+        handoverData.forEach((item, i) => {
+            html += `<tr>
+                <td>${i+1}</td>
+                <td>${item.jobOrder}</td>
+                <td>${item.itemCode}</td>
+                <td style="text-align:left;">${item.itemName}</td>
+                <td>${item.color||''}</td>
+                <td>${item.handoverQty}</td>
+                <td>${item.handoverPerson}</td>
+                <td>${item.shift||''}</td>
+                <td>${item.entryDate||''} ${item.entryTime||''}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-edit" onclick="openEditModal(${i})">✏️</button>
+                        <button class="btn-danger" onclick="deleteHandover(${i})">🗑️</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function updateSummary() {
+        document.getElementById('totalMasterItems').textContent = masterItems.length;
+        document.getElementById('totalHandover').textContent = handoverData.reduce((s, i) => s + i.handoverQty, 0);
+        document.getElementById('totalDue').textContent = masterItems.reduce((s, i) => s + (i.demandQty||0), 0);
+    }
+
+    // =========================================================
+    // Edit (No Password)
+    // =========================================================
+    function openEditModal(index) {
+        const item = handoverData[index];
+        if (!item) return;
+        editIndex = index;
+        document.getElementById('editItemDisplay').textContent = `${item.itemName} (${item.itemCode})`;
+        document.getElementById('editHandoverQty').value = item.handoverQty;
+        document.getElementById('editHandoverPerson').value = item.handoverPerson || '';
+        document.getElementById('editShift').value = item.shift || 'Day';
+        document.getElementById('editModal').style.display = 'flex';
+    }
+    function closeEditModal() { document.getElementById('editModal').style.display = 'none'; editIndex = null; }
+    function confirmEdit() {
+        if (editIndex === null) return;
+        const qty = parseInt(document.getElementById('editHandoverQty').value);
+        const person = document.getElementById('editHandoverPerson').value.trim();
+        const shift = document.getElementById('editShift').value;
+        if (isNaN(qty) || qty < 0 || !person) { alert('সঠিক তথ্য দিন!'); return; }
+        const item = handoverData[editIndex];
+        const master = masterItems.find(i => i.jobOrder === item.jobOrder && i.itemCode === item.itemCode);
+        const due = master ? master.demandQty : 0;
+        const others = handoverData.filter((h, idx) => idx !== editIndex && h.jobOrder === item.jobOrder && h.itemCode === item.itemCode).reduce((s, h) => s + h.handoverQty, 0);
+        if (others + qty > due) { alert(`⚠️ Demand (${due}) এর বেশি হ্যান্ডওভার সম্ভব না!`); return; }
+        item.handoverQty = qty;
+        item.handoverPerson = person;
+        item.shift = shift;
+        saveHandover();
+        closeEditModal();
+        alert('✅ আপডেট হয়েছে!');
+    }
+
+    // =========================================================
+    // Delete (No Password)
+    // =========================================================
+    function deleteHandover(index) {
+        if (!confirm('মুছবেন?')) return;
+        const item = handoverData[index];
+        if (!item) return;
+        if (item._firebaseKey) { database.ref('handoverEntries').child(item._firebaseKey).remove(); }
+        else { handoverData.splice(index, 1); saveHandover(); }
+        alert('🗑️ মুছে গেছে!');
+    }
+
+    // =========================================================
+    // JO Report (সব JO দেখাবে, Done সহ)
+    // =========================================================
+    let currentReportJO = '';
+    function openJ0Report() {
+        if (!masterItems.length) { alert('কোনো ডেটা নেই!'); return; }
+        const select = document.getElementById('joSelect');
+        const joList = [...new Set(masterItems.map(i => i.jobOrder))];
+        select.innerHTML = '<option value="">-- JO --</option>';
+        joList.forEach(jo => { const opt = document.createElement('option'); opt.value = jo; opt.textContent = jo; select.appendChild(opt); });
+        document.getElementById('joReportContent').innerHTML = '<p style="color:#999;">JO সিলেক্ট করুন</p>';
+        document.getElementById('joReportModal').style.display = 'flex';
+        currentReportJO = '';
+    }
+    function closeJoReport() { document.getElementById('joReportModal').style.display = 'none'; }
+
+    function loadJoReport() {
+        const select = document.getElementById('joSelect');
+        const jo = select.value;
+        if (!jo) { document.getElementById('joReportContent').innerHTML = '<p style="color:#999;">JO সিলেক্ট করুন</p>'; currentReportJO = ''; return; }
+        currentReportJO = jo;
+
+        const masterJOItems = masterItems.filter(i => i.jobOrder === jo);
+        if (!masterJOItems.length) { document.getElementById('joReportContent').innerHTML = `<p style="color:#999;">"${jo}"-তে কোনো মাস্টার আইটেম নেই</p>`; return; }
+
+        const grouped = {};
+        masterJOItems.forEach(item => {
+            const key = `${item.itemCode}_${item.itemName}_${item.color || ''}`;
+            if (!grouped[key]) grouped[key] = { itemCode: item.itemCode, itemName: item.itemName, color: item.color || '', demandQty: 0, asOfQty: 0 };
+            grouped[key].demandQty += item.demandQty || 0;
+        });
+
+        const handoverJO = handoverData.filter(h => h.jobOrder === jo);
+        handoverJO.forEach(h => {
+            const key = `${h.itemCode}_${h.itemName}_${h.color || ''}`;
+            if (grouped[key]) grouped[key].asOfQty += h.handoverQty || 0;
+            else grouped[key] = { itemCode: h.itemCode, itemName: h.itemName, color: h.color || '', demandQty: 0, asOfQty: h.handoverQty || 0 };
+        });
+
+        const arr = Object.values(grouped);
+        let html = `<div class="report-summary" style="background:#cce5ff;padding:12px;border-radius:8px;margin-bottom:12px;display:flex;justify-content:space-between;flex-wrap:wrap;"><span style="font-size:18px;font-weight:700;">📋 রিপোর্ট: ${jo}</span><span>মোট: ${arr.length}</span></div>`;
+        html += `<table class="history-table"><thead><tr><th>#</th><th>CODE</th><th>NAME</th><th>COLOR</th><th>📌 Demand</th><th>📊 As of</th><th>⏳ বাকি</th><th>স্ট্যাটাস</th></tr></thead><tbody>`;
+        let td=0, ta=0, tr=0, allDone = true;
+        arr.forEach((g,i) => {
+            const rem = g.demandQty - g.asOfQty;
+            const done = (g.asOfQty >= g.demandQty && g.demandQty > 0);
+            if (!done) allDone = false;
+            td += g.demandQty; ta += g.asOfQty; tr += rem;
+            html += `<tr><td>${i+1}</td><td>${g.itemCode}</td><td style="text-align:left;">${g.itemName}</td><td>${g.color}</td><td>${g.demandQty}</td><td style="color:#0d47a1;">${g.asOfQty}</td><td style="color:${rem<0?'red':rem>0?'#d32f2f':'#2e7d32'}">${rem}</td><td><span class="status-badge ${done?'status-done':'status-pending'}">${done?'✅ Done':'⏳ Pending'}</span></td></tr>`;
+        });
+        html += `</tbody></table>`;
+        const orderStatus = allDone ? '✅ Complete' : '⏳ In Progress';
+        html += `<div style="margin-top:15px;display:flex;gap:30px;flex-wrap:wrap;font-weight:bold;background:#e3f2fd;padding:12px;border-radius:8px;align-items:center;">
+            <span>📌 মোট Demand: ${td}</span>
+            <span>📊 মোট As of: ${ta}</span>
+            <span>⏳ মোট বাকি: ${tr}</span>
+            <span style="font-size:18px;">অর্ডার: <span class="status-badge ${allDone?'status-done':'status-pending'}">${orderStatus}</span></span>
+        </div>`;
+        html += `<div style="margin-top:20px;border-top:2px solid #0d47a1;padding-top:15px;"><h4>📋 বিস্তারিত লিস্ট</h4>`;
+        if (handoverJO.length) {
+            html += `<table class="history-table"><thead><tr><th>#</th><th>CODE</th><th>NAME</th><th>COLOR</th><th>QTY</th><th>কারী</th><th>শিফট</th><th>তারিখ</th></tr></thead><tbody>`;
+            handoverJO.forEach((h,i) => {
+                html += `<tr><td>${i+1}</td><td>${h.itemCode}</td><td style="text-align:left;">${h.itemName}</td><td>${h.color||''}</td><td>${h.handoverQty}</td><td>${h.handoverPerson}</td><td>${h.shift||''}</td><td>${h.entryDate||''}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+        } else html += `<p style="color:#999;">কোনো হ্যান্ডওভার নেই</p>`;
+        html += `</div>`;
+        document.getElementById('joReportContent').innerHTML = html;
+    }
+
+    // =========================================================
+    // PDF, Image, Excel Download
+    // =========================================================
+    function downloadReportPDF() {
+        const content = document.getElementById('joReportContent');
+        if (!content || content.innerHTML.includes('সিলেক্ট করুন')) { alert('JO সিলেক্ট করুন!'); return; }
+        const btns = content.previousElementSibling;
+        if (btns && btns.style) btns.style.display = 'none';
+        html2pdf().set({ margin: 0.5, filename: `Handover_${currentReportJO}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } }).from(content).save().then(() => { if (btns && btns.style) btns.style.display = 'flex'; });
+    }
+
+    function downloadReportImage() {
+        const content = document.getElementById('joReportContent');
+        if (!content || content.innerHTML.includes('সিলেক্ট করুন')) { alert('JO সিলেক্ট করুন!'); return; }
+        const btns = content.previousElementSibling;
+        if (btns && btns.style) btns.style.display = 'none';
+        html2canvas(content, { scale: 2, useCORS: true, backgroundColor: '#fff' }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Handover_${currentReportJO}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            if (btns && btns.style) btns.style.display = 'flex';
+        });
+    }
+
+    function downloadReportExcel() {
+        if (!currentReportJO) { alert('JO সিলেক্ট করুন!'); return; }
+        const grouped = {};
+        masterItems.filter(i => i.jobOrder === currentReportJO).forEach(item => {
+            const key = `${item.itemCode}_${item.itemName}_${item.color||''}`;
+            if (!grouped[key]) grouped[key] = { itemCode: item.itemCode, itemName: item.itemName, color: item.color||'', demandQty: 0, asOfQty: 0 };
+            grouped[key].demandQty += item.demandQty || 0;
+        });
+        handoverData.filter(h => h.jobOrder === currentReportJO).forEach(h => {
+            const key = `${h.itemCode}_${h.itemName}_${h.color||''}`;
+            if (grouped[key]) grouped[key].asOfQty += h.handoverQty;
+            else grouped[key] = { itemCode: h.itemCode, itemName: h.itemName, color: h.color||'', demandQty: 0, asOfQty: h.handoverQty };
+        });
+        const arr = Object.values(grouped);
+        const rows = [['CODE','NAME','COLOR','Demand','As of','বাকি','Status']];
+        let td=0, ta=0, tr=0;
+        arr.forEach(g => {
+            const rem = g.demandQty - g.asOfQty;
+            const done = (g.asOfQty >= g.demandQty && g.demandQty > 0) ? 'Done' : 'Pending';
+            td += g.demandQty; ta += g.asOfQty; tr += rem;
+            rows.push([g.itemCode, g.itemName, g.color, g.demandQty, g.asOfQty, rem, done]);
+        });
+        const allDone = arr.every(g => g.asOfQty >= g.demandQty && g.demandQty > 0);
+        rows.push([], ['মোট','','', td, ta, tr, '']);
+        rows.push(['Order Status:', allDone ? 'Complete' : 'In Progress']);
+        rows.push([], ['===== বিস্তারিত =====']);
+        rows.push(['#','CODE','NAME','COLOR','QTY','কারী','শিফট','তারিখ']);
+        handoverData.filter(h => h.jobOrder === currentReportJO).forEach((h,i) => {
+            rows.push([i+1, h.itemCode, h.itemName, h.color||'', h.handoverQty, h.handoverPerson, h.shift||'', h.entryDate||'']);
+        });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'JO Report');
+        XLSX.writeFile(wb, `Handover_${currentReportJO}.xlsx`);
+    }
+
+    // =========================================================
+    // CSV Export
+    // =========================================================
+    function exportReport() {
+        if (!handoverData.length) { alert('কোনো ডেটা নেই!'); return; }
+        let csv = 'JO,CODE,NAME,COLOR,QTY,কারী,শিফট,তারিখ,সময়\n';
+        handoverData.forEach(h => { csv += `${h.jobOrder},${h.itemCode},${h.itemName},${h.color||''},${h.handoverQty},${h.handoverPerson},${h.shift||''},${h.entryDate||''},${h.entryTime||''}\n`; });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Handover_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        alert('✅ CSV ডাউনলোড শুরু!');
+    }
+
+    // =========================================================
+    // Modal Close
+    // =========================================================
+    document.getElementById('passwordModal').addEventListener('click', e => { if (e.target === e.currentTarget) closePasswordModal(); });
+    document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
+    document.getElementById('joReportModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeJoReport(); });
+    document.getElementById('detailModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetailModal(); });
+
+    // =========================================================
+    // Init
+    // =========================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        const hours = new Date().getHours();
+        document.getElementById('handoverShift').value = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
+        startListening();
+    });
+</script>
+</body>
+</html>
