@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* CSS (unchanged) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -493,8 +494,9 @@
     // =========================================================
     // GLOBAL STATE
     // =========================================================
-    let currentDepartment = '';       
-    let database = null;             
+    let currentDepartment = '';          // Display name (e.g., "Plastic-6.2")
+    let currentDepartmentKey = '';       // Safe key for Firebase (e.g., "Plastic-6_2")
+    let database = null;
 
     let masterItems = [];
     let handoverData = [];
@@ -534,6 +536,8 @@
 
         document.getElementById('loginError').style.display = 'none';
         currentDepartment = dept;
+        // Convert display name to safe Firebase key (replace dots with underscores)
+        currentDepartmentKey = dept.replace(/\./g, '_');
         initializeApp();
         return false;
     }
@@ -550,6 +554,7 @@
         deletedItems = [];
         tempList = [];
         currentDepartment = '';
+        currentDepartmentKey = '';
         database = null;
         document.getElementById('loginScreen').style.display = 'block';
         document.getElementById('mainApp').style.display = 'none';
@@ -565,7 +570,8 @@
         }
         const db = firebase.database();
         database = db;
-        const basePath = `departments/${currentDepartment}`;
+        // Use the safe key for the database path
+        const basePath = `departments/${currentDepartmentKey}`;
         window._basePath = basePath;
 
         document.getElementById('mainTitle').textContent = `🏭 ${currentDepartment} - Handover System`;
