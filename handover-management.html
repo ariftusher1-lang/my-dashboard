@@ -54,6 +54,12 @@
         .btn-jo-list:hover { background: #0a3a7a; }
         .btn-restore { background: #00897b; color: #fff; padding: 4px 10px; font-size: 12px; border-radius: 4px; width: auto; }
         .btn-restore:hover { background: #00695c; }
+        .btn-add-list { background: #ff9800; color: #fff; }
+        .btn-add-list:hover { background: #e68900; }
+        .btn-save-all { background: #0d47a1; color: #fff; }
+        .btn-save-all:hover { background: #0a3a7a; }
+        .btn-clear-list { background: #dc3545; color: #fff; }
+        .btn-clear-list:hover { background: #b02a37; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
         th { background: #0d47a1; color: white; position: sticky; top: 0; font-size: 12px; }
@@ -156,6 +162,10 @@
         .clickable { cursor: pointer; }
         .date-display { font-weight: bold; color: #0d47a1; }
         input[type="date"] { color-scheme: light; }
+        .temp-list-table { margin-top: 12px; }
+        .temp-list-table th { background: #ff9800; }
+        .batch-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .batch-actions button { flex: 1; min-width: 120px; }
         @media (max-width: 600px) {
             .form-row > div { min-width: 100%; }
             .handover-info > div { min-width: 100%; }
@@ -169,6 +179,7 @@
             .btn-detail { font-size: 14px; padding: 4px 10px; }
             .toggle-wrapper .btn-toggle { width: 100%; margin-right: 0; }
             .sub-toggle-wrapper { padding-left: 10px; }
+            .batch-actions button { flex: 1 1 100%; }
         }
     </style>
 </head>
@@ -214,20 +225,48 @@
     <!-- ===== Master Data Main Section (Hidden by default) ===== -->
     <div id="masterMainSection" style="display:none;">
 
-        <!-- Sub Toggle 1: Manual Master Entry -->
+        <!-- Sub Toggle 1: Manual Master Entry (Batch Add) -->
         <div class="sub-toggle-wrapper">
-            <button class="btn-toggle btn-toggle-manual" id="toggleManualBtn" onclick="toggleManualMaster()">➕ Manual Master Entry</button>
+            <button class="btn-toggle btn-toggle-manual" id="toggleManualBtn" onclick="toggleManualMaster()">➕ Manual Master Entry (Batch Add)</button>
         </div>
         <div class="manual-master-section" id="manualMasterSection">
-            <h3>📝 Manual Master Entry</h3>
+            <h3>📝 Manual Master Entry - Batch Add</h3>
+            <p style="font-size:13px; color:#555; margin-bottom:10px;">Add items one by one to the list below, then click <strong>"Save All"</strong> to upload all at once.</p>
             <div class="form-row">
                 <div><label>JOB ORDER *</label><input type="text" id="manualJo" placeholder="JO-2026-001"></div>
                 <div><label>ITEM CODE *</label><input type="text" id="manualCode" placeholder="IC-001"></div>
                 <div><label>ITEM NAME *</label><input type="text" id="manualName" placeholder="Product Name"></div>
                 <div><label>COLOR</label><input type="text" id="manualColor" placeholder="Red/Blue"></div>
                 <div><label>DEMAND QTY *</label><input type="number" id="manualDemand" placeholder="100"></div>
-                <div style="display: flex; align-items: flex-end;">
-                    <button type="button" class="btn-add-master" onclick="addManualMaster()" style="width:100%;">➕ Add Master</button>
+                <div style="display: flex; align-items: flex-end; gap:6px;">
+                    <button type="button" class="btn-add-list" onclick="addToList()" style="width:100%;">➕ Add to List</button>
+                </div>
+            </div>
+            
+            <!-- Temporary List Table -->
+            <div id="tempListContainer" style="margin-top:15px;">
+                <h4 style="color:#d32f2f;">📋 Temporary List (<span id="tempCount">0</span> items)</h4>
+                <div class="table-wrapper temp-list-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>JOB ORDER</th>
+                                <th>ITEM CODE</th>
+                                <th>ITEM NAME</th>
+                                <th>COLOR</th>
+                                <th>DEMAND QTY</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tempListBody">
+                            <tr><td colspan="7" style="text-align:center;color:#999;padding:15px;">No items added yet. Add items above.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="batch-actions">
+                    <button class="btn-save-all" onclick="saveAllToMaster()">💾 Save All to Master</button>
+                    <button class="btn-clear-list" onclick="clearTempList()">🗑️ Clear List</button>
                 </div>
             </div>
         </div>
@@ -285,7 +324,6 @@
             <div><label>⏳ Remaining</label><input type="number" id="remainingDisplay" readonly></div>
         </div>
         <div class="form-row">
-            <!-- Date field with calendar (date picker) -->
             <div><label>Date</label>
                 <input type="date" id="currentDateDisplay">
             </div>
@@ -433,6 +471,7 @@
     let handoverData = [];
     let deletedItems = [];
     let editIndex = null;
+    let tempList = []; // Temporary batch list
 
     // =========================================================
     // Listeners
@@ -513,13 +552,13 @@
 
         if (section.style.display === 'block') {
             section.style.display = 'none';
-            btn.innerHTML = '➕ Manual Master Entry';
+            btn.innerHTML = '➕ Manual Master Entry (Batch Add)';
         } else {
             const pwd = prompt('🔑 Enter Password:');
             if (pwd === null) return;
             if (pwd === '123') {
                 section.style.display = 'block';
-                btn.innerHTML = '➖ Manual Master Entry';
+                btn.innerHTML = '➖ Manual Master Entry (Batch Add)';
             } else {
                 alert('❌ Wrong Password!');
             }
@@ -549,9 +588,9 @@
     }
 
     // =========================================================
-    // Manual Master Add
+    // Batch Add Functions
     // =========================================================
-    function addManualMaster() {
+    function addToList() {
         const jo = document.getElementById('manualJo').value.trim();
         const code = document.getElementById('manualCode').value.trim();
         const name = document.getElementById('manualName').value.trim();
@@ -563,15 +602,109 @@
             return;
         }
 
-        const exists = masterItems.some(i => i.jobOrder === jo && i.itemCode === code);
+        // Check if already in temp list (to avoid duplicates)
+        const exists = tempList.some(i => i.jobOrder === jo && i.itemCode === code);
         if (exists) {
-            alert(`⚠️ "${jo}" - "${code}" already exists!`);
+            alert(`⚠️ "${jo}" - "${code}" already in the temporary list!`);
             return;
         }
 
-        masterItems.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand });
+        tempList.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand });
+        renderTempList();
+        clearManualInputs();
+        document.getElementById('manualJo').focus();
+        alert(`✅ Added: ${jo} - ${code}`);
+    }
 
-        const btn = document.querySelector('.btn-add-master');
+    function clearManualInputs() {
+        document.getElementById('manualJo').value = '';
+        document.getElementById('manualCode').value = '';
+        document.getElementById('manualName').value = '';
+        document.getElementById('manualColor').value = '';
+        document.getElementById('manualDemand').value = '';
+    }
+
+    function renderTempList() {
+        const tbody = document.getElementById('tempListBody');
+        const count = document.getElementById('tempCount');
+        count.textContent = tempList.length;
+
+        if (tempList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:15px;">No items added yet. Add items above.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        tempList.forEach((item, idx) => {
+            html += `<tr>
+                <td>${idx+1}</td>
+                <td>${item.jobOrder}</td>
+                <td>${item.itemCode}</td>
+                <td style="text-align:left;">${item.itemName}</td>
+                <td>${item.color || ''}</td>
+                <td>${item.demandQty}</td>
+                <td><button class="btn-danger" onclick="removeFromList(${idx})" style="padding:4px 8px; font-size:12px; width:auto;">✖</button></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function removeFromList(index) {
+        if (!confirm(`Remove "${tempList[index].jobOrder} - ${tempList[index].itemCode}" from list?`)) return;
+        tempList.splice(index, 1);
+        renderTempList();
+    }
+
+    function clearTempList() {
+        if (tempList.length === 0) return;
+        if (!confirm('Clear all items from temporary list?')) return;
+        tempList = [];
+        renderTempList();
+    }
+
+    function saveAllToMaster() {
+        if (tempList.length === 0) {
+            alert('⚠️ No items to save! Please add items to the list first.');
+            return;
+        }
+
+        // Check for duplicates in master
+        let duplicates = [];
+        let newItems = [];
+
+        tempList.forEach(item => {
+            const exists = masterItems.some(i => i.jobOrder === item.jobOrder && i.itemCode === item.itemCode);
+            if (exists) {
+                duplicates.push(`${item.jobOrder} - ${item.itemCode}`);
+            } else {
+                newItems.push(item);
+            }
+        });
+
+        let msg = `📌 ${tempList.length} item(s) in list.\n`;
+        if (duplicates.length > 0) {
+            msg += `\n⚠️ ${duplicates.length} item(s) already exist in Master List:\n${duplicates.join('\n')}\n\nThese will be SKIPPED.`;
+        }
+        if (newItems.length === 0) {
+            msg += '\n\n❌ No new items to add. All items already exist.';
+            alert(msg);
+            return;
+        }
+        msg += `\n\n✅ ${newItems.length} new item(s) will be added.\n\nProceed?`;
+        if (!confirm(msg)) return;
+
+        // Add new items to master
+        newItems.forEach(item => {
+            masterItems.push({ 
+                jobOrder: item.jobOrder, 
+                itemCode: item.itemCode, 
+                itemName: item.itemName, 
+                color: item.color || '', 
+                demandQty: item.demandQty 
+            });
+        });
+
+        const btn = document.querySelector('.btn-save-all');
         btn.textContent = '⏳ Saving...';
         btn.disabled = true;
 
@@ -579,22 +712,28 @@
             .then(() => {
                 populateJobOrderDropdown();
                 updateSummary();
-                document.getElementById('manualJo').value = '';
-                document.getElementById('manualCode').value = '';
-                document.getElementById('manualName').value = '';
-                document.getElementById('manualColor').value = '';
-                document.getElementById('manualDemand').value = '';
-                alert(`✅ "${jo}" - "${code}" added!`);
+                const added = newItems.length;
+                const skipped = duplicates.length;
+                alert(`✅ ${added} item(s) added successfully!${skipped > 0 ? `\n⚠️ ${skipped} item(s) skipped (already exist).` : ''}`);
+                tempList = [];
+                renderTempList();
             })
             .catch(err => {
-                alert('❌ Save Failed! ' + err.message);
-                const idx = masterItems.findIndex(i => i.jobOrder === jo && i.itemCode === code);
-                if (idx !== -1) masterItems.splice(idx, 1);
+                alert('❌ Save failed! ' + err.message);
             })
             .finally(() => {
-                btn.textContent = '➕ Add Master';
+                btn.textContent = '💾 Save All to Master';
                 btn.disabled = false;
             });
+    }
+
+    // =========================================================
+    // Manual Master Add (Single - kept for backward compatibility)
+    // =========================================================
+    function addManualMaster() {
+        // This is now replaced by batch add, but kept for reference
+        // We'll redirect to batch add
+        addToList();
     }
 
     // =========================================================
@@ -742,7 +881,7 @@
             })
             .then(() => {
                 alert('✅ Item restored successfully!');
-                viewDeletedItems(); // refresh the list
+                viewDeletedItems();
             })
             .catch(err => {
                 alert('❌ Restore failed! ' + err.message);
@@ -1648,8 +1787,6 @@
     // Init
     // =========================================================
     document.addEventListener('DOMContentLoaded', function() {
-        // Date picker is now type="date", user can select manually.
-        // No auto-fill applied.
         startListening();
     });
 </script>
