@@ -9,7 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* (CSS ঠিক আগের মতোই – এখানে দেওয়া হলো না, তবে পুরো কোডে থাকবে) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -19,6 +18,8 @@
         .login-container button { width: 100%; padding: 12px; background: #0d47a1; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
         .login-container button:hover { background: #0a3a7a; }
         .login-container .error { color: red; font-size: 14px; margin-top: 10px; display: none; }
+        .login-container .change-pwd-link { margin-top: 15px; display: block; color: #0d47a1; cursor: pointer; font-size: 14px; text-decoration: underline; }
+        .login-container .change-pwd-link:hover { color: #0a3a7a; }
         .logout-btn { background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; float: right; font-size: 14px; }
         .logout-btn:hover { background: #b02a37; }
         h1 { font-size: 22px; color: #0d47a1; border-bottom: 2px solid #0d47a1; padding-bottom: 8px; margin-bottom: 15px; }
@@ -178,6 +179,7 @@
         .batch-actions button { flex: 1; min-width: 120px; }
         .header-with-logout { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .migrate-btn-wrapper { margin: 8px 0; }
+        .modal-content .pwd-change-input { margin-bottom: 12px; }
         @media (max-width: 600px) {
             .form-row > div { min-width: 100%; }
             .handover-info > div { min-width: 100%; }
@@ -215,7 +217,34 @@
         <input type="password" id="passwordInput" placeholder="Enter Password" required>
         <button type="submit">🔑 Login</button>
         <div id="loginError" class="error">❌ Invalid password or department!</div>
+        <span class="change-pwd-link" onclick="showChangePassword()">🔑 Change Password</span>
     </form>
+</div>
+
+<!-- ============================================================ -->
+<!-- CHANGE PASSWORD MODAL -->
+<!-- ============================================================ -->
+<div class="modal" id="changePwdModal">
+    <div class="modal-content">
+        <h3>🔑 Change Password</h3>
+        <div class="pwd-change-input">
+            <label>Current Password:</label>
+            <input type="password" id="currentPwd" placeholder="Enter current password">
+        </div>
+        <div class="pwd-change-input">
+            <label>New Password:</label>
+            <input type="password" id="newPwd1" placeholder="Enter new password">
+        </div>
+        <div class="pwd-change-input">
+            <label>Confirm New Password:</label>
+            <input type="password" id="newPwd2" placeholder="Confirm new password">
+        </div>
+        <div id="pwdChangeError" style="color:red; font-size:13px; display:none;"></div>
+        <div class="btn-group">
+            <button class="btn-secondary" onclick="closeChangePassword()">Cancel</button>
+            <button class="btn-success" onclick="changePassword()">✅ Update Password</button>
+        </div>
+    </div>
 </div>
 
 <!-- ============================================================ -->
@@ -415,7 +444,7 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- MODALS -->
+<!-- MODALS (unchanged) -->
 <!-- ============================================================ -->
 
 <!-- JO List Modal -->
@@ -525,6 +554,76 @@
     };
 
     // =========================================================
+    // PASSWORD MANAGEMENT
+    // =========================================================
+    function showChangePassword() {
+        document.getElementById('changePwdModal').style.display = 'flex';
+        document.getElementById('currentPwd').value = '';
+        document.getElementById('newPwd1').value = '';
+        document.getElementById('newPwd2').value = '';
+        document.getElementById('pwdChangeError').style.display = 'none';
+    }
+
+    function closeChangePassword() {
+        document.getElementById('changePwdModal').style.display = 'none';
+    }
+
+    function changePassword() {
+        const dept = document.getElementById('deptSelect').value;
+        if (!dept) {
+            document.getElementById('pwdChangeError').textContent = '❌ Please select a department first!';
+            document.getElementById('pwdChangeError').style.display = 'block';
+            return;
+        }
+
+        const currentPwd = document.getElementById('currentPwd').value.trim();
+        const newPwd1 = document.getElementById('newPwd1').value.trim();
+        const newPwd2 = document.getElementById('newPwd2').value.trim();
+
+        if (!currentPwd || !newPwd1 || !newPwd2) {
+            document.getElementById('pwdChangeError').textContent = '❌ Please fill all fields!';
+            document.getElementById('pwdChangeError').style.display = 'block';
+            return;
+        }
+
+        if (newPwd1 !== newPwd2) {
+            document.getElementById('pwdChangeError').textContent = '❌ New passwords do not match!';
+            document.getElementById('pwdChangeError').style.display = 'block';
+            return;
+        }
+
+        if (newPwd1.length < 3) {
+            document.getElementById('pwdChangeError').textContent = '❌ Password must be at least 3 characters!';
+            document.getElementById('pwdChangeError').style.display = 'block';
+            return;
+        }
+
+        // Verify current password from Firebase
+        const deptKey = dept.replace(/\./g, '_');
+        const pwdRef = firebase.database().ref(`departments/${deptKey}/password`);
+
+        pwdRef.once('value').then(snap => {
+            const storedPwd = snap.val() || '123'; // default if not set
+            if (currentPwd !== storedPwd) {
+                document.getElementById('pwdChangeError').textContent = '❌ Current password is incorrect!';
+                document.getElementById('pwdChangeError').style.display = 'block';
+                return;
+            }
+
+            // Update password
+            return pwdRef.set(newPwd1);
+        })
+        .then(() => {
+            alert('✅ Password updated successfully!');
+            closeChangePassword();
+        })
+        .catch(err => {
+            document.getElementById('pwdChangeError').textContent = '❌ Error: ' + err.message;
+            document.getElementById('pwdChangeError').style.display = 'block';
+        });
+    }
+
+    // =========================================================
     // LOGIN / LOGOUT
     // =========================================================
     function handleLogin() {
@@ -537,16 +636,28 @@
             return false;
         }
 
-        if (pwd !== '123') {
-            document.getElementById('loginError').style.display = 'block';
-            document.getElementById('loginError').textContent = '❌ Invalid password!';
-            return false;
-        }
+        // Check password from Firebase
+        const deptKey = dept.replace(/\./g, '_');
+        const pwdRef = firebase.database().ref(`departments/${deptKey}/password`);
 
-        document.getElementById('loginError').style.display = 'none';
-        currentDepartment = dept;
-        currentDepartmentKey = dept.replace(/\./g, '_');
-        initializeApp();
+        pwdRef.once('value').then(snap => {
+            const storedPwd = snap.val() || '123'; // default if not set
+            if (pwd !== storedPwd) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = '❌ Invalid password!';
+                return;
+            }
+
+            document.getElementById('loginError').style.display = 'none';
+            currentDepartment = dept;
+            currentDepartmentKey = deptKey;
+            initializeApp();
+        })
+        .catch(err => {
+            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('loginError').textContent = '❌ Error: ' + err.message;
+        });
+
         return false;
     }
 
@@ -651,7 +762,7 @@
     }
 
     // =========================================================
-    // MIGRATE OLD DATA (Root → Current Department)
+    // MIGRATE OLD DATA
     // =========================================================
     function migrateOldData() {
         if (!confirm('⚠️ This will copy all root-level master items and handover entries to the current department.\nExisting data in this department will not be overwritten (only new items will be added).\nProceed?')) return;
@@ -659,7 +770,6 @@
         const rootMasterRef = database.ref('masterItems');
         const rootHandoverRef = database.ref('handoverEntries');
 
-        // Read root data
         Promise.all([
             rootMasterRef.once('value'),
             rootHandoverRef.once('value')
@@ -667,10 +777,8 @@
             const rootMaster = masterSnap.val() || {};
             const rootHandover = handoverSnap.val() || {};
 
-            // Filter out items that already exist in current department (based on jobOrder+itemCode)
             const existingKeys = new Set(masterItems.map(i => `${i.jobOrder}|${i.itemCode}`));
 
-            // Prepare new master items to add
             const newMasterItems = [];
             Object.values(rootMaster).forEach(item => {
                 const key = `${item.jobOrder}|${item.itemCode}`;
@@ -679,7 +787,6 @@
                 }
             });
 
-            // Prepare new handover entries (no duplicate check needed; they are independent)
             const newHandoverEntries = Object.values(rootHandover);
 
             if (newMasterItems.length === 0 && newHandoverEntries.length === 0) {
@@ -687,7 +794,6 @@
                 return;
             }
 
-            // Add to current department
             let masterPromises = [];
             if (newMasterItems.length > 0) {
                 newMasterItems.forEach(item => {
@@ -707,8 +813,7 @@
             return Promise.all([...masterPromises, ...handoverPromises]);
         })
         .then(() => {
-            alert(`✅ Migration complete!\nAdded ${arguments[0] ? arguments[0].length : 0} master items and ${arguments[1] ? arguments[1].length : 0} handover entries.`);
-            // The listeners will auto-update
+            alert(`✅ Migration complete!`);
         })
         .catch(err => {
             alert('❌ Migration failed: ' + err.message);
@@ -1927,6 +2032,7 @@
     document.getElementById('joListModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeJOList(); });
     document.getElementById('joDetailModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeJODetail(); });
     document.getElementById('deletedModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDeletedModal(); });
+    document.getElementById('changePwdModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeChangePassword(); });
 
     // =========================================================
     // INIT
