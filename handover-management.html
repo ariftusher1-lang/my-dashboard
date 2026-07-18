@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* CSS (unchanged) */
+        /* (CSS ঠিক আগের মতোই – এখানে দেওয়া হলো না, তবে পুরো কোডে থাকবে) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -69,6 +69,8 @@
         .btn-save-all:hover { background: #0a3a7a; }
         .btn-clear-list { background: #dc3545; color: #fff; }
         .btn-clear-list:hover { background: #b02a37; }
+        .btn-migrate { background: #8e24aa; color: #fff; }
+        .btn-migrate:hover { background: #6a1b9a; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
         th { background: #0d47a1; color: white; position: sticky; top: 0; font-size: 12px; }
@@ -175,6 +177,7 @@
         .batch-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
         .batch-actions button { flex: 1; min-width: 120px; }
         .header-with-logout { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .migrate-btn-wrapper { margin: 8px 0; }
         @media (max-width: 600px) {
             .form-row > div { min-width: 100%; }
             .handover-info > div { min-width: 100%; }
@@ -261,6 +264,12 @@
     </div>
 
     <div id="masterMainSection" style="display:none;">
+
+        <!-- Migrate Old Data Button -->
+        <div class="migrate-btn-wrapper" style="text-align:left; margin:10px 0;">
+            <button class="btn-migrate" onclick="migrateOldData()" style="width:auto; padding:10px 20px;">📥 Migrate Old Data</button>
+            <span style="font-size:12px; color:#555; margin-left:10px;">(Copy root data to current department)</span>
+        </div>
 
         <!-- Sub Toggle 1: Manual Master Entry (Batch Add) -->
         <div class="sub-toggle-wrapper">
@@ -494,8 +503,8 @@
     // =========================================================
     // GLOBAL STATE
     // =========================================================
-    let currentDepartment = '';          // Display name (e.g., "Plastic-6.2")
-    let currentDepartmentKey = '';       // Safe key for Firebase (e.g., "Plastic-6_2")
+    let currentDepartment = '';
+    let currentDepartmentKey = '';
     let database = null;
 
     let masterItems = [];
@@ -536,7 +545,6 @@
 
         document.getElementById('loginError').style.display = 'none';
         currentDepartment = dept;
-        // Convert display name to safe Firebase key (replace dots with underscores)
         currentDepartmentKey = dept.replace(/\./g, '_');
         initializeApp();
         return false;
@@ -570,7 +578,6 @@
         }
         const db = firebase.database();
         database = db;
-        // Use the safe key for the database path
         const basePath = `departments/${currentDepartmentKey}`;
         window._basePath = basePath;
 
@@ -644,7 +651,72 @@
     }
 
     // =========================================================
-    // TOGGLES
+    // MIGRATE OLD DATA (Root → Current Department)
+    // =========================================================
+    function migrateOldData() {
+        if (!confirm('⚠️ This will copy all root-level master items and handover entries to the current department.\nExisting data in this department will not be overwritten (only new items will be added).\nProceed?')) return;
+
+        const rootMasterRef = database.ref('masterItems');
+        const rootHandoverRef = database.ref('handoverEntries');
+
+        // Read root data
+        Promise.all([
+            rootMasterRef.once('value'),
+            rootHandoverRef.once('value')
+        ]).then(([masterSnap, handoverSnap]) => {
+            const rootMaster = masterSnap.val() || {};
+            const rootHandover = handoverSnap.val() || {};
+
+            // Filter out items that already exist in current department (based on jobOrder+itemCode)
+            const existingKeys = new Set(masterItems.map(i => `${i.jobOrder}|${i.itemCode}`));
+
+            // Prepare new master items to add
+            const newMasterItems = [];
+            Object.values(rootMaster).forEach(item => {
+                const key = `${item.jobOrder}|${item.itemCode}`;
+                if (!existingKeys.has(key)) {
+                    newMasterItems.push(item);
+                }
+            });
+
+            // Prepare new handover entries (no duplicate check needed; they are independent)
+            const newHandoverEntries = Object.values(rootHandover);
+
+            if (newMasterItems.length === 0 && newHandoverEntries.length === 0) {
+                alert('No new data to migrate.');
+                return;
+            }
+
+            // Add to current department
+            let masterPromises = [];
+            if (newMasterItems.length > 0) {
+                newMasterItems.forEach(item => {
+                    const ref = database.ref(`${window._basePath}/masterItems`).push();
+                    masterPromises.push(ref.set(item));
+                });
+            }
+
+            let handoverPromises = [];
+            if (newHandoverEntries.length > 0) {
+                newHandoverEntries.forEach(item => {
+                    const ref = database.ref(`${window._basePath}/handoverEntries`).push();
+                    handoverPromises.push(ref.set(item));
+                });
+            }
+
+            return Promise.all([...masterPromises, ...handoverPromises]);
+        })
+        .then(() => {
+            alert(`✅ Migration complete!\nAdded ${arguments[0] ? arguments[0].length : 0} master items and ${arguments[1] ? arguments[1].length : 0} handover entries.`);
+            // The listeners will auto-update
+        })
+        .catch(err => {
+            alert('❌ Migration failed: ' + err.message);
+        });
+    }
+
+    // =========================================================
+    // TOGGLES (unchanged)
     // =========================================================
     function toggleMainMaster() {
         const section = document.getElementById('masterMainSection');
@@ -701,7 +773,7 @@
     }
 
     // =========================================================
-    // BATCH ADD
+    // BATCH ADD (unchanged)
     // =========================================================
     function addToList() {
         const jo = document.getElementById('manualJo').value.trim();
@@ -829,7 +901,7 @@
     }
 
     // =========================================================
-    // DELETE
+    // DELETE (unchanged)
     // =========================================================
     function deleteSingleMasterItem() {
         const jo = prompt('🔍 Enter Job Order to delete (Required):');
@@ -902,7 +974,7 @@
     }
 
     // =========================================================
-    // VIEW DELETED & RESTORE
+    // VIEW DELETED & RESTORE (unchanged)
     // =========================================================
     function viewDeletedItems() {
         const modal = document.getElementById('deletedModal');
@@ -969,7 +1041,7 @@
     }
 
     // =========================================================
-    // JO LIST & DETAIL
+    // JO LIST & DETAIL (unchanged)
     // =========================================================
     function showJOList() {
         const modal = document.getElementById('joListModal');
@@ -1133,7 +1205,7 @@
     }
 
     // =========================================================
-    // EXCEL IMPORT / EXPORT
+    // EXCEL IMPORT / EXPORT (unchanged)
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
@@ -1250,7 +1322,7 @@
     }
 
     // =========================================================
-    // EDIT DEMAND
+    // EDIT DEMAND (unchanged)
     // =========================================================
     function editDemand() {
         const jo = prompt('🔍 Enter Job Order to edit Demand (Required):');
@@ -1296,7 +1368,7 @@
     }
 
     // =========================================================
-    // POPULATE JO DROPDOWN & DETAILS
+    // POPULATE JO DROPDOWN & DETAILS (unchanged)
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -1424,7 +1496,7 @@
     }
 
     // =========================================================
-    // FORM SUBMIT
+    // FORM SUBMIT (unchanged)
     // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1523,7 +1595,7 @@
     }
 
     // =========================================================
-    // EDIT / DELETE HANDOVER
+    // EDIT / DELETE HANDOVER (unchanged)
     // =========================================================
     function openEditModal(index) {
         const item = handoverData[index];
@@ -1571,7 +1643,7 @@
     }
 
     // =========================================================
-    // JO REPORT
+    // JO REPORT (unchanged)
     // =========================================================
     let currentReportJO = '';
 
@@ -1727,7 +1799,7 @@
     }
 
     // =========================================================
-    // PDF, IMAGE, EXCEL DOWNLOAD
+    // PDF, IMAGE, EXCEL DOWNLOAD (unchanged)
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
