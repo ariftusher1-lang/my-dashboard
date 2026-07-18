@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Plastic-03 For Handover SFG Inventory Management System</title>
+    <title>Plastic Department Handover System</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -12,6 +12,14 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .login-container { max-width: 400px; margin: 80px auto; padding: 30px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); text-align: center; }
+        .login-container h2 { color: #0d47a1; margin-bottom: 20px; }
+        .login-container select, .login-container input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        .login-container button { width: 100%; padding: 12px; background: #0d47a1; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+        .login-container button:hover { background: #0a3a7a; }
+        .login-container .error { color: red; font-size: 14px; margin-top: 10px; display: none; }
+        .logout-btn { background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; float: right; font-size: 14px; }
+        .logout-btn:hover { background: #b02a37; }
         h1 { font-size: 22px; color: #0d47a1; border-bottom: 2px solid #0d47a1; padding-bottom: 8px; margin-bottom: 15px; }
         h2 { font-size: 18px; color: #0d47a1; border-bottom: 1px solid #0d47a1; padding-bottom: 6px; margin: 15px 0 10px; }
         .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
@@ -160,12 +168,12 @@
         .detail-modal .modal-content { max-width: 550px; }
         .deleted-modal .modal-content { max-width: 650px; }
         .clickable { cursor: pointer; }
-        .date-display { font-weight: bold; color: #0d47a1; }
         input[type="date"] { color-scheme: light; }
         .temp-list-table { margin-top: 12px; }
         .temp-list-table th { background: #ff9800; }
         .batch-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
         .batch-actions button { flex: 1; min-width: 120px; }
+        .header-with-logout { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         @media (max-width: 600px) {
             .form-row > div { min-width: 100%; }
             .handover-info > div { min-width: 100%; }
@@ -180,13 +188,42 @@
             .toggle-wrapper .btn-toggle { width: 100%; margin-right: 0; }
             .sub-toggle-wrapper { padding-left: 10px; }
             .batch-actions button { flex: 1 1 100%; }
+            .header-with-logout { flex-direction: column; align-items: stretch; }
+            .logout-btn { float: none; margin-top: 8px; }
         }
     </style>
 </head>
 <body>
+
+<!-- ============================================================ -->
+<!-- LOGIN SCREEN -->
+<!-- ============================================================ -->
+<div id="loginScreen" class="login-container">
+    <h2>🔐 Plastic Department Login</h2>
+    <form id="loginForm" onsubmit="return handleLogin()">
+        <label for="deptSelect">Select Department:</label>
+        <select id="deptSelect" required>
+            <option value="">-- Select --</option>
+            <option value="Plastic-03">🏭 Plastic-03</option>
+            <option value="Plastic-6.2">🏭 Plastic-6.2</option>
+        </select>
+        <label for="passwordInput">Password:</label>
+        <input type="password" id="passwordInput" placeholder="Enter Password" required>
+        <button type="submit">🔑 Login</button>
+        <div id="loginError" class="error">❌ Invalid password or department!</div>
+    </form>
+</div>
+
+<!-- ============================================================ -->
+<!-- MAIN APP (HIDDEN BY DEFAULT) -->
+<!-- ============================================================ -->
+<div id="mainApp" style="display:none;">
 <div class="container">
 
-    <h1>🏭 Plastic-03 For Handover SFG Inventory Management System</h1>
+    <div class="header-with-logout">
+        <h1 id="mainTitle">🏭 Plastic Department Handover System</h1>
+        <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+    </div>
 
     <!-- Summary Card -->
     <div class="summary-card" id="summaryCard">
@@ -217,12 +254,11 @@
         </div>
     </div>
 
-    <!-- ===== Main Toggle: Master Data Manage (Password Protected) ===== -->
+    <!-- ===== Main Toggle: Master Data Manage ===== -->
     <div class="toggle-wrapper">
         <button class="btn-toggle btn-toggle-main" id="toggleMainBtn" onclick="toggleMainMaster()">📂 Master Data Manage</button>
     </div>
 
-    <!-- ===== Master Data Main Section (Hidden by default) ===== -->
     <div id="masterMainSection" style="display:none;">
 
         <!-- Sub Toggle 1: Manual Master Entry (Batch Add) -->
@@ -243,7 +279,6 @@
                 </div>
             </div>
             
-            <!-- Temporary List Table -->
             <div id="tempListContainer" style="margin-top:15px;">
                 <h4 style="color:#d32f2f;">📋 Temporary List (<span id="tempCount">0</span> items)</h4>
                 <div class="table-wrapper temp-list-table">
@@ -260,7 +295,7 @@
                             </tr>
                         </thead>
                         <tbody id="tempListBody">
-                            <tr><td colspan="7" style="text-align:center;color:#999;padding:15px;">No items added yet. Add items above.</td></tr>
+                            <tr><td colspan="7" style="text-align:center;color:#999;padding:15px;">No items added yet.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -367,6 +402,11 @@
     <button class="clear-btn" onclick="clearAllHandover()">🗑️ Delete All Handover</button>
     <div class="footer-note">Firebase</div>
 </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODALS -->
+<!-- ============================================================ -->
 
 <!-- JO List Modal -->
 <div class="modal jo-list-modal" id="joListModal">
@@ -451,8 +491,19 @@
 
 <script>
     // =========================================================
-    // Firebase Config
+    // GLOBAL STATE
     // =========================================================
+    let currentDepartment = '';       // 'Plastic-03' or 'Plastic-6.2'
+    let database = null;             // Firebase database reference for the selected department
+
+    // Data holders
+    let masterItems = [];
+    let handoverData = [];
+    let deletedItems = [];
+    let editIndex = null;
+    let tempList = [];
+
+    // Firebase config (same for all departments)
     const firebaseConfig = {
         apiKey: "AIzaSyDbT-5voxU6UGWvzJ3i0VgZhagQICr2EBk",
         authDomain: "handover-management-766fe.firebaseapp.com",
@@ -464,20 +515,88 @@
         measurementId: "G-RPBDQR2G35"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    // =========================================================
+    // LOGIN / LOGOUT
+    // =========================================================
+    function handleLogin() {
+        const dept = document.getElementById('deptSelect').value;
+        const pwd = document.getElementById('passwordInput').value.trim();
 
-    let masterItems = [];
-    let handoverData = [];
-    let deletedItems = [];
-    let editIndex = null;
-    let tempList = []; // Temporary batch list
+        if (!dept) {
+            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('loginError').textContent = '❌ Please select a department!';
+            return false;
+        }
+
+        if (pwd !== '123') {
+            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('loginError').textContent = '❌ Invalid password!';
+            return false;
+        }
+
+        // Login successful
+        document.getElementById('loginError').style.display = 'none';
+        currentDepartment = dept;
+        initializeApp();
+        return false;
+    }
+
+    function logout() {
+        if (!confirm('Are you sure you want to logout?')) return;
+        // Stop all Firebase listeners
+        if (database) {
+            database.ref('masterItems').off();
+            database.ref('handoverEntries').off();
+            database.ref('deletedMasterItems').off();
+        }
+        // Reset state
+        masterItems = [];
+        handoverData = [];
+        deletedItems = [];
+        tempList = [];
+        currentDepartment = '';
+        database = null;
+        // Show login, hide app
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('mainApp').style.display = 'none';
+        // Clear password field
+        document.getElementById('passwordInput').value = '';
+    }
 
     // =========================================================
-    // Listeners
+    // INITIALIZE APP FOR SELECTED DEPARTMENT
     // =========================================================
-    function startListening() {
-        database.ref('masterItems').on('value', snap => {
+    function initializeApp() {
+        // Initialize Firebase (only once)
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        // Get database instance
+        const db = firebase.database();
+
+        // Set department-specific paths
+        const basePath = `departments/${currentDepartment}`;
+        // We'll use this base path for all references
+        database = db;
+
+        // Update title
+        document.getElementById('mainTitle').textContent = `🏭 ${currentDepartment} - Handover System`;
+
+        // Show app, hide login
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+
+        // Start listening with department-specific paths
+        startListening(basePath);
+    }
+
+    // =========================================================
+    // FIREBASE LISTENERS (DEPARTMENT-SPECIFIC)
+    // =========================================================
+    function startListening(basePath) {
+        // Master items
+        const masterRef = database.ref(`${basePath}/masterItems`);
+        masterRef.on('value', snap => {
             const val = snap.val();
             masterItems = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
             populateJobOrderDropdown();
@@ -486,7 +605,9 @@
             alert('❌ Master Data Load Error: ' + err.message);
         });
 
-        database.ref('handoverEntries').on('value', snap => {
+        // Handover entries
+        const handoverRef = database.ref(`${basePath}/handoverEntries`);
+        handoverRef.on('value', snap => {
             const val = snap.val();
             handoverData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
             renderTable();
@@ -495,39 +616,68 @@
             alert('❌ Handover Data Load Error: ' + err.message);
         });
 
-        database.ref('deletedMasterItems').on('value', snap => {
+        // Deleted items
+        const deletedRef = database.ref(`${basePath}/deletedMasterItems`);
+        deletedRef.on('value', snap => {
             const val = snap.val();
             deletedItems = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
+        }, err => {
+            alert('❌ Deleted Items Load Error: ' + err.message);
         });
+
+        // Store refs for later use in save functions
+        window._masterRef = masterRef;
+        window._handoverRef = handoverRef;
+        window._deletedRef = deletedRef;
+        window._basePath = basePath;
     }
 
+    // =========================================================
+    // SAVE FUNCTIONS (DEPARTMENT-SPECIFIC)
+    // =========================================================
     function saveMaster() {
         const obj = {};
         masterItems.forEach(item => {
-            const key = item._firebaseKey || database.ref('masterItems').push().key;
+            const key = item._firebaseKey || database.ref(`${window._basePath}/masterItems`).push().key;
             const { _firebaseKey, ...clean } = item;
             obj[key] = clean;
         });
-        return database.ref('masterItems').set(obj);
+        return database.ref(`${window._basePath}/masterItems`).set(obj);
     }
 
     function saveHandover() {
         const obj = {};
         handoverData.forEach(item => {
-            const key = item._firebaseKey || database.ref('handoverEntries').push().key;
+            const key = item._firebaseKey || database.ref(`${window._basePath}/handoverEntries`).push().key;
             const { _firebaseKey, ...clean } = item;
             obj[key] = clean;
         });
-        return database.ref('handoverEntries').set(obj);
+        return database.ref(`${window._basePath}/handoverEntries`).set(obj);
+    }
+
+    function moveToDeleted(item, key) {
+        const deletedRef = database.ref(`${window._basePath}/deletedMasterItems`).push();
+        const deletedData = {
+            ...item,
+            originalKey: key,
+            deletedAt: new Date().toISOString()
+        };
+        return deletedRef.set(deletedData);
     }
 
     // =========================================================
-    // Main Toggle: Master Data Manage (Password: 123)
+    // ALL UI FUNCTIONS (SAME AS BEFORE, BUT USE DEPARTMENT PATHS)
+    // =========================================================
+    // ... (all functions remain exactly the same as the previous version,
+    // because they operate on the masterItems, handoverData, deletedItems arrays)
+    // I'll include them below for completeness.
+
+    // =========================================================
+    // TOGGLES
     // =========================================================
     function toggleMainMaster() {
         const section = document.getElementById('masterMainSection');
         const btn = document.getElementById('toggleMainBtn');
-
         if (section.style.display === 'block') {
             section.style.display = 'none';
             btn.innerHTML = '📂 Master Data Manage';
@@ -543,13 +693,9 @@
         }
     }
 
-    // =========================================================
-    // Sub Toggle: Manual Master Entry (Password: 123)
-    // =========================================================
     function toggleManualMaster() {
         const section = document.getElementById('manualMasterSection');
         const btn = document.getElementById('toggleManualBtn');
-
         if (section.style.display === 'block') {
             section.style.display = 'none';
             btn.innerHTML = '➕ Manual Master Entry (Batch Add)';
@@ -565,13 +711,9 @@
         }
     }
 
-    // =========================================================
-    // Sub Toggle: Master Data Manage (Delete/Import/Edit) (Password: 123)
-    // =========================================================
     function toggleMasterData() {
         const section = document.getElementById('masterDataSection');
         const btn = document.getElementById('toggleMasterBtn');
-
         if (section.style.display === 'block') {
             section.style.display = 'none';
             btn.innerHTML = '➕ Master Data Manage';
@@ -588,7 +730,7 @@
     }
 
     // =========================================================
-    // Batch Add Functions
+    // BATCH ADD FUNCTIONS
     // =========================================================
     function addToList() {
         const jo = document.getElementById('manualJo').value.trim();
@@ -602,7 +744,6 @@
             return;
         }
 
-        // Check if already in temp list (to avoid duplicates)
         const exists = tempList.some(i => i.jobOrder === jo && i.itemCode === code);
         if (exists) {
             alert(`⚠️ "${jo}" - "${code}" already in the temporary list!`);
@@ -630,7 +771,7 @@
         count.textContent = tempList.length;
 
         if (tempList.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:15px;">No items added yet. Add items above.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:15px;">No items added yet.</td></tr>';
             return;
         }
 
@@ -664,11 +805,10 @@
 
     function saveAllToMaster() {
         if (tempList.length === 0) {
-            alert('⚠️ No items to save! Please add items to the list first.');
+            alert('⚠️ No items to save!');
             return;
         }
 
-        // Check for duplicates in master
         let duplicates = [];
         let newItems = [];
 
@@ -683,17 +823,16 @@
 
         let msg = `📌 ${tempList.length} item(s) in list.\n`;
         if (duplicates.length > 0) {
-            msg += `\n⚠️ ${duplicates.length} item(s) already exist in Master List:\n${duplicates.join('\n')}\n\nThese will be SKIPPED.`;
+            msg += `\n⚠️ ${duplicates.length} item(s) already exist:\n${duplicates.join('\n')}\n\nThese will be SKIPPED.`;
         }
         if (newItems.length === 0) {
-            msg += '\n\n❌ No new items to add. All items already exist.';
+            msg += '\n\n❌ No new items to add.';
             alert(msg);
             return;
         }
         msg += `\n\n✅ ${newItems.length} new item(s) will be added.\n\nProceed?`;
         if (!confirm(msg)) return;
 
-        // Add new items to master
         newItems.forEach(item => {
             masterItems.push({ 
                 jobOrder: item.jobOrder, 
@@ -714,7 +853,7 @@
                 updateSummary();
                 const added = newItems.length;
                 const skipped = duplicates.length;
-                alert(`✅ ${added} item(s) added successfully!${skipped > 0 ? `\n⚠️ ${skipped} item(s) skipped (already exist).` : ''}`);
+                alert(`✅ ${added} item(s) added!${skipped > 0 ? `\n⚠️ ${skipped} skipped (already exist).` : ''}`);
                 tempList = [];
                 renderTempList();
             })
@@ -728,27 +867,8 @@
     }
 
     // =========================================================
-    // Manual Master Add (Single - kept for backward compatibility)
+    // DELETE FUNCTIONS
     // =========================================================
-    function addManualMaster() {
-        // This is now replaced by batch add, but kept for reference
-        // We'll redirect to batch add
-        addToList();
-    }
-
-    // =========================================================
-    // Soft Delete Functions
-    // =========================================================
-    function moveToDeleted(item, key) {
-        const deletedRef = database.ref('deletedMasterItems').push();
-        const deletedData = {
-            ...item,
-            originalKey: key,
-            deletedAt: new Date().toISOString()
-        };
-        return deletedRef.set(deletedData);
-    }
-
     function deleteSingleMasterItem() {
         const jo = prompt('🔍 Enter Job Order to delete (Required):');
         if (jo === null) return;
@@ -758,7 +878,7 @@
             return;
         }
 
-        const codeInput = prompt('🔍 Enter Item Code (Optional – delete specific item):');
+        const codeInput = prompt('🔍 Enter Item Code (Optional):');
         let trimmedCode = '';
         if (codeInput !== null) {
             trimmedCode = codeInput.trim();
@@ -776,13 +896,13 @@
             return;
         }
 
-        const msg = `⚠️ ${itemsToDelete.length} item(s) will be moved to deleted items.\nJO: ${trimmedJo}${trimmedCode ? '\nCode: '+trimmedCode : ''}\n\nYou can restore them later.\nAre you sure?`;
+        const msg = `⚠️ ${itemsToDelete.length} item(s) will be moved to deleted items.\nJO: ${trimmedJo}${trimmedCode ? '\nCode: '+trimmedCode : ''}\n\nYou can restore later.\nAre you sure?`;
         if (!confirm(msg)) return;
 
         const deletePromises = itemsToDelete.map(item => {
             const key = item._firebaseKey;
             return moveToDeleted(item, key).then(() => {
-                return database.ref('masterItems').child(key).remove();
+                return database.ref(`${window._basePath}/masterItems`).child(key).remove();
             });
         });
 
@@ -792,7 +912,7 @@
                 masterItems = masterItems.filter(i => !keysToRemove.includes(i._firebaseKey));
                 populateJobOrderDropdown();
                 updateSummary();
-                alert(`✅ ${itemsToDelete.length} item(s) moved to deleted items.`);
+                alert(`✅ ${itemsToDelete.length} item(s) moved to deleted.`);
             })
             .catch(err => {
                 alert('❌ Delete failed! ' + err.message);
@@ -805,7 +925,7 @@
         const deletePromises = masterItems.map(item => {
             const key = item._firebaseKey;
             return moveToDeleted(item, key).then(() => {
-                return database.ref('masterItems').child(key).remove();
+                return database.ref(`${window._basePath}/masterItems`).child(key).remove();
             });
         });
 
@@ -814,7 +934,7 @@
                 masterItems = [];
                 populateJobOrderDropdown();
                 updateSummary();
-                alert('🗑️ All master items moved to deleted items.');
+                alert('🗑️ All master items moved to deleted.');
             })
             .catch(err => {
                 alert('❌ Delete All failed! ' + err.message);
@@ -822,7 +942,7 @@
     }
 
     // =========================================================
-    // View Deleted Items & Restore
+    // VIEW DELETED & RESTORE
     // =========================================================
     function viewDeletedItems() {
         const modal = document.getElementById('deletedModal');
@@ -864,7 +984,7 @@
             return;
         }
 
-        const originalKey = item.originalKey || database.ref('masterItems').push().key;
+        const originalKey = item.originalKey || database.ref(`${window._basePath}/masterItems`).push().key;
 
         const restoreData = {
             jobOrder: item.jobOrder,
@@ -874,10 +994,10 @@
             demandQty: item.demandQty
         };
 
-        const masterRef = database.ref('masterItems').child(originalKey);
+        const masterRef = database.ref(`${window._basePath}/masterItems`).child(originalKey);
         masterRef.set(restoreData)
             .then(() => {
-                return database.ref('deletedMasterItems').child(deletedKey).remove();
+                return database.ref(`${window._basePath}/deletedMasterItems`).child(deletedKey).remove();
             })
             .then(() => {
                 alert('✅ Item restored successfully!');
@@ -889,7 +1009,7 @@
     }
 
     // =========================================================
-    // JO List with Click to View Details
+    // JO LIST & DETAIL
     // =========================================================
     function showJOList() {
         const modal = document.getElementById('joListModal');
@@ -916,9 +1036,6 @@
         document.getElementById('joListModal').style.display = 'none';
     }
 
-    // =========================================================
-    // View JO Detail (Full Status)
-    // =========================================================
     function viewJODetail(jo) {
         closeJOList();
         
@@ -1016,7 +1133,6 @@
             <span style="font-size:16px;">Status: <span class="status-badge ${orderClass}" style="font-size:14px;padding:6px 16px;">${orderStatus}</span></span>
         </div>`;
 
-        // Detailed handover list
         html += `<div style="margin-top:15px;border-top:2px solid #0d47a1;padding-top:12px;">`;
         html += `<h4 style="color:#0d47a1;">📋 Handover Details</h4>`;
         if (handoverJO.length === 0) {
@@ -1057,7 +1173,7 @@
     }
 
     // =========================================================
-    // Excel Import / Export
+    // EXCEL IMPORT / EXPORT
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
@@ -1155,7 +1271,7 @@
                     .then(() => {
                         populateJobOrderDropdown();
                         updateSummary();
-                        alert(`✅ ${added} new items added and ${updated} items updated!`);
+                        alert(`✅ ${added} new items added and ${updated} updated!`);
                         btn.value = '';
                     })
                     .catch(() => {
@@ -1174,7 +1290,7 @@
     }
 
     // =========================================================
-    // Edit Demand
+    // EDIT DEMAND
     // =========================================================
     function editDemand() {
         const jo = prompt('🔍 Enter Job Order to edit Demand (Required):');
@@ -1220,7 +1336,7 @@
     }
 
     // =========================================================
-    // Populate JO Dropdown (Only pending JO)
+    // POPULATE JO DROPDOWN & DETAILS
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -1337,7 +1453,7 @@
 
     function clearAllHandover() {
         if (!confirm('⚠️ All handover data will be deleted! Are you sure?')) return;
-        database.ref('handoverEntries').remove()
+        database.ref(`${window._basePath}/handoverEntries`).remove()
             .then(() => {
                 handoverData = [];
                 renderTable();
@@ -1348,7 +1464,7 @@
     }
 
     // =========================================================
-    // Form Submit
+    // FORM SUBMIT
     // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1404,7 +1520,7 @@
     }
 
     // =========================================================
-    // Summary Update
+    // SUMMARY UPDATE
     // =========================================================
     function updateSummary() {
         document.getElementById('totalItems').textContent = masterItems.length;
@@ -1450,7 +1566,7 @@
     }
 
     // =========================================================
-    // Edit / Delete Handover
+    // EDIT / DELETE HANDOVER
     // =========================================================
     function openEditModal(index) {
         const item = handoverData[index];
@@ -1488,7 +1604,7 @@
         const item = handoverData[index];
         if (!item) return;
         if (item._firebaseKey) {
-            database.ref('handoverEntries').child(item._firebaseKey).remove()
+            database.ref(`${window._basePath}/handoverEntries`).child(item._firebaseKey).remove()
                 .then(() => alert('🗑️ Deleted!'))
                 .catch(err => alert('❌ Delete failed! ' + err.message));
         } else {
@@ -1498,7 +1614,7 @@
     }
 
     // =========================================================
-    // JO Report
+    // JO REPORT
     // =========================================================
     let currentReportJO = '';
 
@@ -1654,7 +1770,7 @@
     }
 
     // =========================================================
-    // PDF, Image, Excel Download
+    // PDF, IMAGE, EXCEL DOWNLOAD
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
@@ -1774,7 +1890,7 @@
     }
 
     // =========================================================
-    // Modal Close Events
+    // MODAL CLOSE EVENTS
     // =========================================================
     document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
     document.getElementById('joReportModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeJoReport(); });
@@ -1784,10 +1900,12 @@
     document.getElementById('deletedModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDeletedModal(); });
 
     // =========================================================
-    // Init
+    // INIT
     // =========================================================
     document.addEventListener('DOMContentLoaded', function() {
-        startListening();
+        // Show login screen by default
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('mainApp').style.display = 'none';
     });
 </script>
 </body>
