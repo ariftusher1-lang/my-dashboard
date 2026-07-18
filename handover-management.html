@@ -284,8 +284,9 @@
             <div><label>⏳ Remaining</label><input type="number" id="remainingDisplay" readonly></div>
         </div>
         <div class="form-row">
+            <!-- Date field - manually editable, no auto-fill -->
             <div><label>Date</label>
-                <input type="text" id="currentDateDisplay" readonly style="font-weight:bold; color:#0d47a1;">
+                <input type="text" id="currentDateDisplay" placeholder="YYYY-MM-DD">
             </div>
             <div><label>HANDOVER QTY *</label><input type="number" id="handoverQty" placeholder="Today's QTY" required min="1"></div>
             <div><label>Handover By *</label>
@@ -1218,12 +1219,18 @@
         const qty = parseFloat(document.getElementById('handoverQty').value);
         const person = document.getElementById('handoverPerson').value;
         const shift = document.getElementById('handoverShift').value;
+        // Date is manually entered, get it from input
+        const date = document.getElementById('currentDateDisplay').value.trim();
         if (!jo || !code || !name || !qty || qty <= 0 || !person) { alert('Please fill all * fields!'); return; }
+        // Date is optional but we can validate format if needed; we'll just store as is
         const master = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
         const due = master ? master.demandQty : 0;
         const asOf = handoverData.filter(h => h.jobOrder === jo && h.itemCode === code).reduce((s, h) => s + h.handoverQty, 0);
         if (asOf + qty > due) { alert(`⚠️ Cannot exceed Demand (${due})!`); return; }
-        const entry = { jobOrder: jo, itemCode: code, itemName: name, color, handoverQty: qty, handoverPerson: person, shift, entryDate: new Date().toISOString().slice(0,10), entryTime: new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'}) };
+        // Use provided date or default to today if empty
+        const entryDate = date || new Date().toISOString().slice(0,10);
+        const entryTime = new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
+        const entry = { jobOrder: jo, itemCode: code, itemName: name, color, handoverQty: qty, handoverPerson: person, shift, entryDate: entryDate, entryTime: entryTime };
         handoverData.push(entry);
         saveHandover().then(() => {
             document.getElementById('handoverQty').value = '';
@@ -1640,20 +1647,14 @@
     document.getElementById('deletedModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDeletedModal(); });
 
     // =========================================================
-    // Init - Set current date & auto shift
+    // Init - no auto date/shift
     // =========================================================
     document.addEventListener('DOMContentLoaded', function() {
-        const today = new Date();
-        const dateStr = today.toISOString().slice(0,10);
-        document.getElementById('currentDateDisplay').value = dateStr;
-
-        const hours = today.getHours();
-        if (hours >= 8 && hours < 20) {
-            document.getElementById('handoverShift').value = 'Day';
-        } else {
-            document.getElementById('handoverShift').value = 'Night';
-        }
-
+        // Do NOT auto-fill date and shift.
+        // The user will manually enter them.
+        // However, we could optionally set a placeholder or default, but user wants manual.
+        // So we leave them empty or with placeholder.
+        // Just start listening.
         startListening();
     });
 </script>
