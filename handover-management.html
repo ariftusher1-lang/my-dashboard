@@ -493,17 +493,15 @@
     // =========================================================
     // GLOBAL STATE
     // =========================================================
-    let currentDepartment = '';       // 'Plastic-03' or 'Plastic-6.2'
-    let database = null;             // Firebase database reference for the selected department
+    let currentDepartment = '';       
+    let database = null;             
 
-    // Data holders
     let masterItems = [];
     let handoverData = [];
     let deletedItems = [];
     let editIndex = null;
     let tempList = [];
 
-    // Firebase config (same for all departments)
     const firebaseConfig = {
         apiKey: "AIzaSyDbT-5voxU6UGWvzJ3i0VgZhagQICr2EBk",
         authDomain: "handover-management-766fe.firebaseapp.com",
@@ -534,7 +532,6 @@
             return false;
         }
 
-        // Login successful
         document.getElementById('loginError').style.display = 'none';
         currentDepartment = dept;
         initializeApp();
@@ -543,58 +540,45 @@
 
     function logout() {
         if (!confirm('Are you sure you want to logout?')) return;
-        // Stop all Firebase listeners
         if (database) {
-            database.ref('masterItems').off();
-            database.ref('handoverEntries').off();
-            database.ref('deletedMasterItems').off();
+            database.ref(window._basePath + '/masterItems').off();
+            database.ref(window._basePath + '/handoverEntries').off();
+            database.ref(window._basePath + '/deletedMasterItems').off();
         }
-        // Reset state
         masterItems = [];
         handoverData = [];
         deletedItems = [];
         tempList = [];
         currentDepartment = '';
         database = null;
-        // Show login, hide app
         document.getElementById('loginScreen').style.display = 'block';
         document.getElementById('mainApp').style.display = 'none';
-        // Clear password field
         document.getElementById('passwordInput').value = '';
     }
 
     // =========================================================
-    // INITIALIZE APP FOR SELECTED DEPARTMENT
+    // INIT
     // =========================================================
     function initializeApp() {
-        // Initialize Firebase (only once)
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
-        // Get database instance
         const db = firebase.database();
-
-        // Set department-specific paths
-        const basePath = `departments/${currentDepartment}`;
-        // We'll use this base path for all references
         database = db;
+        const basePath = `departments/${currentDepartment}`;
+        window._basePath = basePath;
 
-        // Update title
         document.getElementById('mainTitle').textContent = `🏭 ${currentDepartment} - Handover System`;
-
-        // Show app, hide login
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
 
-        // Start listening with department-specific paths
         startListening(basePath);
     }
 
     // =========================================================
-    // FIREBASE LISTENERS (DEPARTMENT-SPECIFIC)
+    // LISTENERS
     // =========================================================
     function startListening(basePath) {
-        // Master items
         const masterRef = database.ref(`${basePath}/masterItems`);
         masterRef.on('value', snap => {
             const val = snap.val();
@@ -605,7 +589,6 @@
             alert('❌ Master Data Load Error: ' + err.message);
         });
 
-        // Handover entries
         const handoverRef = database.ref(`${basePath}/handoverEntries`);
         handoverRef.on('value', snap => {
             const val = snap.val();
@@ -616,7 +599,6 @@
             alert('❌ Handover Data Load Error: ' + err.message);
         });
 
-        // Deleted items
         const deletedRef = database.ref(`${basePath}/deletedMasterItems`);
         deletedRef.on('value', snap => {
             const val = snap.val();
@@ -624,16 +606,10 @@
         }, err => {
             alert('❌ Deleted Items Load Error: ' + err.message);
         });
-
-        // Store refs for later use in save functions
-        window._masterRef = masterRef;
-        window._handoverRef = handoverRef;
-        window._deletedRef = deletedRef;
-        window._basePath = basePath;
     }
 
     // =========================================================
-    // SAVE FUNCTIONS (DEPARTMENT-SPECIFIC)
+    // SAVE FUNCTIONS
     // =========================================================
     function saveMaster() {
         const obj = {};
@@ -657,20 +633,9 @@
 
     function moveToDeleted(item, key) {
         const deletedRef = database.ref(`${window._basePath}/deletedMasterItems`).push();
-        const deletedData = {
-            ...item,
-            originalKey: key,
-            deletedAt: new Date().toISOString()
-        };
+        const deletedData = { ...item, originalKey: key, deletedAt: new Date().toISOString() };
         return deletedRef.set(deletedData);
     }
-
-    // =========================================================
-    // ALL UI FUNCTIONS (SAME AS BEFORE, BUT USE DEPARTMENT PATHS)
-    // =========================================================
-    // ... (all functions remain exactly the same as the previous version,
-    // because they operate on the masterItems, handoverData, deletedItems arrays)
-    // I'll include them below for completeness.
 
     // =========================================================
     // TOGGLES
@@ -730,7 +695,7 @@
     }
 
     // =========================================================
-    // BATCH ADD FUNCTIONS
+    // BATCH ADD
     // =========================================================
     function addToList() {
         const jo = document.getElementById('manualJo').value.trim();
@@ -740,16 +705,14 @@
         const demand = parseFloat(document.getElementById('manualDemand').value);
 
         if (!jo || !code || !name || !demand || demand <= 0) {
-            alert('Please fill JOB ORDER, ITEM CODE, ITEM NAME & DEMAND QTY correctly!');
+            alert('Please fill all fields correctly!');
             return;
         }
-
         const exists = tempList.some(i => i.jobOrder === jo && i.itemCode === code);
         if (exists) {
-            alert(`⚠️ "${jo}" - "${code}" already in the temporary list!`);
+            alert(`⚠️ "${jo}" - "${code}" already in the list!`);
             return;
         }
-
         tempList.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand });
         renderTempList();
         clearManualInputs();
@@ -774,7 +737,6 @@
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:15px;">No items added yet.</td></tr>';
             return;
         }
-
         let html = '';
         tempList.forEach((item, idx) => {
             html += `<tr>
@@ -791,7 +753,7 @@
     }
 
     function removeFromList(index) {
-        if (!confirm(`Remove "${tempList[index].jobOrder} - ${tempList[index].itemCode}" from list?`)) return;
+        if (!confirm(`Remove "${tempList[index].jobOrder} - ${tempList[index].itemCode}"?`)) return;
         tempList.splice(index, 1);
         renderTempList();
     }
@@ -811,14 +773,10 @@
 
         let duplicates = [];
         let newItems = [];
-
         tempList.forEach(item => {
             const exists = masterItems.some(i => i.jobOrder === item.jobOrder && i.itemCode === item.itemCode);
-            if (exists) {
-                duplicates.push(`${item.jobOrder} - ${item.itemCode}`);
-            } else {
-                newItems.push(item);
-            }
+            if (exists) duplicates.push(`${item.jobOrder} - ${item.itemCode}`);
+            else newItems.push(item);
         });
 
         let msg = `📌 ${tempList.length} item(s) in list.\n`;
@@ -851,9 +809,7 @@
             .then(() => {
                 populateJobOrderDropdown();
                 updateSummary();
-                const added = newItems.length;
-                const skipped = duplicates.length;
-                alert(`✅ ${added} item(s) added!${skipped > 0 ? `\n⚠️ ${skipped} skipped (already exist).` : ''}`);
+                alert(`✅ ${newItems.length} item(s) added!${duplicates.length > 0 ? `\n⚠️ ${duplicates.length} skipped.` : ''}`);
                 tempList = [];
                 renderTempList();
             })
@@ -867,7 +823,7 @@
     }
 
     // =========================================================
-    // DELETE FUNCTIONS
+    // DELETE
     // =========================================================
     function deleteSingleMasterItem() {
         const jo = prompt('🔍 Enter Job Order to delete (Required):');
@@ -880,9 +836,7 @@
 
         const codeInput = prompt('🔍 Enter Item Code (Optional):');
         let trimmedCode = '';
-        if (codeInput !== null) {
-            trimmedCode = codeInput.trim();
-        }
+        if (codeInput !== null) trimmedCode = codeInput.trim();
 
         let itemsToDelete = [];
         if (trimmedCode) {
@@ -1519,9 +1473,6 @@
         tbody.innerHTML = html;
     }
 
-    // =========================================================
-    // SUMMARY UPDATE
-    // =========================================================
     function updateSummary() {
         document.getElementById('totalItems').textContent = masterItems.length;
 
@@ -1903,7 +1854,6 @@
     // INIT
     // =========================================================
     document.addEventListener('DOMContentLoaded', function() {
-        // Show login screen by default
         document.getElementById('loginScreen').style.display = 'block';
         document.getElementById('mainApp').style.display = 'none';
     });
