@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* ===== CSS (পুরানো + নতুন) ===== */
+        /* (CSS same as before) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -207,7 +207,7 @@
 <!-- LOGIN SCREEN -->
 <!-- ============================================================ -->
 <div id="loginScreen" class="login-container">
-    <h2>🔐 Plastic Department Login</h2>
+    <h2>🔐 SFG Handover & Record Monitoring System Department Login</h2>
     <form id="loginForm" onsubmit="return handleLogin()">
         <label for="deptSelect">Select Department:</label>
         <select id="deptSelect" required>
@@ -534,7 +534,7 @@
     let currentDepartment = '';
     let currentDepartmentKey = '';
     let database = null;
-    let currentStoredPassword = '123'; // will be loaded from Firebase
+    let currentStoredPassword = ''; // will be set after login
 
     let masterItems = [];
     let handoverData = [];
@@ -553,8 +553,14 @@
         measurementId: "G-RPBDQR2G35"
     };
 
+    // Default passwords per department (if not set in Firebase)
+    const DEFAULT_PASSWORDS = {
+        'Plastic-03': '111',
+        'Plastic-6.2': '444'
+    };
+
     // =========================================================
-    // LOGIN / LOGOUT
+    // LOGIN
     // =========================================================
     function handleLogin() {
         const dept = document.getElementById('deptSelect').value;
@@ -566,30 +572,29 @@
             return false;
         }
 
-        // First, initialize app to get the password from Firebase
-        // But we need to check password after fetching from Firebase.
-        // We'll call a function to verify.
-
-        // We'll do async: first initialize Firebase, then fetch password, then verify.
-        // Since handleLogin is called from form submit, we need to return false and handle async.
-        // We'll show a loading message maybe.
-
         document.getElementById('loginError').style.display = 'none';
         document.getElementById('loginError').textContent = '⏳ Verifying...';
         document.getElementById('loginError').style.display = 'block';
 
-        // Initialize Firebase if not already
+        // Initialize Firebase if needed
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.database();
 
-        // Determine department key
         const deptKey = dept.replace(/\./g, '_');
         const pwdRef = db.ref(`departments/${deptKey}/password`);
 
         pwdRef.once('value').then(snap => {
-            const storedPwd = snap.val() || '123'; // default if not set
+            let storedPwd = snap.val();
+            if (storedPwd === null) {
+                // First time, set default password for this department
+                const defaultPwd = DEFAULT_PASSWORDS[dept] || '123';
+                storedPwd = defaultPwd;
+                return pwdRef.set(defaultPwd).then(() => defaultPwd);
+            }
+            return storedPwd;
+        }).then(storedPwd => {
             if (pwd === storedPwd) {
                 // Success
                 document.getElementById('loginError').style.display = 'none';
@@ -597,7 +602,6 @@
                 currentDepartmentKey = deptKey;
                 currentStoredPassword = storedPwd;
                 database = db;
-                // Now initialize app fully
                 initializeAppAfterLogin();
             } else {
                 document.getElementById('loginError').style.display = 'block';
@@ -605,7 +609,7 @@
             }
         }).catch(err => {
             document.getElementById('loginError').style.display = 'block';
-            document.getElementById('loginError').textContent = '❌ Error checking password: ' + err.message;
+            document.getElementById('loginError').textContent = '❌ Error: ' + err.message;
         });
 
         return false;
@@ -619,7 +623,6 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
 
-        // Also listen for password changes? Not needed dynamically.
         startListening(basePath);
     }
 
@@ -636,7 +639,7 @@
         tempList = [];
         currentDepartment = '';
         currentDepartmentKey = '';
-        currentStoredPassword = '123';
+        currentStoredPassword = '';
         database = null;
         document.getElementById('loginScreen').style.display = 'block';
         document.getElementById('mainApp').style.display = 'none';
@@ -645,7 +648,7 @@
     }
 
     // =========================================================
-    // CHANGE PASSWORD
+    // CHANGE PASSWORD (after login)
     // =========================================================
     function openChangePassword() {
         document.getElementById('oldPassword').value = '';
@@ -689,7 +692,6 @@
             return;
         }
 
-        // Update password in Firebase
         const pwdRef = database.ref(`departments/${currentDepartmentKey}/password`);
         pwdRef.set(newPwd).then(() => {
             currentStoredPassword = newPwd;
@@ -702,7 +704,7 @@
     }
 
     // =========================================================
-    // LISTENERS (unchanged)
+    // LISTENERS
     // =========================================================
     function startListening(basePath) {
         const masterRef = database.ref(`${basePath}/masterItems`);
@@ -735,7 +737,7 @@
     }
 
     // =========================================================
-    // SAVE FUNCTIONS (unchanged)
+    // SAVE FUNCTIONS
     // =========================================================
     function saveMaster() {
         const obj = {};
@@ -823,14 +825,8 @@
     }
 
     // =========================================================
-    // TOGGLES, BATCH ADD, DELETE, ETC. (unchanged - kept as before)
-    // =========================================================
-    // For brevity, I'll include them but they are exactly the same as previous version.
-    // Since the code is long, I'll trust that the user can copy the full code from above.
-    // But to be complete, I'll include the rest.
-
-    // =========================================================
-    // TOGGLES
+    // TOGGLES, BATCH ADD, DELETE, ETC. (unchanged)
+    // (All the functions below are exactly as before)
     // =========================================================
     function toggleMainMaster() {
         const section = document.getElementById('masterMainSection');
@@ -886,9 +882,6 @@
         }
     }
 
-    // =========================================================
-    // BATCH ADD
-    // =========================================================
     function addToList() {
         const jo = document.getElementById('manualJo').value.trim();
         const code = document.getElementById('manualCode').value.trim();
@@ -1014,9 +1007,6 @@
             });
     }
 
-    // =========================================================
-    // DELETE
-    // =========================================================
     function deleteSingleMasterItem() {
         const jo = prompt('🔍 Enter Job Order to delete (Required):');
         if (jo === null) return;
@@ -1087,9 +1077,6 @@
             });
     }
 
-    // =========================================================
-    // VIEW DELETED & RESTORE
-    // =========================================================
     function viewDeletedItems() {
         const modal = document.getElementById('deletedModal');
         const container = document.getElementById('deletedItemsContainer');
@@ -1154,9 +1141,6 @@
             });
     }
 
-    // =========================================================
-    // JO LIST & DETAIL
-    // =========================================================
     function showJOList() {
         const modal = document.getElementById('joListModal');
         const container = document.getElementById('joListContainer');
@@ -1318,9 +1302,6 @@
         document.getElementById('joDetailModal').style.display = 'none';
     }
 
-    // =========================================================
-    // EXCEL IMPORT / EXPORT
-    // =========================================================
     function downloadMasterTemplate() {
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
         const ws = XLSX.utils.aoa_to_sheet([headers, ['JO-001', 'IC-001', 'Product', 'Red', 100]]);
@@ -1435,9 +1416,6 @@
         reader.readAsArrayBuffer(file);
     }
 
-    // =========================================================
-    // EDIT DEMAND
-    // =========================================================
     function editDemand() {
         const jo = prompt('🔍 Enter Job Order to edit Demand (Required):');
         if (jo === null) return;
@@ -1481,9 +1459,6 @@
             });
     }
 
-    // =========================================================
-    // POPULATE JO DROPDOWN & DETAILS
-    // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
         const current = select.value;
@@ -1609,9 +1584,6 @@
             .catch(err => alert('❌ Delete failed! ' + err.message));
     }
 
-    // =========================================================
-    // FORM SUBMIT
-    // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const jo = document.getElementById('jobOrderSelect').value;
@@ -1708,9 +1680,6 @@
         document.getElementById('pendingItems').textContent = totalPendingItems;
     }
 
-    // =========================================================
-    // EDIT / DELETE HANDOVER
-    // =========================================================
     function openEditModal(index) {
         const item = handoverData[index];
         if (!item) return;
@@ -1756,9 +1725,6 @@
         }
     }
 
-    // =========================================================
-    // JO REPORT
-    // =========================================================
     let currentReportJO = '';
 
     function openJ0Report() {
@@ -1912,9 +1878,6 @@
         document.getElementById('joReportContent').innerHTML = html;
     }
 
-    // =========================================================
-    // PDF, IMAGE, EXCEL DOWNLOAD
-    // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
         if (!content || content.innerHTML.includes('Select JO')) {
