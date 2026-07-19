@@ -40,6 +40,8 @@
         .btn-edit:hover { background: #e68900; }
         .btn-excel { background: #1d6f42; color: #fff; }
         .btn-excel:hover { background: #145a33; }
+        .btn-back { background: #17a2b8; color: #fff; }
+        .btn-back:hover { background: #138496; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
         th { background: #0d47a1; color: white; position: sticky; top: 0; white-space: nowrap; font-size: 12px; }
@@ -101,6 +103,7 @@
         <div class="item"><span class="label">মোট আইটেম</span><div class="value" id="totalItems">0</div></div>
         <div class="item"><span class="label">মোট রিসিভ</span><div class="value" id="totalReceived">0</div></div>
         <div class="item"><span class="label">মোট ইস্যু</span><div class="value" id="totalIssued">0</div></div>
+        <div class="item"><span class="label">মোট ব্যাক</span><div class="value" id="totalBack">0</div></div>
         <div class="item"><span class="label">বর্তমান স্টক</span><div class="value" id="totalStock">0</div></div>
     </div>
 
@@ -158,6 +161,7 @@
                     <th>Received</th>
                     <th>Pending QTY</th>
                     <th>Total Issues</th>
+                    <th>Total Back</th>
                     <th>Present Stock</th>
                     <th>Action</th>
                     <th>Status</th>
@@ -170,7 +174,7 @@
     </div>
 
     <button id="clearDataBtn" class="clear-btn" onclick="clearAllDataWithPassword()">🗑️ সমস্ত ডেটা মুছুন (পাসওয়ার্ড প্রয়োজন)</button>
-    <div class="footer-note">ডেটা Firebase Realtime Database-এ সংরক্ষিত | ডিফল্ট পাসওয়ার্ড: <strong>admin123</strong></div>
+    <div class="footer-note">ডেটা Firebase Realtime Database-এ সংরক্ষিত | অপারেশন পাসওয়ার্ড: <strong>123</strong></div>
 </div>
 
 <!-- ===== পাসওয়ার্ড মোডাল ===== -->
@@ -214,10 +218,10 @@
     </div>
 </div>
 
-<!-- ===== Edit মোডাল (শুধু রিসিভ/ইস্যু এডিট) ===== -->
+<!-- ===== Edit মোডাল (রিসিভ/ইস্যু/ব্যাক এডিট) ===== -->
 <div class="modal" id="editModal">
     <div class="modal-content">
-        <h3>✏️ রিসিভ/ইস্যু এডিট</h3>
+        <h3>✏️ রেকর্ড এডিট</h3>
         <p><strong>আইটেম:</strong> <span id="editItemNameDisplay"></span></p>
         <p><strong>রেকর্ড টাইপ:</strong> <span id="editRecordType"></span></p>
         <label>QTY:</label>
@@ -241,7 +245,7 @@
 <!-- ===== ইতিহাস মোডাল ===== -->
 <div class="modal" id="historyModal">
     <div class="modal-content">
-        <h3>📜 রিসিভ ও ইস্যু হিস্ট্রি</h3>
+        <h3>📜 রিসিভ, ইস্যু ও ব্যাক হিস্ট্রি</h3>
         <p><strong>আইটেম:</strong> <span id="historyItemName"></span></p>
         <div id="historyList" style="margin-top:12px;"></div>
         <div class="btn-group">
@@ -301,6 +305,31 @@
     </div>
 </div>
 
+<!-- ===== ব্যাক (Return from Conveyor) মোডাল ===== -->
+<div class="modal" id="backModal">
+    <div class="modal-content">
+        <h3>↩️ কনভেয়ার থেকে ব্যাক</h3>
+        <p><strong>আইটেম:</strong> <span id="backItemName"></span></p>
+        <p><strong>PR QTY:</strong> <span id="backPrQty"></span></p>
+        <p><strong>বর্তমান স্টক:</strong> <span id="backCurrentStock"></span></p>
+        <label>ব্যাক QTY:</label>
+        <input type="number" id="backQtyInput" placeholder="QTY" min="1">
+        <label>📅 তারিখ:</label>
+        <input type="date" id="backDate">
+        <label>শিফট:</label>
+        <select id="backShift">
+            <option value="Day">☀️ Day</option>
+            <option value="Night">🌙 Night</option>
+        </select>
+        <label>ব্যাককারীর নাম:</label>
+        <input type="text" id="backByName" placeholder="যেমন: রফিক" required>
+        <div class="btn-group">
+            <button class="btn-danger" onclick="closeBackModal()">বাতিল</button>
+            <button class="btn-success" onclick="confirmBack()">✅ ব্যাক করুন</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // =========================================================
     //  🔥 Firebase কনফিগারেশন
@@ -319,20 +348,20 @@
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    const dbRef = database.ref('stockItems');  // Realtime Database-এ 'stockItems' নামে নোড
+    const dbRef = database.ref('stockItems');
 
     // =========================================================
     //  কনফিগারেশন
     // =========================================================
-    const APP_PASSWORD = 'admin123';
-    let allData = [];           // ফায়ারবেস থেকে পাওয়া ডেটা সংরক্ষণ
+    const APP_PASSWORD = '123';   // নতুন পাসওয়ার্ড 123
+    let allData = [];
     let dataLoaded = false;
 
     let filterJobOrder = '';
     let filterItem = '';
     let currentEditItemIndex = null;
     let currentEditRecordIndex = null;
-    let currentEditRecordType = null; // 'receive' or 'issue'
+    let currentEditRecordType = null; // 'receive', 'issue', 'back'
 
     // =========================================================
     //  📥 ডেটা রিড (Firebase থেকে লাইভ সিঙ্ক)
@@ -341,12 +370,9 @@
         dbRef.on('value', (snapshot) => {
             const val = snapshot.val();
             if (val) {
-                // Firebase থেকে array আকারে ডেটা নেওয়া
-                const dataArray = Object.values(val);
-                // প্রতিটি আইটেমে তার নিজের key সংরক্ষণ (পরবর্তী আপডেট/ডিলিটের জন্য)
                 const keys = Object.keys(val);
-                allData = dataArray.map((item, idx) => {
-                    return { ...item, _firebaseKey: keys[idx] };
+                allData = keys.map((key, idx) => {
+                    return { ...val[key], _firebaseKey: key };
                 });
             } else {
                 allData = [];
@@ -363,12 +389,9 @@
     //  📤 ডেটা রাইট (Firebase-এ সেভ)
     // =========================================================
     function saveDataToFirebase(dataArray) {
-        // Firebase-এ array সংরক্ষণ করার জন্য object এ রূপান্তর
         const obj = {};
         dataArray.forEach((item, index) => {
-            // প্রতিটি আইটেমের _firebaseKey থাকলে সেটি ব্যবহার করি, না হলে নতুন key তৈরি করি
             const key = item._firebaseKey || dbRef.push().key;
-            // _firebaseKey ডেটার সাথে সংরক্ষণ করি না (শুধু লোকাল ট্র্যাকিং)
             const { _firebaseKey, ...cleanItem } = item;
             obj[key] = cleanItem;
         });
@@ -400,8 +423,8 @@
     // =========================================================
     //  স্ট্যাটাস ক্যালকুলেশন
     // =========================================================
-    function getStatus(prQty, received, totalIssued) {
-        const present = received - totalIssued;
+    function getStatus(prQty, received, totalIssued, totalBack) {
+        const present = received - totalIssued + totalBack;
         if (present < 0) return { text: '⚠️ Over Issue', class: 'status-over' };
         if (received >= prQty) return { text: '✅ Complete', class: 'status-complete' };
         return { text: '⏳ Pending', class: 'status-pending' };
@@ -412,17 +435,16 @@
     // =========================================================
     function renderTable() {
         const data = allData;
-        const filtered = data;
-
         const tbody = document.getElementById('stockBody');
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#999; padding:20px;">কোনো ডেটা নেই</td></tr>`;
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#999; padding:20px;">কোনো ডেটা নেই</td></tr>`;
         } else {
             let html = '';
-            filtered.forEach((item, index) => {
-                const presentStock = item.received - (item.totalIssued || 0);
+            data.forEach((item, index) => {
+                const totalBack = item.totalBack || 0;
+                const presentStock = item.received - (item.totalIssued || 0) + totalBack;
                 const pendingQty = item.prQty - item.received;
-                const status = getStatus(item.prQty, item.received, item.totalIssued || 0);
+                const status = getStatus(item.prQty, item.received, item.totalIssued || 0, totalBack);
 
                 let stockClass = 'stock-ok';
                 if (presentStock <= 0) stockClass = 'stock-out';
@@ -440,11 +462,13 @@
                     <td>${item.received}</td>
                     <td style="font-weight:bold; color:${pendingQty > 0 ? '#d32f2f' : '#2e7d32'};">${pendingQty}</td>
                     <td>${item.totalIssued || 0}</td>
+                    <td>${totalBack}</td>
                     <td><span class="stock-badge ${stockClass}">${presentStock}</span></td>
                     <td>
                         <div class="action-buttons">
                             <button class="btn-primary" onclick="openReceiveModal(${index})">📥</button>
                             <button class="btn-warning" onclick="openIssueModal(${index})">📤</button>
+                            <button class="btn-back" onclick="openBackModal(${index})">↩️</button>
                             <button class="btn-info" onclick="openHistoryModal(${index})">📜</button>
                             <button class="btn-danger" onclick="deleteItem(${index})">🗑️</button>
                         </div>
@@ -461,14 +485,16 @@
         document.getElementById('totalItems').textContent = data.length;
         const totalReceived = data.reduce((sum, i) => sum + (i.received || 0), 0);
         const totalIssued = data.reduce((sum, i) => sum + (i.totalIssued || 0), 0);
-        const totalStock = data.reduce((sum, i) => sum + ((i.received || 0) - (i.totalIssued || 0)), 0);
+        const totalBack = data.reduce((sum, i) => sum + (i.totalBack || 0), 0);
+        const totalStock = data.reduce((sum, i) => sum + ((i.received || 0) - (i.totalIssued || 0) + (i.totalBack || 0)), 0);
         document.getElementById('totalReceived').textContent = totalReceived;
         document.getElementById('totalIssued').textContent = totalIssued;
+        document.getElementById('totalBack').textContent = totalBack;
         document.getElementById('totalStock').textContent = totalStock;
     }
 
     // =========================================================
-    //  পাসওয়ার্ড মোডাল
+    //  পাসওয়ার্ড মোডাল (123)
     // =========================================================
     function openPasswordModal(actionText, callback) {
         document.getElementById('passwordActionText').textContent = actionText;
@@ -521,7 +547,6 @@
             return;
         }
 
-        // চেক: একই JO + Item Code থাকলে আপডেট
         const existingIndex = allData.findIndex(i => i.jobOrder === jobOrder && i.itemCode === itemCode);
         if (existingIndex !== -1) {
             if (!confirm(`"${itemName}" এর জন্য ইতিমধ্যে এন্ট্রি আছে! PR QTY আপডেট করবেন?`)) return;
@@ -530,7 +555,6 @@
             if (floorName) existingItem.floorName = floorName;
             if (irPerson) existingItem.irPerson = irPerson;
             if (irDate) existingItem.irDate = irDate;
-            // Firebase-এ আপডেট
             saveDataToFirebase(allData);
         } else {
             const newItem = {
@@ -543,14 +567,15 @@
                 prQty,
                 received: 0,
                 totalIssued: 0,
-                history: [],
-                receiveHistory: []
+                totalBack: 0,
+                history: [],       // issue history
+                receiveHistory: [], // receive history
+                backHistory: []    // back history
             };
             allData.push(newItem);
             saveDataToFirebase(allData);
         }
 
-        // ফর্ম রিসেট
         document.getElementById('floorName').value = '';
         document.getElementById('irPerson').value = '';
         document.getElementById('jobOrder').value = '';
@@ -648,8 +673,10 @@
                             prQty,
                             received: 0,
                             totalIssued: 0,
+                            totalBack: 0,
                             history: [],
-                            receiveHistory: []
+                            receiveHistory: [],
+                            backHistory: []
                         });
                     }
                     added++;
@@ -748,7 +775,8 @@
 
         document.getElementById('issueItemName').textContent = `${item.itemName} (${item.itemCode})`;
         document.getElementById('issuePrQty').textContent = item.prQty;
-        document.getElementById('issueCurrentStock').textContent = item.received - (item.totalIssued || 0);
+        const currentStock = item.received - (item.totalIssued || 0) + (item.totalBack || 0);
+        document.getElementById('issueCurrentStock').textContent = currentStock;
         document.getElementById('issueQtyInput').value = '';
         document.getElementById('issueByName').value = '';
 
@@ -775,7 +803,7 @@
         if (isNaN(qty) || qty <= 0 || !date || !by) { alert('সঠিক তথ্য দিন!'); return; }
 
         const item = allData[issueIndex];
-        const currentStock = item.received - (item.totalIssued || 0);
+        const currentStock = item.received - (item.totalIssued || 0) + (item.totalBack || 0);
         if (qty > currentStock) { alert(`⚠️ যথেষ্ট স্টক নেই! বর্তমান স্টক: ${currentStock}`); return; }
 
         const timestamp = new Date().toLocaleString('bn-BD', { timeZone: 'Asia/Dhaka' });
@@ -791,7 +819,64 @@
     }
 
     // =========================================================
-    //  📜 ইতিহাস (রিসিভ ও ইস্যু উভয়)
+    //  ↩️ ব্যাক (Return from Conveyor) - পাসওয়ার্ড 123 প্রয়োজন
+    // =========================================================
+    let backIndex = null;
+
+    function openBackModal(index) {
+        const item = allData[index];
+        if (!item) return;
+        backIndex = index;
+
+        document.getElementById('backItemName').textContent = `${item.itemName} (${item.itemCode})`;
+        document.getElementById('backPrQty').textContent = item.prQty;
+        const currentStock = item.received - (item.totalIssued || 0) + (item.totalBack || 0);
+        document.getElementById('backCurrentStock').textContent = currentStock;
+        document.getElementById('backQtyInput').value = '';
+        document.getElementById('backByName').value = '';
+
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('backDate').value = today;
+        const hours = new Date().getHours();
+        document.getElementById('backShift').value = (hours >= 8 && hours < 20) ? 'Day' : 'Night';
+
+        document.getElementById('backModal').style.display = 'flex';
+    }
+
+    function closeBackModal() {
+        document.getElementById('backModal').style.display = 'none';
+        backIndex = null;
+    }
+
+    function confirmBack() {
+        if (backIndex === null) return;
+        const qty = parseInt(document.getElementById('backQtyInput').value);
+        const date = document.getElementById('backDate').value;
+        const shift = document.getElementById('backShift').value;
+        const by = document.getElementById('backByName').value.trim();
+
+        if (isNaN(qty) || qty <= 0 || !date || !by) { alert('সঠিক তথ্য দিন!'); return; }
+
+        // পাসওয়ার্ড যাচাই
+        openPasswordModal('↩️ ব্যাক অপারেশন করতে পাসওয়ার্ড দিন', () => {
+            const item = allData[backIndex];
+            if (!item) return;
+
+            const timestamp = new Date().toLocaleString('bn-BD', { timeZone: 'Asia/Dhaka' });
+            const recordId = Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+            const record = { id: recordId, qty, date, shift, by, time: timestamp };
+            if (!item.backHistory) item.backHistory = [];
+            item.backHistory.push(record);
+            item.totalBack = (item.totalBack || 0) + qty;
+
+            saveDataToFirebase(allData);
+            closeBackModal();
+            alert(`✅ ${qty} টি ব্যাক করা হয়েছে!`);
+        });
+    }
+
+    // =========================================================
+    //  📜 ইতিহাস (রিসিভ, ইস্যু ও ব্যাক)
     // =========================================================
     let historyIndex = null;
 
@@ -804,7 +889,7 @@
         const container = document.getElementById('historyList');
         let html = '';
 
-        // রিসিভ ইতিহাস
+        // রিসিভ
         html += `<h4 style="color:#28a745; margin-top:10px;">📥 রিসিভ ইতিহাস</h4>`;
         if (item.receiveHistory && item.receiveHistory.length > 0) {
             html += `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>QTY</th><th>রিসিভকারী</th><th>সময়</th><th>অ্যাকশন</th></tr></thead><tbody>`;
@@ -827,7 +912,7 @@
             html += `<p style="color:#999;">কোনো রিসিভ রেকর্ড নেই</p>`;
         }
 
-        // ইস্যু ইতিহাস
+        // ইস্যু
         html += `<h4 style="color:#d32f2f; margin-top:15px;">📤 ইস্যু ইতিহাস</h4>`;
         if (item.history && item.history.length > 0) {
             html += `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>QTY</th><th>ইস্যুকারী</th><th>সময়</th><th>অ্যাকশন</th></tr></thead><tbody>`;
@@ -850,6 +935,29 @@
             html += `<p style="color:#999;">কোনো ইস্যু রেকর্ড নেই</p>`;
         }
 
+        // ব্যাক
+        html += `<h4 style="color:#17a2b8; margin-top:15px;">↩️ ব্যাক ইতিহাস</h4>`;
+        if (item.backHistory && item.backHistory.length > 0) {
+            html += `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>QTY</th><th>ব্যাককারী</th><th>সময়</th><th>অ্যাকশন</th></tr></thead><tbody>`;
+            item.backHistory.forEach((rec, i) => {
+                html += `<tr>
+                    <td>${i+1}</td>
+                    <td>${rec.date}</td>
+                    <td>${rec.shift}</td>
+                    <td>${rec.qty}</td>
+                    <td>${rec.by}</td>
+                    <td style="font-size:11px;">${rec.time}</td>
+                    <td>
+                        <button class="btn-edit" style="font-size:10px; padding:2px 6px;" onclick="openEditRecord(${historyIndex}, 'back', ${i})">✏️</button>
+                        <button class="btn-danger" style="font-size:10px; padding:2px 6px;" onclick="deleteRecord(${historyIndex}, 'back', ${i})">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+        } else {
+            html += `<p style="color:#999;">কোনো ব্যাক রেকর্ড নেই</p>`;
+        }
+
         container.innerHTML = html;
         document.getElementById('historyModal').style.display = 'flex';
     }
@@ -860,18 +968,16 @@
     }
 
     // =========================================================
-    //  ✏️ রেকর্ড এডিট (পাসওয়ার্ড সহ)
+    //  ✏️ রেকর্ড এডিট (পাসওয়ার্ড 123 প্রয়োজন)
     // =========================================================
     function openEditRecord(itemIndex, type, recordIndex) {
         const item = allData[itemIndex];
         if (!item) return;
 
         let record;
-        if (type === 'receive') {
-            record = item.receiveHistory[recordIndex];
-        } else {
-            record = item.history[recordIndex];
-        }
+        if (type === 'receive') record = item.receiveHistory[recordIndex];
+        else if (type === 'issue') record = item.history[recordIndex];
+        else if (type === 'back') record = item.backHistory[recordIndex];
         if (!record) return;
 
         currentEditItemIndex = itemIndex;
@@ -879,11 +985,12 @@
         currentEditRecordType = type;
 
         document.getElementById('editItemNameDisplay').textContent = `${item.itemName} (${item.itemCode})`;
-        document.getElementById('editRecordType').textContent = type === 'receive' ? 'রিসিভ' : 'ইস্যু';
+        const typeName = type === 'receive' ? 'রিসিভ' : (type === 'issue' ? 'ইস্যু' : 'ব্যাক');
+        document.getElementById('editRecordType').textContent = typeName;
         document.getElementById('editQty').value = record.qty;
         document.getElementById('editDate').value = record.date;
         document.getElementById('editShift').value = record.shift;
-        document.getElementById('editPerson').value = type === 'receive' ? record.receiver : record.by;
+        document.getElementById('editPerson').value = (type === 'receive') ? record.receiver : record.by;
 
         document.getElementById('editModal').style.display = 'flex';
     }
@@ -910,7 +1017,8 @@
             if (!item) return;
 
             let record;
-            if (currentEditRecordType === 'receive') {
+            let type = currentEditRecordType;
+            if (type === 'receive') {
                 record = item.receiveHistory[currentEditRecordIndex];
                 if (!record) return;
                 const diff = qty - record.qty;
@@ -919,11 +1027,20 @@
                 record.date = date;
                 record.shift = shift;
                 record.receiver = person;
-            } else {
+            } else if (type === 'issue') {
                 record = item.history[currentEditRecordIndex];
                 if (!record) return;
                 const diff = qty - record.qty;
                 item.totalIssued += diff;
+                record.qty = qty;
+                record.date = date;
+                record.shift = shift;
+                record.by = person;
+            } else if (type === 'back') {
+                record = item.backHistory[currentEditRecordIndex];
+                if (!record) return;
+                const diff = qty - record.qty;
+                item.totalBack += diff;
                 record.qty = qty;
                 record.date = date;
                 record.shift = shift;
@@ -938,7 +1055,7 @@
     }
 
     // =========================================================
-    //  🗑️ রেকর্ড ডিলিট (পাসওয়ার্ড সহ)
+    //  🗑️ রেকর্ড ডিলিট (পাসওয়ার্ড 123 প্রয়োজন)
     // =========================================================
     function deleteRecord(itemIndex, type, recordIndex) {
         openPasswordModal('🗑️ রেকর্ড ডিলিট করতে পাসওয়ার্ড দিন', () => {
@@ -951,11 +1068,16 @@
                 if (!record) return;
                 item.received -= record.qty;
                 item.receiveHistory.splice(recordIndex, 1);
-            } else {
+            } else if (type === 'issue') {
                 const record = item.history[recordIndex];
                 if (!record) return;
                 item.totalIssued -= record.qty;
                 item.history.splice(recordIndex, 1);
+            } else if (type === 'back') {
+                const record = item.backHistory[recordIndex];
+                if (!record) return;
+                item.totalBack -= record.qty;
+                item.backHistory.splice(recordIndex, 1);
             }
 
             saveDataToFirebase(allData);
@@ -965,33 +1087,32 @@
     }
 
     // =========================================================
-    //  🗑️ আইটেম ডিলিট (পাসওয়ার্ড নেই)
+    //  🗑️ আইটেম ডিলিট (পাসওয়ার্ড 123 প্রয়োজন)
     // =========================================================
     function deleteItem(index) {
-        if (!confirm('এই এন্ট্রি মুছবেন? (সব ইস্যু/রিসিভ হিস্ট্রিও মুছে যাবে)')) return;
-        const item = allData[index];
-        if (item) {
-            const key = item._firebaseKey;
-            if (key) {
-                deleteItemFromFirebase(key);
+        openPasswordModal('🗑️ আইটেম ডিলিট করতে পাসওয়ার্ড দিন', () => {
+            if (!confirm('এই এন্ট্রি মুছবেন? (সব ইস্যু/রিসিভ/ব্যাক হিস্ট্রিও মুছে যাবে)')) return;
+            const item = allData[index];
+            if (item) {
+                const key = item._firebaseKey;
+                if (key) {
+                    deleteItemFromFirebase(key);
+                } else {
+                    allData.splice(index, 1);
+                    saveDataToFirebase(allData);
+                }
+                alert('🗑️ আইটেম মুছে ফেলা হয়েছে!');
             } else {
-                // লোকাল ডিলিট (যদি কোনো কারণে key না থাকে)
-                allData.splice(index, 1);
-                saveDataToFirebase(allData);
+                alert('আইটেম পাওয়া যায়নি!');
             }
-            alert('🗑️ আইটেম মুছে ফেলা হয়েছে!');
-        } else {
-            alert('আইটেম পাওয়া যায়নি!');
-        }
+        });
     }
 
     // =========================================================
-    //  সমস্ত ডেটা মুছুন (পাসওয়ার্ড)
+    //  সমস্ত ডেটা মুছুন (পাসওয়ার্ড 123)
     // =========================================================
     function clearAllDataWithPassword() {
-        const userPass = prompt('🗑️ সমস্ত ডেটা মুছতে পাসওয়ার্ড দিন:');
-        if (userPass === null) return;
-        if (userPass.trim() === APP_PASSWORD) {
+        openPasswordModal('🗑️ সমস্ত ডেটা মুছতে পাসওয়ার্ড দিন', () => {
             if (confirm('⚠️ সতর্কতা: সমস্ত ডেটা স্থায়ীভাবে মুছে যাবে! আপনি কি নিশ্চিত?')) {
                 dbRef.remove()
                     .then(() => {
@@ -1004,13 +1125,11 @@
                         console.error(err);
                     });
             }
-        } else {
-            alert('❌ ভুল পাসওয়ার্ড!');
-        }
+        });
     }
 
     // =========================================================
-    //  📊 JO রিপোর্ট
+    //  📊 JO রিপোর্ট (ব্যাক সহ)
     // =========================================================
     let currentReportItems = [];
     let currentReportJO = '';
@@ -1061,7 +1180,7 @@
         currentReportJO = jo;
 
         let html = '';
-        let totalReceive = 0, totalIssue = 0, totalStock = 0, totalPending = 0;
+        let totalReceive = 0, totalIssue = 0, totalBack = 0, totalStock = 0, totalPending = 0;
 
         html += `<div class="report-summary" style="background:#cce5ff; border:2px solid #007bff;">
             <span style="font-size:20px; font-weight:700;">📋 রিপোর্ট: ${jo}</span>
@@ -1069,6 +1188,7 @@
 
         let allReceiveHistory = [];
         let allIssueHistory = [];
+        let allBackHistory = [];
 
         items.forEach(item => {
             if (item.receiveHistory && item.receiveHistory.length > 0) {
@@ -1089,13 +1209,23 @@
                     });
                 });
             }
+            if (item.backHistory && item.backHistory.length > 0) {
+                item.backHistory.forEach(rec => {
+                    allBackHistory.push({
+                        itemCode: item.itemCode,
+                        itemName: item.itemName,
+                        ...rec
+                    });
+                });
+            }
         });
 
         allReceiveHistory.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
         allIssueHistory.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+        allBackHistory.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
         html += `<div style="margin-top:20px; border:1px solid #28a745; border-radius:8px; padding:12px; background:#f0fff4;">`;
-        html += `<h4 style="color:#28a745;">📥 রিসিভ হিস্ট্রি (সকল আইটেম)</h4>`;
+        html += `<h4 style="color:#28a745;">📥 রিসিভ হিস্ট্রি</h4>`;
         if (allReceiveHistory.length === 0) {
             html += `<p style="color:#999;">কোনো রিসিভ রেকর্ড নেই</p>`;
         } else {
@@ -1108,12 +1238,25 @@
         html += `</div>`;
 
         html += `<div style="margin-top:20px; border:1px solid #ffc107; border-radius:8px; padding:12px; background:#fff8e1;">`;
-        html += `<h4 style="color:#d32f2f;">📤 ইস্যু হিস্ট্রি (সকল আইটেম)</h4>`;
+        html += `<h4 style="color:#d32f2f;">📤 ইস্যু হিস্ট্রি</h4>`;
         if (allIssueHistory.length === 0) {
             html += `<p style="color:#999;">কোনো ইস্যু রেকর্ড নেই</p>`;
         } else {
             html += `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>ITEM CODE</th><th>ITEM NAME</th><th>QTY</th><th>ইস্যুকারী</th><th>সময়</th></tr></thead><tbody>`;
             allIssueHistory.forEach((rec, i) => {
+                html += `<tr><td>${i+1}</td><td>${rec.date}</td><td>${rec.shift}</td><td>${rec.itemCode}</td><td>${rec.itemName}</td><td>${rec.qty}</td><td>${rec.by}</td><td style="font-size:11px;">${rec.time}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+        }
+        html += `</div>`;
+
+        html += `<div style="margin-top:20px; border:1px solid #17a2b8; border-radius:8px; padding:12px; background:#e6f7ff;">`;
+        html += `<h4 style="color:#17a2b8;">↩️ ব্যাক হিস্ট্রি</h4>`;
+        if (allBackHistory.length === 0) {
+            html += `<p style="color:#999;">কোনো ব্যাক রেকর্ড নেই</p>`;
+        } else {
+            html += `<table class="history-table"><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>ITEM CODE</th><th>ITEM NAME</th><th>QTY</th><th>ব্যাককারী</th><th>সময়</th></tr></thead><tbody>`;
+            allBackHistory.forEach((rec, i) => {
                 html += `<tr><td>${i+1}</td><td>${rec.date}</td><td>${rec.shift}</td><td>${rec.itemCode}</td><td>${rec.itemName}</td><td>${rec.qty}</td><td>${rec.by}</td><td style="font-size:11px;">${rec.time}</td></tr>`;
             });
             html += `</tbody></table>`;
@@ -1133,16 +1276,19 @@
             <th>রিসিভ</th>
             <th>পেন্ডিং</th>
             <th>ইস্যু</th>
+            <th>ব্যাক</th>
             <th>স্টক</th>
             <th>স্ট্যাটাস</th>
         </tr></thead><tbody>`;
 
         items.forEach((item, idx) => {
-            const present = item.received - (item.totalIssued || 0);
+            const totalBack = item.totalBack || 0;
+            const present = item.received - (item.totalIssued || 0) + totalBack;
             const pending = item.prQty - item.received;
-            const status = getStatus(item.prQty, item.received, item.totalIssued || 0);
+            const status = getStatus(item.prQty, item.received, item.totalIssued || 0, totalBack);
             totalReceive += item.received;
             totalIssue += (item.totalIssued || 0);
+            totalBack += totalBack;
             totalStock += present;
             totalPending += pending > 0 ? pending : 0;
 
@@ -1157,6 +1303,7 @@
                 <td>${item.received}</td>
                 <td style="font-weight:bold; color:${pending>0?'#d32f2f':'#2e7d32'}">${pending}</td>
                 <td>${item.totalIssued||0}</td>
+                <td>${totalBack}</td>
                 <td style="font-weight:bold; color:${present<0?'red':'green'}">${present}</td>
                 <td><span class="status-badge ${status.class}">${status.text}</span></td>
             </tr>`;
@@ -1168,6 +1315,7 @@
             <span>📦 JO: <strong>${jo}</strong></span>
             <span>📥 মোট রিসিভ: <strong>${totalReceive}</strong></span>
             <span>📤 মোট ইস্যু: <strong>${totalIssue}</strong></span>
+            <span>↩️ মোট ব্যাক: <strong>${totalBack}</strong></span>
             <span>📊 বর্তমান স্টক: <strong style="color:${totalStock<0?'red':'green'}">${totalStock}</strong></span>
             <span>⏳ মোট পেন্ডিং: <strong style="color:${totalPending>0?'#d32f2f':'#2e7d32'}">${totalPending}</strong></span>
             <span>📋 মোট আইটেম: <strong>${items.length}</strong></span>
@@ -1177,7 +1325,7 @@
     }
 
     // =========================================================
-    //  PDF, Image, Excel ডাউনলোড (আগের মতো)
+    //  PDF, Image, Excel ডাউনলোড
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
@@ -1232,12 +1380,13 @@
             return;
         }
         const rows = [
-            ['#', 'ITEM CODE', 'ITEM NAME', 'Floor', 'IR Person', 'IR Date', 'PR QTY', 'রিসিভ', 'পেন্ডিং', 'ইস্যু', 'স্টক', 'স্ট্যাটাস']
+            ['#', 'ITEM CODE', 'ITEM NAME', 'Floor', 'IR Person', 'IR Date', 'PR QTY', 'রিসিভ', 'পেন্ডিং', 'ইস্যু', 'ব্যাক', 'স্টক', 'স্ট্যাটাস']
         ];
         currentReportItems.forEach((item, idx) => {
-            const present = item.received - (item.totalIssued || 0);
+            const totalBack = item.totalBack || 0;
+            const present = item.received - (item.totalIssued || 0) + totalBack;
             const pending = item.prQty - item.received;
-            const status = getStatus(item.prQty, item.received, item.totalIssued || 0).text;
+            const status = getStatus(item.prQty, item.received, item.totalIssued || 0, totalBack).text;
             rows.push([
                 idx+1,
                 item.itemCode,
@@ -1249,16 +1398,18 @@
                 item.received,
                 pending,
                 item.totalIssued || 0,
+                totalBack,
                 present,
                 status
             ]);
         });
         const totalReceive = currentReportItems.reduce((s, i) => s + i.received, 0);
         const totalIssue = currentReportItems.reduce((s, i) => s + (i.totalIssued || 0), 0);
-        const totalStock = currentReportItems.reduce((s, i) => s + (i.received - (i.totalIssued || 0)), 0);
+        const totalBack = currentReportItems.reduce((s, i) => s + (i.totalBack || 0), 0);
+        const totalStock = currentReportItems.reduce((s, i) => s + (i.received - (i.totalIssued || 0) + (i.totalBack || 0)), 0);
         const totalPending = currentReportItems.reduce((s, i) => s + (i.prQty - i.received > 0 ? i.prQty - i.received : 0), 0);
         rows.push([]);
-        rows.push(['মোট', '', '', '', '', '', '', totalReceive, totalPending, totalIssue, totalStock, '']);
+        rows.push(['মোট', '', '', '', '', '', '', totalReceive, totalPending, totalIssue, totalBack, totalStock, '']);
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(rows);
         XLSX.utils.book_append_sheet(wb, ws, 'JO Report');
@@ -1273,12 +1424,13 @@
             alert('কোনো ডেটা নেই!');
             return;
         }
-        let csv = 'Floor Name,IR Person,IR Date,JOB ORDER,ITEM CODE,ITEM NAME,PR QTY,RECEIVED,PENDING QTY,TOTAL ISSUES,PRESENT STOCK,STATUS\n';
+        let csv = 'Floor Name,IR Person,IR Date,JOB ORDER,ITEM CODE,ITEM NAME,PR QTY,RECEIVED,PENDING QTY,TOTAL ISSUES,TOTAL BACK,PRESENT STOCK,STATUS\n';
         allData.forEach(item => {
-            const present = item.received - (item.totalIssued || 0);
+            const totalBack = item.totalBack || 0;
+            const present = item.received - (item.totalIssued || 0) + totalBack;
             const pending = item.prQty - item.received;
-            const status = getStatus(item.prQty, item.received, item.totalIssued || 0).text;
-            csv += `${item.floorName||''},${item.irPerson||''},${item.irDate||''},${item.jobOrder},${item.itemCode},${item.itemName},${item.prQty},${item.received},${pending},${item.totalIssued||0},${present},${status}\n`;
+            const status = getStatus(item.prQty, item.received, item.totalIssued || 0, totalBack).text;
+            csv += `${item.floorName||''},${item.irPerson||''},${item.irDate||''},${item.jobOrder},${item.itemCode},${item.itemName},${item.prQty},${item.received},${pending},${item.totalIssued||0},${totalBack},${present},${status}\n`;
         });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
@@ -1298,6 +1450,9 @@
     document.getElementById('issueModal').addEventListener('click', function(e) {
         if (e.target === this) closeIssueModal();
     });
+    document.getElementById('backModal').addEventListener('click', function(e) {
+        if (e.target === this) closeBackModal();
+    });
     document.getElementById('historyModal').addEventListener('click', function(e) {
         if (e.target === this) closeHistoryModal();
     });
@@ -1312,12 +1467,12 @@
     });
 
     // =========================================================
-    //  ইনিশিয়াল লোড – Firebase Listening শুরু
+    //  ইনিশিয়াল লোড
     // =========================================================
     document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().slice(0, 10);
         document.getElementById('irDate').value = today;
-        startListening();  // Firebase থেকে ডেটা লোড শুরু
+        startListening();
     });
 </script>
 </body>
