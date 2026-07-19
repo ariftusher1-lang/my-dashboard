@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* ===== CSS (পুরানো + নতুন) ===== */
+        /* (CSS unchanged – same as before) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -50,7 +50,6 @@
         .btn-excel:hover { background: #145a33; }
         .btn-detail { background: #17a2b8; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 16px; cursor: pointer; width: auto; }
         .btn-delete-single { background: #e67e22; color: #fff; }
-        .btn-delete-single:hover { background: #d35400; }
         .btn-edit-demand { background: #00897b; color: #fff; }
         .btn-edit-demand:hover { background: #00695c; }
         .btn-toggle { background: #0d47a1; color: #fff; width: auto; padding: 8px 16px; margin-bottom: 8px; border-radius: 6px; font-size: 15px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
@@ -536,7 +535,7 @@
     let currentDepartment = '';
     let currentDepartmentKey = '';
     let database = null;
-    let currentStoredPassword = ''; // will be set after login
+    let currentStoredPassword = '';
 
     let masterItems = [];
     let handoverData = [];
@@ -555,13 +554,21 @@
         measurementId: "G-RPBDQR2G35"
     };
 
-    // Default passwords per department (if not set in Firebase)
     const DEFAULT_PASSWORDS = {
         'Plastic-03': '111',
         'Plastic-6.2': '444',
         'Plastic-7.2': '555',
         'Plastic-7.3': '666'
     };
+
+    // =========================================================
+    // DELETE PASSWORD VERIFICATION (Password: 000)
+    // =========================================================
+    function verifyDeletePassword() {
+        const pwd = prompt('🔑 Enter delete password:');
+        if (pwd === null) return false; // cancelled
+        return pwd === '000';
+    }
 
     // =========================================================
     // LOGIN
@@ -580,7 +587,6 @@
         document.getElementById('loginError').textContent = '⏳ Verifying...';
         document.getElementById('loginError').style.display = 'block';
 
-        // Initialize Firebase if needed
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
@@ -592,7 +598,6 @@
         pwdRef.once('value').then(snap => {
             let storedPwd = snap.val();
             if (storedPwd === null) {
-                // First time, set default password for this department
                 const defaultPwd = DEFAULT_PASSWORDS[dept] || '123';
                 storedPwd = defaultPwd;
                 return pwdRef.set(defaultPwd).then(() => defaultPwd);
@@ -600,7 +605,6 @@
             return storedPwd;
         }).then(storedPwd => {
             if (pwd === storedPwd) {
-                // Success
                 document.getElementById('loginError').style.display = 'none';
                 currentDepartment = dept;
                 currentDepartmentKey = deptKey;
@@ -652,7 +656,7 @@
     }
 
     // =========================================================
-    // CHANGE PASSWORD (after login)
+    // CHANGE PASSWORD
     // =========================================================
     function openChangePassword() {
         document.getElementById('oldPassword').value = '';
@@ -770,7 +774,7 @@
     }
 
     // =========================================================
-    // MIGRATE OLD DATA (unchanged)
+    // MIGRATE OLD DATA
     // =========================================================
     function migrateOldData() {
         if (!confirm('⚠️ This will copy all root-level master items and handover entries to the current department.\nExisting data in this department will not be overwritten (only new items will be added).\nProceed?')) return;
@@ -829,7 +833,7 @@
     }
 
     // =========================================================
-    // TOGGLES, BATCH ADD, DELETE, ETC. (unchanged)
+    // TOGGLES
     // =========================================================
     function toggleMainMaster() {
         const section = document.getElementById('masterMainSection');
@@ -885,6 +889,9 @@
         }
     }
 
+    // =========================================================
+    // BATCH ADD
+    // =========================================================
     function addToList() {
         const jo = document.getElementById('manualJo').value.trim();
         const code = document.getElementById('manualCode').value.trim();
@@ -1010,7 +1017,14 @@
             });
     }
 
+    // =========================================================
+    // DELETE FUNCTIONS (PASSWORD PROTECTED: 000)
+    // =========================================================
     function deleteSingleMasterItem() {
+        if (!verifyDeletePassword()) {
+            alert('❌ Incorrect delete password. Operation cancelled.');
+            return;
+        }
         const jo = prompt('🔍 Enter Job Order to delete (Required):');
         if (jo === null) return;
         const trimmedJo = jo.trim();
@@ -1059,6 +1073,10 @@
     }
 
     function clearMasterData() {
+        if (!verifyDeletePassword()) {
+            alert('❌ Incorrect delete password. Operation cancelled.');
+            return;
+        }
         if (!confirm('⚠️ All master items will be moved to deleted items. You can restore later.\nAre you sure?')) return;
 
         const deletePromises = masterItems.map(item => {
@@ -1080,6 +1098,43 @@
             });
     }
 
+    function deleteHandover(index) {
+        if (!verifyDeletePassword()) {
+            alert('❌ Incorrect delete password. Operation cancelled.');
+            return;
+        }
+        if (!confirm('Delete this handover entry?')) return;
+        const item = handoverData[index];
+        if (!item) return;
+        if (item._firebaseKey) {
+            database.ref(`${window._basePath}/handoverEntries`).child(item._firebaseKey).remove()
+                .then(() => alert('🗑️ Deleted!'))
+                .catch(err => alert('❌ Delete failed! ' + err.message));
+        } else {
+            handoverData.splice(index, 1);
+            saveHandover().then(() => alert('🗑️ Deleted!'));
+        }
+    }
+
+    function clearAllHandover() {
+        if (!verifyDeletePassword()) {
+            alert('❌ Incorrect delete password. Operation cancelled.');
+            return;
+        }
+        if (!confirm('⚠️ All handover data will be deleted! Are you sure?')) return;
+        database.ref(`${window._basePath}/handoverEntries`).remove()
+            .then(() => {
+                handoverData = [];
+                renderTable();
+                updateSummary();
+                alert('🗑️ All handover data deleted!');
+            })
+            .catch(err => alert('❌ Delete failed! ' + err.message));
+    }
+
+    // =========================================================
+    // VIEW DELETED & RESTORE
+    // =========================================================
     function viewDeletedItems() {
         const modal = document.getElementById('deletedModal');
         const container = document.getElementById('deletedItemsContainer');
@@ -1144,6 +1199,9 @@
             });
     }
 
+    // =========================================================
+    // JO LIST & DETAIL
+    // =========================================================
     function showJOList() {
         const modal = document.getElementById('joListModal');
         const container = document.getElementById('joListContainer');
@@ -1305,6 +1363,9 @@
         document.getElementById('joDetailModal').style.display = 'none';
     }
 
+    // =========================================================
+    // EXCEL IMPORT / EXPORT
+    // =========================================================
     function downloadMasterTemplate() {
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
         const ws = XLSX.utils.aoa_to_sheet([headers, ['JO-001', 'IC-001', 'Product', 'Red', 100]]);
@@ -1419,6 +1480,9 @@
         reader.readAsArrayBuffer(file);
     }
 
+    // =========================================================
+    // EDIT DEMAND
+    // =========================================================
     function editDemand() {
         const jo = prompt('🔍 Enter Job Order to edit Demand (Required):');
         if (jo === null) return;
@@ -1462,6 +1526,9 @@
             });
     }
 
+    // =========================================================
+    // POPULATE JO DROPDOWN & DETAILS
+    // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
         const current = select.value;
@@ -1575,18 +1642,9 @@
 
     function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
 
-    function clearAllHandover() {
-        if (!confirm('⚠️ All handover data will be deleted! Are you sure?')) return;
-        database.ref(`${window._basePath}/handoverEntries`).remove()
-            .then(() => {
-                handoverData = [];
-                renderTable();
-                updateSummary();
-                alert('🗑️ All handover data deleted!');
-            })
-            .catch(err => alert('❌ Delete failed! ' + err.message));
-    }
-
+    // =========================================================
+    // FORM SUBMIT
+    // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const jo = document.getElementById('jobOrderSelect').value;
@@ -1683,6 +1741,9 @@
         document.getElementById('pendingItems').textContent = totalPendingItems;
     }
 
+    // =========================================================
+    // EDIT HANDOVER
+    // =========================================================
     function openEditModal(index) {
         const item = handoverData[index];
         if (!item) return;
@@ -1714,20 +1775,9 @@
         });
     }
 
-    function deleteHandover(index) {
-        if (!confirm('Delete?')) return;
-        const item = handoverData[index];
-        if (!item) return;
-        if (item._firebaseKey) {
-            database.ref(`${window._basePath}/handoverEntries`).child(item._firebaseKey).remove()
-                .then(() => alert('🗑️ Deleted!'))
-                .catch(err => alert('❌ Delete failed! ' + err.message));
-        } else {
-            handoverData.splice(index, 1);
-            saveHandover().then(() => alert('🗑️ Deleted!'));
-        }
-    }
-
+    // =========================================================
+    // JO REPORT
+    // =========================================================
     let currentReportJO = '';
 
     function openJ0Report() {
@@ -1881,6 +1931,9 @@
         document.getElementById('joReportContent').innerHTML = html;
     }
 
+    // =========================================================
+    // PDF, IMAGE, EXCEL DOWNLOAD
+    // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
         if (!content || content.innerHTML.includes('Select JO')) {
