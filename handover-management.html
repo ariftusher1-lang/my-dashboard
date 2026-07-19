@@ -3,28 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SFG Handover & Record Monitoring System</title>
+    <title>Plastic Department Handover System</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* (CSS unchanged – same as before) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7fc; padding: 12px; }
         .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        
+        /* ===== LOGIN SCREEN ===== */
         .login-container { max-width: 400px; margin: 80px auto; padding: 30px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); text-align: center; }
-        .login-container h2 { color: #d32f2f; font-weight: 700; font-size: 24px; margin-bottom: 12px; }
+        .login-container h2 { color: #0d47a1; margin-bottom: 20px; }
         .login-container select, .login-container input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
         .login-container button { width: 100%; padding: 12px; background: #0d47a1; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
         .login-container button:hover { background: #0a3a7a; }
         .login-container .error { color: red; font-size: 14px; margin-top: 10px; display: none; }
+        
+        /* ===== SCROLLING TICKER ===== */
+        .ticker-wrapper {
+            background: #8B0000;
+            color: #fff;
+            padding: 10px 0;
+            overflow: hidden;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(139,0,0,0.3);
+        }
+        .ticker-text {
+            display: inline-block;
+            white-space: nowrap;
+            animation: scrollTicker 20s linear infinite;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            padding-left: 100%;
+        }
+        @keyframes scrollTicker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+        .ticker-text span { 
+            margin: 0 50px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+        
+        /* ===== DASHBOARD CARDS ===== */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .dash-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #0d47a1;
+            transition: 0.3s;
+            text-align: center;
+        }
+        .dash-card:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.12); }
+        .dash-card .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0d47a1;
+        }
+        .dash-card .label {
+            font-size: 12px;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .dash-card .sub-text {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+        }
+        .dash-card .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .dash-card .dot-green { background: #4caf50; }
+        .dash-card .dot-red { background: #f44336; }
+        .dash-card .dot-yellow { background: #ff9800; }
+        .dash-card.green-border { border-left-color: #4caf50; }
+        .dash-card.red-border { border-left-color: #f44336; }
+        .dash-card.orange-border { border-left-color: #ff9800; }
+        .dash-card.purple-border { border-left-color: #9c27b0; }
+        
+        .dash-row-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin: 12px 0;
+        }
+        .dash-small {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+        .dash-small .number { font-size: 20px; font-weight: 700; color: #0d47a1; }
+        .dash-small .label { font-size: 11px; color: #777; }
+        
+        /* ===== HEADER & NAV ===== */
+        .header-with-logout { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        h1 { font-size: 22px; color: #0d47a1; border-bottom: 2px solid #0d47a1; padding-bottom: 8px; margin-bottom: 15px; }
+        h2 { font-size: 18px; color: #0d47a1; border-bottom: 1px solid #0d47a1; padding-bottom: 6px; margin: 15px 0 10px; }
         .logout-btn, .change-pwd-btn { background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .change-pwd-btn { background: #00897b; margin-right: 8px; }
         .change-pwd-btn:hover { background: #00695c; }
         .logout-btn:hover { background: #b02a37; }
-        h1 { font-size: 22px; color: #0d47a1; border-bottom: 2px solid #0d47a1; padding-bottom: 8px; margin-bottom: 15px; }
-        h2 { font-size: 18px; color: #0d47a1; border-bottom: 1px solid #0d47a1; padding-bottom: 6px; margin: 15px 0 10px; }
+        .header-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        
+        /* ===== FORM ELEMENTS ===== */
         .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
         .form-row > div { flex: 1; min-width: 120px; }
         label { font-weight: bold; display: block; font-size: 13px; margin-bottom: 3px; color: #333; }
@@ -50,7 +151,6 @@
         .btn-excel:hover { background: #145a33; }
         .btn-detail { background: #17a2b8; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 16px; cursor: pointer; width: auto; }
         .btn-delete-single { background: #e67e22; color: #fff; }
-        .btn-delete-single:hover { background: #d35400; }
         .btn-edit-demand { background: #00897b; color: #fff; }
         .btn-edit-demand:hover { background: #00695c; }
         .btn-toggle { background: #0d47a1; color: #fff; width: auto; padding: 8px 16px; margin-bottom: 8px; border-radius: 6px; font-size: 15px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
@@ -73,10 +173,21 @@
         .btn-clear-list:hover { background: #b02a37; }
         .btn-migrate { background: #8e24aa; color: #fff; }
         .btn-migrate:hover { background: #6a1b9a; }
+        .toggle-wrapper { text-align: left; margin: 6px 0; padding-left: 5px; }
+        .toggle-wrapper .btn-toggle { margin-right: 12px; }
+        .sub-toggle-wrapper { padding-left: 20px; margin: 4px 0; }
+        .migrate-btn-wrapper { margin: 8px 0; }
+        
+        /* ===== TABLES ===== */
         table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
         th { background: #0d47a1; color: white; position: sticky; top: 0; font-size: 12px; }
         td { background: #fff; }
+        .table-wrapper { max-height: 400px; overflow-y: auto; }
+        .history-table { font-size: 12px; }
+        .history-table th { background: #17a2b8; }
+        
+        /* ===== MODALS ===== */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 999; padding: 15px; }
         .modal-content { background: #fff; padding: 20px; border-radius: 10px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
         .modal-content h3 { margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; font-size: 18px; }
@@ -84,6 +195,11 @@
         .modal-content .btn-group button { width: auto; padding: 8px 20px; }
         .modal-content .jo-list-item { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; transition: 0.2s; }
         .modal-content .jo-list-item:hover { background: #e3f2fd; }
+        .jo-list-modal .modal-content { max-width: 420px; }
+        .detail-modal .modal-content { max-width: 550px; }
+        .deleted-modal .modal-content { max-width: 650px; }
+        
+        /* ===== SUMMARY CARD ===== */
         .summary-card { 
             background: #e3f2fd; 
             padding: 15px; 
@@ -119,77 +235,39 @@
         .summary-card .value.done { color: #2e7d32; }
         .summary-card .value.pending { color: #b71c1c; }
         .summary-card .value.total { color: #0d47a1; }
+        
+        /* ===== FILTER & HANDOVER INFO ===== */
         .filter-section { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; padding: 12px; background: #f8f9fa; border-radius: 8px; }
         .filter-section > div { flex: 1; min-width: 120px; }
         .filter-section button { width: 100%; }
         .handover-info { background: #e3f2fd; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
         .handover-info > div { flex: 1; min-width: 80px; }
         .handover-info input { background: #fff; }
-        .master-import-section { 
-            background: #fff8e1; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid #ffc107; 
-            margin-bottom: 15px; 
-            display: none;
-        }
+        
+        /* ===== OTHER ===== */
+        .master-import-section { background: #fff8e1; padding: 12px; border-radius: 8px; border: 1px solid #ffc107; margin-bottom: 15px; display: none; }
         .master-import-section h3 { font-size: 16px; color: #d32f2f; margin-bottom: 8px; }
-        .manual-master-section {
-            background: #e8f5e9;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #4caf50;
-            margin-bottom: 15px;
-            display: none;
-        }
+        .manual-master-section { background: #e8f5e9; padding: 12px; border-radius: 8px; border: 1px solid #4caf50; margin-bottom: 15px; display: none; }
         .manual-master-section h3 { font-size: 16px; color: #2e7d32; margin-bottom: 8px; }
         .manual-master-section .form-row input { background: #fff; }
         .manual-master-section .form-row button { background: #28a745; }
         .manual-master-section .form-row button:hover { background: #1e7e34; }
-        .table-wrapper { max-height: 400px; overflow-y: auto; }
-        .history-table { font-size: 12px; }
-        .history-table th { background: #17a2b8; }
-        .footer-note { margin-top: 15px; font-size: 12px; color: #777; text-align: center; }
-        .action-buttons { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
-        .action-buttons button { padding: 4px 8px; font-size: 12px; width: auto; }
-        .clear-btn { background: #6c757d; margin-top: 10px; }
-        .clear-btn:hover { background: #5a6268; }
-        .status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; }
-        .status-done { background: #d4edda; color: #155724; border: 1px solid #28a745; }
-        .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
-        .toggle-wrapper {
-            text-align: left;
-            margin: 6px 0;
-            padding-left: 5px;
-        }
-        .toggle-wrapper .btn-toggle {
-            margin-right: 12px;
-        }
-        .sub-toggle-wrapper {
-            padding-left: 20px;
-            margin: 4px 0;
-        }
-        .jo-list-modal .modal-content { max-width: 420px; }
-        .detail-modal .modal-content { max-width: 550px; }
-        .deleted-modal .modal-content { max-width: 650px; }
-        .clickable { cursor: pointer; }
-        input[type="date"] { color-scheme: light; }
         .temp-list-table { margin-top: 12px; }
         .temp-list-table th { background: #ff9800; }
         .batch-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
         .batch-actions button { flex: 1; min-width: 120px; }
-        .header-with-logout { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .migrate-btn-wrapper { margin: 8px 0; }
-        .header-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .marquee-text { 
-            color: #0d47a1; 
-            font-weight: bold; 
-            font-size: 16px; 
-            margin: 8px 0; 
-            background: #ffebee; 
-            padding: 6px; 
-            border-radius: 4px; 
-        }
+        .status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; }
+        .status-done { background: #d4edda; color: #155724; border: 1px solid #28a745; }
+        .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .action-buttons { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+        .action-buttons button { padding: 4px 8px; font-size: 12px; width: auto; }
+        .clear-btn { background: #6c757d; margin-top: 10px; }
+        .clear-btn:hover { background: #5a6268; }
+        .footer-note { margin-top: 15px; font-size: 12px; color: #777; text-align: center; }
+        input[type="date"] { color-scheme: light; }
+        .clickable { cursor: pointer; }
+        
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 600px) {
             .form-row > div { min-width: 100%; }
             .handover-info > div { min-width: 100%; }
@@ -207,19 +285,24 @@
             .header-with-logout { flex-direction: column; align-items: stretch; }
             .logout-btn, .change-pwd-btn { float: none; margin-top: 8px; }
             .header-buttons { flex-direction: column; align-items: stretch; }
+            .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+            .dash-row-2 { grid-template-columns: repeat(2, 1fr); }
+            .dash-card .number { font-size: 22px; }
+            .ticker-text { font-size: 14px; animation-duration: 15s; }
+        }
+        @media (max-width: 400px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .dash-row-2 { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
 <!-- ============================================================ -->
-<!-- LOGIN SCREEN (UPDATED) -->
+<!-- LOGIN SCREEN -->
 <!-- ============================================================ -->
 <div id="loginScreen" class="login-container">
-    <h2 style="color: #d32f2f; font-weight: 700; font-size: 24px;">🔥 Welcome to SFG Handover & Record Monitoring System</h2>
-    <marquee behavior="scroll" direction="left" scrollamount="4" class="marquee-text">
-        📌 Please select your department and enter password to continue. | This system is for SFG Handover & Inventory Monitoring.
-    </marquee>
+    <h2>🔐 Plastic Department Login</h2>
     <form id="loginForm" onsubmit="return handleLogin()">
         <label for="deptSelect">Select Department:</label>
         <select id="deptSelect" required>
@@ -242,11 +325,114 @@
 <div id="mainApp" style="display:none;">
 <div class="container">
 
+    <!-- ===== SCROLLING TICKER (RED) ===== -->
+    <div class="ticker-wrapper">
+        <div class="ticker-text">
+            <span>🚀 Welcome to SFG Handover & Record Monitoring System</span>
+            <span>📊 Real-time production insights, OEE analytics & machine performance</span>
+            <span>🏭 Smart Manufacturing Dashboard</span>
+            <span>🚀 Welcome to SFG Handover & Record Monitoring System</span>
+        </div>
+    </div>
+
+    <!-- ===== HEADER ===== -->
     <div class="header-with-logout">
         <h1 id="mainTitle">🏭 Plastic Department Handover System</h1>
         <div class="header-buttons">
             <button class="change-pwd-btn" onclick="openChangePassword()">🔑 Change Password</button>
             <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+        </div>
+    </div>
+
+    <!-- ===== DASHBOARD SECTION ===== -->
+    <div style="background: linear-gradient(135deg, #e8eaf6, #f5f5f5); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+        <h2 style="border-bottom: none; color: #0d47a1; font-size: 20px; margin-top: 0;">📊 Smart Manufacturing Dashboard</h2>
+        
+        <!-- Machine Status Cards -->
+        <div class="dashboard-grid">
+            <div class="dash-card green-border">
+                <div class="number">42.6%</div>
+                <div class="label">Machines Without Production</div>
+            </div>
+            <div class="dash-card">
+                <div class="number">35.61</div>
+                <div class="label">Machines With Production</div>
+            </div>
+            <div class="dash-card red-border">
+                <div class="number">57.4%</div>
+                <div class="label">Machines Without Production</div>
+            </div>
+            <div class="dash-card green-border">
+                <div class="number">60.9%</div>
+                <div class="label">Machines With Production</div>
+            </div>
+            <div class="dash-card orange-border">
+                <div class="number">73.6%</div>
+                <div class="label">NPT</div>
+            </div>
+            <div class="dash-card red-border">
+                <div class="number">3.0%</div>
+                <div class="label">Rejection</div>
+            </div>
+            <div class="dash-card purple-border">
+                <div class="number">82.3%</div>
+                <div class="label">Capacity Utilization</div>
+            </div>
+            <div class="dash-card orange-border">
+                <div class="number">82.3%</div>
+                <div class="label">NPT Trend</div>
+            </div>
+        </div>
+
+        <!-- Machine Overview -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
+            <div style="background: #0d47a1; color: #fff; padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 32px; font-weight: 700;">84</div>
+                <div style="font-size: 13px; opacity: 0.9;">Total Machines</div>
+            </div>
+            <div style="background: #4caf50; color: #fff; padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 32px; font-weight: 700;">61</div>
+                <div style="font-size: 13px; opacity: 0.9;">Smart Machines</div>
+            </div>
+            <div style="background: #ff9800; color: #fff; padding: 15px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 32px; font-weight: 700;">23</div>
+                <div style="font-size: 13px; opacity: 0.9;">Manual Machines</div>
+            </div>
+        </div>
+
+        <!-- Live Data -->
+        <div class="dash-row-2">
+            <div class="dash-small" style="border-left: 3px solid #4caf50;">
+                <div class="number" style="color: #4caf50;">19 <span style="font-size:14px;">/ 61</span></div>
+                <div class="label">🟢 Live Online Machines</div>
+            </div>
+            <div class="dash-small" style="border-left: 3px solid #f44336;">
+                <div class="number" style="color: #f44336;">42 <span style="font-size:14px;">/ 61</span></div>
+                <div class="label">🔴 Live Offline Machines</div>
+            </div>
+        </div>
+        
+        <!-- NPT Trend Mini Chart (visual) -->
+        <div style="margin-top: 12px; background: #fff; border-radius: 8px; padding: 12px; border: 1px solid #eee;">
+            <div style="font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px;">📈 Weekly NPT Trend</div>
+            <div style="display: flex; gap: 6px; align-items: flex-end; height: 60px;">
+                <div style="flex:1; background: #4caf50; height: 20px; border-radius: 4px 4px 0 0;"></div>
+                <div style="flex:1; background: #ff9800; height: 35px; border-radius: 4px 4px 0 0;"></div>
+                <div style="flex:1; background: #f44336; height: 50px; border-radius: 4px 4px 0 0;"></div>
+                <div style="flex:1; background: #ff9800; height: 30px; border-radius: 4px 4px 0 0;"></div>
+                <div style="flex:1; background: #4caf50; height: 25px; border-radius: 4px 4px 0 0;"></div>
+                <div style="flex:1; background: #ff9800; height: 40px; border-radius: 4px 4px 0 0;"></div>
+                <div style="flex:1; background: #4caf50; height: 15px; border-radius: 4px 4px 0 0;"></div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-top: 4px; font-size: 9px; color: #999;">
+                <span style="flex:1; text-align:center;">Mon</span>
+                <span style="flex:1; text-align:center;">Tue</span>
+                <span style="flex:1; text-align:center;">Wed</span>
+                <span style="flex:1; text-align:center;">Thu</span>
+                <span style="flex:1; text-align:center;">Fri</span>
+                <span style="flex:1; text-align:center;">Sat</span>
+                <span style="flex:1; text-align:center;">Sun</span>
+            </div>
         </div>
     </div>
 
@@ -1031,7 +1217,7 @@
     }
 
     // =========================================================
-    // DELETE FUNCTIONS (PASSWORD PROTECTED: 000)
+    // DELETE FUNCTIONS (Password: 000)
     // =========================================================
     function deleteSingleMasterItem() {
         if (!verifyDeletePassword()) {
