@@ -367,17 +367,10 @@
         <div class="form-row">
             <div><label>Date</label><input type="date" id="currentDateDisplay"></div>
             <div><label>HANDOVER QTY *</label><input type="number" id="handoverQty" placeholder="Today's QTY" required min="1"></div>
-            
-            <!-- === NEW FIELD: LOT NUMBER === -->
             <div><label>Lot Number</label><input type="text" id="lotNumber" placeholder="Enter Lot Number"></div>
-            
             <div><label>Handover By *</label>
                 <select id="handoverPerson" required>
-                    <option value="">-- Select --</option>
-                    <option value="Mr. Mohon">Mr. Mohon</option>
-                    <option value="Mr. Ahamed">Mr. Ahamed</option>
-                    <option value="Mr. Pobitra">Mr. Pobitra</option>
-                    <option value="Mr. Shawon">Mr. Shawon</option>
+                    <!-- Dynamic options will be populated via JavaScript based on department -->
                 </select>
             </div>
             <div><label>Shift</label>
@@ -548,6 +541,33 @@
     };
 
     // =========================================================
+    // DEPARTMENT-WISE HANDOVER PERSON OPTIONS
+    // =========================================================
+    const HANDOVER_PERSONS = {
+        'Plastic-7.2': ['Pankoj Kumar', 'Harun', 'Golam', 'Mizan', 'Pappu', 'Sajib'],
+        'default': ['Mr. Mohon', 'Mr. Ahamed', 'Mr. Pobitra', 'Mr. Shawon']
+    };
+
+    function getHandoverPersons() {
+        if (currentDepartment === 'Plastic-7.2') {
+            return HANDOVER_PERSONS['Plastic-7.2'];
+        }
+        return HANDOVER_PERSONS['default'];
+    }
+
+    function populateHandoverPersonSelect() {
+        const select = document.getElementById('handoverPerson');
+        const persons = getHandoverPersons();
+        select.innerHTML = '<option value="">-- Select --</option>';
+        persons.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+    }
+
+    // =========================================================
     // DELETE PASSWORD VERIFICATION
     // =========================================================
     function verifyDeletePassword() {
@@ -615,6 +635,10 @@
         document.getElementById('mainTitle').textContent = `🏭 ${currentDepartment} - Handover System`;
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
+
+        // Populate handover person dropdown based on department
+        populateHandoverPersonSelect();
+
         startListening(basePath);
     }
 
