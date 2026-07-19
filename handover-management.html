@@ -335,7 +335,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- NEW DATA ENTRY (Lot Number field added) -->
+    <!-- NEW DATA ENTRY -->
     <!-- ============================================================ -->
     <h2>📝 New Data Entry</h2>
     <form id="entryForm">
@@ -370,7 +370,7 @@
             <div><label>Lot Number</label><input type="text" id="lotNumber" placeholder="Enter Lot Number"></div>
             <div><label>Handover By *</label>
                 <select id="handoverPerson" required>
-                    <!-- Dynamic options will be populated via JavaScript based on department -->
+                    <option value="">-- Select --</option>
                 </select>
             </div>
             <div><label>Shift</label>
@@ -390,7 +390,7 @@
         <div><button class="btn-info" onclick="exportReport()">📥 CSV</button></div>
     </div>
 
-    <!-- Handover Table (added Lot Number column) -->
+    <!-- Handover Table -->
     <div class="table-wrapper">
         <table id="stockTable">
             <thead>
@@ -541,31 +541,14 @@
     };
 
     // =========================================================
-    // DEPARTMENT-WISE HANDOVER PERSON OPTIONS
+    // DEPARTMENT-SPECIFIC HANDOVER BY LISTS
     // =========================================================
-    const HANDOVER_PERSONS = {
+    const HANDOVER_BY_LISTS = {
+        'Plastic-03': ['Mr. Mohon', 'Mr. Ahamed', 'Mr. Pobitra', 'Mr. Shawon'],
+        'Plastic-6.2': ['Mr. Mohon', 'Mr. Ahamed', 'Mr. Pobitra', 'Mr. Shawon'],
         'Plastic-7.2': ['Pankoj Kumar', 'Harun', 'Golam', 'Mizan', 'Pappu', 'Sajib'],
-        'default': ['Mr. Mohon', 'Mr. Ahamed', 'Mr. Pobitra', 'Mr. Shawon']
+        'Plastic-7.3': ['Juwel', 'Jogodish', 'Ashik', 'Hrdoy']
     };
-
-    function getHandoverPersons() {
-        if (currentDepartment === 'Plastic-7.2') {
-            return HANDOVER_PERSONS['Plastic-7.2'];
-        }
-        return HANDOVER_PERSONS['default'];
-    }
-
-    function populateHandoverPersonSelect() {
-        const select = document.getElementById('handoverPerson');
-        const persons = getHandoverPersons();
-        select.innerHTML = '<option value="">-- Select --</option>';
-        persons.forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            select.appendChild(opt);
-        });
-    }
 
     // =========================================================
     // DELETE PASSWORD VERIFICATION
@@ -635,11 +618,26 @@
         document.getElementById('mainTitle').textContent = `🏭 ${currentDepartment} - Handover System`;
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
-
-        // Populate handover person dropdown based on department
-        populateHandoverPersonSelect();
-
+        
+        // Update Handover By dropdown based on department
+        updateHandoverByDropdown();
+        
         startListening(basePath);
+    }
+
+    // =========================================================
+    // UPDATE HANDOVER BY DROPDOWN
+    // =========================================================
+    function updateHandoverByDropdown() {
+        const select = document.getElementById('handoverPerson');
+        const list = HANDOVER_BY_LISTS[currentDepartment] || ['Mr. Mohon', 'Mr. Ahamed', 'Mr. Pobitra', 'Mr. Shawon'];
+        select.innerHTML = '<option value="">-- Select --</option>';
+        list.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
     }
 
     function logout() {
@@ -1613,7 +1611,7 @@
     function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
 
     // =========================================================
-    // FORM SUBMIT (with Lot Number)
+    // FORM SUBMIT
     // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1726,7 +1724,7 @@
     }
 
     // =========================================================
-    // EDIT HANDOVER (with Lot Number)
+    // EDIT HANDOVER
     // =========================================================
     function openEditModal(index) {
         const item = handoverData[index];
