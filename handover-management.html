@@ -301,6 +301,8 @@
         .btn-outline:hover { background: #1565c0; color: #fff; }
         .btn-sm { padding: 6px 14px; font-size: 13px; border-radius: 8px; }
         .btn-xs { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+        .btn-excel { background: #1d6f42; color: #fff; }
+        .btn-excel:hover { background: #145a33; }
 
         /* ===== ফর্ম স্টাইল ===== */
         .section-title {
@@ -363,6 +365,45 @@
             flex-wrap: wrap;
         }
 
+        /* ===== সার্চ বক্স ===== */
+        .search-box {
+            position: relative;
+        }
+        .search-box input {
+            padding: 12px 14px 12px 40px;
+            border: 2px solid #e8ecf0;
+            border-radius: 10px;
+            font-size: 14px;
+            width: 100%;
+            background: #fafbfc;
+            transition: 0.3s;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: #1565c0;
+            box-shadow: 0 0 0 4px rgba(21, 101, 192, 0.1);
+        }
+        .search-box .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8a9aaa;
+        }
+        .search-box .clear-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #8a9aaa;
+            cursor: pointer;
+            display: none;
+            font-size: 16px;
+        }
+        .search-box .clear-btn.show { display: block; }
+
         /* ===== টেবিল ===== */
         .table-wrapper {
             background: #fff;
@@ -415,7 +456,7 @@
             background: #fff;
             padding: 25px;
             border-radius: 20px;
-            max-width: 600px;
+            max-width: 750px;
             width: 100%;
             max-height: 85vh;
             overflow-y: auto;
@@ -481,6 +522,9 @@
         .badge-done { background: #e8f5e9; color: #2e7d32; }
         .badge-pending { background: #fff3e0; color: #e65100; }
         .badge-complete { background: #e3f2fd; color: #0d47a1; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body class="login-active" id="bodyEl">
@@ -575,13 +619,18 @@
     </div>
 
     <!-- ===== নিউ ডেটা এন্ট্রি (ডিফল্ট ভিউ) ===== -->
-    <div id="tabEntry" class="tab-content">
+    <div id="tabEntry" class="tab-content active">
         <div class="section-title"><i class="fas fa-pen"></i> নিউ ডেটা এন্ট্রি</div>
         <form id="entryForm" class="form-card">
             <div class="form-row">
                 <div class="form-group">
                     <label>জব অর্ডার <span class="required">*</span></label>
-                    <select id="jobOrderSelect" required onchange="loadItemsByJobOrder()">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="joSearchInput" placeholder="জব অর্ডার সার্চ করুন..." oninput="filterJOSelect()">
+                        <button type="button" class="clear-btn" id="joClearBtn" onclick="clearJOSearch()"><i class="fas fa-times-circle"></i></button>
+                    </div>
+                    <select id="jobOrderSelect" required onchange="loadItemsByJobOrder()" style="margin-top:4px;">
                         <option value="">-- সিলেক্ট জব অর্ডার --</option>
                     </select>
                 </div>
@@ -655,7 +704,7 @@
     </div>
 
     <!-- ===== মাস্টার ডেটা ম্যানেজ ===== -->
-    <div id="tabMaster" class="tab-content" style="display:none;">
+    <div id="tabMaster" class="tab-content">
         <div class="section-title"><i class="fas fa-database"></i> মাস্টার ডেটা ম্যানেজ</div>
         <div class="form-card">
             <div class="form-row">
@@ -723,7 +772,7 @@
     </div>
 
     <!-- ===== রিপোর্ট ===== -->
-    <div id="tabReport" class="tab-content" style="display:none;">
+    <div id="tabReport" class="tab-content">
         <div class="section-title"><i class="fas fa-chart-bar"></i> রিপোর্ট</div>
         <div class="form-card">
             <div class="form-row">
@@ -762,6 +811,7 @@
         </table>
     </div>
     <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+        <button class="btn btn-excel btn-sm" onclick="downloadHandoverExcel()"><i class="fas fa-file-excel"></i> এক্সেল ডাউনলোড</button>
         <button class="btn btn-danger btn-sm" onclick="clearAllHandover()"><i class="fas fa-trash-alt"></i> সব হ্যান্ডওভার ডিলিট</button>
     </div>
     <div class="footer-note" style="margin-top:20px;text-align:center;color:#8a9aaa;font-size:12px;">
@@ -804,14 +854,21 @@
     </div>
 </div>
 
-<!-- জব রিপোর্ট মডাল -->
+<!-- জব রিপোর্ট মডাল (সার্চ সহ) -->
 <div class="modal" id="joReportModal">
     <div class="modal-content" style="max-width:750px;">
         <h3><i class="fas fa-file-alt"></i> জব রিপোর্ট</h3>
         <div class="form-row">
             <div class="form-group">
-                <label>জব অর্ডার</label>
-                <select id="joSelect" onchange="loadJoReport()"><option value="">-- সিলেক্ট করুন --</option></select>
+                <label>জব অর্ডার সার্চ করুন</label>
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="joReportSearchInput" placeholder="জব অর্ডার সার্চ করুন..." oninput="filterJOReportSelect()">
+                    <button type="button" class="clear-btn" id="joReportClearBtn" onclick="clearJOReportSearch()"><i class="fas fa-times-circle"></i></button>
+                </div>
+                <select id="joSelect" onchange="loadJoReport()" style="margin-top:4px;">
+                    <option value="">-- সিলেক্ট করুন --</option>
+                </select>
             </div>
             <div class="form-group" style="justify-content:flex-end;">
                 <button class="btn btn-secondary btn-sm" onclick="closeJoReport()" style="width:100%;">বন্ধ করুন</button>
@@ -882,6 +939,10 @@
     let deletedItems = [];
     let editIndex = null;
     let tempList = [];
+    
+    // সার্চ ফিল্টার করার জন্য কপি
+    let allJOList = [];
+    let allJOReportList = [];
 
     const firebaseConfig = {
         apiKey: "AIzaSyDbT-5voxU6UGWvzJ3i0VgZhagQICr2EBk",
@@ -1080,17 +1141,17 @@
     // ট্যাব স্যুইচ
     // =========================================================
     function switchTab(tab) {
-        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         
         if (tab === 'entry') {
-            document.getElementById('tabEntry').style.display = 'block';
+            document.getElementById('tabEntry').classList.add('active');
             document.querySelector('.nav-item:nth-child(1)').classList.add('active');
         } else if (tab === 'master') {
-            document.getElementById('tabMaster').style.display = 'block';
+            document.getElementById('tabMaster').classList.add('active');
             document.querySelector('.nav-item:nth-child(2)').classList.add('active');
         } else if (tab === 'report') {
-            document.getElementById('tabReport').style.display = 'block';
+            document.getElementById('tabReport').classList.add('active');
             document.querySelector('.nav-item:nth-child(3)').classList.add('active');
         }
     }
@@ -1764,14 +1825,15 @@
     }
 
     // =========================================================
-    // ড্রপডাউন পপুলেট
+    // ড্রপডাউন পপুলেট ও সার্চ ফাংশন
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
         const current = select.value;
         const joList = [...new Set(masterItems.map(i => i.jobOrder))];
-        const joStatus = {};
+        allJOList = joList;
         
+        const joStatus = {};
         joList.forEach(jo => {
             const items = masterItems.filter(i => i.jobOrder === jo);
             let pending = 0;
@@ -1812,6 +1874,86 @@
             document.getElementById('remainingDisplay').value = '';
         }
         loadItemsByJobOrder();
+    }
+
+    // জব অর্ডার সার্চ ফিল্টার
+    function filterJOSelect() {
+        const searchText = document.getElementById('joSearchInput').value.toLowerCase().trim();
+        const select = document.getElementById('jobOrderSelect');
+        const clearBtn = document.getElementById('joClearBtn');
+        
+        if (searchText.length > 0) {
+            clearBtn.classList.add('show');
+        } else {
+            clearBtn.classList.remove('show');
+        }
+        
+        const filtered = allJOList.filter(jo => jo.toLowerCase().includes(searchText));
+        
+        // বর্তমান নির্বাচিত মান সংরক্ষণ
+        const currentValue = select.value;
+        
+        // নতুন অপশন তৈরি
+        select.innerHTML = '<option value="">-- সিলেক্ট জব অর্ডার --</option>';
+        if (filtered.length === 0 && searchText.length > 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '❌ কোন জব অর্ডার পাওয়া যায়নি';
+            opt.disabled = true;
+            select.appendChild(opt);
+        } else {
+            // শুধু pending JO দেখান (সার্চের ক্ষেত্রে সব দেখানো ভাল)
+            const joList = filtered.length > 0 ? filtered : allJOList;
+            const joStatus = {};
+            joList.forEach(jo => {
+                const items = masterItems.filter(i => i.jobOrder === jo);
+                let pending = 0;
+                items.forEach(item => {
+                    const asOf = handoverData
+                        .filter(h => h.jobOrder === jo && h.itemCode === item.itemCode)
+                        .reduce((sum, h) => sum + (h.handoverQty || 0), 0);
+                    if (asOf < item.demandQty) pending++;
+                });
+                joStatus[jo] = { total: items.length, pending };
+            });
+            
+            // সার্চের সময় সব দেখান
+            const sortedList = filtered.length > 0 ? filtered : joList.filter(jo => joStatus[jo] && joStatus[jo].pending > 0);
+            if (sortedList.length === 0 && filtered.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = '✅ সব জব অর্ডার সম্পন্ন!';
+                opt.disabled = true;
+                select.appendChild(opt);
+            } else {
+                const displayList = filtered.length > 0 ? filtered : sortedList;
+                displayList.forEach(jo => {
+                    const opt = document.createElement('option');
+                    opt.value = jo;
+                    const status = joStatus[jo];
+                    if (status) {
+                        opt.textContent = `${jo} (পেন্ডিং ${status.pending}/${status.total})`;
+                    } else {
+                        opt.textContent = jo;
+                    }
+                    select.appendChild(opt);
+                });
+            }
+        }
+        
+        // আগের নির্বাচিত মান সেট করার চেষ্টা
+        if (currentValue && [...select.options].some(o => o.value === currentValue)) {
+            select.value = currentValue;
+        }
+        
+        loadItemsByJobOrder();
+    }
+    
+    function clearJOSearch() {
+        document.getElementById('joSearchInput').value = '';
+        document.getElementById('joClearBtn').classList.remove('show');
+        filterJOSelect();
+        document.getElementById('joSearchInput').focus();
     }
 
     function loadItemsByJobOrder() {
@@ -2037,7 +2179,40 @@
     }
 
     // =========================================================
-    // জব রিপোর্ট
+    // হ্যান্ডওভার এক্সেল ডাউনলোড
+    // =========================================================
+    function downloadHandoverExcel() {
+        if (!handoverData.length) {
+            alert('কোন ডেটা নেই!');
+            return;
+        }
+        
+        const rows = [['#', 'জব অর্ডার', 'আইটেম কোড', 'আইটেম নাম', 'রঙ', 'কোয়ান্টিটি', 'লট নং', 'হ্যান্ডওভার করেছেন', 'শিফট', 'তারিখ', 'সময়']];
+        handoverData.forEach((item, i) => {
+            rows.push([
+                i+1,
+                item.jobOrder,
+                item.itemCode,
+                item.itemName,
+                item.color || '',
+                item.handoverQty,
+                item.lotNumber || '',
+                item.handoverPerson,
+                item.shift || '',
+                item.entryDate || '',
+                item.entryTime || ''
+            ]);
+        });
+        
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, 'Handover Records');
+        XLSX.writeFile(wb, `Handover_Records_${new Date().toISOString().slice(0,10)}.xlsx`);
+        alert('✅ হ্যান্ডওভার এক্সেল ডাউনলোড শুরু হয়েছে!');
+    }
+
+    // =========================================================
+    // জব রিপোর্ট (সার্চ সহ)
     // =========================================================
     let currentReportJO = '';
 
@@ -2045,15 +2220,65 @@
         if (!masterItems.length) { alert('কোন ডেটা নেই!'); return; }
         const select = document.getElementById('joSelect');
         const joList = [...new Set(masterItems.map(i => i.jobOrder))];
+        allJOReportList = joList;
         select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
         joList.forEach(jo => { const opt = document.createElement('option'); opt.value = jo; opt.textContent = jo; select.appendChild(opt); });
         document.getElementById('joReportContent').innerHTML = '<p class="text-muted">জব অর্ডার সিলেক্ট করুন</p>';
         document.getElementById('joReportModal').style.display = 'flex';
         currentReportJO = '';
+        // সার্চ ইনপুট ক্লিয়ার
+        document.getElementById('joReportSearchInput').value = '';
+        document.getElementById('joReportClearBtn').classList.remove('show');
     }
 
     function closeJoReport() {
         document.getElementById('joReportModal').style.display = 'none';
+    }
+
+    // জব রিপোর্ট সার্চ ফিল্টার
+    function filterJOReportSelect() {
+        const searchText = document.getElementById('joReportSearchInput').value.toLowerCase().trim();
+        const select = document.getElementById('joSelect');
+        const clearBtn = document.getElementById('joReportClearBtn');
+        
+        if (searchText.length > 0) {
+            clearBtn.classList.add('show');
+        } else {
+            clearBtn.classList.remove('show');
+        }
+        
+        const filtered = allJOReportList.filter(jo => jo.toLowerCase().includes(searchText));
+        
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
+        if (filtered.length === 0 && searchText.length > 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '❌ কোন জব অর্ডার পাওয়া যায়নি';
+            opt.disabled = true;
+            select.appendChild(opt);
+        } else {
+            const displayList = filtered.length > 0 ? filtered : allJOReportList;
+            displayList.forEach(jo => {
+                const opt = document.createElement('option');
+                opt.value = jo;
+                opt.textContent = jo;
+                select.appendChild(opt);
+            });
+        }
+        
+        if (currentValue && [...select.options].some(o => o.value === currentValue)) {
+            select.value = currentValue;
+        }
+        
+        loadJoReport();
+    }
+    
+    function clearJOReportSearch() {
+        document.getElementById('joReportSearchInput').value = '';
+        document.getElementById('joReportClearBtn').classList.remove('show');
+        filterJOReportSelect();
+        document.getElementById('joReportSearchInput').focus();
     }
 
     function loadJoReport() {
