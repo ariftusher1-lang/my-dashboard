@@ -1,653 +1,876 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SFG Handover & Record Monitoring System</title>
+    <title>PRAN-RFL | হ্যান্ডওভার সিস্টেম</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        /* ===== GLOBAL ===== */
+        /* ===== গ্লোবাল স্টাইল ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f4f7fc; padding: 12px; }
-        .container { max-width: 100%; margin: auto; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-
-        /* ===== LOGIN SCREEN (dark glass theme) ===== */
-        body.login-active {
-            background: radial-gradient(circle at 15% 15%, #16305c 0%, #0b1c33 45%, #081321 100%),
-                        linear-gradient(135deg, #071427 0%, #0b1c33 40%, #0d3b3a 75%, #0f5c52 100%);
-            background-blend-mode: screen;
-            min-height: 100vh;
+        body {
+            font-family: 'Segoe UI', 'Bangla', Arial, sans-serif;
+            background: #f0f4f8;
             padding: 0;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
+
+        /* ===== লগইন স্ক্রিন ===== */
+        body.login-active {
+            background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0d3b3a 100%);
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
         .login-container {
-            max-width: 400px;
-            width: 92%;
-            margin: 40px auto;
-            padding: 36px 32px 28px;
-            background: rgba(20, 33, 56, 0.72);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+            max-width: 420px;
+            width: 100%;
+            padding: 40px 35px 30px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
             text-align: center;
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
         }
-        .login-icon {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 18px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #1565c0, #1e88e5);
+        .login-logo {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, #e53935, #c62828);
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 30px;
-            box-shadow: 0 8px 24px rgba(21, 101, 192, 0.5);
-        }
-        .login-container h2 {
+            font-size: 32px;
             color: #fff;
+            box-shadow: 0 10px 30px rgba(229, 57, 53, 0.4);
+        }
+        .login-container h1 {
+            color: #fff;
+            font-size: 26px;
             font-weight: 800;
-            font-size: 24px;
-            line-height: 1.3;
-            margin-bottom: 6px;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
         }
-        .login-subtitle {
-            font-size: 12px;
-            letter-spacing: 1.5px;
-            color: #8fa3c4;
-            font-weight: 700;
+        .login-container .subtitle {
+            color: #8aabcf;
+            font-size: 13px;
+            letter-spacing: 2px;
+            font-weight: 600;
             text-transform: uppercase;
-            margin-bottom: 22px;
+            margin-bottom: 25px;
         }
-        .shift-toggle-display {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin: 0 0 20px;
-            font-size: 11px;
-            letter-spacing: 1px;
-            color: #7d90b0;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-        .shift-toggle-display .track {
-            position: relative;
-            flex: 1;
-            height: 4px;
-            border-radius: 4px;
-            background: linear-gradient(90deg, #2b4a7a 0%, #17b7a3 100%);
-        }
-        .shift-toggle-display .track::after {
-            content: '';
-            position: absolute;
-            right: -2px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #17e0c3;
-            box-shadow: 0 0 10px rgba(23, 224, 195, 0.9);
-        }
-        .login-field-group { text-align: left; margin-bottom: 14px; }
-        .login-field-group label {
+        .login-field { text-align: left; margin-bottom: 16px; }
+        .login-field label {
             display: block;
-            font-size: 11px;
+            color: #a0bcdd;
+            font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.8px;
             text-transform: uppercase;
-            color: #8fa3c4;
             margin-bottom: 6px;
         }
-        .login-container select, .login-container input {
+        .login-field select, .login-field input {
             width: 100%;
-            padding: 13px 14px;
-            margin: 0;
+            padding: 14px 16px;
+            border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 10px;
-            font-size: 15px;
             background: rgba(255,255,255,0.06);
-            color: #eaf1fb;
-        }
-        .login-container select option { background: #14213a; color: #eaf1fb; }
-        .login-container input::placeholder { color: #64789c; }
-        .login-container select:focus, .login-container input:focus {
-            outline: none;
-            border-color: #1e88e5;
-            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.25);
-        }
-        .login-container button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #1565c0, #1e88e5);
-            color: white;
-            border: none;
-            border-radius: 10px;
+            color: #fff;
             font-size: 16px;
+            transition: 0.3s;
+        }
+        .login-field select option { background: #1a2a40; color: #fff; }
+        .login-field select:focus, .login-field input:focus {
+            outline: none;
+            border-color: #e53935;
+            box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.2);
+        }
+        .login-field input::placeholder { color: #6a8aaa; }
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #e53935, #c62828);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
             font-weight: 700;
             cursor: pointer;
             margin-top: 8px;
-            box-shadow: 0 8px 20px rgba(21, 101, 192, 0.35);
+            transition: 0.3s;
+            box-shadow: 0 8px 25px rgba(229, 57, 53, 0.35);
         }
-        .login-container button:hover { background: linear-gradient(135deg, #0d47a1, #1976d2); }
-        .login-container .error { color: #ff8a80; font-size: 13px; margin-top: 12px; display: none; }
-        .login-footer-note {
-            margin-top: 18px;
-            font-size: 11px;
-            color: #64789c;
-            letter-spacing: 0.3px;
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(229, 57, 53, 0.5); }
+        .login-error { color: #ff6b6b; font-size: 14px; margin-top: 12px; display: none; }
+        .login-footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #5a7a9a;
+            letter-spacing: 0.5px;
         }
 
-        .logout-btn, .change-pwd-btn { background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .change-pwd-btn { background: #00897b; margin-right: 8px; }
-        .change-pwd-btn:hover { background: #00695c; }
-        .logout-btn:hover { background: #b02a37; }
-        h1 { font-size: 22px; color: #0d47a1; border-bottom: 2px solid #0d47a1; padding-bottom: 8px; margin-bottom: 15px; }
-        h2 { font-size: 18px; color: #0d47a1; border-bottom: 1px solid #0d47a1; padding-bottom: 6px; margin: 15px 0 10px; }
-        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
-        .form-row > div { flex: 1; min-width: 120px; }
-        label { font-weight: bold; display: block; font-size: 13px; margin-bottom: 3px; color: #333; }
-        input, select { width: 100%; padding: 10px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; background: #fff; }
-        input[readonly] { background: #f0f0f0; font-weight: bold; color: #0d47a1; cursor: default; }
-        button { background: #0d47a1; color: white; border: none; padding: 12px 18px; border-radius: 6px; font-size: 16px; cursor: pointer; transition: 0.3s; width: 100%; }
-        button:hover { background: #0a3a7a; }
-        .btn-success { background: #28a745; }
-        .btn-success:hover { background: #1e7e34; }
-        .btn-danger { background: #dc3545; }
-        .btn-danger:hover { background: #b02a37; }
-        .btn-warning { background: #ffc107; color: #000; }
-        .btn-warning:hover { background: #e0a800; }
-        .btn-info { background: #17a2b8; }
-        .btn-info:hover { background: #138496; }
-        .btn-secondary { background: #6c757d; }
-        .btn-secondary:hover { background: #5a6268; }
-        .btn-purple { background: #6f42c1; }
-        .btn-purple:hover { background: #5a32a3; }
-        .btn-edit { background: #ff9800; color: #fff; }
-        .btn-edit:hover { background: #e68900; }
-        .btn-excel { background: #1d6f42; color: #fff; }
-        .btn-excel:hover { background: #145a33; }
-        .btn-detail { background: #17a2b8; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 16px; cursor: pointer; width: auto; }
-        .btn-delete-single { background: #e67e22; color: #fff; }
-        .btn-delete-single:hover { background: #d35400; }
-        .btn-edit-demand { background: #00897b; color: #fff; }
-        .btn-edit-demand:hover { background: #00695c; }
-        .btn-toggle { background: #0d47a1; color: #fff; width: auto; padding: 8px 16px; margin-bottom: 8px; border-radius: 6px; font-size: 15px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-toggle:hover { background: #0a3a7a; }
-        .btn-toggle-manual { background: #2e7d32; }
-        .btn-toggle-manual:hover { background: #1b5e20; }
-        .btn-toggle-master { background: #6c757d; }
-        .btn-toggle-master:hover { background: #5a6268; }
-        .btn-toggle-main { background: #0d47a1; }
-        .btn-toggle-main:hover { background: #0a3a7a; }
-        .btn-jo-list { background: #0d47a1; color: #fff; width: auto; padding: 4px 12px; font-size: 13px; border-radius: 4px; margin-left: 8px; }
-        .btn-jo-list:hover { background: #0a3a7a; }
-        .btn-restore { background: #00897b; color: #fff; padding: 4px 10px; font-size: 12px; border-radius: 4px; width: auto; }
-        .btn-restore:hover { background: #00695c; }
-        .btn-add-list { background: #ff9800; color: #fff; }
-        .btn-add-list:hover { background: #e68900; }
-        .btn-save-all { background: #0d47a1; color: #fff; }
-        .btn-save-all:hover { background: #0a3a7a; }
-        .btn-clear-list { background: #dc3545; color: #fff; }
-        .btn-clear-list:hover { background: #b02a37; }
-        .btn-migrate { background: #8e24aa; color: #fff; }
-        .btn-migrate:hover { background: #6a1b9a; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
-        th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
-        th { background: #0d47a1; color: white; position: sticky; top: 0; font-size: 12px; }
-        td { background: #fff; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 999; padding: 15px; }
-        .modal-content { background: #fff; padding: 20px; border-radius: 10px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
-        .modal-content h3 { margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; font-size: 18px; }
-        .modal-content .btn-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
-        .modal-content .btn-group button { width: auto; padding: 8px 20px; }
-        .modal-content .jo-list-item { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; transition: 0.2s; }
-        .modal-content .jo-list-item:hover { background: #e3f2fd; }
-        .summary-card { 
-            background: #e3f2fd; 
-            padding: 15px; 
-            border-radius: 10px; 
-            margin: 12px 0; 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-            gap: 12px; 
-            border: 1px solid #bbdefb;
+        /* ===== মেইন অ্যাপ ===== */
+        #mainApp { display: none; background: #f0f4f8; min-height: 100vh; }
+
+        /* ===== হেডার ===== */
+        .app-header {
+            background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 100%);
+            padding: 12px 20px;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
         }
-        .summary-card .item { 
-            background: #fff; 
-            padding: 10px 12px; 
-            border-radius: 8px; 
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-            text-align: center;
-            position: relative;
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .summary-card .label { 
-            font-size: 11px; 
-            color: #555; 
-            display: block;
-            font-weight: 600;
-            text-transform: uppercase;
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .header-brand .brand-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #e53935, #c62828);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #fff;
+            font-weight: 800;
+        }
+        .header-brand h1 {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
             letter-spacing: 0.3px;
         }
-        .summary-card .value { 
-            font-size: 22px; 
-            font-weight: 700; 
-            color: #0d47a1; 
+        .header-brand h1 span { color: #e53935; }
+        .header-brand .dept-tag {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #8aabcf;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header-user .user-name {
+            color: #e0e8f0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .header-user .user-name i { color: #4caf50; margin-right: 4px; }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .header-actions button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-logout { background: rgba(229, 57, 53, 0.2); color: #ef5350; }
+        .btn-logout:hover { background: rgba(229, 57, 53, 0.35); }
+        .btn-password { background: rgba(255,255,255,0.08); color: #8aabcf; }
+        .btn-password:hover { background: rgba(255,255,255,0.15); }
+
+        /* ===== নেভিগেশন মেনু ===== */
+        .nav-menu {
+            display: flex;
+            gap: 6px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 14px;
+        }
+        .nav-menu .nav-item {
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #8aabcf;
+            cursor: pointer;
+            transition: 0.3s;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-menu .nav-item:hover {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+        }
+        .nav-menu .nav-item.active {
+            background: rgba(229, 57, 53, 0.2);
+            color: #ef5350;
+            border-color: rgba(229, 57, 53, 0.3);
+        }
+        .nav-menu .nav-item i { font-size: 14px; }
+
+        /* ===== সারাংশ কার্ড ===== */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: #fff;
+            padding: 14px 12px;
+            border-radius: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: 0.3s;
+        }
+        .summary-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        .summary-card .label {
+            font-size: 11px;
+            color: #7a8a9a;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: 800;
             margin-top: 4px;
         }
-        .summary-card .value.done { color: #2e7d32; }
-        .summary-card .value.pending { color: #b71c1c; }
-        .summary-card .value.total { color: #0d47a1; }
-        .filter-section { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; padding: 12px; background: #f8f9fa; border-radius: 8px; }
-        .filter-section > div { flex: 1; min-width: 120px; }
-        .filter-section button { width: 100%; }
-        .handover-info { background: #e3f2fd; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
-        .handover-info > div { flex: 1; min-width: 80px; }
-        .handover-info input { background: #fff; }
-        .master-import-section { 
-            background: #fff8e1; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid #ffc107; 
-            margin-bottom: 15px; 
+        .summary-card .value.blue { color: #1565c0; }
+        .summary-card .value.green { color: #2e7d32; }
+        .summary-card .value.red { color: #c62828; }
+        .summary-card .value.orange { color: #e65100; }
+        .summary-card .value.purple { color: #6a1b9a; }
+
+        /* ===== বাটন স্টাইল ===== */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        .btn-primary { background: linear-gradient(135deg, #1565c0, #0d47a1); color: #fff; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(21, 101, 192, 0.35); }
+        .btn-success { background: linear-gradient(135deg, #2e7d32, #1b5e20); color: #fff; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(46, 125, 50, 0.35); }
+        .btn-warning { background: linear-gradient(135deg, #f57c00, #e65100); color: #fff; }
+        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245, 124, 0, 0.35); }
+        .btn-danger { background: linear-gradient(135deg, #c62828, #b71c1c); color: #fff; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(198, 40, 40, 0.35); }
+        .btn-info { background: linear-gradient(135deg, #00838f, #006064); color: #fff; }
+        .btn-info:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 131, 143, 0.35); }
+        .btn-purple { background: linear-gradient(135deg, #6a1b9a, #4a148c); color: #fff; }
+        .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(106, 27, 154, 0.35); }
+        .btn-outline { background: transparent; border: 2px solid #1565c0; color: #1565c0; }
+        .btn-outline:hover { background: #1565c0; color: #fff; }
+        .btn-sm { padding: 6px 14px; font-size: 13px; border-radius: 8px; }
+        .btn-xs { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+
+        /* ===== ফর্ম স্টাইল ===== */
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0a1628;
+            margin: 20px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title i { color: #e53935; }
+        .form-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3a4a;
+        }
+        .form-group label .required { color: #e53935; }
+        .form-group input, .form-group select {
+            padding: 12px 14px;
+            border: 2px solid #e8ecf0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: 0.3s;
+            background: #fafbfc;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #1565c0;
+            box-shadow: 0 0 0 4px rgba(21, 101, 192, 0.1);
+        }
+        .form-group input[readonly] {
+            background: #f0f2f5;
+            color: #0a1628;
+            font-weight: 600;
+            border-color: #e0e4e8;
+        }
+        .form-group .input-hint {
+            font-size: 11px;
+            color: #8a9aaa;
+            margin-top: 2px;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== টেবিল ===== */
+        .table-wrapper {
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin: 12px 0;
+        }
+        .table-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .table-wrapper th {
+            background: #0a1628;
+            color: #fff;
+            padding: 12px 10px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .table-wrapper td {
+            padding: 10px;
+            border-bottom: 1px solid #f0f2f5;
+            text-align: center;
+        }
+        .table-wrapper tr:hover td { background: #f8faff; }
+        .table-wrapper .text-left { text-align: left; }
+
+        /* ===== মডাল ===== */
+        .modal {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            padding: 20px;
         }
-        .master-import-section h3 { font-size: 16px; color: #d32f2f; margin-bottom: 8px; }
-        .manual-master-section {
-            background: #e8f5e9;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #4caf50;
-            margin-bottom: 15px;
-            display: none;
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
         }
-        .manual-master-section h3 { font-size: 16px; color: #2e7d32; margin-bottom: 8px; }
-        .manual-master-section .form-row input { background: #fff; }
-        .manual-master-section .form-row button { background: #28a745; }
-        .manual-master-section .form-row button:hover { background: #1e7e34; }
-        .table-wrapper { max-height: 400px; overflow-y: auto; }
-        .history-table { font-size: 12px; }
-        .history-table th { background: #17a2b8; }
-        .footer-note { margin-top: 15px; font-size: 12px; color: #777; text-align: center; }
-        .action-buttons { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
-        .action-buttons button { padding: 4px 8px; font-size: 12px; width: auto; }
-        .clear-btn { background: #6c757d; margin-top: 10px; }
-        .clear-btn:hover { background: #5a6268; }
-        .status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; }
-        .status-done { background: #d4edda; color: #155724; border: 1px solid #28a745; }
-        .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
-        .toggle-wrapper { text-align: left; margin: 6px 0; padding-left: 5px; }
-        .toggle-wrapper .btn-toggle { margin-right: 12px; }
-        .sub-toggle-wrapper { padding-left: 20px; margin: 4px 0; }
-        .jo-list-modal .modal-content { max-width: 420px; }
-        .detail-modal .modal-content { max-width: 550px; }
-        .deleted-modal .modal-content { max-width: 650px; }
-        .clickable { cursor: pointer; }
-        input[type="date"] { color-scheme: light; }
-        .temp-list-table { margin-top: 12px; }
-        .temp-list-table th { background: #ff9800; }
-        .batch-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        .batch-actions button { flex: 1; min-width: 120px; }
-        .header-with-logout { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .migrate-btn-wrapper { margin: 8px 0; }
-        .header-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .marquee-text { 
-            color: #0d47a1; 
-            font-weight: bold; 
-            font-size: 16px; 
-            margin: 8px 0; 
-            background: #ffebee; 
-            padding: 6px; 
-            border-radius: 4px; 
+        .modal-content h3 {
+            font-size: 20px;
+            color: #0a1628;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        @media (max-width: 600px) {
-            .form-row > div { min-width: 100%; }
-            .handover-info > div { min-width: 100%; }
-            .filter-section > div { min-width: 100%; }
-            .summary-card { grid-template-columns: repeat(2, 1fr); }
-            .summary-card .item { padding: 8px; }
+        .modal-content h3 i { color: #e53935; }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+            justify-content: flex-end;
+        }
+
+        /* ===== রেসপন্সিভ ===== */
+        @media (max-width: 768px) {
+            .header-brand h1 { font-size: 16px; }
+            .header-brand .dept-tag { font-size: 10px; padding: 2px 10px; }
+            .header-user .user-name { font-size: 12px; }
+            .nav-menu .nav-item { padding: 6px 12px; font-size: 12px; }
+            .summary-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .summary-card { padding: 10px 8px; }
             .summary-card .value { font-size: 18px; }
-            .modal-content { max-width: 100%; padding: 15px; }
-            table { font-size: 11px; }
-            th, td { padding: 3px 4px; }
-            .btn-detail { font-size: 14px; padding: 4px 10px; }
-            .toggle-wrapper .btn-toggle { width: 100%; margin-right: 0; }
-            .sub-toggle-wrapper { padding-left: 10px; }
-            .batch-actions button { flex: 1 1 100%; }
-            .header-with-logout { flex-direction: column; align-items: stretch; }
-            .logout-btn, .change-pwd-btn { float: none; margin-top: 8px; }
-            .header-buttons { flex-direction: column; align-items: stretch; }
+            .form-row { grid-template-columns: 1fr; gap: 10px; }
+            .form-card { padding: 14px; }
+            .btn { padding: 10px 16px; font-size: 14px; }
+            .table-wrapper { font-size: 12px; overflow-x: auto; }
+            .table-wrapper th, .table-wrapper td { padding: 6px 8px; }
+            .modal-content { padding: 18px; margin: 10px; }
         }
+        @media (max-width: 480px) {
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+            .header-top { flex-direction: column; align-items: stretch; }
+            .header-user { justify-content: space-between; }
+            .nav-menu { justify-content: center; }
+            .header-actions button { padding: 6px 12px; font-size: 12px; }
+        }
+
+        /* ===== ইউটিলিটি ===== */
+        .mt-8 { margin-top: 8px; }
+        .mt-12 { margin-top: 12px; }
+        .mb-12 { margin-bottom: 12px; }
+        .gap-8 { gap: 8px; }
+        .flex-wrap { flex-wrap: wrap; }
+        .flex-center { display: flex; align-items: center; justify-content: center; }
+        .text-muted { color: #7a8a9a; font-size: 13px; }
+        .badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .badge-done { background: #e8f5e9; color: #2e7d32; }
+        .badge-pending { background: #fff3e0; color: #e65100; }
+        .badge-complete { background: #e3f2fd; color: #0d47a1; }
     </style>
 </head>
 <body class="login-active" id="bodyEl">
 
 <!-- ============================================================ -->
-<!-- LOGIN SCREEN -->
+<!-- লগইন স্ক্রিন -->
 <!-- ============================================================ -->
 <div id="loginScreen" class="login-container">
-    <div class="login-icon">🏭</div>
-    <h2>SFG Handover &amp;<br>Record Monitoring</h2>
-    <div class="login-subtitle" id="loginSubtitle">Please Select Department</div>
-
-    <div class="shift-toggle-display">
-        <span>Shift A</span>
-        <span class="track"></span>
-        <span>Shift B</span>
-    </div>
-
+    <div class="login-logo"><i class="fas fa-industry"></i></div>
+    <h1>PRAN-RFL</h1>
+    <div class="subtitle" id="loginSubtitle">হ্যান্ডওভার মনিটরিং সিস্টেম</div>
     <form id="loginForm" onsubmit="return handleLogin()">
-        <div class="login-field-group">
-            <label for="deptSelect">Select Department</label>
+        <div class="login-field">
+            <label for="deptSelect"><i class="fas fa-building"></i> ডিপার্টমেন্ট নির্বাচন করুন</label>
             <select id="deptSelect" required onchange="updateLoginSubtitle()">
-                <option value="">-- Select --</option>
-                <option value="Plastic-03">Plastic-03</option>
-                <option value="Plastic-6.2">Plastic-6.2</option>
-                <option value="Plastic-7.2">Plastic-7.2</option>
-                <option value="Plastic-7.3">Plastic-7.3</option>
+                <option value="">-- সিলেক্ট করুন --</option>
+                <option value="Plastic-03">প্লাস্টিক-০৩</option>
+                <option value="Plastic-6.2">প্লাস্টিক-৬.২</option>
+                <option value="Plastic-7.2">প্লাস্টিক-৭.২</option>
+                <option value="Plastic-7.3">প্লাস্টিক-৭.৩</option>
             </select>
         </div>
-        <div class="login-field-group">
-            <label for="passwordInput">Password</label>
-            <input type="password" id="passwordInput" placeholder="Enter password" required>
+        <div class="login-field">
+            <label for="passwordInput"><i class="fas fa-lock"></i> পাসওয়ার্ড</label>
+            <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড দিন" required>
         </div>
-        <button type="submit">🔑 Login</button>
-        <div id="loginError" class="error">❌ Invalid password or department!</div>
+        <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> লগইন</button>
+        <div id="loginError" class="login-error">❌ ভুল পাসওয়ার্ড বা ডিপার্টমেন্ট!</div>
     </form>
-    <div class="login-footer-note">Secure access · Production floor use only</div>
+    <div class="login-footer">🔒 শুধুমাত্র প্রোডাকশন ফ্লোরের জন্য</div>
 </div>
 
 <!-- ============================================================ -->
-<!-- MAIN APP -->
+<!-- মেইন অ্যাপ -->
 <!-- ============================================================ -->
-<div id="mainApp" style="display:none;">
+<div id="mainApp">
 <div class="container">
 
-    <div class="header-with-logout">
-        <h1 id="mainTitle">🏭 Plastic Department Handover System</h1>
-        <div class="header-buttons">
-            <button class="change-pwd-btn" onclick="openChangePassword()">🔑 Change Password</button>
-            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+    <!-- ===== হেডার ===== -->
+    <header class="app-header">
+        <div class="header-top">
+            <div class="header-brand">
+                <div class="brand-icon"><span>PR</span></div>
+                <div>
+                    <h1>PRAN-RFL <span>|</span> <span id="deptDisplay">প্লাস্টিক</span></h1>
+                    <div class="dept-tag" id="deptTag">Plastic-03</div>
+                </div>
+            </div>
+            <div class="header-user">
+                <span class="user-name"><i class="fas fa-circle" style="color:#4caf50;font-size:10px;"></i> <span id="userNameDisplay">Arifuzzaman</span></span>
+                <div class="header-actions">
+                    <button class="btn-password" onclick="openChangePassword()"><i class="fas fa-key"></i> পাসওয়ার্ড</button>
+                    <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> লগআউট</button>
+                </div>
+            </div>
+        </div>
+        <!-- ===== নেভিগেশন মেনু ===== -->
+        <nav class="nav-menu">
+            <span class="nav-item active" onclick="switchTab('entry')"><i class="fas fa-plus-circle"></i> নিউ ডেটা এন্ট্রি</span>
+            <span class="nav-item" onclick="switchTab('master')"><i class="fas fa-database"></i> মাস্টার ডেটা ম্যানেজ</span>
+            <span class="nav-item" onclick="switchTab('report')"><i class="fas fa-chart-bar"></i> রিপোর্ট</span>
+            <span class="nav-item" onclick="showJOList()"><i class="fas fa-list"></i> জব অর্ডার লিস্ট</span>
+        </nav>
+    </header>
+
+    <!-- ===== সারাংশ কার্ড ===== -->
+    <div class="summary-grid" id="summaryCard">
+        <div class="summary-card">
+            <div class="label">📋 মোট জব অর্ডার</div>
+            <div class="value blue" id="totalJO">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">⏳ পেন্ডিং জব</div>
+            <div class="value red" id="pendingJO">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">✅ সম্পন্ন জব</div>
+            <div class="value green" id="doneJO">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">📦 মোট আইটেম</div>
+            <div class="value purple" id="totalItems">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">✅ সম্পন্ন আইটেম</div>
+            <div class="value green" id="doneItems">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">⏳ পেন্ডিং আইটেম</div>
+            <div class="value red" id="pendingItems">0</div>
         </div>
     </div>
 
-    <!-- Summary Card -->
-    <div class="summary-card" id="summaryCard">
-        <div class="item">
-            <span class="label">📋 Total JO</span>
-            <div class="value total" id="totalJO">0</div>
-            <button class="btn-jo-list" onclick="showJOList()">Show/Hide</button>
-        </div>
-        <div class="item">
-            <span class="label">⏳ Pending JO</span>
-            <div class="value pending" id="pendingJO">0</div>
-        </div>
-        <div class="item">
-            <span class="label">✅ Done JO</span>
-            <div class="value done" id="doneJO">0</div>
-        </div>
-        <div class="item">
-            <span class="label">📦 Total Items</span>
-            <div class="value total" id="totalItems">0</div>
-        </div>
-        <div class="item">
-            <span class="label">✅ Done Items</span>
-            <div class="value done" id="doneItems">0</div>
-        </div>
-        <div class="item">
-            <span class="label">⏳ Pending Items</span>
-            <div class="value pending" id="pendingItems">0</div>
-        </div>
-    </div>
-
-    <!-- ===== Master Data Manage Toggle ===== -->
-    <div class="toggle-wrapper">
-        <button class="btn-toggle btn-toggle-main" id="toggleMainBtn" onclick="toggleMainMaster()">📂 Master Data Manage</button>
-    </div>
-    <div id="masterMainSection" style="display:none;">
-        <div class="migrate-btn-wrapper">
-            <button class="btn-migrate" onclick="migrateOldData()" style="width:auto; padding:10px 20px;">📥 Migrate Old Data</button>
-            <span style="font-size:12px; color:#555; margin-left:10px;">(Copy root data to current department)</span>
-        </div>
-
-        <!-- Manual Master Entry -->
-        <div class="sub-toggle-wrapper">
-            <button class="btn-toggle btn-toggle-manual" id="toggleManualBtn" onclick="toggleManualMaster()">➕ Manual Master Entry (Batch Add)</button>
-        </div>
-        <div class="manual-master-section" id="manualMasterSection">
-            <h3>📝 Manual Master Entry - Batch Add</h3>
-            <p style="font-size:13px; color:#555; margin-bottom:10px;">Add items one by one to the list below, then click <strong>"Save All"</strong> to upload all at once.</p>
+    <!-- ===== নিউ ডেটা এন্ট্রি (ডিফল্ট ভিউ) ===== -->
+    <div id="tabEntry" class="tab-content">
+        <div class="section-title"><i class="fas fa-pen"></i> নিউ ডেটা এন্ট্রি</div>
+        <form id="entryForm" class="form-card">
             <div class="form-row">
-                <div><label>JOB ORDER *</label><input type="text" id="manualJo" placeholder="JO-2026-001"></div>
-                <div><label>ITEM CODE *</label><input type="text" id="manualCode" placeholder="IC-001"></div>
-                <div><label>ITEM NAME *</label><input type="text" id="manualName" placeholder="Product Name"></div>
-                <div><label>COLOR</label><input type="text" id="manualColor" placeholder="Red/Blue"></div>
-                <div><label>DEMAND QTY *</label><input type="number" id="manualDemand" placeholder="100"></div>
-                <div style="display: flex; align-items: flex-end; gap:6px;">
-                    <button type="button" class="btn-add-list" onclick="addToList()" style="width:100%;">➕ Add to List</button>
+                <div class="form-group">
+                    <label>জব অর্ডার <span class="required">*</span></label>
+                    <select id="jobOrderSelect" required onchange="loadItemsByJobOrder()">
+                        <option value="">-- সিলেক্ট জব অর্ডার --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>আইটেম কোড <span class="required">*</span></label>
+                    <select id="itemCodeSelect" required onchange="loadItemDetails()">
+                        <option value="">-- সিলেক্ট কোড --</option>
+                    </select>
                 </div>
             </div>
-            <div id="tempListContainer" style="margin-top:15px;">
-                <h4 style="color:#d32f2f;">📋 Temporary List (<span id="tempCount">0</span> items)</h4>
-                <div class="table-wrapper temp-list-table">
-                    <table>
-                        <thead><tr><th>#</th><th>JOB ORDER</th><th>ITEM CODE</th><th>ITEM NAME</th><th>COLOR</th><th>DEMAND QTY</th><th>Action</th></tr></thead>
-                        <tbody id="tempListBody"><tr><td colspan="7" style="text-align:center;color:#999;padding:15px;">No items added yet.</td></tr></tbody>
-                    </table>
-                </div>
-                <div class="batch-actions">
-                    <button class="btn-save-all" onclick="saveAllToMaster()">💾 Save All to Master</button>
-                    <button class="btn-clear-list" onclick="clearTempList()">🗑️ Clear List</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Master Data Manage (Delete/Import/Edit) -->
-        <div class="sub-toggle-wrapper">
-            <button class="btn-toggle btn-toggle-master" id="toggleMasterBtn" onclick="toggleMasterData()">➕ Master Data Manage</button>
-        </div>
-        <div class="master-import-section" id="masterDataSection">
-            <h3>📂 Master Data Manage</h3>
             <div class="form-row">
-                <div><button class="btn-excel" onclick="downloadMasterTemplate()">📄 Template</button></div>
-                <div><button class="btn-excel" onclick="document.getElementById('masterFileInput').click()">📥 Import</button></div>
-                <div><button class="btn-danger" onclick="clearMasterData()">🗑️ Delete All</button></div>
-                <input type="file" id="masterFileInput" accept=".xlsx,.xls" onchange="importMasterExcel(event)" style="display:none;">
+                <div class="form-group">
+                    <label>আইটেম নাম</label>
+                    <input type="text" id="itemNameDisplay" readonly placeholder="--">
+                </div>
+                <div class="form-group">
+                    <label>রঙ</label>
+                    <input type="text" id="colorDisplay" readonly placeholder="--">
+                </div>
             </div>
-            <div class="form-row" style="margin-top:8px;">
-                <div><button class="btn-delete-single" onclick="deleteSingleMasterItem()">🗑️ Delete Single</button></div>
-                <div><button class="btn-edit-demand" onclick="editDemand()">✏️ Edit Demand</button></div>
-                <div><button class="btn-info" onclick="viewDeletedItems()">🗑️ View Deleted Items</button></div>
-                <div style="flex:1; font-size:12px; color:#555; display:flex; align-items:center;">⚡ Job Order (Required) & Item Code (Optional)</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📌 ডিমান্ড</label>
+                    <input type="number" id="dueQtyDisplay" readonly>
+                </div>
+                <div class="form-group" style="position:relative;">
+                    <label>📊 এজ অফ</label>
+                    <div style="display:flex; gap:6px;">
+                        <input type="number" id="asOfHandoverDisplay" readonly style="flex:1;">
+                        <button type="button" class="btn btn-info btn-sm" onclick="showHandoverDetails()" style="padding:6px 14px;"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>⏳ বাকি</label>
+                    <input type="number" id="remainingDisplay" readonly>
+                </div>
             </div>
-            <p style="font-size:11px; color:#777;">Headers: <strong>Order Name, Acc Code, Item Name, Color, Demand</strong> (Unit Wt also works)</p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>তারিখ</label>
+                    <input type="date" id="currentDateDisplay">
+                </div>
+                <div class="form-group">
+                    <label>হ্যান্ডওভার কোয়ান্টিটি <span class="required">*</span></label>
+                    <input type="number" id="handoverQty" placeholder="আজকের কোয়ান্টিটি" required min="1">
+                </div>
+                <div class="form-group">
+                    <label>লট নম্বর</label>
+                    <input type="text" id="lotNumber" placeholder="লট নম্বর দিন">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>হ্যান্ডওভার করেছেন <span class="required">*</span></label>
+                    <select id="handoverPerson" required>
+                        <option value="">-- সিলেক্ট করুন --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>শিফট</label>
+                    <select id="handoverShift">
+                        <option value="Day">☀️ ডে</option>
+                        <option value="Night">🌙 নাইট</option>
+                    </select>
+                </div>
+                <div class="form-group" style="justify-content:flex-end;">
+                    <button type="submit" class="btn btn-success" style="width:100%;"><i class="fas fa-plus"></i> এন্ট্রি</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== মাস্টার ডেটা ম্যানেজ ===== -->
+    <div id="tabMaster" class="tab-content" style="display:none;">
+        <div class="section-title"><i class="fas fa-database"></i> মাস্টার ডেটা ম্যানেজ</div>
+        <div class="form-card">
+            <div class="form-row">
+                <div class="form-group">
+                    <button class="btn btn-warning" onclick="migrateOldData()" style="width:100%;"><i class="fas fa-upload"></i> পুরাতন ডেটা মাইগ্রেট</button>
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-primary" onclick="downloadMasterTemplate()" style="width:100%;"><i class="fas fa-file-download"></i> টেমপ্লেট ডাউনলোড</button>
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-info" onclick="document.getElementById('masterFileInput').click()" style="width:100%;"><i class="fas fa-file-import"></i> ইমপোর্ট</button>
+                    <input type="file" id="masterFileInput" accept=".xlsx,.xls" onchange="importMasterExcel(event)" style="display:none;">
+                </div>
+            </div>
+            <div class="form-row mt-8">
+                <div class="form-group">
+                    <button class="btn btn-danger" onclick="deleteSingleMasterItem()" style="width:100%;"><i class="fas fa-trash"></i> সিঙ্গেল ডিলিট</button>
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-purple" onclick="editDemand()" style="width:100%;"><i class="fas fa-edit"></i> ডিমান্ড এডিট</button>
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-danger" onclick="clearMasterData()" style="width:100%;"><i class="fas fa-trash-alt"></i> সব ডিলিট</button>
+                </div>
+            </div>
+            <div class="form-row mt-8">
+                <div class="form-group">
+                    <button class="btn btn-outline" onclick="viewDeletedItems()" style="width:100%;"><i class="fas fa-recycle"></i> ডিলিটেড আইটেম দেখুন</button>
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-success" onclick="toggleManualMaster()" style="width:100%;"><i class="fas fa-plus-circle"></i> ম্যানুয়াল অ্যাড</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ম্যানুয়াল অ্যাড সেকশন -->
+        <div id="manualMasterSection" style="display:none;">
+            <div class="form-card" style="border:2px dashed #2e7d32;">
+                <h4 style="color:#2e7d32; margin-bottom:12px;"><i class="fas fa-hand-holding-heart"></i> ম্যানুয়াল মাস্টার এন্ট্রি (ব্যাচ অ্যাড)</h4>
+                <div class="form-row">
+                    <div class="form-group"><label>জব অর্ডার *</label><input type="text" id="manualJo" placeholder="JO-2026-001"></div>
+                    <div class="form-group"><label>আইটেম কোড *</label><input type="text" id="manualCode" placeholder="IC-001"></div>
+                    <div class="form-group"><label>আইটেম নাম *</label><input type="text" id="manualName" placeholder="পণ্যের নাম"></div>
+                    <div class="form-group"><label>রঙ</label><input type="text" id="manualColor" placeholder="লাল/নীল"></div>
+                    <div class="form-group"><label>ডিমান্ড কোয়ান্টিটি *</label><input type="number" id="manualDemand" placeholder="১০০"></div>
+                    <div class="form-group" style="justify-content:flex-end;">
+                        <button type="button" class="btn btn-success" onclick="addToList()" style="width:100%;"><i class="fas fa-plus"></i> লিস্টে অ্যাড করুন</button>
+                    </div>
+                </div>
+                <div id="tempListContainer" class="mt-12">
+                    <h5>📋 টেম্পোরারি লিস্ট (<span id="tempCount">0</span> আইটেম)</h5>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>#</th><th>জব অর্ডার</th><th>আইটেম কোড</th><th>আইটেম নাম</th><th>রঙ</th><th>ডিমান্ড</th><th>অ্যাকশন</th></tr></thead>
+                            <tbody id="tempListBody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:15px;">কোন আইটেম যোগ করা হয়নি।</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-success" onclick="saveAllToMaster()"><i class="fas fa-save"></i> সব সেভ করুন</button>
+                        <button class="btn btn-danger" onclick="clearTempList()"><i class="fas fa-eraser"></i> লিস্ট ক্লিয়ার</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- ============================================================ -->
-    <!-- NEW DATA ENTRY -->
-    <!-- ============================================================ -->
-    <h2>📝 New Data Entry</h2>
-    <form id="entryForm">
-        <div class="form-row">
-            <div><label>JOB ORDER *</label>
-                <select id="jobOrderSelect" required onchange="loadItemsByJobOrder()">
-                    <option value="">-- Select JO --</option>
-                </select>
-            </div>
-            <div><label>ITEM CODE *</label>
-                <select id="itemCodeSelect" required onchange="loadItemDetails()">
-                    <option value="">-- Select CODE --</option>
-                </select>
+    <!-- ===== রিপোর্ট ===== -->
+    <div id="tabReport" class="tab-content" style="display:none;">
+        <div class="section-title"><i class="fas fa-chart-bar"></i> রিপোর্ট</div>
+        <div class="form-card">
+            <div class="form-row">
+                <div class="form-group">
+                    <button class="btn btn-purple" onclick="openJ0Report()" style="width:100%;"><i class="fas fa-file-alt"></i> জব রিপোর্ট</button>
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-info" onclick="exportReport()" style="width:100%;"><i class="fas fa-file-csv"></i> সিএসভি এক্সপোর্ট</button>
+                </div>
             </div>
         </div>
-        <div class="form-row">
-            <div><label>ITEM NAME</label><input type="text" id="itemNameDisplay" readonly></div>
-            <div><label>COLOR</label><input type="text" id="colorDisplay" readonly></div>
-        </div>
-        <div class="handover-info">
-            <div><label>📌 Demand</label><input type="number" id="dueQtyDisplay" readonly></div>
-            <div style="display:flex; align-items:center; gap:6px;">
-                <label>📊 As of</label>
-                <input type="number" id="asOfHandoverDisplay" readonly style="flex:1;">
-                <button type="button" class="btn-detail" onclick="showHandoverDetails()">➕</button>
-            </div>
-            <div><label>⏳ Remaining</label><input type="number" id="remainingDisplay" readonly></div>
-        </div>
-        <div class="form-row">
-            <div><label>Date</label><input type="date" id="currentDateDisplay"></div>
-            <div><label>HANDOVER QTY *</label><input type="number" id="handoverQty" placeholder="Today's QTY" required min="1"></div>
-            <div><label>Lot Number</label><input type="text" id="lotNumber" placeholder="Enter Lot Number"></div>
-            <div><label>Handover By *</label>
-                <select id="handoverPerson" required>
-                    <option value="">-- Select --</option>
-                </select>
-            </div>
-            <div><label>Shift</label>
-                <select id="handoverShift">
-                    <option value="Day">☀️ Day</option>
-                    <option value="Night">🌙 Night</option>
-                </select>
-            </div>
-            <div><button type="submit" class="btn-success">➕ Entry</button></div>
-        </div>
-    </form>
-
-    <!-- Report -->
-    <h2>📊 Report</h2>
-    <div class="filter-section">
-        <div><button class="btn-purple" onclick="openJ0Report()">📊 JO Report</button></div>
-        <div><button class="btn-info" onclick="exportReport()">📥 CSV</button></div>
     </div>
 
-    <!-- Handover Table -->
+    <!-- ===== হ্যান্ডওভার টেবিল ===== -->
+    <div class="section-title mt-12"><i class="fas fa-table"></i> হ্যান্ডওভার রেকর্ড</div>
     <div class="table-wrapper">
-        <table id="stockTable">
+        <table>
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>JO</th>
-                    <th>CODE</th>
-                    <th>NAME</th>
-                    <th>COLOR</th>
-                    <th>QTY</th>
-                    <th>Lot No</th>
-                    <th>By</th>
-                    <th>Shift</th>
-                    <th>Date</th>
-                    <th>Action</th>
+                    <th>জব অর্ডার</th>
+                    <th>কোড</th>
+                    <th>নাম</th>
+                    <th>রঙ</th>
+                    <th>কোয়ান্টিটি</th>
+                    <th>লট নং</th>
+                    <th>দ্বারা</th>
+                    <th>শিফট</th>
+                    <th>তারিখ</th>
+                    <th>অ্যাকশন</th>
                 </tr>
             </thead>
-            <tbody id="stockBody"></tbody>
+            <tbody id="stockBody">
+                <tr><td colspan="11" class="text-muted" style="text-align:center;padding:20px;">কোন ডেটা নেই</td></tr>
+            </tbody>
         </table>
     </div>
-    <button class="clear-btn" onclick="clearAllHandover()">🗑️ Delete All Handover</button>
-    <div class="footer-note">Firebase</div>
+    <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+        <button class="btn btn-danger btn-sm" onclick="clearAllHandover()"><i class="fas fa-trash-alt"></i> সব হ্যান্ডওভার ডিলিট</button>
+    </div>
+    <div class="footer-note" style="margin-top:20px;text-align:center;color:#8a9aaa;font-size:12px;">
+        <i class="fas fa-fire"></i> Firebase দ্বারা পরিচালিত | © ২০২৬ PRAN-RFL
+    </div>
 </div>
 </div>
 
 <!-- ============================================================ -->
-<!-- MODALS -->
+<!-- মডালসমূহ -->
 <!-- ============================================================ -->
-<div class="modal jo-list-modal" id="joListModal">
+
+<!-- জব অর্ডার লিস্ট মডাল -->
+<div class="modal" id="joListModal">
     <div class="modal-content">
-        <h3>📋 Job Order List</h3>
-        <div id="joListContainer"><p style="color:#999;">Loading...</p></div>
-        <div class="btn-group"><button class="btn-secondary" onclick="closeJOList()">Close</button></div>
+        <h3><i class="fas fa-list"></i> জব অর্ডার লিস্ট</h3>
+        <div id="joListContainer"><p class="text-muted">লোড হচ্ছে...</p></div>
+        <div class="modal-actions"><button class="btn btn-secondary btn-sm" onclick="closeJOList()">বন্ধ করুন</button></div>
     </div>
 </div>
 
-<div class="modal detail-modal" id="joDetailModal">
+<!-- জব ডিটেইল মডাল -->
+<div class="modal" id="joDetailModal">
     <div class="modal-content">
-        <h3>📊 JO Detail Status</h3>
-        <div id="joDetailContent"><p style="color:#999;">Loading...</p></div>
-        <div class="btn-group"><button class="btn-secondary" onclick="closeJODetail()">Close</button></div>
+        <h3><i class="fas fa-info-circle"></i> জব ডিটেইল স্ট্যাটাস</h3>
+        <div id="joDetailContent"><p class="text-muted">লোড হচ্ছে...</p></div>
+        <div class="modal-actions"><button class="btn btn-secondary btn-sm" onclick="closeJODetail()">বন্ধ করুন</button></div>
     </div>
 </div>
 
+<!-- হ্যান্ডওভার ডিটেইল মডাল -->
 <div class="modal" id="detailModal">
     <div class="modal-content">
-        <h3>📋 Handover Details</h3>
-        <p><strong>JO:</strong> <span id="detailJobOrder"></span> | <strong>CODE:</strong> <span id="detailItemCode"></span></p>
-        <p><strong>ITEM:</strong> <span id="detailItemName"></span></p>
+        <h3><i class="fas fa-history"></i> হ্যান্ডওভার ডিটেইলস</h3>
+        <p><strong>জব অর্ডার:</strong> <span id="detailJobOrder"></span> | <strong>কোড:</strong> <span id="detailItemCode"></span></p>
+        <p><strong>আইটেম:</strong> <span id="detailItemName"></span></p>
         <div id="detailTableContainer"></div>
-        <div style="margin-top:12px; font-weight:bold; text-align:right;">Total: <span id="detailTotalQty">0</span> Pcs</div>
-        <div class="btn-group"><button class="btn-secondary" onclick="closeDetailModal()">Close</button></div>
+        <div style="margin-top:12px;font-weight:bold;text-align:right;">মোট: <span id="detailTotalQty">0</span> পিস</div>
+        <div class="modal-actions"><button class="btn btn-secondary btn-sm" onclick="closeDetailModal()">বন্ধ করুন</button></div>
     </div>
 </div>
 
+<!-- জব রিপোর্ট মডাল -->
 <div class="modal" id="joReportModal">
-    <div class="modal-content">
-        <h3>📊 JO Report</h3>
+    <div class="modal-content" style="max-width:750px;">
+        <h3><i class="fas fa-file-alt"></i> জব রিপোর্ট</h3>
         <div class="form-row">
-            <div><label>JOB ORDER</label>
-                <select id="joSelect" onchange="loadJoReport()"><option value="">-- Select --</option></select>
+            <div class="form-group">
+                <label>জব অর্ডার</label>
+                <select id="joSelect" onchange="loadJoReport()"><option value="">-- সিলেক্ট করুন --</option></select>
             </div>
-            <div><button class="btn-secondary" onclick="closeJoReport()" style="width:100%;">Close</button></div>
+            <div class="form-group" style="justify-content:flex-end;">
+                <button class="btn btn-secondary btn-sm" onclick="closeJoReport()" style="width:100%;">বন্ধ করুন</button>
+            </div>
         </div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;">
-            <button class="btn-info" onclick="downloadReportPDF()" style="flex:1;">📄 PDF</button>
-            <button class="btn-success" onclick="downloadReportImage()" style="flex:1;">🖼️ Image</button>
-            <button class="btn-primary" onclick="downloadReportExcel()" style="flex:1;">📊 Excel</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+            <button class="btn btn-info btn-sm" onclick="downloadReportPDF()"><i class="fas fa-file-pdf"></i> পিডিএফ</button>
+            <button class="btn btn-success btn-sm" onclick="downloadReportImage()"><i class="fas fa-image"></i> ইমেজ</button>
+            <button class="btn btn-primary btn-sm" onclick="downloadReportExcel()"><i class="fas fa-file-excel"></i> এক্সেল</button>
         </div>
-        <div id="joReportContent"><p style="color:#999;">Select JO</p></div>
+        <div id="joReportContent"><p class="text-muted">জব অর্ডার সিলেক্ট করুন</p></div>
     </div>
 </div>
 
-<div class="modal deleted-modal" id="deletedModal">
-    <div class="modal-content" style="max-width:650px;">
-        <h3>🗑️ Deleted Items</h3>
-        <div id="deletedItemsContainer"><p style="color:#999;">Loading...</p></div>
-        <div class="btn-group">
-            <button class="btn-secondary" onclick="closeDeletedModal()">Close</button>
-        </div>
+<!-- ডিলিটেড আইটেম মডাল -->
+<div class="modal" id="deletedModal">
+    <div class="modal-content" style="max-width:750px;">
+        <h3><i class="fas fa-recycle"></i> ডিলিটেড আইটেম</h3>
+        <div id="deletedItemsContainer"><p class="text-muted">লোড হচ্ছে...</p></div>
+        <div class="modal-actions"><button class="btn btn-secondary btn-sm" onclick="closeDeletedModal()">বন্ধ করুন</button></div>
     </div>
 </div>
 
+<!-- এডিট মডাল -->
 <div class="modal" id="editModal">
     <div class="modal-content">
-        <h3>✏️ Edit</h3>
-        <p><strong>Item:</strong> <span id="editItemDisplay"></span></p>
-        <label>QTY:</label><input type="number" id="editHandoverQty" min="0">
-        <label>Lot Number:</label><input type="text" id="editLotNumber" placeholder="Lot Number">
-        <label>By:</label><input type="text" id="editHandoverPerson">
-        <label>Shift:</label>
-        <select id="editShift">
-            <option value="Day">Day</option>
-            <option value="Night">Night</option>
-        </select>
-        <div class="btn-group">
-            <button class="btn-danger" onclick="closeEditModal()">Cancel</button>
-            <button class="btn-success" onclick="confirmEdit()">💾 Save</button>
+        <h3><i class="fas fa-edit"></i> এডিট করুন</h3>
+        <p><strong>আইটেম:</strong> <span id="editItemDisplay"></span></p>
+        <div class="form-group"><label>কোয়ান্টিটি:</label><input type="number" id="editHandoverQty" min="0"></div>
+        <div class="form-group"><label>লট নম্বর:</label><input type="text" id="editLotNumber" placeholder="লট নম্বর"></div>
+        <div class="form-group"><label>হ্যান্ডওভার করেছেন:</label><input type="text" id="editHandoverPerson"></div>
+        <div class="form-group"><label>শিফট:</label>
+            <select id="editShift"><option value="Day">ডে</option><option value="Night">নাইট</option></select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-danger btn-sm" onclick="closeEditModal()">বাতিল</button>
+            <button class="btn btn-success btn-sm" onclick="confirmEdit()"><i class="fas fa-save"></i> সেভ</button>
         </div>
     </div>
 </div>
 
+<!-- পাসওয়ার্ড চেঞ্জ মডাল -->
 <div class="modal" id="changePwdModal">
     <div class="modal-content">
-        <h3>🔑 Change Password</h3>
-        <div class="form-row"><div><label>Old Password</label><input type="password" id="oldPassword" placeholder="Enter old password"></div></div>
-        <div class="form-row"><div><label>New Password</label><input type="password" id="newPassword" placeholder="Enter new password"></div></div>
-        <div class="form-row"><div><label>Confirm New Password</label><input type="password" id="confirmPassword" placeholder="Confirm new password"></div></div>
-        <div id="pwdError" style="color:red; font-size:13px; display:none; margin:10px 0;"></div>
-        <div class="btn-group">
-            <button class="btn-secondary" onclick="closeChangePassword()">Cancel</button>
-            <button class="btn-success" onclick="confirmChangePassword()">💾 Update Password</button>
+        <h3><i class="fas fa-key"></i> পাসওয়ার্ড পরিবর্তন</h3>
+        <div class="form-group"><label>পুরাতন পাসওয়ার্ড</label><input type="password" id="oldPassword" placeholder="পুরাতন পাসওয়ার্ড"></div>
+        <div class="form-group"><label>নতুন পাসওয়ার্ড</label><input type="password" id="newPassword" placeholder="নতুন পাসওয়ার্ড"></div>
+        <div class="form-group"><label>নতুন পাসওয়ার্ড নিশ্চিত করুন</label><input type="password" id="confirmPassword" placeholder="নতুন পাসওয়ার্ড পুনরায়"></div>
+        <div id="pwdError" style="color:red;font-size:13px;display:none;margin:10px 0;"></div>
+        <div class="modal-actions">
+            <button class="btn btn-danger btn-sm" onclick="closeChangePassword()">বাতিল</button>
+            <button class="btn btn-success btn-sm" onclick="confirmChangePassword()"><i class="fas fa-save"></i> আপডেট</button>
         </div>
     </div>
 </div>
 
 <script>
     // =========================================================
-    // GLOBAL STATE
+    // গ্লোবাল স্টেট
     // =========================================================
     let currentDepartment = '';
     let currentDepartmentKey = '';
@@ -678,56 +901,45 @@
         'Plastic-7.3': '666'
     };
 
-    // =========================================================
-    // DEPARTMENT-SPECIFIC HANDOVER BY LISTS
-    // =========================================================
     const HANDOVER_BY_LISTS = {
-        'Plastic-03': ['Mr. Mohon', 'Mr. Ahamed', 'Mr. Pobitra', 'Mr. Shawon'],
-        'Plastic-6.2': ['Mr. Mohon', 'Mr. Ahamed', 'Mr. Pobitra', 'Mr. Shawon'],
-        'Plastic-7.2': ['Pankoj Kumar', 'Harun', 'Golam', 'Mizan', 'Pappu', 'Sajib'],
-        'Plastic-7.3': ['Juwel', 'Jogodish', 'Ashik', 'Hrdoy']
+        'Plastic-03': ['মি. মোহন', 'মি. আহমেদ', 'মি. পবিত্র', 'মি. শাওন'],
+        'Plastic-6.2': ['মি. মোহন', 'মি. আহমেদ', 'মি. পবিত্র', 'মি. শাওন'],
+        'Plastic-7.2': ['পঙ্কজ কুমার', 'হারুন', 'গোলাম', 'মিজান', 'পাপ্পু', 'সাজিব'],
+        'Plastic-7.3': ['জুয়েল', 'যোগদীশ', 'আশিক', 'হৃদয়']
     };
 
     // =========================================================
-    // LOGIN SUBTITLE UPDATE
+    // লগইন
     // =========================================================
     function updateLoginSubtitle() {
         const dept = document.getElementById('deptSelect').value;
         const subtitle = document.getElementById('loginSubtitle');
-        subtitle.textContent = dept ? (dept.toUpperCase() + ' SYSTEM') : 'Please Select Department';
+        const names = {
+            'Plastic-03': 'প্লাস্টিক-০৩',
+            'Plastic-6.2': 'প্লাস্টিক-৬.২',
+            'Plastic-7.2': 'প্লাস্টিক-৭.২',
+            'Plastic-7.3': 'প্লাস্টিক-৭.৩'
+        };
+        subtitle.textContent = dept ? (names[dept] || dept) + ' - হ্যান্ডওভার সিস্টেম' : 'হ্যান্ডওভার মনিটরিং সিস্টেম';
     }
 
-    // =========================================================
-    // DELETE PASSWORD VERIFICATION
-    // =========================================================
-    function verifyDeletePassword() {
-        const pwd = prompt('🔑 Enter delete password:');
-        if (pwd === null) return false;
-        return pwd === '123';
-    }
-
-    // =========================================================
-    // LOGIN
-    // =========================================================
     function handleLogin() {
         const dept = document.getElementById('deptSelect').value;
         const pwd = document.getElementById('passwordInput').value.trim();
+        const errorEl = document.getElementById('loginError');
 
         if (!dept) {
-            document.getElementById('loginError').style.display = 'block';
-            document.getElementById('loginError').textContent = '❌ Please select a department!';
+            errorEl.textContent = '❌ অনুগ্রহ করে একটি ডিপার্টমেন্ট নির্বাচন করুন!';
+            errorEl.style.display = 'block';
             return false;
         }
 
-        document.getElementById('loginError').style.display = 'none';
-        document.getElementById('loginError').textContent = '⏳ Verifying...';
-        document.getElementById('loginError').style.display = 'block';
+        errorEl.style.display = 'none';
+        errorEl.textContent = '⏳ যাচাই করা হচ্ছে...';
+        errorEl.style.display = 'block';
 
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
         const deptKey = dept.replace(/\./g, '_');
         const pwdRef = db.ref(`departments/${deptKey}/password`);
 
@@ -741,19 +953,19 @@
             return storedPwd;
         }).then(storedPwd => {
             if (pwd === storedPwd) {
-                document.getElementById('loginError').style.display = 'none';
+                errorEl.style.display = 'none';
                 currentDepartment = dept;
                 currentDepartmentKey = deptKey;
                 currentStoredPassword = storedPwd;
                 database = db;
                 initializeAppAfterLogin();
             } else {
-                document.getElementById('loginError').style.display = 'block';
-                document.getElementById('loginError').textContent = '❌ Invalid password!';
+                errorEl.style.display = 'block';
+                errorEl.textContent = '❌ ভুল পাসওয়ার্ড!';
             }
         }).catch(err => {
-            document.getElementById('loginError').style.display = 'block';
-            document.getElementById('loginError').textContent = '❌ Error: ' + err.message;
+            errorEl.style.display = 'block';
+            errorEl.textContent = '❌ এরর: ' + err.message;
         });
 
         return false;
@@ -762,24 +974,29 @@
     function initializeAppAfterLogin() {
         const basePath = `departments/${currentDepartmentKey}`;
         window._basePath = basePath;
-        document.getElementById('mainTitle').textContent = `🏭 ${currentDepartment} - Handover System`;
+        
+        const names = {
+            'Plastic-03': 'প্লাস্টিক-০৩',
+            'Plastic-6.2': 'প্লাস্টিক-৬.২',
+            'Plastic-7.2': 'প্লাস্টিক-৭.২',
+            'Plastic-7.3': 'প্লাস্টিক-৭.৩'
+        };
+        document.getElementById('deptDisplay').textContent = names[currentDepartment] || currentDepartment;
+        document.getElementById('deptTag').textContent = currentDepartment;
+        document.getElementById('userNameDisplay').textContent = 'Arifuzzaman';
+
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         document.getElementById('bodyEl').classList.remove('login-active');
-        
-        // Update Handover By dropdown based on department
+
         updateHandoverByDropdown();
-        
         startListening(basePath);
     }
 
-    // =========================================================
-    // UPDATE HANDOVER BY DROPDOWN
-    // =========================================================
     function updateHandoverByDropdown() {
         const select = document.getElementById('handoverPerson');
-        const list = HANDOVER_BY_LISTS[currentDepartment] || ['Mr. Mohon', 'Mr. Ahamed', 'Mr. Pobitra', 'Mr. Shawon'];
-        select.innerHTML = '<option value="">-- Select --</option>';
+        const list = HANDOVER_BY_LISTS[currentDepartment] || ['মি. মোহন', 'মি. আহমেদ', 'মি. পবিত্র', 'মি. শাওন'];
+        select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
         list.forEach(name => {
             const opt = document.createElement('option');
             opt.value = name;
@@ -789,20 +1006,14 @@
     }
 
     function logout() {
-        if (!confirm('Are you sure you want to logout?')) return;
+        if (!confirm('আপনি কি লগআউট করতে চান?')) return;
         if (database) {
             database.ref(window._basePath + '/masterItems').off();
             database.ref(window._basePath + '/handoverEntries').off();
             database.ref(window._basePath + '/deletedMasterItems').off();
         }
-        masterItems = [];
-        handoverData = [];
-        deletedItems = [];
-        tempList = [];
-        currentDepartment = '';
-        currentDepartmentKey = '';
-        currentStoredPassword = '';
-        database = null;
+        masterItems = []; handoverData = []; deletedItems = []; tempList = [];
+        currentDepartment = ''; currentDepartmentKey = ''; currentStoredPassword = ''; database = null;
         document.getElementById('loginScreen').style.display = 'block';
         document.getElementById('mainApp').style.display = 'none';
         document.getElementById('bodyEl').classList.add('login-active');
@@ -813,7 +1024,7 @@
     }
 
     // =========================================================
-    // CHANGE PASSWORD
+    // পাসওয়ার্ড চেঞ্জ
     // =========================================================
     function openChangePassword() {
         document.getElementById('oldPassword').value = '';
@@ -834,25 +1045,22 @@
         const errorEl = document.getElementById('pwdError');
 
         if (!old || !newPwd || !confirm) {
-            errorEl.textContent = '❌ All fields are required.';
+            errorEl.textContent = '❌ সব ফিল্ড পূরণ করুন।';
             errorEl.style.display = 'block';
             return;
         }
-
         if (old !== currentStoredPassword) {
-            errorEl.textContent = '❌ Old password is incorrect.';
+            errorEl.textContent = '❌ পুরাতন পাসওয়ার্ড ভুল।';
             errorEl.style.display = 'block';
             return;
         }
-
         if (newPwd.length < 4) {
-            errorEl.textContent = '❌ New password must be at least 4 characters.';
+            errorEl.textContent = '❌ নতুন পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে।';
             errorEl.style.display = 'block';
             return;
         }
-
         if (newPwd !== confirm) {
-            errorEl.textContent = '❌ New password and confirm do not match.';
+            errorEl.textContent = '❌ নতুন পাসওয়ার্ড এবং নিশ্চিতকরণ মেলে না।';
             errorEl.style.display = 'block';
             return;
         }
@@ -861,15 +1069,34 @@
         pwdRef.set(newPwd).then(() => {
             currentStoredPassword = newPwd;
             closeChangePassword();
-            alert('✅ Password updated successfully!');
+            alert('✅ পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!');
         }).catch(err => {
-            errorEl.textContent = '❌ Failed to update: ' + err.message;
+            errorEl.textContent = '❌ আপডেট ব্যর্থ: ' + err.message;
             errorEl.style.display = 'block';
         });
     }
 
     // =========================================================
-    // LISTENERS
+    // ট্যাব স্যুইচ
+    // =========================================================
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        
+        if (tab === 'entry') {
+            document.getElementById('tabEntry').style.display = 'block';
+            document.querySelector('.nav-item:nth-child(1)').classList.add('active');
+        } else if (tab === 'master') {
+            document.getElementById('tabMaster').style.display = 'block';
+            document.querySelector('.nav-item:nth-child(2)').classList.add('active');
+        } else if (tab === 'report') {
+            document.getElementById('tabReport').style.display = 'block';
+            document.querySelector('.nav-item:nth-child(3)').classList.add('active');
+        }
+    }
+
+    // =========================================================
+    // ফায়ারবেস লিসেনার
     // =========================================================
     function startListening(basePath) {
         const masterRef = database.ref(`${basePath}/masterItems`);
@@ -878,9 +1105,7 @@
             masterItems = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
             populateJobOrderDropdown();
             updateSummary();
-        }, err => {
-            alert('❌ Master Data Load Error: ' + err.message);
-        });
+        }, err => alert('❌ মাস্টার ডেটা লোড এরর: ' + err.message));
 
         const handoverRef = database.ref(`${basePath}/handoverEntries`);
         handoverRef.on('value', snap => {
@@ -888,21 +1113,17 @@
             handoverData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
             renderTable();
             updateSummary();
-        }, err => {
-            alert('❌ Handover Data Load Error: ' + err.message);
-        });
+        }, err => alert('❌ হ্যান্ডওভার ডেটা লোড এরর: ' + err.message));
 
         const deletedRef = database.ref(`${basePath}/deletedMasterItems`);
         deletedRef.on('value', snap => {
             const val = snap.val();
             deletedItems = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
-        }, err => {
-            alert('❌ Deleted Items Load Error: ' + err.message);
-        });
+        }, err => alert('❌ ডিলিটেড আইটেম লোড এরর: ' + err.message));
     }
 
     // =========================================================
-    // SAVE FUNCTIONS
+    // সেভ ফাংশন
     // =========================================================
     function saveMaster() {
         const obj = {};
@@ -931,10 +1152,10 @@
     }
 
     // =========================================================
-    // MIGRATE OLD DATA
+    // মাইগ্রেট
     // =========================================================
     function migrateOldData() {
-        if (!confirm('⚠️ This will copy all root-level master items and handover entries to the current department.\nExisting data in this department will not be overwritten (only new items will be added).\nProceed?')) return;
+        if (!confirm('⚠️ এটি রুট লেভেলের সব মাস্টার আইটেম এবং হ্যান্ডওভার এন্ট্রি বর্তমান ডিপার্টমেন্টে কপি করবে।\nবর্তমান ডিপার্টমেন্টের ডেটা ওভাররাইট হবে না (শুধু নতুন আইটেম যোগ হবে)।\nএগিয়ে যাবেন?')) return;
 
         const rootMasterRef = database.ref('masterItems');
         const rootHandoverRef = database.ref('handoverEntries');
@@ -947,108 +1168,51 @@
             const rootHandover = handoverSnap.val() || {};
 
             const existingKeys = new Set(masterItems.map(i => `${i.jobOrder}|${i.itemCode}`));
-
             const newMasterItems = [];
             Object.values(rootMaster).forEach(item => {
                 const key = `${item.jobOrder}|${item.itemCode}`;
-                if (!existingKeys.has(key)) {
-                    newMasterItems.push(item);
-                }
+                if (!existingKeys.has(key)) newMasterItems.push(item);
             });
-
             const newHandoverEntries = Object.values(rootHandover);
 
             if (newMasterItems.length === 0 && newHandoverEntries.length === 0) {
-                alert('No new data to migrate.');
+                alert('কোন নতুন ডেটা নেই।');
                 return;
             }
 
             let masterPromises = [];
-            if (newMasterItems.length > 0) {
-                newMasterItems.forEach(item => {
-                    const ref = database.ref(`${window._basePath}/masterItems`).push();
-                    masterPromises.push(ref.set(item));
-                });
-            }
-
+            newMasterItems.forEach(item => {
+                const ref = database.ref(`${window._basePath}/masterItems`).push();
+                masterPromises.push(ref.set(item));
+            });
             let handoverPromises = [];
-            if (newHandoverEntries.length > 0) {
-                newHandoverEntries.forEach(item => {
-                    const ref = database.ref(`${window._basePath}/handoverEntries`).push();
-                    handoverPromises.push(ref.set(item));
-                });
-            }
-
+            newHandoverEntries.forEach(item => {
+                const ref = database.ref(`${window._basePath}/handoverEntries`).push();
+                handoverPromises.push(ref.set(item));
+            });
             return Promise.all([...masterPromises, ...handoverPromises]);
-        })
-        .then(() => {
-            alert('✅ Migration complete!');
-        })
-        .catch(err => {
-            alert('❌ Migration failed: ' + err.message);
-        });
+        }).then(() => alert('✅ মাইগ্রেশন সম্পূর্ণ!'))
+          .catch(err => alert('❌ মাইগ্রেশন ব্যর্থ: ' + err.message));
     }
 
     // =========================================================
-    // TOGGLES
+    // ম্যানুয়াল অ্যাড
     // =========================================================
-    function toggleMainMaster() {
-        const section = document.getElementById('masterMainSection');
-        const btn = document.getElementById('toggleMainBtn');
-        if (section.style.display === 'block') {
-            section.style.display = 'none';
-            btn.innerHTML = '📂 Master Data Manage';
-        } else {
-            const pwd = prompt('🔑 Enter Password:');
-            if (pwd === null) return;
-            if (pwd === '123') {
-                section.style.display = 'block';
-                btn.innerHTML = '📂 Master Data Manage (Open)';
-            } else {
-                alert('❌ Wrong Password!');
-            }
-        }
-    }
-
     function toggleManualMaster() {
         const section = document.getElementById('manualMasterSection');
-        const btn = document.getElementById('toggleManualBtn');
         if (section.style.display === 'block') {
             section.style.display = 'none';
-            btn.innerHTML = '➕ Manual Master Entry (Batch Add)';
         } else {
-            const pwd = prompt('🔑 Enter Password:');
+            const pwd = prompt('🔑 পাসওয়ার্ড দিন:');
             if (pwd === null) return;
             if (pwd === '123') {
                 section.style.display = 'block';
-                btn.innerHTML = '➖ Manual Master Entry (Batch Add)';
             } else {
-                alert('❌ Wrong Password!');
+                alert('❌ ভুল পাসওয়ার্ড!');
             }
         }
     }
 
-    function toggleMasterData() {
-        const section = document.getElementById('masterDataSection');
-        const btn = document.getElementById('toggleMasterBtn');
-        if (section.style.display === 'block') {
-            section.style.display = 'none';
-            btn.innerHTML = '➕ Master Data Manage';
-        } else {
-            const pwd = prompt('🔑 Enter Password:');
-            if (pwd === null) return;
-            if (pwd === '123') {
-                section.style.display = 'block';
-                btn.innerHTML = '➖ Master Data Manage';
-            } else {
-                alert('❌ Wrong Password!');
-            }
-        }
-    }
-
-    // =========================================================
-    // BATCH ADD
-    // =========================================================
     function addToList() {
         const jo = document.getElementById('manualJo').value.trim();
         const code = document.getElementById('manualCode').value.trim();
@@ -1057,19 +1221,19 @@
         const demand = parseFloat(document.getElementById('manualDemand').value);
 
         if (!jo || !code || !name || !demand || demand <= 0) {
-            alert('Please fill all fields correctly!');
+            alert('সব ফিল্ড সঠিকভাবে পূরণ করুন!');
             return;
         }
         const exists = tempList.some(i => i.jobOrder === jo && i.itemCode === code);
         if (exists) {
-            alert(`⚠️ "${jo}" - "${code}" already in the list!`);
+            alert(`⚠️ "${jo}" - "${code}" ইতিমধ্যে লিস্টে আছে!`);
             return;
         }
         tempList.push({ jobOrder: jo, itemCode: code, itemName: name, color: color || '', demandQty: demand });
         renderTempList();
         clearManualInputs();
         document.getElementById('manualJo').focus();
-        alert(`✅ Added: ${jo} - ${code}`);
+        alert(`✅ যোগ হয়েছে: ${jo} - ${code}`);
     }
 
     function clearManualInputs() {
@@ -1086,7 +1250,7 @@
         count.textContent = tempList.length;
 
         if (tempList.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:15px;">No items added yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#8a9aaa;padding:15px;">কোন আইটেম যোগ করা হয়নি।</td></tr>';
             return;
         }
         let html = '';
@@ -1095,31 +1259,31 @@
                 <td>${idx+1}</td>
                 <td>${item.jobOrder}</td>
                 <td>${item.itemCode}</td>
-                <td style="text-align:left;">${item.itemName}</td>
+                <td class="text-left">${item.itemName}</td>
                 <td>${item.color || ''}</td>
                 <td>${item.demandQty}</td>
-                <td><button class="btn-danger" onclick="removeFromList(${idx})" style="padding:4px 8px; font-size:12px; width:auto;">✖</button></td>
+                <td><button class="btn btn-danger btn-xs" onclick="removeFromList(${idx})"><i class="fas fa-times"></i></button></td>
             </tr>`;
         });
         tbody.innerHTML = html;
     }
 
     function removeFromList(index) {
-        if (!confirm(`Remove "${tempList[index].jobOrder} - ${tempList[index].itemCode}"?`)) return;
+        if (!confirm(`"${tempList[index].jobOrder} - ${tempList[index].itemCode}" সরানো হবে?`)) return;
         tempList.splice(index, 1);
         renderTempList();
     }
 
     function clearTempList() {
         if (tempList.length === 0) return;
-        if (!confirm('Clear all items from temporary list?')) return;
+        if (!confirm('সব আইটেম ক্লিয়ার করবেন?')) return;
         tempList = [];
         renderTempList();
     }
 
     function saveAllToMaster() {
         if (tempList.length === 0) {
-            alert('⚠️ No items to save!');
+            alert('⚠️ সেভ করার জন্য কোন আইটেম নেই!');
             return;
         }
 
@@ -1131,16 +1295,16 @@
             else newItems.push(item);
         });
 
-        let msg = `📌 ${tempList.length} item(s) in list.\n`;
+        let msg = `📌 ${tempList.length} টি আইটেম লিস্টে আছে।\n`;
         if (duplicates.length > 0) {
-            msg += `\n⚠️ ${duplicates.length} item(s) already exist:\n${duplicates.join('\n')}\n\nThese will be SKIPPED.`;
+            msg += `\n⚠️ ${duplicates.length} টি আইটেম ইতিমধ্যে আছে:\n${duplicates.join('\n')}\n\nএগুলো স্কিপ করা হবে।`;
         }
         if (newItems.length === 0) {
-            msg += '\n\n❌ No new items to add.';
+            msg += '\n\n❌ কোন নতুন আইটেম নেই।';
             alert(msg);
             return;
         }
-        msg += `\n\n✅ ${newItems.length} new item(s) will be added.\n\nProceed?`;
+        msg += `\n\n✅ ${newItems.length} টি নতুন আইটেম যোগ হবে।\n\nএগিয়ে যাবেন?`;
         if (!confirm(msg)) return;
 
         newItems.forEach(item => {
@@ -1154,43 +1318,42 @@
         });
 
         const btn = document.querySelector('.btn-save-all');
-        btn.textContent = '⏳ Saving...';
+        btn.textContent = '⏳ সেভ হচ্ছে...';
         btn.disabled = true;
 
-        saveMaster()
-            .then(() => {
-                populateJobOrderDropdown();
-                updateSummary();
-                alert(`✅ ${newItems.length} item(s) added!${duplicates.length > 0 ? `\n⚠️ ${duplicates.length} skipped.` : ''}`);
-                tempList = [];
-                renderTempList();
-            })
-            .catch(err => {
-                alert('❌ Save failed! ' + err.message);
-            })
-            .finally(() => {
-                btn.textContent = '💾 Save All to Master';
-                btn.disabled = false;
-            });
+        saveMaster().then(() => {
+            populateJobOrderDropdown();
+            updateSummary();
+            alert(`✅ ${newItems.length} টি আইটেম যোগ হয়েছে!${duplicates.length > 0 ? `\n⚠️ ${duplicates.length} টি স্কিপ করা হয়েছে।` : ''}`);
+            tempList = [];
+            renderTempList();
+        }).catch(err => alert('❌ সেভ ব্যর্থ! ' + err.message))
+          .finally(() => { btn.textContent = '💾 সব সেভ করুন'; btn.disabled = false; });
     }
 
     // =========================================================
-    // DELETE FUNCTIONS
+    // ডিলিট ফাংশন
     // =========================================================
+    function verifyDeletePassword() {
+        const pwd = prompt('🔑 ডিলিট পাসওয়ার্ড দিন:');
+        if (pwd === null) return false;
+        return pwd === '123';
+    }
+
     function deleteSingleMasterItem() {
         if (!verifyDeletePassword()) {
-            alert('❌ Incorrect delete password. Operation cancelled.');
+            alert('❌ ভুল ডিলিট পাসওয়ার্ড। অপারেশন বাতিল।');
             return;
         }
-        const jo = prompt('🔍 Enter Job Order to delete (Required):');
+        const jo = prompt('🔍 ডিলিট করার জন্য জব অর্ডার দিন (প্রয়োজনীয়):');
         if (jo === null) return;
         const trimmedJo = jo.trim();
         if (!trimmedJo) {
-            alert('❌ Job Order is required!');
+            alert('❌ জব অর্ডার প্রয়োজন!');
             return;
         }
 
-        const codeInput = prompt('🔍 Enter Item Code (Optional):');
+        const codeInput = prompt('🔍 আইটেম কোড দিন (ঐচ্ছিক):');
         let trimmedCode = '';
         if (codeInput !== null) trimmedCode = codeInput.trim();
 
@@ -1202,11 +1365,11 @@
         }
 
         if (itemsToDelete.length === 0) {
-            alert(`⚠️ "${trimmedJo}"${trimmedCode ? ' - "'+trimmedCode+'"' : ''} not found!`);
+            alert(`⚠️ "${trimmedJo}"${trimmedCode ? ' - "'+trimmedCode+'"' : ''} খুঁজে পাওয়া যায়নি!`);
             return;
         }
 
-        const msg = `⚠️ ${itemsToDelete.length} item(s) will be moved to deleted items.\nJO: ${trimmedJo}${trimmedCode ? '\nCode: '+trimmedCode : ''}\n\nYou can restore later.\nAre you sure?`;
+        const msg = `⚠️ ${itemsToDelete.length} টি আইটেম ডিলিটেড আইটেমে সরানো হবে।\nজব অর্ডার: ${trimmedJo}${trimmedCode ? '\nকোড: '+trimmedCode : ''}\n\nপরে পুনরুদ্ধার করতে পারবেন।\nআপনি কি নিশ্চিত?`;
         if (!confirm(msg)) return;
 
         const deletePromises = itemsToDelete.map(item => {
@@ -1216,25 +1379,21 @@
             });
         });
 
-        Promise.all(deletePromises)
-            .then(() => {
-                const keysToRemove = itemsToDelete.map(item => item._firebaseKey);
-                masterItems = masterItems.filter(i => !keysToRemove.includes(i._firebaseKey));
-                populateJobOrderDropdown();
-                updateSummary();
-                alert(`✅ ${itemsToDelete.length} item(s) moved to deleted.`);
-            })
-            .catch(err => {
-                alert('❌ Delete failed! ' + err.message);
-            });
+        Promise.all(deletePromises).then(() => {
+            const keysToRemove = itemsToDelete.map(item => item._firebaseKey);
+            masterItems = masterItems.filter(i => !keysToRemove.includes(i._firebaseKey));
+            populateJobOrderDropdown();
+            updateSummary();
+            alert(`✅ ${itemsToDelete.length} টি আইটেম ডিলিটেডে সরানো হয়েছে।`);
+        }).catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
     }
 
     function clearMasterData() {
         if (!verifyDeletePassword()) {
-            alert('❌ Incorrect delete password. Operation cancelled.');
+            alert('❌ ভুল ডিলিট পাসওয়ার্ড। অপারেশন বাতিল।');
             return;
         }
-        if (!confirm('⚠️ All master items will be moved to deleted items. You can restore later.\nAre you sure?')) return;
+        if (!confirm('⚠️ সব মাস্টার আইটেম ডিলিটেড আইটেমে সরানো হবে। পরে পুনরুদ্ধার করতে পারবেন।\nআপনি কি নিশ্চিত?')) return;
 
         const deletePromises = masterItems.map(item => {
             const key = item._firebaseKey;
@@ -1243,74 +1402,64 @@
             });
         });
 
-        Promise.all(deletePromises)
-            .then(() => {
-                masterItems = [];
-                populateJobOrderDropdown();
-                updateSummary();
-                alert('🗑️ All master items moved to deleted.');
-            })
-            .catch(err => {
-                alert('❌ Delete All failed! ' + err.message);
-            });
+        Promise.all(deletePromises).then(() => {
+            masterItems = [];
+            populateJobOrderDropdown();
+            updateSummary();
+            alert('🗑️ সব মাস্টার আইটেম ডিলিটেডে সরানো হয়েছে।');
+        }).catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
     }
 
     function deleteHandover(index) {
         if (!verifyDeletePassword()) {
-            alert('❌ Incorrect delete password. Operation cancelled.');
+            alert('❌ ভুল ডিলিট পাসওয়ার্ড। অপারেশন বাতিল।');
             return;
         }
-        if (!confirm('Delete this handover entry?')) return;
+        if (!confirm('এই হ্যান্ডওভার এন্ট্রি ডিলিট করবেন?')) return;
         const item = handoverData[index];
         if (!item) return;
         if (item._firebaseKey) {
             database.ref(`${window._basePath}/handoverEntries`).child(item._firebaseKey).remove()
-                .then(() => alert('🗑️ Deleted!'))
-                .catch(err => alert('❌ Delete failed! ' + err.message));
+                .then(() => alert('🗑️ ডিলিট হয়েছে!'))
+                .catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
         } else {
             handoverData.splice(index, 1);
-            saveHandover().then(() => alert('🗑️ Deleted!'));
+            saveHandover().then(() => alert('🗑️ ডিলিট হয়েছে!'));
         }
     }
 
     function clearAllHandover() {
         if (!verifyDeletePassword()) {
-            alert('❌ Incorrect delete password. Operation cancelled.');
+            alert('❌ ভুল ডিলিট পাসওয়ার্ড। অপারেশন বাতিল।');
             return;
         }
-        if (!confirm('⚠️ All handover data will be deleted! Are you sure?')) return;
+        if (!confirm('⚠️ সব হ্যান্ডওভার ডেটা ডিলিট হবে! আপনি কি নিশ্চিত?')) return;
         database.ref(`${window._basePath}/handoverEntries`).remove()
-            .then(() => {
-                handoverData = [];
-                renderTable();
-                updateSummary();
-                alert('🗑️ All handover data deleted!');
-            })
-            .catch(err => alert('❌ Delete failed! ' + err.message));
+            .then(() => { handoverData = []; renderTable(); updateSummary(); alert('🗑️ সব হ্যান্ডওভার ডেটা ডিলিট হয়েছে!'); })
+            .catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
     }
 
     // =========================================================
-    // VIEW DELETED & RESTORE
+    // ডিলিটেড আইটেম দেখুন ও পুনরুদ্ধার
     // =========================================================
     function viewDeletedItems() {
         const modal = document.getElementById('deletedModal');
         const container = document.getElementById('deletedItemsContainer');
 
         if (deletedItems.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No deleted items.</p>';
+            container.innerHTML = '<p class="text-muted">কোন ডিলিটেড আইটেম নেই।</p>';
         } else {
-            let html = `<table class="history-table" style="width:100%;">
-                <thead><tr><th>#</th><th>JO</th><th>CODE</th><th>NAME</th><th>COLOR</th><th>Demand</th><th>Deleted At</th><th>Restore</th></tr></thead><tbody>`;
+            let html = `<table><thead><tr><th>#</th><th>জব অর্ডার</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>ডিমান্ড</th><th>ডিলিট তারিখ</th><th>পুনরুদ্ধার</th></tr></thead><tbody>`;
             deletedItems.forEach((item, idx) => {
                 html += `<tr>
                     <td>${idx+1}</td>
                     <td>${item.jobOrder}</td>
                     <td>${item.itemCode}</td>
-                    <td style="text-align:left;">${item.itemName}</td>
+                    <td class="text-left">${item.itemName}</td>
                     <td>${item.color || ''}</td>
                     <td>${item.demandQty}</td>
                     <td>${item.deletedAt ? new Date(item.deletedAt).toLocaleString() : ''}</td>
-                    <td><button class="btn-restore" onclick="restoreDeletedItem('${item._firebaseKey}')">↩️ Restore</button></td>
+                    <td><button class="btn btn-success btn-xs" onclick="restoreDeletedItem('${item._firebaseKey}')"><i class="fas fa-undo"></i> পুনরুদ্ধার</button></td>
                 </tr>`;
             });
             html += `</tbody></table>`;
@@ -1324,16 +1473,12 @@
     }
 
     function restoreDeletedItem(deletedKey) {
-        if (!confirm('Restore this item to Master List?')) return;
+        if (!confirm('এই আইটেমটি মাস্টার লিস্টে পুনরুদ্ধার করবেন?')) return;
 
         const item = deletedItems.find(i => i._firebaseKey === deletedKey);
-        if (!item) {
-            alert('Item not found!');
-            return;
-        }
+        if (!item) { alert('আইটেম খুঁজে পাওয়া যায়নি!'); return; }
 
         const originalKey = item.originalKey || database.ref(`${window._basePath}/masterItems`).push().key;
-
         const restoreData = {
             jobOrder: item.jobOrder,
             itemCode: item.itemCode,
@@ -1344,20 +1489,13 @@
 
         const masterRef = database.ref(`${window._basePath}/masterItems`).child(originalKey);
         masterRef.set(restoreData)
-            .then(() => {
-                return database.ref(`${window._basePath}/deletedMasterItems`).child(deletedKey).remove();
-            })
-            .then(() => {
-                alert('✅ Item restored successfully!');
-                viewDeletedItems();
-            })
-            .catch(err => {
-                alert('❌ Restore failed! ' + err.message);
-            });
+            .then(() => database.ref(`${window._basePath}/deletedMasterItems`).child(deletedKey).remove())
+            .then(() => { alert('✅ আইটেম পুনরুদ্ধার হয়েছে!'); viewDeletedItems(); })
+            .catch(err => alert('❌ পুনরুদ্ধার ব্যর্থ! ' + err.message));
     }
 
     // =========================================================
-    // JO LIST & DETAIL
+    // জব অর্ডার লিস্ট ও ডিটেইল
     // =========================================================
     function showJOList() {
         const modal = document.getElementById('joListModal');
@@ -1366,12 +1504,15 @@
         const joArray = Array.from(joSet).sort();
 
         if (joArray.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No JO uploaded yet.</p>';
+            container.innerHTML = '<p class="text-muted">কোন জব অর্ডার আপলোড হয়নি।</p>';
         } else {
             let html = '';
             joArray.forEach((jo, idx) => {
                 const itemCount = masterItems.filter(i => i.jobOrder === jo).length;
-                html += `<div class="jo-list-item" onclick="viewJODetail('${jo}')">${idx+1}. ${jo} (${itemCount} items) ➜ Click to view</div>`;
+                html += `<div class="jo-list-item" onclick="viewJODetail('${jo}')" style="padding:10px 14px;border-bottom:1px solid #f0f2f5;cursor:pointer;transition:0.2s;display:flex;justify-content:space-between;align-items:center;">
+                    <span><strong>${idx+1}.</strong> ${jo}</span>
+                    <span style="background:#e3f2fd;padding:2px 12px;border-radius:12px;font-size:12px;">${itemCount} আইটেম</span>
+                </div>`;
             });
             container.innerHTML = html;
         }
@@ -1388,7 +1529,7 @@
         const container = document.getElementById('joDetailContent');
         const masterJOItems = masterItems.filter(i => i.jobOrder === jo);
         if (!masterJOItems.length) {
-            container.innerHTML = `<p style="color:#999;">No items found for "${jo}"</p>`;
+            container.innerHTML = `<p class="text-muted">"${jo}" এর জন্য কোন আইটেম নেই</p>`;
             modal.style.display = 'flex';
             return;
         }
@@ -1405,18 +1546,15 @@
         const handoverJO = handoverData.filter(h => h.jobOrder === jo);
         handoverJO.forEach(h => {
             const key = `${h.itemCode}_${h.itemName}_${h.color || ''}`;
-            if (grouped[key]) {
-                grouped[key].asOfQty += h.handoverQty || 0;
-            } else {
-                if (!grouped[key]) {
-                    grouped[key] = { itemCode: h.itemCode, itemName: h.itemName, color: h.color || '', demandQty: 0, asOfQty: h.handoverQty || 0 };
-                }
+            if (grouped[key]) grouped[key].asOfQty += h.handoverQty || 0;
+            else {
+                grouped[key] = { itemCode: h.itemCode, itemName: h.itemName, color: h.color || '', demandQty: 0, asOfQty: h.handoverQty || 0 };
             }
         });
 
         const arr = Object.values(grouped);
-        let html = `<div style="margin-bottom:12px;font-weight:bold;font-size:16px;color:#0d47a1;">📋 JO: ${jo}</div>`;
-        html += `<table class="history-table" style="width:100%;"><thead><tr><th>#</th><th>CODE</th><th>NAME</th><th>COLOR</th><th>📌 Demand</th><th>📊 As of</th><th>⏳ Remaining</th><th>Status</th></tr></thead><tbody>`;
+        let html = `<div style="margin-bottom:12px;font-weight:bold;font-size:18px;color:#0a1628;">📋 জব অর্ডার: ${jo}</div>`;
+        html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>📌 ডিমান্ড</th><th>📊 এজ অফ</th><th>⏳ বাকি</th><th>স্ট্যাটাস</th></tr></thead><tbody>`;
 
         let totalDemand = 0, totalAsOf = 0, totalRemaining = 0;
         let allDone = true;
@@ -1429,41 +1567,41 @@
             totalAsOf += g.asOfQty;
             totalRemaining += remaining;
 
-            const statusText = isDone ? '✅ Done' : '⏳ Pending';
-            const statusClass = isDone ? 'status-done' : 'status-pending';
+            const statusText = isDone ? '✅ সম্পন্ন' : '⏳ পেন্ডিং';
+            const statusClass = isDone ? 'badge-done' : 'badge-pending';
             html += `<tr>
                 <td>${idx+1}</td>
                 <td>${g.itemCode}</td>
-                <td style="text-align:left;">${g.itemName}</td>
+                <td class="text-left">${g.itemName}</td>
                 <td>${g.color}</td>
                 <td><strong>${g.demandQty}</strong></td>
-                <td><strong style="color:#0d47a1;">${g.asOfQty}</strong></td>
-                <td><strong style="color:${remaining < 0 ? 'red' : remaining > 0 ? '#d32f2f' : '#2e7d32'};">${remaining < 0 ? 0 : remaining}</strong></td>
-                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td><strong style="color:#1565c0;">${g.asOfQty}</strong></td>
+                <td><strong style="color:${remaining < 0 ? 'red' : remaining > 0 ? '#e65100' : '#2e7d32'};">${remaining < 0 ? 0 : remaining}</strong></td>
+                <td><span class="badge ${statusClass}">${statusText}</span></td>
             </tr>`;
         });
 
         html += `</tbody></table>`;
-        const orderStatus = allDone ? '✅ Complete' : '⏳ In Progress';
-        const orderClass = allDone ? 'status-done' : 'status-pending';
-        html += `<div style="margin-top:12px;display:flex;gap:20px;flex-wrap:wrap;font-weight:bold;background:#e3f2fd;padding:10px;border-radius:8px;align-items:center;">
-            <span>📌 Total Demand: <strong>${totalDemand}</strong></span>
-            <span>📊 Total As of: <strong style="color:#0d47a1;">${totalAsOf}</strong></span>
-            <span>⏳ Total Remaining: <strong style="color:${totalRemaining < 0 ? 'red' : totalRemaining > 0 ? '#d32f2f' : '#2e7d32'};">${totalRemaining < 0 ? 0 : totalRemaining}</strong></span>
-            <span style="font-size:16px;">Status: <span class="status-badge ${orderClass}" style="font-size:14px;padding:6px 16px;">${orderStatus}</span></span>
+        const orderStatus = allDone ? '✅ সম্পূর্ণ' : '⏳ চলমান';
+        const orderClass = allDone ? 'badge-complete' : 'badge-pending';
+        html += `<div style="margin-top:12px;display:flex;gap:20px;flex-wrap:wrap;font-weight:bold;background:#e8f0fe;padding:12px;border-radius:12px;align-items:center;">
+            <span>📌 মোট ডিমান্ড: <strong>${totalDemand}</strong></span>
+            <span>📊 মোট এজ অফ: <strong style="color:#1565c0;">${totalAsOf}</strong></span>
+            <span>⏳ মোট বাকি: <strong style="color:${totalRemaining < 0 ? 'red' : totalRemaining > 0 ? '#e65100' : '#2e7d32'};">${totalRemaining < 0 ? 0 : totalRemaining}</strong></span>
+            <span style="font-size:16px;">স্ট্যাটাস: <span class="badge ${orderClass}" style="font-size:14px;padding:6px 16px;">${orderStatus}</span></span>
         </div>`;
 
-        html += `<div style="margin-top:15px;border-top:2px solid #0d47a1;padding-top:12px;">`;
-        html += `<h4 style="color:#0d47a1;">📋 Handover Details</h4>`;
+        html += `<div style="margin-top:15px;border-top:2px solid #e8ecf0;padding-top:12px;">`;
+        html += `<h4 style="color:#0a1628;">📋 হ্যান্ডওভার ডিটেইলস</h4>`;
         if (handoverJO.length === 0) {
-            html += `<p style="color:#999;">No handover records</p>`;
+            html += `<p class="text-muted">কোন হ্যান্ডওভার রেকর্ড নেই</p>`;
         } else {
-            html += `<table class="history-table" style="width:100%;"><thead><tr><th>#</th><th>CODE</th><th>NAME</th><th>COLOR</th><th>QTY</th><th>Lot No</th><th>By</th><th>Shift</th><th>Date/Time</th></tr></thead><tbody>`;
+            html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>কোয়ান্টিটি</th><th>লট নং</th><th>দ্বারা</th><th>শিফট</th><th>তারিখ/সময়</th></tr></thead><tbody>`;
             handoverJO.forEach((item, idx) => {
                 html += `<tr>
                     <td>${idx+1}</td>
                     <td>${item.itemCode}</td>
-                    <td style="text-align:left;">${item.itemName}</td>
+                    <td class="text-left">${item.itemName}</td>
                     <td>${item.color || ''}</td>
                     <td>${item.handoverQty}</td>
                     <td>${item.lotNumber || ''}</td>
@@ -1484,7 +1622,7 @@
     }
 
     // =========================================================
-    // EXCEL IMPORT / EXPORT
+    // এক্সেল ইমপোর্ট/এক্সপোর্ট
     // =========================================================
     function downloadMasterTemplate() {
         const headers = ['Order Name', 'Acc Code', 'Item Name', 'Color', 'Demand'];
@@ -1492,15 +1630,12 @@
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
         XLSX.writeFile(wb, 'Master_Template.xlsx');
-        alert('📄 Template download started!');
+        alert('📄 টেমপ্লেট ডাউনলোড শুরু হয়েছে!');
     }
 
     function importMasterExcel(event) {
         const file = event.target.files[0];
-        if (!file) {
-            alert('No file selected!');
-            return;
-        }
+        if (!file) { alert('কোন ফাইল সিলেক্ট করা হয়নি!'); return; }
 
         const reader = new FileReader();
         reader.onload = e => {
@@ -1510,10 +1645,7 @@
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
 
-                if (!rows || rows.length === 0) {
-                    alert('❌ File is empty!');
-                    return;
-                }
+                if (!rows || rows.length === 0) { alert('❌ ফাইল খালি!'); return; }
 
                 const originalHeaders = Object.keys(rows[0]);
                 const headerMap = {};
@@ -1534,7 +1666,7 @@
                 const required = ['JOB ORDER', 'ITEM CODE', 'ITEM NAME', 'DEMAND QTY'];
                 const missing = required.filter(r => !headerMap[r]);
                 if (missing.length > 0) {
-                    alert('❌ Missing columns: ' + missing.join(', ') + '\n\nHeaders: Order Name, Acc Code, Item Name, Color, Demand');
+                    alert('❌ অনুপস্থিত কলাম: ' + missing.join(', ') + '\n\nহেডার: Order Name, Acc Code, Item Name, Color, Demand');
                     return;
                 }
 
@@ -1547,7 +1679,6 @@
                     const qty = parseFloat((row[headerMap['DEMAND QTY']] || '').toString().replace(/,/g, '')) || 0;
 
                     if (!jo || !code || !name || qty <= 0) return;
-
                     const key = jo + '|' + code;
                     if (!groupMap[key]) {
                         groupMap[key] = { jobOrder: jo, itemCode: code, itemName: name, color: color, demandQty: 0 };
@@ -1556,13 +1687,9 @@
                 });
 
                 const groupedItems = Object.values(groupMap);
-                if (groupedItems.length === 0) {
-                    alert('⚠️ No valid data found!');
-                    return;
-                }
+                if (groupedItems.length === 0) { alert('⚠️ কোন বৈধ ডেটা পাওয়া যায়নি!'); return; }
 
-                let added = 0;
-                let updated = 0;
+                let added = 0, updated = 0;
                 groupedItems.forEach(g => {
                     const exist = masterItems.find(i => i.jobOrder === g.jobOrder && i.itemCode === g.itemCode);
                     if (exist) {
@@ -1578,22 +1705,16 @@
 
                 const btn = document.getElementById('masterFileInput');
                 btn.disabled = true;
-                saveMaster()
-                    .then(() => {
-                        populateJobOrderDropdown();
-                        updateSummary();
-                        alert(`✅ ${added} new items added and ${updated} updated!`);
-                        btn.value = '';
-                    })
-                    .catch(() => {
-                        btn.value = '';
-                    })
-                    .finally(() => {
-                        btn.disabled = false;
-                    });
+                saveMaster().then(() => {
+                    populateJobOrderDropdown();
+                    updateSummary();
+                    alert(`✅ ${added} টি নতুন আইটেম যোগ হয়েছে এবং ${updated} টি আপডেট হয়েছে!`);
+                    btn.value = '';
+                }).catch(() => btn.value = '')
+                  .finally(() => btn.disabled = false);
 
             } catch (err) {
-                alert('❌ Import failed! ' + err.message);
+                alert('❌ ইমপোর্ট ব্যর্থ! ' + err.message);
                 console.error(err);
             }
         };
@@ -1601,53 +1722,49 @@
     }
 
     // =========================================================
-    // EDIT DEMAND
+    // ডিমান্ড এডিট
     // =========================================================
     function editDemand() {
-        const jo = prompt('🔍 Enter Job Order to edit Demand (Required):');
+        const jo = prompt('🔍 ডিমান্ড এডিট করার জন্য জব অর্ডার দিন (প্রয়োজনীয়):');
         if (jo === null) return;
         const trimmedJo = jo.trim();
         if (!trimmedJo) {
-            alert('❌ Job Order is required!');
+            alert('❌ জব অর্ডার প্রয়োজন!');
             return;
         }
 
-        const codeInput = prompt('🔍 Enter Item Code (Required):');
+        const codeInput = prompt('🔍 আইটেম কোড দিন (প্রয়োজনীয়):');
         if (codeInput === null) return;
         const trimmedCode = codeInput.trim();
         if (!trimmedCode) {
-            alert('❌ Item Code is required!');
+            alert('❌ আইটেম কোড প্রয়োজন!');
             return;
         }
 
         const item = masterItems.find(i => i.jobOrder === trimmedJo && i.itemCode === trimmedCode);
         if (!item) {
-            alert(`⚠️ "${trimmedJo}" - "${trimmedCode}" not found!`);
+            alert(`⚠️ "${trimmedJo}" - "${trimmedCode}" খুঁজে পাওয়া যায়নি!`);
             return;
         }
 
-        const newDemand = prompt(`📌 Current Demand: ${item.demandQty}\nEnter new Demand:`);
+        const newDemand = prompt(`📌 বর্তমান ডিমান্ড: ${item.demandQty}\nনতুন ডিমান্ড দিন:`);
         if (newDemand === null) return;
         const newDemandNum = parseFloat(newDemand.trim());
         if (isNaN(newDemandNum) || newDemandNum < 0) {
-            alert('❌ Please enter a valid number!');
+            alert('❌ সঠিক সংখ্যা দিন!');
             return;
         }
 
         item.demandQty = newDemandNum;
-        saveMaster()
-            .then(() => {
-                populateJobOrderDropdown();
-                updateSummary();
-                alert(`✅ Demand updated to: ${newDemandNum}`);
-            })
-            .catch(err => {
-                alert('❌ Update failed! ' + err.message);
-            });
+        saveMaster().then(() => {
+            populateJobOrderDropdown();
+            updateSummary();
+            alert(`✅ ডিমান্ড আপডেট হয়েছে: ${newDemandNum}`);
+        }).catch(err => alert('❌ আপডেট ব্যর্থ! ' + err.message));
     }
 
     // =========================================================
-    // POPULATE JO DROPDOWN & DETAILS
+    // ড্রপডাউন পপুলেট
     // =========================================================
     function populateJobOrderDropdown() {
         const select = document.getElementById('jobOrderSelect');
@@ -1662,26 +1779,24 @@
                 const asOf = handoverData
                     .filter(h => h.jobOrder === jo && h.itemCode === item.itemCode)
                     .reduce((sum, h) => sum + (h.handoverQty || 0), 0);
-                if (asOf < item.demandQty) {
-                    pending++;
-                }
+                if (asOf < item.demandQty) pending++;
             });
             joStatus[jo] = { total: items.length, pending };
         });
 
         const pendingJoList = joList.filter(jo => joStatus[jo].pending > 0);
-        select.innerHTML = '<option value="">-- Select JO --</option>';
+        select.innerHTML = '<option value="">-- সিলেক্ট জব অর্ডার --</option>';
         if (pendingJoList.length === 0) {
             const opt = document.createElement('option');
             opt.value = '';
-            opt.textContent = '✅ All JO Done!';
+            opt.textContent = '✅ সব জব অর্ডার সম্পন্ন!';
             opt.disabled = true;
             select.appendChild(opt);
         } else {
             pendingJoList.forEach(jo => {
                 const opt = document.createElement('option');
                 opt.value = jo;
-                opt.textContent = `${jo} (Pending ${joStatus[jo].pending}/${joStatus[jo].total})`;
+                opt.textContent = `${jo} (পেন্ডিং ${joStatus[jo].pending}/${joStatus[jo].total})`;
                 select.appendChild(opt);
             });
         }
@@ -1689,7 +1804,7 @@
         if (current && pendingJoList.includes(current)) {
             select.value = current;
         } else {
-            document.getElementById('itemCodeSelect').innerHTML = '<option value="">-- Select CODE --</option>';
+            document.getElementById('itemCodeSelect').innerHTML = '<option value="">-- সিলেক্ট কোড --</option>';
             document.getElementById('itemNameDisplay').value = '';
             document.getElementById('colorDisplay').value = '';
             document.getElementById('dueQtyDisplay').value = '';
@@ -1702,7 +1817,7 @@
     function loadItemsByJobOrder() {
         const jo = document.getElementById('jobOrderSelect').value;
         const sel = document.getElementById('itemCodeSelect');
-        sel.innerHTML = '<option value="">-- Select CODE --</option>';
+        sel.innerHTML = '<option value="">-- সিলেক্ট কোড --</option>';
         document.getElementById('itemNameDisplay').value = '';
         document.getElementById('colorDisplay').value = '';
         document.getElementById('dueQtyDisplay').value = '';
@@ -1741,13 +1856,13 @@
     function showHandoverDetails() {
         const jo = document.getElementById('jobOrderSelect').value;
         const code = document.getElementById('itemCodeSelect').value;
-        if (!jo || !code) { alert('Please select JO & CODE!'); return; }
+        if (!jo || !code) { alert('জব অর্ডার ও কোড সিলেক্ট করুন!'); return; }
         const details = handoverData.filter(h => h.jobOrder === jo && h.itemCode === code);
-        if (!details.length) { alert('No records found!'); return; }
+        if (!details.length) { alert('কোন রেকর্ড নেই!'); return; }
         document.getElementById('detailJobOrder').textContent = jo;
         document.getElementById('detailItemCode').textContent = code;
         document.getElementById('detailItemName').textContent = masterItems.find(i => i.jobOrder === jo && i.itemCode === code)?.itemName || '';
-        let html = `<table class="history-table"><thead><tr><th>#</th><th>Date</th><th>Shift</th><th>By</th><th>QTY</th><th>Lot No</th><th>Time</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>দ্বারা</th><th>কোয়ান্টিটি</th><th>লট নং</th><th>সময়</th></tr></thead><tbody>`;
         let total = 0;
         details.forEach((d, i) => {
             total += d.handoverQty;
@@ -1759,10 +1874,12 @@
         document.getElementById('detailModal').style.display = 'flex';
     }
 
-    function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
+    function closeDetailModal() {
+        document.getElementById('detailModal').style.display = 'none';
+    }
 
     // =========================================================
-    // FORM SUBMIT
+    // ফর্ম সাবমিট
     // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1775,11 +1892,17 @@
         const person = document.getElementById('handoverPerson').value;
         const shift = document.getElementById('handoverShift').value;
         const date = document.getElementById('currentDateDisplay').value.trim();
-        if (!jo || !code || !name || !qty || qty <= 0 || !person) { alert('Please fill all * fields!'); return; }
+        if (!jo || !code || !name || !qty || qty <= 0 || !person) {
+            alert('সব * ফিল্ড পূরণ করুন!');
+            return;
+        }
         const master = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
         const due = master ? master.demandQty : 0;
         const asOf = handoverData.filter(h => h.jobOrder === jo && h.itemCode === code).reduce((s, h) => s + h.handoverQty, 0);
-        if (asOf + qty > due) { alert(`⚠️ Cannot exceed Demand (${due})!`); return; }
+        if (asOf + qty > due) {
+            alert(`⚠️ ডিমান্ড (${due}) এর বেশি দেওয়া যাবে না!`);
+            return;
+        }
         const entryDate = date || new Date().toISOString().slice(0,10);
         const entryTime = new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
         const entry = { 
@@ -1800,20 +1923,23 @@
             document.getElementById('lotNumber').value = '';
             document.getElementById('handoverPerson').value = '';
             loadItemDetails();
-            alert('✅ Handover successful!');
-        }).catch(err => alert('❌ Save failed! ' + err.message));
+            alert('✅ হ্যান্ডওভার সফল হয়েছে!');
+        }).catch(err => alert('❌ সেভ ব্যর্থ! ' + err.message));
     });
 
     function renderTable() {
         const tbody = document.getElementById('stockBody');
-        if (!handoverData.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#999;padding:15px;">No data</td></tr>'; return; }
+        if (!handoverData.length) {
+            tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#8a9aaa;padding:20px;">কোন ডেটা নেই</td></tr>';
+            return;
+        }
         let html = '';
         handoverData.forEach((item, i) => {
             html += `<tr>
                 <td>${i+1}</td>
                 <td>${item.jobOrder}</td>
                 <td>${item.itemCode}</td>
-                <td style="text-align:left;">${item.itemName}</td>
+                <td class="text-left">${item.itemName}</td>
                 <td>${item.color||''}</td>
                 <td>${item.handoverQty}</td>
                 <td>${item.lotNumber || ''}</td>
@@ -1821,9 +1947,9 @@
                 <td>${item.shift||''}</td>
                 <td>${item.entryDate||''} ${item.entryTime||''}</td>
                 <td>
-                    <div class="action-buttons">
-                        <button class="btn-edit" onclick="openEditModal(${i})">✏️</button>
-                        <button class="btn-danger" onclick="deleteHandover(${i})">🗑️</button>
+                    <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">
+                        <button class="btn btn-warning btn-xs" onclick="openEditModal(${i})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-xs" onclick="deleteHandover(${i})"><i class="fas fa-trash"></i></button>
                     </div>
                 </td>
             </tr>`;
@@ -1845,25 +1971,16 @@
                 const asOf = handoverData
                     .filter(h => h.jobOrder === jo && h.itemCode === item.itemCode)
                     .reduce((sum, h) => sum + (h.handoverQty || 0), 0);
-                if (asOf >= item.demandQty && item.demandQty > 0) {
-                    doneCount++;
-                }
+                if (asOf >= item.demandQty && item.demandQty > 0) doneCount++;
             });
             joStatus[jo] = { total: items.length, done: doneCount };
         });
 
-        let totalDoneJO = 0;
-        let totalPendingJO = 0;
-        let totalDoneItems = 0;
-        let totalPendingItems = 0;
-
+        let totalDoneJO = 0, totalPendingJO = 0, totalDoneItems = 0, totalPendingItems = 0;
         joSet.forEach(jo => {
             const { total, done } = joStatus[jo];
-            if (done === total && total > 0) {
-                totalDoneJO++;
-            } else {
-                totalPendingJO++;
-            }
+            if (done === total && total > 0) totalDoneJO++;
+            else totalPendingJO++;
             totalDoneItems += done;
             totalPendingItems += (total - done);
         });
@@ -1875,7 +1992,7 @@
     }
 
     // =========================================================
-    // EDIT HANDOVER
+    // এডিট হ্যান্ডওভার
     // =========================================================
     function openEditModal(index) {
         const item = handoverData[index];
@@ -1888,52 +2005,62 @@
         document.getElementById('editShift').value = item.shift || 'Day';
         document.getElementById('editModal').style.display = 'flex';
     }
-    function closeEditModal() { document.getElementById('editModal').style.display = 'none'; editIndex = null; }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        editIndex = null;
+    }
+
     function confirmEdit() {
         if (editIndex === null) return;
         const qty = parseFloat(document.getElementById('editHandoverQty').value);
         const lotNumber = document.getElementById('editLotNumber').value.trim();
         const person = document.getElementById('editHandoverPerson').value.trim();
         const shift = document.getElementById('editShift').value;
-        if (isNaN(qty) || qty < 0 || !person) { alert('Please enter valid data!'); return; }
+        if (isNaN(qty) || qty < 0 || !person) {
+            alert('সঠিক ডেটা দিন!');
+            return;
+        }
         const item = handoverData[editIndex];
         const master = masterItems.find(i => i.jobOrder === item.jobOrder && i.itemCode === item.itemCode);
         const due = master ? master.demandQty : 0;
         const others = handoverData.filter((h, idx) => idx !== editIndex && h.jobOrder === item.jobOrder && h.itemCode === item.itemCode).reduce((s, h) => s + h.handoverQty, 0);
-        if (others + qty > due) { alert(`⚠️ Cannot exceed Demand (${due})!`); return; }
+        if (others + qty > due) {
+            alert(`⚠️ ডিমান্ড (${due}) এর বেশি দেওয়া যাবে না!`);
+            return;
+        }
         item.handoverQty = qty;
         item.lotNumber = lotNumber;
         item.handoverPerson = person;
         item.shift = shift;
-        saveHandover().then(() => {
-            closeEditModal();
-            alert('✅ Updated!');
-        });
+        saveHandover().then(() => { closeEditModal(); alert('✅ আপডেট হয়েছে!'); });
     }
 
     // =========================================================
-    // JO REPORT
+    // জব রিপোর্ট
     // =========================================================
     let currentReportJO = '';
 
     function openJ0Report() {
-        if (!masterItems.length) { alert('No data!'); return; }
+        if (!masterItems.length) { alert('কোন ডেটা নেই!'); return; }
         const select = document.getElementById('joSelect');
         const joList = [...new Set(masterItems.map(i => i.jobOrder))];
-        select.innerHTML = '<option value="">-- Select --</option>';
+        select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
         joList.forEach(jo => { const opt = document.createElement('option'); opt.value = jo; opt.textContent = jo; select.appendChild(opt); });
-        document.getElementById('joReportContent').innerHTML = '<p style="color:#999;">Select JO</p>';
+        document.getElementById('joReportContent').innerHTML = '<p class="text-muted">জব অর্ডার সিলেক্ট করুন</p>';
         document.getElementById('joReportModal').style.display = 'flex';
         currentReportJO = '';
     }
 
-    function closeJoReport() { document.getElementById('joReportModal').style.display = 'none'; }
+    function closeJoReport() {
+        document.getElementById('joReportModal').style.display = 'none';
+    }
 
     function loadJoReport() {
         const select = document.getElementById('joSelect');
         const jo = select.value;
         if (!jo) {
-            document.getElementById('joReportContent').innerHTML = '<p style="color:#999;">Select JO</p>';
+            document.getElementById('joReportContent').innerHTML = '<p class="text-muted">জব অর্ডার সিলেক্ট করুন</p>';
             currentReportJO = '';
             return;
         }
@@ -1941,7 +2068,7 @@
 
         const masterJOItems = masterItems.filter(i => i.jobOrder === jo);
         if (!masterJOItems.length) {
-            document.getElementById('joReportContent').innerHTML = `<p style="color:#999;">No items for "${jo}"</p>`;
+            document.getElementById('joReportContent').innerHTML = `<p class="text-muted">"${jo}" এর জন্য কোন আইটেম নেই</p>`;
             return;
         }
 
@@ -1957,21 +2084,18 @@
         const handoverJO = handoverData.filter(h => h.jobOrder === jo);
         handoverJO.forEach(h => {
             const key = `${h.itemCode}_${h.itemName}_${h.color || ''}`;
-            if (grouped[key]) {
-                grouped[key].asOfQty += h.handoverQty || 0;
-            } else {
-                if (!grouped[key]) {
-                    grouped[key] = { itemCode: h.itemCode, itemName: h.itemName, color: h.color || '', demandQty: 0, asOfQty: h.handoverQty || 0 };
-                }
+            if (grouped[key]) grouped[key].asOfQty += h.handoverQty || 0;
+            else {
+                grouped[key] = { itemCode: h.itemCode, itemName: h.itemName, color: h.color || '', demandQty: 0, asOfQty: h.handoverQty || 0 };
             }
         });
 
         const arr = Object.values(grouped);
-        let html = `<div style="background:#cce5ff;padding:12px;border-radius:8px;margin-bottom:12px;display:flex;justify-content:space-between;flex-wrap:wrap;">
-            <span style="font-size:18px;font-weight:700;">📋 Report: ${jo}</span>
-            <span>Total Items: <strong>${arr.length}</strong></span>
+        let html = `<div style="background:#e8f0fe;padding:12px;border-radius:12px;margin-bottom:12px;display:flex;justify-content:space-between;flex-wrap:wrap;">
+            <span style="font-size:18px;font-weight:700;">📋 রিপোর্ট: ${jo}</span>
+            <span>মোট আইটেম: <strong>${arr.length}</strong></span>
         </div>`;
-        html += `<table class="history-table"><thead><tr><th>#</th><th>CODE</th><th>NAME</th><th>COLOR</th><th>📌 Demand</th><th>📊 As of</th><th>⏳ Remaining</th><th>Status</th></tr></thead><tbody>`;
+        html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>📌 ডিমান্ড</th><th>📊 এজ অফ</th><th>⏳ বাকি</th><th>স্ট্যাটাস</th></tr></thead><tbody>`;
 
         let totalDemand = 0, totalAsOf = 0, totalRemaining = 0;
         let allDone = true;
@@ -1984,41 +2108,41 @@
             totalAsOf += g.asOfQty;
             totalRemaining += remaining;
 
-            const statusText = isDone ? '✅ Done' : '⏳ Pending';
-            const statusClass = isDone ? 'status-done' : 'status-pending';
+            const statusText = isDone ? '✅ সম্পন্ন' : '⏳ পেন্ডিং';
+            const statusClass = isDone ? 'badge-done' : 'badge-pending';
             html += `<tr>
                 <td>${idx+1}</td>
                 <td>${g.itemCode}</td>
-                <td style="text-align:left;">${g.itemName}</td>
+                <td class="text-left">${g.itemName}</td>
                 <td>${g.color}</td>
                 <td><strong>${g.demandQty}</strong></td>
-                <td><strong style="color:#0d47a1;">${g.asOfQty}</strong></td>
-                <td><strong style="color:${remaining < 0 ? 'red' : remaining > 0 ? '#d32f2f' : '#2e7d32'};">${remaining < 0 ? 0 : remaining}</strong></td>
-                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td><strong style="color:#1565c0;">${g.asOfQty}</strong></td>
+                <td><strong style="color:${remaining < 0 ? 'red' : remaining > 0 ? '#e65100' : '#2e7d32'};">${remaining < 0 ? 0 : remaining}</strong></td>
+                <td><span class="badge ${statusClass}">${statusText}</span></td>
             </tr>`;
         });
 
         html += `</tbody></table>`;
-        const orderStatus = allDone ? '✅ Complete' : '⏳ In Progress';
-        const orderClass = allDone ? 'status-done' : 'status-pending';
-        html += `<div style="margin-top:15px;display:flex;gap:30px;flex-wrap:wrap;font-weight:bold;background:#e3f2fd;padding:12px;border-radius:8px;align-items:center;">
-            <span>📌 Total Demand: <strong>${totalDemand}</strong></span>
-            <span>📊 Total As of: <strong style="color:#0d47a1;">${totalAsOf}</strong></span>
-            <span>⏳ Total Remaining: <strong style="color:${totalRemaining < 0 ? 'red' : totalRemaining > 0 ? '#d32f2f' : '#2e7d32'};">${totalRemaining < 0 ? 0 : totalRemaining}</strong></span>
-            <span style="font-size:18px;">Order Status: <span class="status-badge ${orderClass}" style="font-size:16px;padding:6px 16px;">${orderStatus}</span></span>
+        const orderStatus = allDone ? '✅ সম্পূর্ণ' : '⏳ চলমান';
+        const orderClass = allDone ? 'badge-complete' : 'badge-pending';
+        html += `<div style="margin-top:15px;display:flex;gap:30px;flex-wrap:wrap;font-weight:bold;background:#e8f0fe;padding:12px;border-radius:12px;align-items:center;">
+            <span>📌 মোট ডিমান্ড: <strong>${totalDemand}</strong></span>
+            <span>📊 মোট এজ অফ: <strong style="color:#1565c0;">${totalAsOf}</strong></span>
+            <span>⏳ মোট বাকি: <strong style="color:${totalRemaining < 0 ? 'red' : totalRemaining > 0 ? '#e65100' : '#2e7d32'};">${totalRemaining < 0 ? 0 : totalRemaining}</strong></span>
+            <span style="font-size:18px;">অর্ডার স্ট্যাটাস: <span class="badge ${orderClass}" style="font-size:16px;padding:6px 16px;">${orderStatus}</span></span>
         </div>`;
 
-        html += `<div style="margin-top:20px;border-top:2px solid #0d47a1;padding-top:15px;">`;
-        html += `<h4 style="color:#0d47a1;">📋 Handover Details</h4>`;
+        html += `<div style="margin-top:20px;border-top:2px solid #e8ecf0;padding-top:15px;">`;
+        html += `<h4 style="color:#0a1628;">📋 হ্যান্ডওভার ডিটেইলস</h4>`;
         if (handoverJO.length === 0) {
-            html += `<p style="color:#999;">No handover records</p>`;
+            html += `<p class="text-muted">কোন হ্যান্ডওভার রেকর্ড নেই</p>`;
         } else {
-            html += `<table class="history-table"><thead><tr><th>#</th><th>CODE</th><th>NAME</th><th>COLOR</th><th>QTY</th><th>Lot No</th><th>By</th><th>Shift</th><th>Date/Time</th></tr></thead><tbody>`;
+            html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>কোয়ান্টিটি</th><th>লট নং</th><th>দ্বারা</th><th>শিফট</th><th>তারিখ/সময়</th></tr></thead><tbody>`;
             handoverJO.forEach((item, idx) => {
                 html += `<tr>
                     <td>${idx+1}</td>
                     <td>${item.itemCode}</td>
-                    <td style="text-align:left;">${item.itemName}</td>
+                    <td class="text-left">${item.itemName}</td>
                     <td>${item.color || ''}</td>
                     <td>${item.handoverQty}</td>
                     <td>${item.lotNumber || ''}</td>
@@ -2034,12 +2158,12 @@
     }
 
     // =========================================================
-    // PDF, IMAGE, EXCEL DOWNLOAD
+    // পিডিএফ, ইমেজ, এক্সেল ডাউনলোড
     // =========================================================
     function downloadReportPDF() {
         const content = document.getElementById('joReportContent');
-        if (!content || content.innerHTML.includes('Select JO')) {
-            alert('Please select a JOB ORDER first!');
+        if (!content || content.innerHTML.includes('জব অর্ডার সিলেক্ট করুন')) {
+            alert('প্রথমে জব অর্ডার সিলেক্ট করুন!');
             return;
         }
         const btns = content.previousElementSibling;
@@ -2054,14 +2178,14 @@
             if (btns && btns.style) btns.style.display = 'flex';
         }).catch(() => {
             if (btns && btns.style) btns.style.display = 'flex';
-            alert('PDF generation failed!');
+            alert('পিডিএফ জেনারেশন ব্যর্থ!');
         });
     }
 
     function downloadReportImage() {
         const content = document.getElementById('joReportContent');
-        if (!content || content.innerHTML.includes('Select JO')) {
-            alert('Please select a JOB ORDER first!');
+        if (!content || content.innerHTML.includes('জব অর্ডার সিলেক্ট করুন')) {
+            alert('প্রথমে জব অর্ডার সিলেক্ট করুন!');
             return;
         }
         const btns = content.previousElementSibling;
@@ -2074,13 +2198,13 @@
             if (btns && btns.style) btns.style.display = 'flex';
         }).catch(() => {
             if (btns && btns.style) btns.style.display = 'flex';
-            alert('Image generation failed!');
+            alert('ইমেজ জেনারেশন ব্যর্থ!');
         });
     }
 
     function downloadReportExcel() {
         if (!currentReportJO) {
-            alert('Please select a JOB ORDER first!');
+            alert('প্রথমে জব অর্ডার সিলেক্ট করুন!');
             return;
         }
         const grouped = {};
@@ -2093,56 +2217,53 @@
         });
         handoverData.filter(h => h.jobOrder === currentReportJO).forEach(h => {
             const key = `${h.itemCode}_${h.itemName}_${h.color||''}`;
-            if (grouped[key]) {
-                grouped[key].asOfQty += h.handoverQty;
-            } else {
-                if (!grouped[key]) {
-                    grouped[key] = { itemCode: h.itemCode, itemName: h.itemName, color: h.color||'', demandQty: 0, asOfQty: h.handoverQty || 0 };
-                }
+            if (grouped[key]) grouped[key].asOfQty += h.handoverQty;
+            else {
+                grouped[key] = { itemCode: h.itemCode, itemName: h.itemName, color: h.color||'', demandQty: 0, asOfQty: h.handoverQty || 0 };
             }
         });
         const arr = Object.values(grouped);
-        const rows = [['CODE','NAME','COLOR','Demand','As of','Remaining','Status']];
+        const rows = [['কোড','নাম','রঙ','ডিমান্ড','এজ অফ','বাকি','স্ট্যাটাস']];
         let td=0, ta=0, tr=0;
         arr.forEach(g => {
             const rem = g.demandQty - g.asOfQty;
-            const done = (g.asOfQty >= g.demandQty && g.demandQty > 0) ? 'Done' : 'Pending';
+            const done = (g.asOfQty >= g.demandQty && g.demandQty > 0) ? 'সম্পন্ন' : 'পেন্ডিং';
             td += g.demandQty; ta += g.asOfQty; tr += rem;
             rows.push([g.itemCode, g.itemName, g.color, g.demandQty, g.asOfQty, rem, done]);
         });
         const allDone = arr.every(g => g.asOfQty >= g.demandQty && g.demandQty > 0);
-        rows.push([], ['Total','','', td, ta, tr, '']);
-        rows.push(['Order Status:', allDone ? 'Complete' : 'In Progress']);
-        rows.push([], ['===== Details =====']);
-        rows.push(['#','CODE','NAME','COLOR','QTY','Lot No','By','Shift','Date']);
+        rows.push([], ['মোট','','', td, ta, tr, '']);
+        rows.push(['অর্ডার স্ট্যাটাস:', allDone ? 'সম্পূর্ণ' : 'চলমান']);
+        rows.push([], ['===== ডিটেইলস =====']);
+        rows.push(['#','কোড','নাম','রঙ','কোয়ান্টিটি','লট নং','দ্বারা','শিফট','তারিখ']);
         handoverData.filter(h => h.jobOrder === currentReportJO).forEach((h,i) => {
             rows.push([i+1, h.itemCode, h.itemName, h.color||'', h.handoverQty, h.lotNumber||'', h.handoverPerson, h.shift||'', h.entryDate||'']);
         });
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'JO Report');
         XLSX.writeFile(wb, `Handover_${currentReportJO}.xlsx`);
-        alert('✅ Excel download started!');
+        alert('✅ এক্সেল ডাউনলোড শুরু হয়েছে!');
     }
 
     function exportReport() {
         if (!handoverData.length) {
-            alert('No data!');
+            alert('কোন ডেটা নেই!');
             return;
         }
-        let csv = 'JO,CODE,NAME,COLOR,QTY,Lot No,By,Shift,Date,Time\n';
+        let csv = 'জব অর্ডার,কোড,নাম,রঙ,কোয়ান্টিটি,লট নং,দ্বারা,শিফট,তারিখ,সময়\n';
         handoverData.forEach(h => {
             csv += `${h.jobOrder},${h.itemCode},${h.itemName},${h.color||''},${h.handoverQty},${h.lotNumber||''},${h.handoverPerson},${h.shift||''},${h.entryDate||''},${h.entryTime||''}\n`;
         });
-        const blob = new Blob([csv], { type: 'text/csv' });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `Handover_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
-        alert('✅ CSV download started!');
+        alert('✅ সিএসভি ডাউনলোড শুরু হয়েছে!');
     }
 
     // =========================================================
-    // MODAL CLOSE EVENTS
+    // মডাল ক্লোজ ইভেন্ট
     // =========================================================
     document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
     document.getElementById('joReportModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeJoReport(); });
@@ -2153,11 +2274,14 @@
     document.getElementById('changePwdModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeChangePassword(); });
 
     // =========================================================
-    // INIT
+    // ইনিশিয়ালাইজ
     // =========================================================
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('loginScreen').style.display = 'block';
         document.getElementById('mainApp').style.display = 'none';
+        // আজকের তারিখ সেট করা
+        const today = new Date().toISOString().slice(0,10);
+        document.getElementById('currentDateDisplay').value = today;
     });
 </script>
 </body>
