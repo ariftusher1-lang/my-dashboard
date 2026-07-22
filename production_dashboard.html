@@ -2062,19 +2062,37 @@
         }
 
         // ============================================================
-        //  EXCEL IMPORT
+        //  EXCEL IMPORT (FIXED)
         // ============================================================
         let importedData = [];
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
+
         dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-        dropZone.addEventListener('drop', e => {
-            e.preventDefault(); dropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; handleFile(e.dataTransfer.files[0]); }
+
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
         });
-        fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', e => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
 
         function handleFile(file) {
             const reader = new FileReader();
@@ -2084,34 +2102,84 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                    if (jsonData.length === 0) { alert('ফাইল খালি!'); return; }
+                    
+                    console.log("📊 Raw Data from Excel:", jsonData);
+                    
+                    if (jsonData.length === 0) {
+                        alert('⚠️ ফাইল খালি!');
+                        return;
+                    }
+
+                    const firstRow = jsonData[0];
+                    console.log("📋 Column Names:", Object.keys(firstRow));
+
+                    const expectedColumns = ['MC SL', 'Order Name', 'Acc Code', 'Item Name', 'Unit Wt', 
+                                            'Logo Symble', 'Origin', 'SCM Code', 'Color', 'Cavity', 'CT', 'Demand'];
+                    
+                    const actualColumns = Object.keys(firstRow);
+                    const missingColumns = expectedColumns.filter(col => 
+                        !actualColumns.some(actual => actual.trim().toLowerCase() === col.toLowerCase())
+                    );
+                    
+                    if (missingColumns.length > 0) {
+                        alert(`⚠️ এই কলামগুলো খুঁজে পাওয়া যায়নি:\n${missingColumns.join('\n')}\n\nআপনার Excel এর কলাম নাম চেক করুন।`);
+                        return;
+                    }
+                    
                     const getVal = (row, key) => {
-                        for (let k in row) { if (k.trim().toLowerCase() === key.toLowerCase()) return row[k]; }
+                        for (let k in row) {
+                            if (k.trim().toLowerCase() === key.toLowerCase()) {
+                                return row[k];
+                            }
+                        }
                         return undefined;
                     };
-                    importedData = jsonData.map(row => ({
-                        mcSl: (getVal(row, 'MC SL') || '').toString().trim(),
-                        orderName: (getVal(row, 'Order Name') || '').toString().trim(),
-                        accCode: (getVal(row, 'Acc Code') || '').toString().trim(),
-                        itemName: (getVal(row, 'Item Name') || '').toString().trim(),
-                        unitWt: parseFloat(getVal(row, 'Unit Wt')) || 0,
-                        logoSymble: (getVal(row, 'Logo Symble') || '').toString().trim(),
-                        origin: (getVal(row, 'Origin') || '').toString().trim(),
-                        scmCode: (getVal(row, 'SCM Code') || '').toString().trim(),
-                        color: (getVal(row, 'Color') || '').toString().trim(),
-                        cavity: parseInt(getVal(row, 'Cavity')) || 1,
-                        ct: parseInt(getVal(row, 'CT')) || 30,
-                        demand: parseInt(getVal(row, 'Demand')) || 0,
-                    }));
-                    const valid = importedData.filter(d => d.mcSl && d.orderName && d.demand > 0);
-                    if (valid.length === 0) { alert('বৈধ ডেটা নেই!'); return; }
-                    importedData = valid;
+                    
+                    importedData = jsonData.map((row, index) => {
+                        const mcSl = (getVal(row, 'MC SL') || '').toString().trim();
+                        const orderName = (getVal(row, 'Order Name') || '').toString().trim();
+                        const demand = parseInt(getVal(row, 'Demand')) || 0;
+                        
+                        if (!mcSl || !orderName || demand === 0) {
+                            console.warn(`⚠️ Row ${index + 1} skipped:`, row);
+                            return null;
+                        }
+                        
+                        return {
+                            mcSl: mcSl,
+                            orderName: orderName,
+                            accCode: (getVal(row, 'Acc Code') || '').toString().trim(),
+                            itemName: (getVal(row, 'Item Name') || '').toString().trim(),
+                            unitWt: parseFloat(getVal(row, 'Unit Wt')) || 0,
+                            logoSymble: (getVal(row, 'Logo Symble') || '').toString().trim(),
+                            origin: (getVal(row, 'Origin') || '').toString().trim(),
+                            scmCode: (getVal(row, 'SCM Code') || '').toString().trim(),
+                            color: (getVal(row, 'Color') || '').toString().trim(),
+                            cavity: parseInt(getVal(row, 'Cavity')) || 1,
+                            ct: parseInt(getVal(row, 'CT')) || 30,
+                            demand: demand,
+                        };
+                    }).filter(d => d !== null);
+                    
+                    console.log("✅ Processed Data:", importedData);
+                    
+                    if (importedData.length === 0) {
+                        alert('⚠️ কোনো বৈধ ডেটা পাওয়া যায়নি! Excel ফাইল চেক করুন।');
+                        return;
+                    }
+                    
                     const preview = document.getElementById('importPreview');
                     preview.style.display = 'block';
                     document.getElementById('importPreviewBody').innerHTML = importedData.map(d =>
                         `<tr><td>${d.mcSl}</td><td>${d.orderName}</td><td>${d.demand}</td></tr>`
                     ).join('');
-                } catch (err) { alert('ত্রুটি: ' + err.message); }
+                    
+                    showToast(`✅ ${importedData.length} টি ডেটা পাওয়া গেছে!`, 'success', 3000);
+                    
+                } catch (err) {
+                    alert('❌ ত্রুটি: ' + err.message);
+                    console.error('Error:', err);
+                }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -2124,7 +2192,11 @@
         }
 
         function confirmImport() {
-            if (importedData.length === 0) { alert('ডেটা নেই!'); return; }
+            if (importedData.length === 0) {
+                alert('⚠️ ডেটা নেই! আগে Excel ফাইল সিলেক্ট করুন।');
+                return;
+            }
+            
             let added = 0;
             const promises = [];
             
@@ -2154,10 +2226,19 @@
                 }
             });
             
+            if (added === 0) {
+                alert('✅ সব অর্ডার ইতিমধ্যে আছে!');
+                clearImport();
+                return;
+            }
+            
             Promise.all(promises).then(() => {
                 clearImport();
                 refreshAll();
                 showToast(`✅ ${added} টি অর্ডার ইমপোর্ট হয়েছে।`, 'success', 3000);
+            }).catch(err => {
+                alert('❌ ইমপোর্ট করতে সমস্যা: ' + err.message);
+                console.error(err);
             });
         }
 
@@ -2217,7 +2298,6 @@
             const good = parseInt(document.getElementById('counterGood').value) || 0;
             const reject = parseInt(document.getElementById('counterReject').value) || 0;
             
-            // Validate Good + Reject = Total Counter
             if (good + reject !== totalCounter) {
                 alert('⚠️ Good + Reject অবশ্যই Total Counter এর সমান হতে হবে!');
                 return;
@@ -2321,7 +2401,6 @@
                 document.getElementById(id).addEventListener('input', calculateShift);
             });
             
-            // NEW: Separate listeners for Good and Reject
             document.getElementById('counterGood').addEventListener('input', calculateShift);
             document.getElementById('counterReject').addEventListener('input', calculateShift);
             
