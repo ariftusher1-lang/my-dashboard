@@ -1,0 +1,2265 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRAN-RFL | প্রোডাকশন ড্যাশবোর্ড</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background: #1a2332;
+            color: #fff;
+            z-index: 1000;
+            transition: all 0.3s;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #2d3a4b; border-radius: 4px; }
+        .sidebar-brand {
+            padding: 18px 20px;
+            border-bottom: 1px solid #2d3a4b;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sidebar-brand .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: #e74c3c;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            color: #fff;
+        }
+        .sidebar-brand .brand-text { font-size: 17px; font-weight: 700; letter-spacing: 0.5px; }
+        .sidebar-brand .brand-text span { color: #e74c3c; }
+        .sidebar-menu { padding: 15px 0; }
+        .sidebar-menu .menu-label {
+            padding: 8px 24px;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #6c7a8d;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        .sidebar-menu .menu-item {
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: #a8b5c7;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-menu .menu-item:hover { background: #253040; color: #fff; }
+        .sidebar-menu .menu-item.active { background: #253040; color: #fff; border-left-color: #e74c3c; }
+        .sidebar-menu .menu-item i { width: 20px; font-size: 16px; text-align: center; }
+        .sidebar-menu .menu-item .badge-menu {
+            margin-left: auto;
+            background: #e74c3c;
+            color: #fff;
+            font-size: 9px;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        .main-content { margin-left: 250px; height: 100vh; display: flex; flex-direction: column; }
+        .header {
+            background: #fff;
+            padding: 8px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e9ecef;
+            flex-shrink: 0;
+            min-height: 60px;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .header-left .page-title { font-size: 18px; font-weight: 600; color: #1a2332; }
+        .header-left .page-title small { font-size: 12px; font-weight: 400; color: #6c7a8d; margin-left: 8px; }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+        .header-right .clock-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f8f9fa;
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .header-right .clock-section .clock {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a2332;
+            font-variant-numeric: tabular-nums;
+        }
+        .header-right .clock-section .shift-countdown {
+            font-size: 12px;
+            color: #e74c3c;
+            font-weight: 500;
+        }
+        .header-right .clock-section .shift-label {
+            font-size: 12px;
+            color: #6c7a8d;
+            font-weight: 500;
+        }
+        .header-right .notification {
+            position: relative;
+            cursor: pointer;
+            font-size: 20px;
+            color: #6c7a8d;
+        }
+        .header-right .notification .dot {
+            position: absolute;
+            top: -2px;
+            right: -4px;
+            width: 8px;
+            height: 8px;
+            background: #e74c3c;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        .header-right .user-profile { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .header-right .user-profile .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #e74c3c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .header-right .user-profile .user-name { font-size: 14px; font-weight: 500; color: #1a2332; }
+        .header-right .user-profile .user-role { font-size: 11px; color: #6c7a8d; }
+        .header-right .user-profile .chevron { color: #6c7a8d; font-size: 12px; }
+        .content-body {
+            flex: 1;
+            padding: 20px 30px;
+            overflow-y: auto;
+            background: #f0f2f5;
+        }
+        .content-body::-webkit-scrollbar { width: 6px; }
+        .content-body::-webkit-scrollbar-thumb { background: #c1c9d6; border-radius: 4px; }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border-left: 4px solid #0d6efd;
+        }
+        .stat-card .stat-label { font-size: 12px; color: #6c7a8d; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .stat-value { font-size: 24px; font-weight: 700; color: #1a2332; margin-top: 4px; }
+        .stat-card .stat-change { font-size: 12px; color: #28a745; }
+        .stat-card:nth-child(2) { border-left-color: #28a745; }
+        .stat-card:nth-child(3) { border-left-color: #ffc107; }
+        .stat-card:nth-child(4) { border-left-color: #e74c3c; }
+
+        .filter-bar {
+            background: #fff;
+            border-radius: 10px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .filter-bar .filter-label { font-size: 12px; font-weight: 600; color: #1a2332; }
+        .filter-bar select, .filter-bar input {
+            padding: 5px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #fff;
+            outline: none;
+        }
+        .filter-bar select:focus, .filter-bar input:focus { border-color: #0d6efd; }
+        .filter-bar .btn-reset {
+            padding: 5px 16px;
+            border: none;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .filter-bar .btn-reset:hover { background: #dde1e6; }
+        .filter-bar .search-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 3px 10px;
+        }
+        .filter-bar .search-box i { color: #6c7a8d; font-size: 14px; }
+        .filter-bar .search-box input {
+            border: none;
+            background: transparent;
+            padding: 4px 0;
+            font-size: 13px;
+            width: 160px;
+        }
+        .filter-bar .search-box input:focus { outline: none; }
+        .filter-stats {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+            flex-wrap: wrap;
+        }
+        .filter-stats span {
+            padding: 4px 14px;
+            border-radius: 20px;
+            background: #f0f2f5;
+        }
+        .filter-stats .badge-completed { background: #d4edda; color: #155724; }
+        .filter-stats .badge-pending { background: #f8d7da; color: #721c24; }
+        .filter-stats .badge-total { background: #cce5ff; color: #004085; }
+
+        .table-wrapper {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+        .table-wrapper .table-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .table-wrapper .table-header h6 { font-weight: 600; color: #1a2332; margin: 0; font-size: 14px; }
+        .table-wrapper .table-header .export-btn {
+            padding: 4px 14px;
+            border: none;
+            background: #28a745;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .table-wrapper .table-header .export-btn:hover { background: #218838; }
+        .table-responsive-custom {
+            max-height: 440px;
+            overflow-y: auto;
+        }
+        .table-responsive-custom::-webkit-scrollbar { width: 6px; }
+        .table-responsive-custom::-webkit-scrollbar-thumb { background: #c1c9d6; border-radius: 4px; }
+
+        .table { font-size: 12px; margin-bottom: 0; }
+        .table thead th {
+            background: #f8f9fa;
+            color: #1a2332;
+            font-weight: 600;
+            font-size: 10px;
+            padding: 6px 4px;
+            text-align: center;
+            border-bottom: 2px solid #e9ecef;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .table thead th.sub-header {
+            background: #e9ecef;
+            font-weight: 500;
+            font-size: 9px;
+            padding: 3px 3px;
+        }
+        .table tbody td {
+            padding: 5px 4px;
+            vertical-align: middle;
+            text-align: center;
+            font-size: 11px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .table tbody tr:hover { background: #f8f9fa; }
+        .table tbody tr.bg-completed { background: #d4edda; }
+        .table tbody tr.bg-completed:hover { background: #c3e6cb; }
+        .table tbody tr.table-danger {
+            background-color: #f8d7da !important;
+            border-left: 4px solid #dc3545;
+        }
+        .table tbody tr.table-danger:hover { background-color: #f5c6cb !important; }
+        .badge-util { font-size: 9px; padding: 2px 8px; border-radius: 12px; }
+        .delete-btn { color: #dc3545; cursor: pointer; font-size: 14px; margin: 0 3px; }
+        .delete-btn:hover { color: #a71d2a; }
+        .transfer-btn { color: #0d6efd; cursor: pointer; font-size: 14px; margin: 0 3px; }
+        .transfer-btn:hover { color: #0a58ca; }
+        .edit-btn { color: #ffc107; cursor: pointer; font-size: 14px; margin: 0 3px; }
+        .edit-btn:hover { color: #e0a800; }
+        .clickable-good {
+            color: #0d6efd;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .clickable-good:hover { color: #0a58ca; }
+
+        .form-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .form-card .form-title {
+            font-weight: 600;
+            color: #1a2332;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+        .form-label {
+            font-weight: 500;
+            font-size: 12px;
+            color: #1a2332;
+            margin-bottom: 2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .form-control, .form-select {
+            font-size: 13px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15);
+        }
+        .form-control[readonly] { background: #f8f9fa; color: #1a2332; }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px 14px;
+            margin-bottom: 6px;
+        }
+        .field-group { display: flex; flex-direction: column; }
+        .field-group .form-label { font-size: 11px; font-weight: 500; color: #495057; margin-bottom: 2px; }
+        .field-group .form-control, .field-group .form-select { font-size: 13px; padding: 4px 10px; }
+        .field-group .form-control[readonly] { background: #e9ecef; }
+        .drop-zone {
+            border: 2px dashed #0d6efd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .drop-zone:hover { background: #e7f3ff; }
+        .drop-zone.dragover { background: #cfe2ff; border-color: #0a58ca; }
+        .import-preview { max-height: 150px; overflow-y: auto; }
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #1a2332;
+            cursor: pointer;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 999;
+        }
+        .overlay.show { display: block; }
+        .btn-save-shift {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            padding: 6px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-save-shift:hover { background: #218838; }
+        .btn-save-shift i { margin-right: 6px; }
+        .btn-danger-custom {
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-danger-custom:hover { background: #c82333; }
+        .btn-warning-custom {
+            background: #ffc107;
+            color: #1a2332;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-warning-custom:hover { background: #e0a800; }
+        .section-title-icon { color: #e74c3c; margin-right: 8px; }
+        .status-badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-pending { background: #f8d7da; color: #721c24; }
+        .remark-badge {
+            font-size: 10px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            background: #dc3545;
+            color: #fff;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        .help-tip {
+            color: #0d6efd;
+            cursor: pointer;
+            font-size: 13px;
+            margin-left: 2px;
+            position: relative;
+            display: inline-block;
+        }
+        .help-tip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background: #1a2332;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 400;
+            position: absolute;
+            z-index: 100;
+            bottom: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            line-height: 1.4;
+        }
+        .help-tip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #1a2332 transparent transparent transparent;
+        }
+        .help-tip:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+        .modal-content { border-radius: 12px; }
+        .modal-header {
+            background: #1a2332;
+            color: #fff;
+            border-radius: 12px 12px 0 0;
+        }
+        .modal-header .btn-close { filter: invert(1); }
+        .modal-title { font-weight: 600; }
+        .modal-body .shift-detail-table { font-size: 12px; }
+        .modal-body .shift-detail-table thead th {
+            background: #e9ecef;
+            font-size: 11px;
+            padding: 5px 4px;
+            text-align: center;
+        }
+        .modal-body .shift-detail-table tbody td {
+            padding: 4px 4px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .transfer-detail-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            border-left: 4px solid #0d6efd;
+        }
+        .transfer-detail-card .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        .transfer-detail-card .detail-row:last-child { border-bottom: none; }
+        .transfer-detail-card .label { font-weight: 600; color: #495057; font-size: 12px; }
+        .transfer-detail-card .value { font-weight: 500; color: #1a2332; font-size: 12px; }
+
+        /* Toast Notification */
+        .toast-container-custom {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 380px;
+        }
+        .toast-custom {
+            background: #1a2332;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            animation: slideInRight 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid #28a745;
+        }
+        .toast-custom.toast-warning { border-left-color: #ffc107; }
+        .toast-custom.toast-danger { border-left-color: #dc3545; }
+        .toast-custom .toast-icon { font-size: 22px; }
+        .toast-custom .toast-body { flex: 1; font-size: 13px; line-height: 1.4; }
+        .toast-custom .toast-close {
+            cursor: pointer;
+            font-size: 18px;
+            color: #6c7a8d;
+            background: none;
+            border: none;
+        }
+        .toast-custom .toast-close:hover { color: #fff; }
+        @keyframes slideInRight {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(120%); opacity: 0; }
+        }
+        .toast-custom.hiding { animation: slideOutRight 0.3s ease forwards; }
+
+        .backup-btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        .backup-btn-group .btn-outline-secondary { font-size: 12px; padding: 3px 12px; }
+
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .sidebar-toggle { display: block; }
+            .filter-stats { margin-left: 0; width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+            .header { padding: 8px 16px; flex-wrap: wrap; gap: 8px; }
+            .header-right .clock-section { font-size: 12px; padding: 2px 10px; }
+            .content-body { padding: 14px 16px; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .form-row { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 576px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .header-left .page-title { font-size: 15px; }
+            .header-right .user-profile .user-name { display: none; }
+            .header-right .user-profile .user-role { display: none; }
+            .filter-bar .search-box input { width: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- ========================================================= -->
+    <!-- TOAST CONTAINER -->
+    <!-- ========================================================= -->
+    <div class="toast-container-custom" id="toastContainer"></div>
+
+    <!-- ========================================================= -->
+    <!-- SIDEBAR -->
+    <!-- ========================================================= -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="logo-icon">P</div>
+            <div class="brand-text">PRAN-<span>RFL</span></div>
+        </div>
+        <nav class="sidebar-menu">
+            <div class="menu-label">Navigation</div>
+            <a class="menu-item active" onclick="showSection('dashboard')">
+                <i class="bi bi-speedometer2"></i> ড্যাশবোর্ড
+            </a>
+            <a class="menu-item" onclick="showSection('injection')">
+                <i class="bi bi-boxes"></i> ইনজেকশন ডিমান্ড
+            </a>
+            <a class="menu-item" onclick="showSection('production')">
+                <i class="bi bi-pencil-square"></i> প্রোডাকশন এন্ট্রি
+            </a>
+            <a class="menu-item" onclick="showSection('mcstatus')">
+                <i class="bi bi-clipboard-check"></i> এমসি স্ট্যাটাস
+            </a>
+            <a class="menu-item" onclick="showSection('lastday')">
+                <i class="bi bi-calendar-day"></i> Last Day Prod
+            </a>
+            <div class="menu-label">Tools</div>
+            <a class="menu-item" onclick="backupData()">
+                <i class="bi bi-download"></i> ব্যাকআপ নিন
+            </a>
+            <a class="menu-item" onclick="document.getElementById('restoreInput').click();">
+                <i class="bi bi-upload"></i> রিস্টোর করুন
+            </a>
+            <input type="file" id="restoreInput" accept=".json" style="display:none;" onchange="restoreData(event)">
+            <div class="menu-label">Reports (Coming Soon)</div>
+            <a class="menu-item" onclick="showDummy()">
+                <i class="bi bi-file-earmark-text"></i> লাইন ওয়াইজ রিপোর্ট
+                <span class="badge-menu">Soon</span>
+            </a>
+            <a class="menu-item" onclick="showDummy()">
+                <i class="bi bi-box-seam"></i> প্যাকেজিং রিপোর্ট
+                <span class="badge-menu">Soon</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ========================================================= -->
+    <!-- MAIN CONTENT -->
+    <!-- ========================================================= -->
+    <div class="main-content">
+
+        <!-- HEADER with Clock & Countdown -->
+        <header class="header">
+            <div class="header-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div class="page-title" id="pageTitle">
+                    ড্যাশবোর্ড <small>প্রোডাকশন মনিটরিং</small>
+                </div>
+            </div>
+            <div class="header-right">
+                <!-- Clock & Shift Countdown -->
+                <div class="clock-section">
+                    <span class="clock" id="liveClock">--:--:--</span>
+                    <span class="shift-label" id="shiftLabel">Day</span>
+                    <span class="shift-countdown" id="shiftCountdown">⏳ --h --m</span>
+                </div>
+                <div class="notification" onclick="showDummy()">
+                    <i class="bi bi-bell"></i>
+                    <span class="dot"></span>
+                </div>
+                <div class="user-profile">
+                    <div class="avatar">A</div>
+                    <div>
+                        <div class="user-name">Arifuzzaman</div>
+                        <div class="user-role">Admin</div>
+                    </div>
+                    <i class="bi bi-chevron-down chevron"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTENT BODY -->
+        <div class="content-body">
+
+            <!-- ========================================================= -->
+            <!-- SECTION: DASHBOARD (MC Summary সরানো হয়েছে) -->
+            <!-- ========================================================= -->
+            <div id="section-dashboard">
+
+                <!-- Stats Row -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-label">মোট অর্ডার</div>
+                        <div class="stat-value" id="totalOrdersStat">0</div>
+                        <div class="stat-change"><i class="bi bi-arrow-up"></i> সক্রিয়</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">সম্পন্ন অর্ডার</div>
+                        <div class="stat-value" id="completedOrdersStat">0</div>
+                        <div class="stat-change"><i class="bi bi-check-circle"></i> ডেলিভারি রেডি</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">বাকি অর্ডার</div>
+                        <div class="stat-value" id="pendingOrdersStat">0</div>
+                        <div class="stat-change"><i class="bi bi-clock"></i> প্রোডাকশনে</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">মোট প্রোডাকশন (টন)</div>
+                        <div class="stat-value" id="totalTonStat">0.000</div>
+                        <div class="stat-change"><i class="bi bi-box"></i> আজ পর্যন্ত</div>
+                    </div>
+                </div>
+
+                <!-- Filter Bar with Search -->
+                <div class="filter-bar">
+                    <span class="filter-label"><i class="bi bi-funnel"></i> ফিল্টার:</span>
+                    <select id="excelMcFilter" onchange="renderExcelTable()">
+                        <option value="">-- সব MC --</option>
+                    </select>
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="tableSearchInput" placeholder="অর্ডার বা Item খুঁজুন..." oninput="renderExcelTable()">
+                    </div>
+                    <button class="btn-reset" onclick="document.getElementById('excelMcFilter').value='';document.getElementById('tableSearchInput').value='';renderExcelTable();">
+                        <i class="bi bi-arrow-counterclockwise"></i> রিসেট
+                    </button>
+                    <div class="filter-stats">
+                        <span class="badge-total">📦 মোট: <span id="filterTotalOrders">0</span></span>
+                        <span class="badge-completed">✅ সম্পন্ন: <span id="filterCompleted">0</span></span>
+                        <span class="badge-pending">⏳ বাকি: <span id="filterPending">0</span></span>
+                    </div>
+                </div>
+
+                <!-- Main Table -->
+                <div class="table-wrapper">
+                    <div class="table-header">
+                        <h6><i class="bi bi-table me-2"></i>অর্ডারওয়াইজ সামারি (Excel স্টাইল)</h6>
+                        <button class="export-btn" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel"></i> Excel ডাউনলোড</button>
+                    </div>
+                    <div class="table-responsive-custom">
+                        <table class="table table-bordered table-hover" id="excelTable">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">তারিখ</th>
+                                    <th rowspan="2">MC</th>
+                                    <th rowspan="2">অর্ডার</th>
+                                    <th rowspan="2">Acc</th>
+                                    <th rowspan="2">Item</th>
+                                    <th rowspan="2">Unit Wt</th>
+                                    <th rowspan="2">Color</th>
+                                    <th rowspan="2">Cav</th>
+                                    <th rowspan="2">CT</th>
+                                    <th rowspan="2">Capacity<br>(22h)</th>
+                                    <th rowspan="2">Demand</th>
+                                    <th rowspan="2">Due</th>
+                                    <th rowspan="2">As of Prod</th>
+                                    <th rowspan="2">Util%</th>
+                                    <th rowspan="2">LD T.Good</th>
+                                    <th colspan="6" class="sub-header">A-Shift (Day)</th>
+                                    <th colspan="6" class="sub-header">B-Shift (Night)</th>
+                                    <th rowspan="2">Prod Ton</th>
+                                    <th rowspan="2">Action</th>
+                                </tr>
+                                <tr>
+                                    <th class="sub-header">Cnt</th><th class="sub-header">Good</th><th class="sub-header">Util%</th>
+                                    <th class="sub-header">Rej</th><th class="sub-header">কারণ</th><th class="sub-header">DT</th>
+                                    <th class="sub-header">Cnt</th><th class="sub-header">Good</th><th class="sub-header">Util%</th>
+                                    <th class="sub-header">Rej</th><th class="sub-header">কারণ</th><th class="sub-header">DT</th>
+                                </tr>
+                            </thead>
+                            <tbody id="excelBody">
+                                <tr><td colspan="30" class="text-center text-muted py-4">কোনো অর্ডার নেই।</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- SECTION: INJECTION DEMAND -->
+            <!-- ========================================================= -->
+            <div id="section-injection" style="display:none;">
+                <div class="form-card">
+                    <div class="form-title d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-boxes section-title-icon"></i>ইনজেকশন ডিমান্ড – নতুন অর্ডার যোগ করুন</span>
+                        <button class="btn-danger-custom" onclick="deleteAllOrders()"><i class="bi bi-trash3"></i> সব অর্ডার মুছুন</button>
+                    </div>
+                    <form id="addOrderForm">
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">MC SL * <span class="help-tip">❓<span class="tooltip-text">মেশিনের নাম/কোড, যেমন: A1-280TC</span></span></label>
+                                <input type="text" class="form-control" id="mcSl" placeholder="যেমন: A1-280TC" required>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">অর্ডার নাম * <span class="help-tip">❓<span class="tooltip-text">অর্ডারের অনন্য নাম, যেমন: ONTIME-26-219</span></span></label>
+                                <input type="text" class="form-control" id="orderName" placeholder="যেমন: ONTIME-26-219" required>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">Acc Code <span class="help-tip">❓<span class="tooltip-text">অ্যাকাউন্ট কোড (ঐচ্ছিক)</span></span></label>
+                                <input type="text" class="form-control" id="accCode" placeholder="যেমন: 656788">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">Item Name <span class="help-tip">❓<span class="tooltip-text">পণ্যের নাম, যেমন: DT Lid Outer</span></span></label>
+                                <input type="text" class="form-control" id="itemName" placeholder="যেমন: DT Lid Outer">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">Unit Wt (kg) <span class="help-tip">❓<span class="tooltip-text">একটি পিসের ওজন কিলোগ্রামে</span></span></label>
+                                <input type="number" step="0.001" class="form-control" id="unitWt" placeholder="যেমন: 0.058" value="0">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">Logo Symble <span class="help-tip">❓<span class="tooltip-text">লোগোর নাম বা প্রতীক</span></span></label>
+                                <input type="text" class="form-control" id="logoSymble" placeholder="লোগো">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">Origin <span class="help-tip">❓<span class="tooltip-text">উৎপত্তি বা ব্র্যান্ড</span></span></label>
+                                <input type="text" class="form-control" id="origin" placeholder="উৎপত্তি">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">SCM Code <span class="help-tip">❓<span class="tooltip-text">সাপ্লাই চেইন ম্যানেজমেন্ট কোড</span></span></label>
+                                <input type="text" class="form-control" id="scmCode" placeholder="যেমন: SCM-001">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">Color <span class="help-tip">❓<span class="tooltip-text">পণ্যের রং</span></span></label>
+                                <input type="text" class="form-control" id="color" placeholder="যেমন: Blue">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">Cavity <span class="help-tip">❓<span class="tooltip-text">একটি সাইকেলে কতটি পিস তৈরি হয়</span></span></label>
+                                <input type="number" class="form-control" id="cavity" placeholder="যেমন: 1" value="1" oninput="calcCap()">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">CT (sec) <span class="help-tip">❓<span class="tooltip-text">একটি সাইকেলের সময় (সেকেন্ড)</span></span></label>
+                                <input type="number" class="form-control" id="ct" placeholder="যেমন: 36" value="30" oninput="calcCap()">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">Demand * <span class="help-tip">❓<span class="tooltip-text">মোট কত পিস তৈরি করতে হবে (টার্গেট)</span></span></label>
+                                <input type="number" class="form-control" id="demand" placeholder="যেমন: 20021" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group"><label class="form-label">Cap/Day (Auto)</label><input type="number" class="form-control" id="capDay" readonly></div>
+                            <div class="field-group"><label class="form-label">Cap/Night (Auto)</label><input type="number" class="form-control" id="capNight" readonly></div>
+                        </div>
+                        <div class="text-end mt-2"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> অর্ডার সেভ</button></div>
+                    </form>
+                    <hr>
+                    <h6><i class="bi bi-file-excel"></i> Excel ফাইল থেকে ইমপোর্ট</h6>
+                    <div class="drop-zone" id="dropZone">
+                        <i class="bi bi-cloud-upload" style="font-size:24px;"></i>
+                        <p class="mb-0">ফাইল ড্রপ করুন অথবা ক্লিক করুন</p>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
+                    </div>
+                    <div id="importPreview" class="mt-2" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>প্রিভিউ:</strong>
+                            <div>
+                                <button class="btn btn-success btn-sm me-1" onclick="confirmImport()"><i class="bi bi-check"></i> ইমপোর্ট</button>
+                                <button class="btn btn-secondary btn-sm" onclick="clearImport()"><i class="bi bi-x"></i></button>
+                            </div>
+                        </div>
+                        <div class="import-preview"><table class="table table-bordered table-sm table-striped mt-1"><thead><tr><th>MC</th><th>Order</th><th>Demand</th></tr></thead><tbody id="importPreviewBody"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- SECTION: PRODUCTION ENTRY (with Edit Support) -->
+            <!-- ========================================================= -->
+            <div id="section-production" style="display:none;">
+                <div class="form-card">
+                    <div class="form-title d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-pencil-square section-title-icon"></i>প্রোডাকশন এন্ট্রি – শিফট ইনপুট (A / B)</span>
+                        <span id="editModeBadge" style="display:none; background:#ffc107; color:#1a2332; padding:4px 14px; border-radius:20px; font-size:12px; font-weight:600;">
+                            <i class="bi bi-pencil"></i> এডিট মোড
+                        </span>
+                    </div>
+                    <form id="shiftForm">
+                        <input type="hidden" id="editShiftId" value="">
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">১. তারিখ *</label>
+                                <input type="date" class="form-control" id="shiftDate" required>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">২. শিফট *</label>
+                                <select class="form-select" id="shiftType">
+                                    <option value="A-Shift">Day</option>
+                                    <option value="B-Shift">Night</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">৩. MC SL *</label>
+                                <select class="form-select" id="mcSlSelect" required><option value="">-- সিলেক্ট --</option></select>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">৪. JOB Order *</label>
+                                <select class="form-select" id="shiftOrderSelect" required><option value="">-- সিলেক্ট --</option></select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">৫. Item Name</label>
+                                <input type="text" class="form-control" id="shiftItem" readonly placeholder="অটো ফিল হবে">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">৬. Color</label>
+                                <input type="text" class="form-control" id="shiftColor" readonly placeholder="অটো ফিল হবে">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">৭. Logo Information</label>
+                                <input type="text" class="form-control" id="logoInfo" readonly placeholder="অটো ফিল হবে">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">৮. Cavity <span class="help-tip">❓<span class="tooltip-text">এই শিফটে ব্যবহৃত ক্যাভিটি সংখ্যা</span></span></label>
+                                <input type="number" class="form-control" id="shiftCavity" value="1" oninput="calculateShift()">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">৯. CT (sec) <span class="help-tip">❓<span class="tooltip-text">এই শিফটের সাইকেল টাইম</span></span></label>
+                                <input type="number" class="form-control" id="shiftCt" value="30" oninput="calculateShift()">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">১০. Capacity (এই শিফট)</label>
+                                <input type="number" class="form-control" id="capacityShift" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">১১. Counter (Cycle) <span class="help-tip">❓<span class="tooltip-text">মেশিনের মোট সাইকেল সংখ্যা</span></span></label>
+                                <input type="number" class="form-control" id="counterCycle" value="0" oninput="calculateShift()">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">১২. Total Counter</label>
+                                <input type="number" class="form-control" id="totalCounter" readonly>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">১৩. Good <span class="help-tip">❓<span class="tooltip-text">ভালো (ডেলিভারি উপযোগী) পিসের সংখ্যা</span></span></label>
+                                <input type="number" class="form-control" id="counterGood" value="0" oninput="validateAndCalc()">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">১৪. Prod Utilization %</label>
+                                <input type="number" step="0.01" class="form-control" id="utilizationPercent" readonly>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">১৫. Reject QTY</label>
+                                <input type="number" class="form-control" id="counterReject" readonly>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">১৬. কম উৎপাদনের কারণ <span class="help-tip">❓<span class="tooltip-text">যেমন: Power trip, Mold issue</span></span></label>
+                                <input type="text" class="form-control" id="rejectReason" placeholder="Power trip, Mold issue">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">১৭. Prod Time (Minutes)</label>
+                                <input type="number" step="0.1" class="form-control" id="prodMinutes" readonly>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">১৮. DT (min)</label>
+                                <input type="number" class="form-control" id="downtime" readonly>
+                            </div>
+                            <div class="field-group d-flex align-items-end gap-2">
+                                <button type="submit" class="btn-save-shift" id="shiftSubmitBtn"><i class="bi bi-check-circle"></i> শিফট সেভ</button>
+                                <button type="button" class="btn btn-secondary" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()"><i class="bi bi-x-circle"></i> বাতিল</button>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="validationMsg" class="mt-2 text-danger small" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- SECTION: MC STATUS -->
+            <!-- ========================================================= -->
+            <div id="section-mcstatus" style="display:none;">
+                <div class="table-wrapper">
+                    <div class="table-header">
+                        <h6><i class="bi bi-clipboard-check me-2"></i>এমসি ভিত্তিক অর্ডার স্ট্যাটাস</h6>
+                    </div>
+                    <div class="p-3">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">MC SL ফিল্টার</label>
+                                <select class="form-select" id="statusMcFilter" onchange="renderMcStatus()">
+                                    <option value="">-- সব MC --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-secondary btn-sm w-100" onclick="document.getElementById('statusMcFilter').value='';renderMcStatus();">
+                                    <i class="bi bi-arrow-counterclockwise"></i> রিসেট
+                                </button>
+                            </div>
+                            <div class="col-md-6 text-end" id="statusStats">
+                                <span class="badge bg-primary">মোট অর্ডার: <span id="statusTotalOrders">0</span></span>
+                                <span class="badge bg-success ms-2">সম্পন্ন: <span id="statusCompleted">0</span></span>
+                                <span class="badge bg-warning ms-2 text-dark">বাকি: <span id="statusPending">0</span></span>
+                                <span class="badge bg-info ms-2 text-dark">মোট Good: <span id="statusTotalGood">0</span></span>
+                            </div>
+                        </div>
+                        <div class="table-responsive-custom">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>MC SL</th><th>JOB Order</th><th>Item Name</th>
+                                        <th>Demand</th><th>As of Prod</th>
+                                        <th>Due Prod</th><th>Last Day Shift</th>
+                                        <th>Last Night Shift</th><th>Status</th><th>Remark</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mcStatusBody">
+                                    <tr><td colspan="10" class="text-center text-muted py-4">কোনো অর্ডার নেই।</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- SECTION: LAST DAY PROD (with Edit button) -->
+            <!-- ========================================================= -->
+            <div id="section-lastday" style="display:none;">
+                <div class="table-wrapper">
+                    <div class="table-header">
+                        <h6><i class="bi bi-calendar-day me-2"></i>Last Day Prod Entry – সর্বশেষ শিফট এন্ট্রি</h6>
+                        <button class="export-btn" onclick="exportLastDayExcel()"><i class="bi bi-file-earmark-excel"></i> Excel ডাউনলোড</button>
+                    </div>
+                    <div class="p-3">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">MC SL ফিল্টার</label>
+                                <select class="form-select" id="lastdayMcFilter" onchange="renderLastDay()">
+                                    <option value="">-- সব MC --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-secondary btn-sm w-100" onclick="document.getElementById('lastdayMcFilter').value='';renderLastDay();">
+                                    <i class="bi bi-arrow-counterclockwise"></i> রিসেট
+                                </button>
+                            </div>
+                            <div class="col-md-7 text-end" id="lastdayStats">
+                                <span class="badge bg-primary">মোট এন্ট্রি: <span id="lastdayTotalEntries">0</span></span>
+                                <span class="badge bg-info ms-2">সর্বশেষ তারিখ: <span id="lastdayLatestDate">-</span></span>
+                            </div>
+                        </div>
+                        <div class="table-responsive-custom">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>তারিখ</th><th>শিফট</th><th>MC SL</th><th>JOB Order</th>
+                                        <th>Item Name</th><th>Color</th><th>Logo</th><th>Capacity</th>
+                                        <th>Counter</th><th>Total Counter</th><th>Good</th><th>Util%</th>
+                                        <th>Reject</th><th>কারণ</th><th>Prod Time</th><th>DT</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lastdayBody">
+                                    <tr><td colspan="17" class="text-center text-muted py-4">কোনো শিফট এন্ট্রি নেই।</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TRANSFER MODAL -->
+    <!-- ========================================================= -->
+    <div class="modal fade" id="transferModal" tabindex="-1">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-arrow-left-right me-2"></i>অর্ডার ট্রান্সফার</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="transfer-detail-card">
+                        <div class="detail-row"><span class="label">বর্তমান MC:</span><span class="value" id="transferCurrentMc">-</span></div>
+                        <div class="detail-row"><span class="label">অর্ডার নাম:</span><span class="value" id="transferOrderName">-</span></div>
+                        <div class="detail-row"><span class="label">Item Name:</span><span class="value" id="transferItemName">-</span></div>
+                        <div class="detail-row"><span class="label">Demand:</span><span class="value" id="transferDemand">-</span></div>
+                        <div class="detail-row"><span class="label">As of Prod:</span><span class="value" id="transferTotalGood">-</span></div>
+                        <div class="detail-row"><span class="label">Due Prod:</span><span class="value" id="transferDueProd">-</span></div>
+                    </div>
+                    <hr>
+                    <p class="mb-2"><strong>নতুন MC সিলেক্ট করুন:</strong></p>
+                    <select id="transferTargetMc" class="form-select">
+                        <option value="">-- সিলেক্ট --</option>
+                    </select>
+                    <input type="hidden" id="transferOrderId">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">বাতিল</button>
+                    <button class="btn btn-primary" onclick="confirmTransfer()"><i class="bi bi-check-circle"></i> ট্রান্সফার</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- SHIFT DETAILS MODAL -->
+    <!-- ========================================================= -->
+    <div class="modal fade" id="shiftDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shiftDetailsTitle">শিফট ডিটেইলস</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="shiftDetailsContent"><p class="text-muted">ডেটা লোড হচ্ছে...</p></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">বন্ধ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ============================================================
+        //  TOAST NOTIFICATION SYSTEM
+        // ============================================================
+        function showToast(message, type = 'success', duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            const icons = {
+                success: '✅',
+                warning: '⚠️',
+                danger: '❌',
+                info: 'ℹ️'
+            };
+            const toast = document.createElement('div');
+            toast.className = `toast-custom toast-${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+                <span class="toast-body">${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove();">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 400);
+            }, duration);
+        }
+
+        // ============================================================
+        //  LIVE CLOCK & SHIFT COUNTDOWN
+        // ============================================================
+        function updateClockAndShift() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+
+            const timeStr = String(hours).padStart(2, '0') + ':' +
+                           String(minutes).padStart(2, '0') + ':' +
+                           String(seconds).padStart(2, '0');
+            document.getElementById('liveClock').textContent = timeStr;
+
+            let shiftType, shiftEndHour;
+            if (hours >= 6 && hours < 18) {
+                shiftType = 'Day';
+                shiftEndHour = 18;
+            } else {
+                shiftType = 'Night';
+                shiftEndHour = 6;
+            }
+            document.getElementById('shiftLabel').textContent = shiftType;
+
+            let endTime = new Date(now);
+            if (hours >= 6 && hours < 18) {
+                endTime.setHours(18, 0, 0, 0);
+            } else {
+                endTime.setHours(6, 0, 0, 0);
+                if (hours >= 18) endTime.setDate(endTime.getDate() + 1);
+            }
+            const diffMs = endTime - now;
+            if (diffMs <= 0) {
+                document.getElementById('shiftCountdown').textContent = '⏳ শেষ!';
+                return;
+            }
+            const diffH = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffM = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            document.getElementById('shiftCountdown').textContent = `⏳ ${diffH}h ${diffM}m বাকি`;
+        }
+        setInterval(updateClockAndShift, 1000);
+        updateClockAndShift();
+
+        // ============================================================
+        //  NAVIGATION
+        // ============================================================
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => el.classList.remove('active'));
+            if (event && event.target) {
+                event.target.closest('.menu-item').classList.add('active');
+            }
+            ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            const title = document.getElementById('pageTitle');
+            if (section === 'dashboard') {
+                document.getElementById('section-dashboard').style.display = 'block';
+                title.innerHTML = 'ড্যাশবোর্ড <small>প্রোডাকশন মনিটরিং</small>';
+                renderExcelTable();
+            } else if (section === 'injection') {
+                document.getElementById('section-injection').style.display = 'block';
+                title.innerHTML = 'ইনজেকশন ডিমান্ড <small>নতুন অর্ডার যোগ করুন</small>';
+            } else if (section === 'production') {
+                document.getElementById('section-production').style.display = 'block';
+                title.innerHTML = 'প্রোডাকশন এন্ট্রি <small>শিফট ইনপুট</small>';
+            } else if (section === 'mcstatus') {
+                document.getElementById('section-mcstatus').style.display = 'block';
+                title.innerHTML = 'এমসি স্ট্যাটাস <small>অর্ডার মনিটরিং</small>';
+                populateStatusFilter();
+                renderMcStatus();
+            } else if (section === 'lastday') {
+                document.getElementById('section-lastday').style.display = 'block';
+                title.innerHTML = 'Last Day Prod <small>সর্বশেষ শিফট ডেটা</small>';
+                populateLastdayFilter();
+                renderLastDay();
+            }
+            if (window.innerWidth <= 992) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('overlay').classList.remove('show');
+            }
+        }
+
+        function showDummy() {
+            showToast('এই ফিচারটি ডেভেলপমেন্ট চলছে। শীঘ্রই যোগ করা হবে।', 'info', 3000);
+        }
+
+        // ============================================================
+        //  DATA LAYER
+        // ============================================================
+        const STORAGE_KEY = 'prodOrders';
+        const SHIFT_KEY = 'shiftEntries';
+        let notifiedOrders = new Set();
+
+        function getOrders() { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+        function saveOrders(o) { localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); }
+        function getShifts() { return JSON.parse(localStorage.getItem(SHIFT_KEY)) || []; }
+        function saveShifts(s) { localStorage.setItem(SHIFT_KEY, JSON.stringify(s)); }
+        function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+        function getOrderById(id) { return getOrders().find(o => o.id === id); }
+        function getShiftsForOrder(id) { return getShifts().filter(s => s.orderId === id); }
+
+        // ============================================================
+        //  CALCULATIONS
+        // ============================================================
+        function getShiftAggregate(orderId, shiftType) {
+            const shifts = getShiftsForOrder(orderId).filter(s => s.shiftType === shiftType);
+            let totalCounter = 0, totalGood = 0, totalReject = 0, totalDT = 0;
+            let reasons = [], lastDate = null;
+            shifts.forEach(s => {
+                totalCounter += parseInt(s.totalCounter) || 0;
+                totalGood += parseInt(s.good) || 0;
+                totalReject += parseInt(s.reject) || 0;
+                totalDT += parseInt(s.downtime) || 0;
+                if (s.rejectReason) reasons.push(s.rejectReason);
+                if (s.date && (!lastDate || s.date > lastDate)) lastDate = s.date;
+            });
+            const util = totalCounter === 0 ? 0 : Math.round((totalGood / totalCounter) * 100);
+            return { totalCounter, totalGood, totalReject, totalDT, util, reasons: [...new Set(reasons)].join(', '), lastDate };
+        }
+
+        function getDueProduction(order) {
+            const a = getShiftAggregate(order.id, 'A-Shift');
+            const b = getShiftAggregate(order.id, 'B-Shift');
+            return Math.max(0, parseInt(order.demand) - (a.totalGood + b.totalGood));
+        }
+
+        function getTotalGood(orderId) {
+            const a = getShiftAggregate(orderId, 'A-Shift');
+            const b = getShiftAggregate(orderId, 'B-Shift');
+            return a.totalGood + b.totalGood;
+        }
+
+        function getProdTon(orderId) {
+            const order = getOrderById(orderId);
+            if (!order) return 0;
+            return (getTotalGood(orderId) * (parseFloat(order.unitWt) || 0)) / 1000;
+        }
+
+        function getLastDate(orderId) {
+            const a = getShiftAggregate(orderId, 'A-Shift');
+            const b = getShiftAggregate(orderId, 'B-Shift');
+            const dates = [a.lastDate, b.lastDate].filter(d => d);
+            if (dates.length === 0) return '';
+            return dates.sort().reverse()[0];
+        }
+
+        function getCapacity(order) {
+            const ct = parseFloat(order.ct) || 1;
+            const cav = parseInt(order.cavity) || 1;
+            return Math.round((3600 / ct) * cav * 22);
+        }
+
+        function getLastDayTotalGood(orderId) {
+            const shifts = getShiftsForOrder(orderId);
+            if (shifts.length === 0) return 0;
+            let latestDate = null;
+            shifts.forEach(s => { if (s.date && (!latestDate || s.date > latestDate)) latestDate = s.date; });
+            if (!latestDate) return 0;
+            let total = 0;
+            shifts.forEach(s => { if (s.date === latestDate) total += parseInt(s.good) || 0; });
+            return total;
+        }
+
+        function isNearingCompletion(order) {
+            const due = getDueProduction(order);
+            if (due <= 0) return false;
+            const ct = parseFloat(order.ct) || 1;
+            const cav = parseInt(order.cavity) || 1;
+            const maxCap12h = (3600 / ct) * cav * 12;
+            return due <= maxCap12h;
+        }
+
+        function getRemark(order) {
+            if (getDueProduction(order) <= 0) return '✅ Completed';
+            if (isNearingCompletion(order)) return '⚠️ Will finish soon, assign next order';
+            return '';
+        }
+
+        function getLastDayShiftProd(orderId) {
+            const shifts = getShiftsForOrder(orderId).filter(s => s.shiftType === 'A-Shift');
+            if (shifts.length === 0) return 0;
+            shifts.sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return b.date.localeCompare(a.date); });
+            return shifts[0].good || 0;
+        }
+
+        function getLastNightShiftProd(orderId) {
+            const shifts = getShiftsForOrder(orderId).filter(s => s.shiftType === 'B-Shift');
+            if (shifts.length === 0) return 0;
+            shifts.sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return b.date.localeCompare(a.date); });
+            return shifts[0].good || 0;
+        }
+
+        // ============================================================
+        //  VALIDATION & EDIT FUNCTIONS
+        // ============================================================
+        function validateAndCalc() {
+            calculateShift();
+            const totalCounter = parseInt(document.getElementById('totalCounter').value) || 0;
+            const good = parseInt(document.getElementById('counterGood').value) || 0;
+            const msgDiv = document.getElementById('validationMsg');
+            if (good > totalCounter) {
+                msgDiv.style.display = 'block';
+                msgDiv.innerHTML = '⚠️ সতর্কতা: Good-এর মান Total Counter-এর চেয়ে বেশি! অনুগ্রহ করে সঠিক মান দিন।';
+                document.querySelector('#shiftForm .btn-save-shift').disabled = true;
+            } else {
+                msgDiv.style.display = 'none';
+                document.querySelector('#shiftForm .btn-save-shift').disabled = false;
+            }
+        }
+
+        function isDuplicateShift(orderId, date, shiftType, excludeId) {
+            const shifts = getShifts();
+            return shifts.some(s => s.orderId === orderId && s.date === date && s.shiftType === shiftType && s.id !== excludeId);
+        }
+
+        // ============================================================
+        //  EDIT SHIFT ENTRY
+        // ============================================================
+        function editShiftEntry(shiftId) {
+            const shifts = getShifts();
+            const shift = shifts.find(s => s.id === shiftId);
+            if (!shift) { alert('শিফট এন্ট্রি খুঁজে পাওয়া যায়নি!'); return; }
+            const order = getOrderById(shift.orderId);
+            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
+
+            document.getElementById('editShiftId').value = shiftId;
+            document.getElementById('shiftDate').value = shift.date || '';
+            document.getElementById('shiftType').value = shift.shiftType || 'A-Shift';
+
+            const mcSelect = document.getElementById('mcSlSelect');
+            const uniqueMCs = [...new Set(getOrders().map(o => o.mcSl))];
+            mcSelect.innerHTML = '<option value="">-- MC --</option>';
+            uniqueMCs.forEach(mc => { mcSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            mcSelect.value = order.mcSl;
+
+            const orderSelect = document.getElementById('shiftOrderSelect');
+            const ordersForMc = getOrders().filter(o => o.mcSl === order.mcSl);
+            orderSelect.innerHTML = '<option value="">-- অর্ডার --</option>';
+            ordersForMc.forEach(o => { orderSelect.innerHTML += `<option value="${o.id}">${o.orderName}</option>`; });
+            orderSelect.value = shift.orderId;
+
+            document.getElementById('shiftItem').value = order.itemName || '';
+            document.getElementById('shiftColor').value = order.color || '';
+            document.getElementById('logoInfo').value = order.logoSymble || '';
+            document.getElementById('shiftCavity').value = shift.counterCycle ? Math.round(shift.totalCounter / shift.counterCycle) : order.cavity || 1;
+            document.getElementById('shiftCt').value = order.ct || 30;
+            document.getElementById('counterCycle').value = shift.counterCycle || 0;
+            document.getElementById('counterGood').value = shift.good || 0;
+            document.getElementById('rejectReason').value = shift.rejectReason || '';
+
+            document.getElementById('editModeBadge').style.display = 'inline-block';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+            document.querySelector('#shiftForm .btn-save-shift').innerHTML = '<i class="bi bi-pencil"></i> আপডেট করুন';
+            document.getElementById('shiftSubmitBtn').classList.add('btn-warning-custom');
+            document.getElementById('shiftSubmitBtn').classList.remove('btn-save-shift');
+
+            calculateShift();
+            showSection('production');
+            showToast('✏️ এডিট মোড: শিফট এন্ট্রি আপডেট করুন', 'info', 3000);
+        }
+
+        function cancelEdit() {
+            document.getElementById('editShiftId').value = '';
+            document.getElementById('editModeBadge').style.display = 'none';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.querySelector('#shiftForm .btn-save-shift').innerHTML = '<i class="bi bi-check-circle"></i> শিফট সেভ';
+            document.getElementById('shiftSubmitBtn').classList.remove('btn-warning-custom');
+            document.getElementById('shiftSubmitBtn').classList.add('btn-save-shift');
+            document.getElementById('shiftForm').reset();
+            document.getElementById('counterCycle').value = 0;
+            document.getElementById('counterGood').value = 0;
+            document.getElementById('rejectReason').value = '';
+            calculateShift();
+            showToast('এডিট মোড বাতিল করা হয়েছে।', 'info', 2000);
+        }
+
+        // ============================================================
+        //  CHECK AND SEND ALERTS
+        // ============================================================
+        function checkAndNotify() {
+            const orders = getOrders();
+            orders.forEach(order => {
+                const due = getDueProduction(order);
+                const isCompleted = due <= 0;
+                const isNear = isNearingCompletion(order) && !isCompleted;
+                const orderKey = order.id;
+
+                if (isCompleted && !notifiedOrders.has(orderKey + '_completed')) {
+                    notifiedOrders.add(orderKey + '_completed');
+                    showToast(`✅ ${order.mcSl} - ${order.orderName} অর্ডার সম্পন্ন হয়েছে!`, 'success', 6000);
+                } else if (isNear && !notifiedOrders.has(orderKey + '_near')) {
+                    notifiedOrders.add(orderKey + '_near');
+                    showToast(`⚠️ ${order.mcSl} - ${order.orderName} অর্ডার শেষের দিকে! নতুন অর্ডার অ্যাসাইন করুন।`, 'warning', 6000);
+                }
+            });
+        }
+        setInterval(checkAndNotify, 30000);
+
+        // ============================================================
+        //  RENDER EXCEL TABLE (with Search)
+        // ============================================================
+        function renderExcelTable() {
+            const orders = getOrders();
+            const mcFilter = document.getElementById('excelMcFilter').value;
+            const searchTerm = document.getElementById('tableSearchInput').value.toLowerCase().trim();
+
+            let filteredOrders = orders;
+            if (mcFilter) filteredOrders = filteredOrders.filter(o => o.mcSl === mcFilter);
+            if (searchTerm) {
+                filteredOrders = filteredOrders.filter(o =>
+                    (o.orderName || '').toLowerCase().includes(searchTerm) ||
+                    (o.itemName || '').toLowerCase().includes(searchTerm) ||
+                    (o.mcSl || '').toLowerCase().includes(searchTerm)
+                );
+            }
+
+            let totalCompleted = 0, totalPending = 0, totalTon = 0;
+            filteredOrders.forEach(order => {
+                const due = getDueProduction(order);
+                if (due <= 0) totalCompleted++; else totalPending++;
+                totalTon += getProdTon(order.id);
+            });
+
+            document.getElementById('filterTotalOrders').innerText = filteredOrders.length;
+            document.getElementById('filterCompleted').innerText = totalCompleted;
+            document.getElementById('filterPending').innerText = totalPending;
+            document.getElementById('totalOrdersStat').innerText = getOrders().length;
+            document.getElementById('completedOrdersStat').innerText = getOrders().filter(o => getDueProduction(o) <= 0).length;
+            document.getElementById('pendingOrdersStat').innerText = getOrders().filter(o => getDueProduction(o) > 0).length;
+            document.getElementById('totalTonStat').innerText = totalTon.toFixed(3);
+
+            const tbody = document.getElementById('excelBody');
+            if (filteredOrders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="30" class="text-center text-muted py-4">কোনো অর্ডার নেই (ফিল্টার পরিবর্তন করুন)।</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            filteredOrders.forEach(order => {
+                const a = getShiftAggregate(order.id, 'A-Shift');
+                const b = getShiftAggregate(order.id, 'B-Shift');
+                const due = getDueProduction(order);
+                const totalGood = a.totalGood + b.totalGood;
+                const totalCounter = a.totalCounter + b.totalCounter;
+                const overallUtil = totalCounter === 0 ? 0 : Math.round((totalGood / totalCounter) * 100);
+                const ton = getProdTon(order.id);
+                const lastDate = getLastDate(order.id);
+                const isCompleted = due <= 0;
+                const capacity = getCapacity(order);
+                const isNear = isNearingCompletion(order) && !isCompleted;
+                const lastDayTotal = getLastDayTotalGood(order.id);
+
+                let rowClass = '';
+                if (isCompleted) rowClass = 'bg-completed';
+                else if (isNear) rowClass = 'table-danger';
+
+                html += `<tr class="${rowClass}">
+                            <td>${lastDate || '-'}</td>
+                            <td><strong>${order.mcSl || ''}</strong></td>
+                            <td>${order.orderName || ''}</td>
+                            <td>${order.accCode || ''}</td>
+                            <td>${order.itemName || ''}</td>
+                            <td>${parseFloat(order.unitWt).toFixed(3)}</td>
+                            <td>${order.color || ''}</td>
+                            <td>${order.cavity || ''}</td>
+                            <td>${order.ct || ''}</td>
+                            <td>${capacity.toLocaleString()}</td>
+                            <td>${parseInt(order.demand).toLocaleString()}</td>
+                            <td class="${isCompleted ? 'text-success fw-bold' : 'text-danger fw-bold'}">${due.toLocaleString()}</td>
+                            <td><span class="clickable-good" onclick="showShiftDetails('${order.id}')">${totalGood.toLocaleString()}</span></td>
+                            <td><span class="badge bg-${overallUtil >= 80 ? 'success' : overallUtil >= 50 ? 'warning' : 'danger'} badge-util">${overallUtil}%</span></td>
+                            <td>${lastDayTotal.toLocaleString()}</td>
+                            <td>${a.totalCounter}</td>
+                            <td>${a.totalGood}</td>
+                            <td><span class="badge bg-${a.util >= 80 ? 'success' : a.util >= 50 ? 'warning' : 'danger'} badge-util">${a.util}%</span></td>
+                            <td>${a.totalReject}</td>
+                            <td style="font-size:9px; max-width:60px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${a.reasons}">${a.reasons || '-'}</td>
+                            <td>${a.totalDT}</td>
+                            <td>${b.totalCounter}</td>
+                            <td>${b.totalGood}</td>
+                            <td><span class="badge bg-${b.util >= 80 ? 'success' : b.util >= 50 ? 'warning' : 'danger'} badge-util">${b.util}%</span></td>
+                            <td>${b.totalReject}</td>
+                            <td style="font-size:9px; max-width:60px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${b.reasons}">${b.reasons || '-'}</td>
+                            <td>${b.totalDT}</td>
+                            <td>${ton.toFixed(3)}</td>
+                            <td>
+                                <i class="bi bi-arrow-left-right transfer-btn" onclick="openTransferModal('${order.id}')" title="ট্রান্সফার"></i>
+                                <i class="bi bi-trash3 delete-btn" onclick="deleteOrder('${order.id}')" title="ডিলিট"></i>
+                            </td>
+                        </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // ============================================================
+        //  TRANSFER
+        // ============================================================
+        function openTransferModal(orderId) {
+            document.getElementById('transferOrderId').value = orderId;
+            const order = getOrderById(orderId);
+            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
+            document.getElementById('transferCurrentMc').innerText = order.mcSl || '-';
+            document.getElementById('transferOrderName').innerText = order.orderName || '-';
+            document.getElementById('transferItemName').innerText = order.itemName || '-';
+            document.getElementById('transferDemand').innerText = parseInt(order.demand).toLocaleString() || '0';
+            document.getElementById('transferTotalGood').innerText = getTotalGood(order.id).toLocaleString() || '0';
+            document.getElementById('transferDueProd').innerText = getDueProduction(order).toLocaleString() || '0';
+
+            const allMCs = [...new Set(getOrders().map(o => o.mcSl))];
+            const targetSelect = document.getElementById('transferTargetMc');
+            targetSelect.innerHTML = '<option value="">-- সিলেক্ট --</option>';
+            allMCs.forEach(mc => { if (mc !== order.mcSl) targetSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (targetSelect.options.length === 1) targetSelect.innerHTML = '<option value="">কোনো অন্য MC নেই</option>';
+            new bootstrap.Modal(document.getElementById('transferModal')).show();
+        }
+
+        function confirmTransfer() {
+            const orderId = document.getElementById('transferOrderId').value;
+            const newMc = document.getElementById('transferTargetMc').value;
+            if (!newMc) { alert('দয়া করে একটি MC সিলেক্ট করুন!'); return; }
+            let orders = getOrders();
+            const idx = orders.findIndex(o => o.id === orderId);
+            if (idx === -1) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
+            orders[idx].mcSl = newMc;
+            saveOrders(orders);
+            bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
+            refreshAll();
+            showToast(`✅ অর্ডার ${newMc} তে ট্রান্সফার হয়েছে!`, 'success', 4000);
+        }
+
+        // ============================================================
+        //  STATUS PAGE
+        // ============================================================
+        function populateStatusFilter() {
+            const orders = getOrders();
+            const select = document.getElementById('statusMcFilter');
+            const currentVal = select.value;
+            const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
+            select.innerHTML = '<option value="">-- সব MC --</option>';
+            uniqueMCs.forEach(mc => { select.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (currentVal && uniqueMCs.includes(currentVal)) select.value = currentVal;
+        }
+
+        function renderMcStatus() {
+            const orders = getOrders();
+            const mcFilter = document.getElementById('statusMcFilter').value;
+            let filteredOrders = orders;
+            if (mcFilter) filteredOrders = orders.filter(o => o.mcSl === mcFilter);
+
+            const tbody = document.getElementById('mcStatusBody');
+            let totalCompleted = 0, totalPending = 0, totalGoodSum = 0;
+            if (filteredOrders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">কোনো অর্ডার নেই।</td></tr>`;
+                document.getElementById('statusTotalOrders').innerText = 0;
+                document.getElementById('statusCompleted').innerText = 0;
+                document.getElementById('statusPending').innerText = 0;
+                document.getElementById('statusTotalGood').innerText = 0;
+                return;
+            }
+            let html = '';
+            filteredOrders.forEach(order => {
+                const due = getDueProduction(order);
+                const totalGood = getTotalGood(order.id);
+                const isCompleted = due <= 0;
+                const lastDayGood = getLastDayShiftProd(order.id);
+                const lastNightGood = getLastNightShiftProd(order.id);
+                const remark = getRemark(order);
+                const isNear = isNearingCompletion(order) && !isCompleted;
+                if (isCompleted) totalCompleted++; else totalPending++;
+                totalGoodSum += totalGood;
+                let rowClass = '';
+                if (isCompleted) rowClass = 'bg-completed';
+                else if (isNear) rowClass = 'table-danger';
+                html += `<tr class="${rowClass}">
+                            <td><strong>${order.mcSl || ''}</strong></td>
+                            <td>${order.orderName || ''}</td>
+                            <td>${order.itemName || ''}</td>
+                            <td>${parseInt(order.demand).toLocaleString()}</td>
+                            <td><span class="clickable-good" onclick="showShiftDetails('${order.id}')">${totalGood.toLocaleString()}</span></td>
+                            <td class="${isCompleted ? 'text-success fw-bold' : 'text-danger fw-bold'}">${due.toLocaleString()}</td>
+                            <td>${lastDayGood.toLocaleString()}</td>
+                            <td>${lastNightGood.toLocaleString()}</td>
+                            <td><span class="status-badge ${isCompleted ? 'status-completed' : 'status-pending'}">${isCompleted ? '✅ সম্পন্ন' : '⏳ চলমান'}</span></td>
+                            <td>${remark ? `<span class="remark-badge">${remark}</span>` : ''}</td>
+                        </tr>`;
+            });
+            tbody.innerHTML = html;
+            document.getElementById('statusTotalOrders').innerText = filteredOrders.length;
+            document.getElementById('statusCompleted').innerText = totalCompleted;
+            document.getElementById('statusPending').innerText = totalPending;
+            document.getElementById('statusTotalGood').innerText = totalGoodSum;
+        }
+
+        // ============================================================
+        //  SHIFT DETAILS MODAL
+        // ============================================================
+        function showShiftDetails(orderId) {
+            const order = getOrderById(orderId);
+            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
+            const shifts = getShiftsForOrder(orderId);
+            shifts.sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return b.date.localeCompare(a.date); });
+            document.getElementById('shiftDetailsTitle').innerHTML = `শিফট ডিটেইলস: <strong>${order.mcSl}</strong> - <strong>${order.orderName}</strong>`;
+            let content = '';
+            if (shifts.length === 0) {
+                content = `<p class="text-muted text-center py-3">এই অর্ডারের জন্য কোনো শিফট এন্ট্রি নেই।</p>`;
+            } else {
+                content = `<div class="table-responsive"><table class="table table-bordered table-striped shift-detail-table"><thead><tr><th>তারিখ</th><th>শিফট</th><th>Counter</th><th>Total Counter</th><th>Good</th><th>Util%</th><th>Reject</th><th>কারণ</th><th>Prod Time</th><th>DT</th></tr></thead><tbody>`;
+                shifts.forEach(s => {
+                    const util = s.totalCounter === 0 ? 0 : Math.round((s.good / s.totalCounter) * 100);
+                    content += `<tr><td>${s.date || '-'}</td><td><span class="badge bg-${s.shiftType === 'A-Shift' ? 'primary' : 'secondary'}">${s.shiftType}</span></td><td>${s.counterCycle || 0}</td><td>${s.totalCounter || 0}</td><td><strong>${s.good || 0}</strong></td><td>${util}%</td><td>${s.reject || 0}</td><td style="font-size:11px;">${s.rejectReason || '-'}</td><td>${s.prodMinutes ? s.prodMinutes.toFixed(1) : 0}</td><td>${s.downtime || 0}</td></tr>`;
+                });
+                content += `</tbody></table></div>`;
+                const totalGood = shifts.reduce((sum, s) => sum + (s.good || 0), 0);
+                const totalCounter = shifts.reduce((sum, s) => sum + (s.totalCounter || 0), 0);
+                const totalReject = shifts.reduce((sum, s) => sum + (s.reject || 0), 0);
+                const overallUtil = totalCounter === 0 ? 0 : Math.round((totalGood / totalCounter) * 100);
+                content += `<div class="mt-3 p-2 bg-light rounded"><strong>সামারি:</strong> মোট এন্ট্রি: ${shifts.length} | মোট Good: ${totalGood} | মোট Counter: ${totalCounter} | মোট Reject: ${totalReject} | গড় Utilization: ${overallUtil}%</div>`;
+            }
+            document.getElementById('shiftDetailsContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('shiftDetailsModal')).show();
+        }
+
+        // ============================================================
+        //  LAST DAY PROD (with Edit button)
+        // ============================================================
+        function populateLastdayFilter() {
+            const orders = getOrders();
+            const select = document.getElementById('lastdayMcFilter');
+            const currentVal = select.value;
+            const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
+            select.innerHTML = '<option value="">-- সব MC --</option>';
+            uniqueMCs.forEach(mc => { select.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (currentVal && uniqueMCs.includes(currentVal)) select.value = currentVal;
+        }
+
+        function renderLastDay() {
+            const shifts = getShifts();
+            const mcFilter = document.getElementById('lastdayMcFilter').value;
+            let filteredShifts = shifts;
+            if (mcFilter) {
+                const orderIds = getOrders().filter(o => o.mcSl === mcFilter).map(o => o.id);
+                filteredShifts = shifts.filter(s => orderIds.includes(s.orderId));
+            }
+            filteredShifts.sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return b.date.localeCompare(a.date); });
+            const tbody = document.getElementById('lastdayBody');
+            if (filteredShifts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="17" class="text-center text-muted py-4">কোনো শিফট এন্ট্রি নেই।</td></tr>`;
+                document.getElementById('lastdayTotalEntries').innerText = 0;
+                document.getElementById('lastdayLatestDate').innerText = '-';
+                return;
+            }
+            let latestDate = filteredShifts[0].date || '-';
+            let html = '';
+            filteredShifts.forEach(shift => {
+                const order = getOrderById(shift.orderId);
+                const util = shift.totalCounter === 0 ? 0 : Math.round((shift.good / shift.totalCounter) * 100);
+                html += `<tr>
+                            <td>${shift.date || '-'}</td>
+                            <td><span class="badge bg-${shift.shiftType === 'A-Shift' ? 'primary' : 'secondary'}">${shift.shiftType}</span></td>
+                            <td>${order ? order.mcSl : ''}</td>
+                            <td>${order ? order.orderName : ''}</td>
+                            <td>${order ? order.itemName : ''}</td>
+                            <td>${order ? order.color : ''}</td>
+                            <td>${shift.logoInfo || '-'}</td>
+                            <td>${shift.capacityShift || 0}</td>
+                            <td>${shift.counterCycle || 0}</td>
+                            <td>${shift.totalCounter || 0}</td>
+                            <td>${shift.good || 0}</td>
+                            <td>${util}%</td>
+                            <td>${shift.reject || 0}</td>
+                            <td style="font-size:10px; max-width:100px; overflow:hidden; text-overflow:ellipsis;">${shift.rejectReason || '-'}</td>
+                            <td>${shift.prodMinutes ? shift.prodMinutes.toFixed(1) : 0}</td>
+                            <td>${shift.downtime || 0}</td>
+                            <td>
+                                <i class="bi bi-pencil edit-btn" onclick="editShiftEntry('${shift.id}')" title="এডিট"></i>
+                                <i class="bi bi-trash3 delete-btn" onclick="deleteShift('${shift.id}')" title="ডিলিট"></i>
+                            </td>
+                        </tr>`;
+            });
+            tbody.innerHTML = html;
+            document.getElementById('lastdayTotalEntries').innerText = filteredShifts.length;
+            document.getElementById('lastdayLatestDate').innerText = latestDate;
+        }
+
+        function deleteShift(shiftId) {
+            if (!confirm('এই শিফট এন্ট্রি মুছে ফেলবেন?')) return;
+            saveShifts(getShifts().filter(s => s.id !== shiftId));
+            refreshAll();
+            showToast('✅ শিফট এন্ট্রি মুছে ফেলা হয়েছে।', 'success', 3000);
+        }
+
+        // ============================================================
+        //  EXPORT LAST DAY
+        // ============================================================
+        function exportLastDayExcel() {
+            const shifts = getShifts();
+            if (shifts.length === 0) { alert('কোনো শিফট ডেটা নেই!'); return; }
+            const sorted = [...shifts].sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return b.date.localeCompare(a.date); });
+            const data = sorted.map(shift => {
+                const order = getOrderById(shift.orderId);
+                const util = shift.totalCounter === 0 ? 0 : Math.round((shift.good / shift.totalCounter) * 100);
+                return {
+                    'তারিখ': shift.date || '', 'শিফট': shift.shiftType || '', 'MC SL': order ? order.mcSl : '',
+                    'JOB Order': order ? order.orderName : '', 'Item Name': order ? order.itemName : '',
+                    'Color': order ? order.color : '', 'Logo': shift.logoInfo || '', 'Capacity': shift.capacityShift || 0,
+                    'Counter (Cycle)': shift.counterCycle || 0, 'Total Counter': shift.totalCounter || 0,
+                    'Good': shift.good || 0, 'Util%': util + '%', 'Reject': shift.reject || 0,
+                    'কারণ': shift.rejectReason || '', 'Prod Time (min)': shift.prodMinutes ? shift.prodMinutes.toFixed(1) : 0,
+                    'DT (min)': shift.downtime || 0
+                };
+            });
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'LastDayProd');
+            XLSX.writeFile(wb, 'LastDay_Prod_Entry.xlsx');
+        }
+
+        // ============================================================
+        //  POPULATE FILTERS
+        // ============================================================
+        function populateFilters() {
+            const orders = getOrders();
+            const select = document.getElementById('excelMcFilter');
+            const currentVal = select.value;
+            const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
+            select.innerHTML = '<option value="">-- সব MC --</option>';
+            uniqueMCs.forEach(mc => { select.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (currentVal && uniqueMCs.includes(currentVal)) select.value = currentVal;
+
+            const mcSelect = document.getElementById('mcSlSelect');
+            const curMc = mcSelect.value;
+            mcSelect.innerHTML = '<option value="">-- MC --</option>';
+            uniqueMCs.forEach(mc => { mcSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (curMc && uniqueMCs.includes(curMc)) mcSelect.value = curMc;
+            updateOrderDropdown();
+            populateStatusFilter();
+            populateLastdayFilter();
+        }
+
+        function updateOrderDropdown() {
+            const mc = document.getElementById('mcSlSelect').value;
+            const orderSelect = document.getElementById('shiftOrderSelect');
+            const currentOrder = orderSelect.value;
+            let orders = getOrders();
+            if (mc) orders = orders.filter(o => o.mcSl === mc);
+            orderSelect.innerHTML = '<option value="">-- অর্ডার --</option>';
+            orders.forEach(o => { orderSelect.innerHTML += `<option value="${o.id}">${o.orderName}</option>`; });
+            if (currentOrder && orders.some(o => o.id === currentOrder)) orderSelect.value = currentOrder;
+            document.getElementById('shiftOrderSelect').dispatchEvent(new Event('change'));
+        }
+
+        // ============================================================
+        //  SHIFT CALCULATIONS
+        // ============================================================
+        document.getElementById('shiftOrderSelect').addEventListener('change', function() {
+            const orderId = this.value;
+            if (!orderId) {
+                document.getElementById('shiftItem').value = '';
+                document.getElementById('shiftColor').value = '';
+                document.getElementById('logoInfo').value = '';
+                document.getElementById('shiftCavity').value = 1;
+                document.getElementById('shiftCt').value = 30;
+                return;
+            }
+            const order = getOrderById(orderId);
+            if (!order) return;
+            document.getElementById('shiftItem').value = order.itemName || '';
+            document.getElementById('shiftColor').value = order.color || '';
+            document.getElementById('logoInfo').value = order.logoSymble || '';
+            document.getElementById('shiftCavity').value = order.cavity || 1;
+            document.getElementById('shiftCt').value = order.ct || 30;
+            calculateShift();
+        });
+
+        function calculateShift() {
+            const cav = parseInt(document.getElementById('shiftCavity').value) || 1;
+            const ct = parseFloat(document.getElementById('shiftCt').value) || 1;
+            const counterCycle = parseInt(document.getElementById('counterCycle').value) || 0;
+            const good = parseInt(document.getElementById('counterGood').value) || 0;
+            const capacityShift = (3600 / ct) * cav * 12;
+            document.getElementById('capacityShift').value = Math.round(capacityShift);
+            const totalCounter = counterCycle * cav;
+            document.getElementById('totalCounter').value = totalCounter;
+            const reject = Math.max(0, totalCounter - good);
+            document.getElementById('counterReject').value = reject;
+            let utilPercent = 0;
+            if (capacityShift > 0 && good > 0) utilPercent = (good / capacityShift) * 100;
+            document.getElementById('utilizationPercent').value = utilPercent.toFixed(2);
+            const perHour = (3600 / ct) * cav;
+            let prodMinutes = 0;
+            if (perHour > 0 && totalCounter > 0) prodMinutes = (totalCounter / perHour) * 60;
+            document.getElementById('prodMinutes').value = prodMinutes.toFixed(1);
+            const prodHours = prodMinutes / 60;
+            let dt = 0;
+            if (prodHours < 12) dt = (12 - prodHours) * 60;
+            document.getElementById('downtime').value = Math.round(dt);
+            validateAndCalc();
+        }
+
+        // ============================================================
+        //  CALC CAP
+        // ============================================================
+        function calcCap() {
+            const cav = parseInt(document.getElementById('cavity').value) || 1;
+            const ct = parseFloat(document.getElementById('ct').value) || 1;
+            const cap = Math.round((3600 / ct) * cav * 12);
+            document.getElementById('capDay').value = cap;
+            document.getElementById('capNight').value = cap;
+        }
+
+        // ============================================================
+        //  SAVE SHIFT (Supports Edit)
+        // ============================================================
+        document.getElementById('shiftForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const orderId = document.getElementById('shiftOrderSelect').value;
+            if (!orderId) { alert('অর্ডার সিলেক্ট করুন!'); return; }
+
+            const date = document.getElementById('shiftDate').value;
+            const shiftType = document.getElementById('shiftType').value;
+            const editId = document.getElementById('editShiftId').value;
+
+            if (!editId && isDuplicateShift(orderId, date, shiftType, null)) {
+                if (!confirm('⚠️ এই তারিখ ও শিফটে ইতিমধ্যে এন্ট্রি করা হয়েছে! তবুও কি সেভ করবেন?')) return;
+            }
+
+            const totalCounter = parseInt(document.getElementById('totalCounter').value) || 0;
+            const good = parseInt(document.getElementById('counterGood').value) || 0;
+            if (good > totalCounter) {
+                alert('⚠️ Good-এর মান Total Counter-এর চেয়ে বেশি! সঠিক মান দিন।');
+                return;
+            }
+
+            const shiftData = {
+                id: editId || genId(),
+                orderId: orderId,
+                date: date,
+                shiftType: shiftType,
+                logoInfo: document.getElementById('logoInfo').value.trim(),
+                counterCycle: parseInt(document.getElementById('counterCycle').value) || 0,
+                totalCounter: totalCounter,
+                good: good,
+                reject: parseInt(document.getElementById('counterReject').value) || 0,
+                rejectReason: document.getElementById('rejectReason').value.trim(),
+                downtime: parseInt(document.getElementById('downtime').value) || 0,
+                prodMinutes: parseFloat(document.getElementById('prodMinutes').value) || 0,
+                capacityShift: parseInt(document.getElementById('capacityShift').value) || 0,
+                utilizationPercent: parseFloat(document.getElementById('utilizationPercent').value) || 0,
+            };
+
+            if (shiftData.totalCounter === 0 && shiftData.good === 0) {
+                alert('Counter বা Good দিন!');
+                return;
+            }
+
+            let shifts = getShifts();
+            if (editId) {
+                const idx = shifts.findIndex(s => s.id === editId);
+                if (idx !== -1) {
+                    shifts[idx] = shiftData;
+                    showToast('✏️ শিফট এন্ট্রি আপডেট করা হয়েছে!', 'success', 3000);
+                } else {
+                    alert('এন্ট্রি খুঁজে পাওয়া যায়নি!');
+                    return;
+                }
+                document.getElementById('editShiftId').value = '';
+                document.getElementById('editModeBadge').style.display = 'none';
+                document.getElementById('cancelEditBtn').style.display = 'none';
+                document.querySelector('#shiftForm .btn-save-shift').innerHTML = '<i class="bi bi-check-circle"></i> শিফট সেভ';
+                document.getElementById('shiftSubmitBtn').classList.remove('btn-warning-custom');
+                document.getElementById('shiftSubmitBtn').classList.add('btn-save-shift');
+            } else {
+                shifts.push(shiftData);
+                showToast(`✅ ${shiftData.shiftType} সেভ!`, 'success', 3000);
+            }
+            saveShifts(shifts);
+
+            document.getElementById('counterCycle').value = 0;
+            document.getElementById('counterGood').value = 0;
+            document.getElementById('rejectReason').value = '';
+            calculateShift();
+
+            refreshAll();
+            const order = getOrderById(orderId);
+            if (order) {
+                showToast(`বাকি Due: ${getDueProduction(order).toLocaleString()}`, 'info', 3000);
+            }
+        });
+
+        // ============================================================
+        //  ADD ORDER
+        // ============================================================
+        document.getElementById('addOrderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const order = {
+                id: genId(),
+                mcSl: document.getElementById('mcSl').value.trim(),
+                orderName: document.getElementById('orderName').value.trim(),
+                accCode: document.getElementById('accCode').value.trim(),
+                itemName: document.getElementById('itemName').value.trim(),
+                unitWt: parseFloat(document.getElementById('unitWt').value) || 0,
+                logoSymble: document.getElementById('logoSymble').value.trim(),
+                origin: document.getElementById('origin').value.trim(),
+                scmCode: document.getElementById('scmCode').value.trim(),
+                color: document.getElementById('color').value.trim(),
+                cavity: parseInt(document.getElementById('cavity').value) || 1,
+                ct: parseInt(document.getElementById('ct').value) || 0,
+                capDay: parseInt(document.getElementById('capDay').value) || 0,
+                capNight: parseInt(document.getElementById('capNight').value) || 0,
+                demand: parseInt(document.getElementById('demand').value) || 0,
+            };
+            if (!order.mcSl || !order.orderName || order.demand <= 0) {
+                alert('MC, অর্ডার নাম ও Demand দিন!');
+                return;
+            }
+            const orders = getOrders();
+            orders.push(order);
+            saveOrders(orders);
+            this.reset();
+            document.getElementById('capDay').value = '';
+            document.getElementById('capNight').value = '';
+            refreshAll();
+            showToast('✅ অর্ডার যোগ হয়েছে!', 'success', 3000);
+        });
+
+        // ============================================================
+        //  DELETE
+        // ============================================================
+        function deleteOrder(id) {
+            if (!confirm('এই অর্ডার ও সব শিফট ডেটা মুছবেন?')) return;
+            saveOrders(getOrders().filter(o => o.id !== id));
+            saveShifts(getShifts().filter(s => s.orderId !== id));
+            refreshAll();
+            showToast('🗑️ অর্ডার মুছে ফেলা হয়েছে।', 'info', 3000);
+        }
+
+        function deleteAllOrders() {
+            if (!confirm('সতর্কতা: সমস্ত অর্ডার ও শিফট ডেটা মুছে ফেলা হবে। আপনি কি নিশ্চিত?')) return;
+            saveOrders([]);
+            saveShifts([]);
+            refreshAll();
+            showToast('🗑️ সব অর্ডার মুছে ফেলা হয়েছে।', 'info', 3000);
+        }
+
+        // ============================================================
+        //  BACKUP & RESTORE
+        // ============================================================
+        function backupData() {
+            const data = {
+                orders: getOrders(),
+                shifts: getShifts(),
+                exportedAt: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Production_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('✅ ডেটা ব্যাকআপ নেওয়া হয়েছে!', 'success', 3000);
+        }
+
+        function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.orders || !data.shifts) {
+                        alert('❌ ভুল ফাইল ফরম্যাট! সঠিক JSON ফাইল নির্বাচন করুন।');
+                        return;
+                    }
+                    if (!confirm('বর্তমান ডেটা মুছে নতুন ডেটা রিস্টোর করতে চান?')) return;
+                    saveOrders(data.orders);
+                    saveShifts(data.shifts);
+                    refreshAll();
+                    showToast('✅ ডেটা সফলভাবে রিস্টোর করা হয়েছে!', 'success', 4000);
+                } catch (err) {
+                    alert('❌ ফাইল পড়তে সমস্যা হয়েছে: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ============================================================
+        //  EXPORT TO EXCEL
+        // ============================================================
+        function exportToExcel() {
+            const orders = getOrders();
+            if (orders.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+            const data = orders.map(order => {
+                const a = getShiftAggregate(order.id, 'A-Shift');
+                const b = getShiftAggregate(order.id, 'B-Shift');
+                const due = getDueProduction(order);
+                const totalGood = a.totalGood + b.totalGood;
+                const totalCounter = a.totalCounter + b.totalCounter;
+                const overallUtil = totalCounter === 0 ? 0 : Math.round((totalGood / totalCounter) * 100);
+                const ton = getProdTon(order.id);
+                const lastDate = getLastDate(order.id);
+                const capacity = getCapacity(order);
+                const lastDayTotal = getLastDayTotalGood(order.id);
+                const remark = getRemark(order);
+                return {
+                    'তারিখ': lastDate || '',
+                    'MC': order.mcSl || '',
+                    'অর্ডার': order.orderName || '',
+                    'Acc': order.accCode || '',
+                    'Item': order.itemName || '',
+                    'Unit Wt': parseFloat(order.unitWt).toFixed(3),
+                    'Color': order.color || '',
+                    'Cav': order.cavity || '',
+                    'CT': order.ct || '',
+                    'Capacity (22h)': capacity,
+                    'Demand': parseInt(order.demand) || 0,
+                    'Due': due,
+                    'As of Prod': totalGood,
+                    'Util%': overallUtil,
+                    'LD T.Good': lastDayTotal,
+                    'A-Cnt': a.totalCounter,
+                    'A-Good': a.totalGood,
+                    'A-Util%': a.util,
+                    'A-Rej': a.totalReject,
+                    'A-কারণ': a.reasons || '',
+                    'A-DT': a.totalDT,
+                    'B-Cnt': b.totalCounter,
+                    'B-Good': b.totalGood,
+                    'B-Util%': b.util,
+                    'B-Rej': b.totalReject,
+                    'B-কারণ': b.reasons || '',
+                    'B-DT': b.totalDT,
+                    'Prod Ton': parseFloat(ton.toFixed(3)),
+                    'Remark': remark
+                };
+            });
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'Production');
+            XLSX.writeFile(wb, 'Production_Report.xlsx');
+        }
+
+        // ============================================================
+        //  EXCEL IMPORT
+        // ============================================================
+        let importedData = [];
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; handleFile(e.dataTransfer.files[0]); }
+        });
+        fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    if (jsonData.length === 0) { alert('ফাইল খালি!'); return; }
+                    const getVal = (row, key) => {
+                        for (let k in row) { if (k.trim().toLowerCase() === key.toLowerCase()) return row[k]; }
+                        return undefined;
+                    };
+                    importedData = jsonData.map(row => ({
+                        mcSl: (getVal(row, 'MC SL') || '').toString().trim(),
+                        orderName: (getVal(row, 'Order Name') || '').toString().trim(),
+                        accCode: (getVal(row, 'Acc Code') || '').toString().trim(),
+                        itemName: (getVal(row, 'Item Name') || '').toString().trim(),
+                        unitWt: parseFloat(getVal(row, 'Unit Wt')) || 0,
+                        logoSymble: (getVal(row, 'Logo Symble') || '').toString().trim(),
+                        origin: (getVal(row, 'Origin') || '').toString().trim(),
+                        scmCode: (getVal(row, 'SCM Code') || '').toString().trim(),
+                        color: (getVal(row, 'Color') || '').toString().trim(),
+                        cavity: parseInt(getVal(row, 'Cavity')) || 1,
+                        ct: parseInt(getVal(row, 'CT')) || 30,
+                        demand: parseInt(getVal(row, 'Demand')) || 0,
+                    }));
+                    const valid = importedData.filter(d => d.mcSl && d.orderName && d.demand > 0);
+                    if (valid.length === 0) { alert('বৈধ ডেটা নেই!'); return; }
+                    importedData = valid;
+                    const preview = document.getElementById('importPreview');
+                    preview.style.display = 'block';
+                    document.getElementById('importPreviewBody').innerHTML = importedData.map(d =>
+                        `<tr><td>${d.mcSl}</td><td>${d.orderName}</td><td>${d.demand}</td></tr>`
+                    ).join('');
+                } catch (err) { alert('ত্রুটি: ' + err.message); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function clearImport() {
+            document.getElementById('importPreview').style.display = 'none';
+            document.getElementById('importPreviewBody').innerHTML = '';
+            importedData = [];
+            fileInput.value = '';
+        }
+
+        function confirmImport() {
+            if (importedData.length === 0) { alert('ডেটা নেই!'); return; }
+            const orders = getOrders();
+            let added = 0;
+            importedData.forEach(d => {
+                const exists = orders.some(o => o.mcSl === d.mcSl && o.orderName === d.orderName);
+                if (!exists) {
+                    const cap = Math.round((3600 / (d.ct || 1)) * (d.cavity || 1) * 12);
+                    orders.push({
+                        id: genId(),
+                        mcSl: d.mcSl,
+                        orderName: d.orderName,
+                        accCode: d.accCode || '',
+                        itemName: d.itemName || '',
+                        unitWt: d.unitWt || 0,
+                        logoSymble: d.logoSymble || '',
+                        origin: d.origin || '',
+                        scmCode: d.scmCode || '',
+                        color: d.color || '',
+                        cavity: d.cavity || 1,
+                        ct: d.ct || 30,
+                        capDay: cap,
+                        capNight: cap,
+                        demand: d.demand,
+                    });
+                    added++;
+                }
+            });
+            saveOrders(orders);
+            clearImport();
+            refreshAll();
+            showToast(`✅ ${added} টি অর্ডার ইমপোর্ট হয়েছে।`, 'success', 3000);
+        }
+
+        // ============================================================
+        //  REFRESH
+        // ============================================================
+        function refreshAll() {
+            populateFilters();
+            renderExcelTable();
+            renderMcStatus();
+            renderLastDay();
+            if (!document.getElementById('shiftDate').value) {
+                document.getElementById('shiftDate').value = new Date().toISOString().split('T')[0];
+            }
+            document.getElementById('section-dashboard').style.display = 'block';
+            document.getElementById('section-injection').style.display = 'none';
+            document.getElementById('section-production').style.display = 'none';
+            document.getElementById('section-mcstatus').style.display = 'none';
+            document.getElementById('section-lastday').style.display = 'none';
+            document.querySelector('.sidebar-menu .menu-item.active')?.classList.remove('active');
+            document.querySelector('.sidebar-menu .menu-item:first-child')?.classList.add('active');
+        }
+
+        // ============================================================
+        //  INIT
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshAll();
+            calcCap();
+            setTimeout(checkAndNotify, 2000);
+        });
+
+        document.getElementById('mcSlSelect').addEventListener('change', updateOrderDropdown);
+        ['shiftCavity','shiftCt','counterCycle','counterGood'].forEach(id => {
+            document.getElementById(id).addEventListener('input', calculateShift);
+        });
+    </script>
+</body>
+</html>
