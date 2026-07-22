@@ -3,11 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRAN-RFL | প্রোডাকশন ড্যাশবোর্ড</title>
+    <title>প্রোডাকশন ড্যাশবোর্ড</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
     <style>
+        /* আপনার সমস্ত স্টাইল এখানে রাখুন (আমি সংক্ষিপ্ত করছি) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -173,7 +180,6 @@
         .content-body::-webkit-scrollbar { width: 6px; }
         .content-body::-webkit-scrollbar-thumb { background: #c1c9d6; border-radius: 4px; }
 
-        /* Stats Row */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -546,7 +552,6 @@
         .transfer-detail-card .label { font-weight: 600; color: #495057; font-size: 12px; }
         .transfer-detail-card .value { font-weight: 500; color: #1a2332; font-size: 12px; }
 
-        /* Toast Notification */
         .toast-container-custom {
             position: fixed;
             top: 80px;
@@ -620,18 +625,14 @@
 
     <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-    <!-- ========================================================= -->
     <!-- TOAST CONTAINER -->
-    <!-- ========================================================= -->
     <div class="toast-container-custom" id="toastContainer"></div>
 
-    <!-- ========================================================= -->
     <!-- SIDEBAR -->
-    <!-- ========================================================= -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <div class="logo-icon">P</div>
-            <div class="brand-text">PRAN-<span>RFL</span></div>
+            <div class="brand-text">প্রোডাকশন <span>ড্যাশ</span></div>
         </div>
         <nav class="sidebar-menu">
             <div class="menu-label">Navigation</div>
@@ -670,12 +671,10 @@
         </nav>
     </aside>
 
-    <!-- ========================================================= -->
     <!-- MAIN CONTENT -->
-    <!-- ========================================================= -->
     <div class="main-content">
 
-        <!-- HEADER with Clock & Countdown -->
+        <!-- HEADER -->
         <header class="header">
             <div class="header-left">
                 <button class="sidebar-toggle" onclick="toggleSidebar()">
@@ -686,7 +685,6 @@
                 </div>
             </div>
             <div class="header-right">
-                <!-- Clock & Shift Countdown -->
                 <div class="clock-section">
                     <span class="clock" id="liveClock">--:--:--</span>
                     <span class="shift-label" id="shiftLabel">Day</span>
@@ -699,7 +697,7 @@
                 <div class="user-profile">
                     <div class="avatar">A</div>
                     <div>
-                        <div class="user-name">Arifuzzaman</div>
+                        <div class="user-name">Admin</div>
                         <div class="user-role">Admin</div>
                     </div>
                     <i class="bi bi-chevron-down chevron"></i>
@@ -710,12 +708,8 @@
         <!-- CONTENT BODY -->
         <div class="content-body">
 
-            <!-- ========================================================= -->
-            <!-- SECTION: DASHBOARD (MC Summary সরানো হয়েছে) -->
-            <!-- ========================================================= -->
+            <!-- DASHBOARD -->
             <div id="section-dashboard">
-
-                <!-- Stats Row -->
                 <div class="stats-row">
                     <div class="stat-card">
                         <div class="stat-label">মোট অর্ডার</div>
@@ -739,7 +733,6 @@
                     </div>
                 </div>
 
-                <!-- Filter Bar with Search -->
                 <div class="filter-bar">
                     <span class="filter-label"><i class="bi bi-funnel"></i> ফিল্টার:</span>
                     <select id="excelMcFilter" onchange="renderExcelTable()">
@@ -759,10 +752,9 @@
                     </div>
                 </div>
 
-                <!-- Main Table -->
                 <div class="table-wrapper">
                     <div class="table-header">
-                        <h6><i class="bi bi-table me-2"></i>অর্ডারওয়াইজ সামারি (Excel স্টাইল)</h6>
+                        <h6><i class="bi bi-table me-2"></i>অর্ডারওয়াইজ সামারি</h6>
                         <button class="export-btn" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel"></i> Excel ডাউনলোড</button>
                     </div>
                     <div class="table-responsive-custom">
@@ -797,16 +789,14 @@
                                 </tr>
                             </thead>
                             <tbody id="excelBody">
-                                <tr><td colspan="30" class="text-center text-muted py-4">কোনো অর্ডার নেই।</td></tr>
+                                <tr><td colspan="30" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- ========================================================= -->
-            <!-- SECTION: INJECTION DEMAND -->
-            <!-- ========================================================= -->
+            <!-- INJECTION DEMAND -->
             <div id="section-injection" style="display:none;">
                 <div class="form-card">
                     <div class="form-title d-flex justify-content-between align-items-center">
@@ -816,55 +806,55 @@
                     <form id="addOrderForm">
                         <div class="form-row">
                             <div class="field-group">
-                                <label class="form-label">MC SL * <span class="help-tip">❓<span class="tooltip-text">মেশিনের নাম/কোড, যেমন: A1-280TC</span></span></label>
+                                <label class="form-label">MC SL *</label>
                                 <input type="text" class="form-control" id="mcSl" placeholder="যেমন: A1-280TC" required>
                             </div>
                             <div class="field-group">
-                                <label class="form-label">অর্ডার নাম * <span class="help-tip">❓<span class="tooltip-text">অর্ডারের অনন্য নাম, যেমন: ONTIME-26-219</span></span></label>
+                                <label class="form-label">অর্ডার নাম *</label>
                                 <input type="text" class="form-control" id="orderName" placeholder="যেমন: ONTIME-26-219" required>
                             </div>
                             <div class="field-group">
-                                <label class="form-label">Acc Code <span class="help-tip">❓<span class="tooltip-text">অ্যাকাউন্ট কোড (ঐচ্ছিক)</span></span></label>
+                                <label class="form-label">Acc Code</label>
                                 <input type="text" class="form-control" id="accCode" placeholder="যেমন: 656788">
                             </div>
                             <div class="field-group">
-                                <label class="form-label">Item Name <span class="help-tip">❓<span class="tooltip-text">পণ্যের নাম, যেমন: DT Lid Outer</span></span></label>
+                                <label class="form-label">Item Name</label>
                                 <input type="text" class="form-control" id="itemName" placeholder="যেমন: DT Lid Outer">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="field-group">
-                                <label class="form-label">Unit Wt (kg) <span class="help-tip">❓<span class="tooltip-text">একটি পিসের ওজন কিলোগ্রামে</span></span></label>
+                                <label class="form-label">Unit Wt (kg)</label>
                                 <input type="number" step="0.001" class="form-control" id="unitWt" placeholder="যেমন: 0.058" value="0">
                             </div>
                             <div class="field-group">
-                                <label class="form-label">Logo Symble <span class="help-tip">❓<span class="tooltip-text">লোগোর নাম বা প্রতীক</span></span></label>
+                                <label class="form-label">Logo Symble</label>
                                 <input type="text" class="form-control" id="logoSymble" placeholder="লোগো">
                             </div>
                             <div class="field-group">
-                                <label class="form-label">Origin <span class="help-tip">❓<span class="tooltip-text">উৎপত্তি বা ব্র্যান্ড</span></span></label>
+                                <label class="form-label">Origin</label>
                                 <input type="text" class="form-control" id="origin" placeholder="উৎপত্তি">
                             </div>
                             <div class="field-group">
-                                <label class="form-label">SCM Code <span class="help-tip">❓<span class="tooltip-text">সাপ্লাই চেইন ম্যানেজমেন্ট কোড</span></span></label>
+                                <label class="form-label">SCM Code</label>
                                 <input type="text" class="form-control" id="scmCode" placeholder="যেমন: SCM-001">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="field-group">
-                                <label class="form-label">Color <span class="help-tip">❓<span class="tooltip-text">পণ্যের রং</span></span></label>
+                                <label class="form-label">Color</label>
                                 <input type="text" class="form-control" id="color" placeholder="যেমন: Blue">
                             </div>
                             <div class="field-group">
-                                <label class="form-label">Cavity <span class="help-tip">❓<span class="tooltip-text">একটি সাইকেলে কতটি পিস তৈরি হয়</span></span></label>
+                                <label class="form-label">Cavity</label>
                                 <input type="number" class="form-control" id="cavity" placeholder="যেমন: 1" value="1" oninput="calcCap()">
                             </div>
                             <div class="field-group">
-                                <label class="form-label">CT (sec) <span class="help-tip">❓<span class="tooltip-text">একটি সাইকেলের সময় (সেকেন্ড)</span></span></label>
+                                <label class="form-label">CT (sec)</label>
                                 <input type="number" class="form-control" id="ct" placeholder="যেমন: 36" value="30" oninput="calcCap()">
                             </div>
                             <div class="field-group">
-                                <label class="form-label">Demand * <span class="help-tip">❓<span class="tooltip-text">মোট কত পিস তৈরি করতে হবে (টার্গেট)</span></span></label>
+                                <label class="form-label">Demand *</label>
                                 <input type="number" class="form-control" id="demand" placeholder="যেমন: 20021" required>
                             </div>
                         </div>
@@ -894,13 +884,11 @@
                 </div>
             </div>
 
-            <!-- ========================================================= -->
-            <!-- SECTION: PRODUCTION ENTRY (with Edit Support) -->
-            <!-- ========================================================= -->
+            <!-- PRODUCTION ENTRY -->
             <div id="section-production" style="display:none;">
                 <div class="form-card">
                     <div class="form-title d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-pencil-square section-title-icon"></i>প্রোডাকশন এন্ট্রি – শিফট ইনপুট (A / B)</span>
+                        <span><i class="bi bi-pencil-square section-title-icon"></i>প্রোডাকশন এন্ট্রি – শিফট ইনপুট</span>
                         <span id="editModeBadge" style="display:none; background:#ffc107; color:#1a2332; padding:4px 14px; border-radius:20px; font-size:12px; font-weight:600;">
                             <i class="bi bi-pencil"></i> এডিট মোড
                         </span>
@@ -946,11 +934,11 @@
                         </div>
                         <div class="form-row">
                             <div class="field-group">
-                                <label class="form-label">৮. Cavity <span class="help-tip">❓<span class="tooltip-text">এই শিফটে ব্যবহৃত ক্যাভিটি সংখ্যা</span></span></label>
+                                <label class="form-label">৮. Cavity</label>
                                 <input type="number" class="form-control" id="shiftCavity" value="1" oninput="calculateShift()">
                             </div>
                             <div class="field-group">
-                                <label class="form-label">৯. CT (sec) <span class="help-tip">❓<span class="tooltip-text">এই শিফটের সাইকেল টাইম</span></span></label>
+                                <label class="form-label">৯. CT (sec)</label>
                                 <input type="number" class="form-control" id="shiftCt" value="30" oninput="calculateShift()">
                             </div>
                             <div class="field-group">
@@ -960,7 +948,7 @@
                         </div>
                         <div class="form-row">
                             <div class="field-group">
-                                <label class="form-label">১১. Counter (Cycle) <span class="help-tip">❓<span class="tooltip-text">মেশিনের মোট সাইকেল সংখ্যা</span></span></label>
+                                <label class="form-label">১১. Counter (Cycle)</label>
                                 <input type="number" class="form-control" id="counterCycle" value="0" oninput="calculateShift()">
                             </div>
                             <div class="field-group">
@@ -968,7 +956,7 @@
                                 <input type="number" class="form-control" id="totalCounter" readonly>
                             </div>
                             <div class="field-group">
-                                <label class="form-label">১৩. Good <span class="help-tip">❓<span class="tooltip-text">ভালো (ডেলিভারি উপযোগী) পিসের সংখ্যা</span></span></label>
+                                <label class="form-label">১৩. Good</label>
                                 <input type="number" class="form-control" id="counterGood" value="0" oninput="validateAndCalc()">
                             </div>
                         </div>
@@ -982,7 +970,7 @@
                                 <input type="number" class="form-control" id="counterReject" readonly>
                             </div>
                             <div class="field-group">
-                                <label class="form-label">১৬. কম উৎপাদনের কারণ <span class="help-tip">❓<span class="tooltip-text">যেমন: Power trip, Mold issue</span></span></label>
+                                <label class="form-label">১৬. কম উৎপাদনের কারণ</label>
                                 <input type="text" class="form-control" id="rejectReason" placeholder="Power trip, Mold issue">
                             </div>
                         </div>
@@ -1005,9 +993,7 @@
                 </div>
             </div>
 
-            <!-- ========================================================= -->
-            <!-- SECTION: MC STATUS -->
-            <!-- ========================================================= -->
+            <!-- MC STATUS -->
             <div id="section-mcstatus" style="display:none;">
                 <div class="table-wrapper">
                     <div class="table-header">
@@ -1044,7 +1030,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="mcStatusBody">
-                                    <tr><td colspan="10" class="text-center text-muted py-4">কোনো অর্ডার নেই।</td></tr>
+                                    <tr><td colspan="10" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1052,13 +1038,11 @@
                 </div>
             </div>
 
-            <!-- ========================================================= -->
-            <!-- SECTION: LAST DAY PROD (with Edit button) -->
-            <!-- ========================================================= -->
+            <!-- LAST DAY PROD -->
             <div id="section-lastday" style="display:none;">
                 <div class="table-wrapper">
                     <div class="table-header">
-                        <h6><i class="bi bi-calendar-day me-2"></i>Last Day Prod Entry – সর্বশেষ শিফট এন্ট্রি</h6>
+                        <h6><i class="bi bi-calendar-day me-2"></i>Last Day Prod Entry</h6>
                         <button class="export-btn" onclick="exportLastDayExcel()"><i class="bi bi-file-earmark-excel"></i> Excel ডাউনলোড</button>
                     </div>
                     <div class="p-3">
@@ -1091,7 +1075,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lastdayBody">
-                                    <tr><td colspan="17" class="text-center text-muted py-4">কোনো শিফট এন্ট্রি নেই।</td></tr>
+                                    <tr><td colspan="17" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1102,9 +1086,7 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
     <!-- TRANSFER MODAL -->
-    <!-- ========================================================= -->
     <div class="modal fade" id="transferModal" tabindex="-1">
         <div class="modal-dialog modal-md">
             <div class="modal-content">
@@ -1136,9 +1118,7 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
     <!-- SHIFT DETAILS MODAL -->
-    <!-- ========================================================= -->
     <div class="modal fade" id="shiftDetailsModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -1159,139 +1139,97 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // ============================================================
-        //  TOAST NOTIFICATION SYSTEM
+        //  FIREBASE CONFIGURATION
         // ============================================================
-        function showToast(message, type = 'success', duration = 5000) {
-            const container = document.getElementById('toastContainer');
-            const icons = {
-                success: '✅',
-                warning: '⚠️',
-                danger: '❌',
-                info: 'ℹ️'
-            };
-            const toast = document.createElement('div');
-            toast.className = `toast-custom toast-${type}`;
-            toast.innerHTML = `
-                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-                <span class="toast-body">${message}</span>
-                <button class="toast-close" onclick="this.parentElement.remove();">&times;</button>
-            `;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.classList.add('hiding');
-                setTimeout(() => toast.remove(), 400);
-            }, duration);
-        }
+        const firebaseConfig = {
+            apiKey: "AIZaSyDgLzu4Y9Bf08ENKnv8u6LWGodAMNJfKrA",
+            authDomain: "production-dashboard-35a79.firebaseapp.com",
+            projectId: "production-dashboard-35a79",
+            storageBucket: "production-dashboard-35a79.firebasestorage.app",
+            messagingSenderId: "900557086431",
+            appId: "1:900557086431:web:b3cdfd1d95f86597d1936a",
+            measurementId: "G-E26DVHKE0W"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
         // ============================================================
-        //  LIVE CLOCK & SHIFT COUNTDOWN
+        //  GLOBAL STATE
         // ============================================================
-        function updateClockAndShift() {
-            const now = new Date();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
-
-            const timeStr = String(hours).padStart(2, '0') + ':' +
-                           String(minutes).padStart(2, '0') + ':' +
-                           String(seconds).padStart(2, '0');
-            document.getElementById('liveClock').textContent = timeStr;
-
-            let shiftType, shiftEndHour;
-            if (hours >= 6 && hours < 18) {
-                shiftType = 'Day';
-                shiftEndHour = 18;
-            } else {
-                shiftType = 'Night';
-                shiftEndHour = 6;
-            }
-            document.getElementById('shiftLabel').textContent = shiftType;
-
-            let endTime = new Date(now);
-            if (hours >= 6 && hours < 18) {
-                endTime.setHours(18, 0, 0, 0);
-            } else {
-                endTime.setHours(6, 0, 0, 0);
-                if (hours >= 18) endTime.setDate(endTime.getDate() + 1);
-            }
-            const diffMs = endTime - now;
-            if (diffMs <= 0) {
-                document.getElementById('shiftCountdown').textContent = '⏳ শেষ!';
-                return;
-            }
-            const diffH = Math.floor(diffMs / (1000 * 60 * 60));
-            const diffM = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            document.getElementById('shiftCountdown').textContent = `⏳ ${diffH}h ${diffM}m বাকি`;
-        }
-        setInterval(updateClockAndShift, 1000);
-        updateClockAndShift();
-
-        // ============================================================
-        //  NAVIGATION
-        // ============================================================
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('overlay').classList.toggle('show');
-        }
-
-        function showSection(section) {
-            document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => el.classList.remove('active'));
-            if (event && event.target) {
-                event.target.closest('.menu-item').classList.add('active');
-            }
-            ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday'].forEach(id => {
-                document.getElementById(id).style.display = 'none';
-            });
-            const title = document.getElementById('pageTitle');
-            if (section === 'dashboard') {
-                document.getElementById('section-dashboard').style.display = 'block';
-                title.innerHTML = 'ড্যাশবোর্ড <small>প্রোডাকশন মনিটরিং</small>';
-                renderExcelTable();
-            } else if (section === 'injection') {
-                document.getElementById('section-injection').style.display = 'block';
-                title.innerHTML = 'ইনজেকশন ডিমান্ড <small>নতুন অর্ডার যোগ করুন</small>';
-            } else if (section === 'production') {
-                document.getElementById('section-production').style.display = 'block';
-                title.innerHTML = 'প্রোডাকশন এন্ট্রি <small>শিফট ইনপুট</small>';
-            } else if (section === 'mcstatus') {
-                document.getElementById('section-mcstatus').style.display = 'block';
-                title.innerHTML = 'এমসি স্ট্যাটাস <small>অর্ডার মনিটরিং</small>';
-                populateStatusFilter();
-                renderMcStatus();
-            } else if (section === 'lastday') {
-                document.getElementById('section-lastday').style.display = 'block';
-                title.innerHTML = 'Last Day Prod <small>সর্বশেষ শিফট ডেটা</small>';
-                populateLastdayFilter();
-                renderLastDay();
-            }
-            if (window.innerWidth <= 992) {
-                document.getElementById('sidebar').classList.remove('open');
-                document.getElementById('overlay').classList.remove('show');
-            }
-        }
-
-        function showDummy() {
-            showToast('এই ফিচারটি ডেভেলপমেন্ট চলছে। শীঘ্রই যোগ করা হবে।', 'info', 3000);
-        }
-
-        // ============================================================
-        //  DATA LAYER
-        // ============================================================
-        const STORAGE_KEY = 'prodOrders';
-        const SHIFT_KEY = 'shiftEntries';
+        let ordersCache = [];
+        let shiftsCache = [];
         let notifiedOrders = new Set();
 
-        function getOrders() { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-        function saveOrders(o) { localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); }
-        function getShifts() { return JSON.parse(localStorage.getItem(SHIFT_KEY)) || []; }
-        function saveShifts(s) { localStorage.setItem(SHIFT_KEY, JSON.stringify(s)); }
-        function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
-        function getOrderById(id) { return getOrders().find(o => o.id === id); }
-        function getShiftsForOrder(id) { return getShifts().filter(s => s.orderId === id); }
+        // ============================================================
+        //  FIREBASE DATA OPERATIONS
+        // ============================================================
+        function fetchOrders() {
+            return new Promise((resolve, reject) => {
+                database.ref('orders').once('value', snapshot => {
+                    const data = snapshot.val();
+                    ordersCache = data ? Object.values(data) : [];
+                    resolve(ordersCache);
+                }, reject);
+            });
+        }
+
+        function fetchShifts() {
+            return new Promise((resolve, reject) => {
+                database.ref('shifts').once('value', snapshot => {
+                    const data = snapshot.val();
+                    shiftsCache = data ? Object.values(data) : [];
+                    resolve(shiftsCache);
+                }, reject);
+            });
+        }
+
+        function saveOrderToFirebase(order) {
+            return database.ref('orders/' + order.id).set(order);
+        }
+
+        function saveShiftToFirebase(shift) {
+            return database.ref('shifts/' + shift.id).set(shift);
+        }
+
+        function deleteOrderFromFirebase(orderId) {
+            return database.ref('orders/' + orderId).remove();
+        }
+
+        function deleteShiftFromFirebase(shiftId) {
+            return database.ref('shifts/' + shiftId).remove();
+        }
+
+        function deleteAllOrdersFromFirebase() {
+            return database.ref('orders').remove();
+        }
+
+        function deleteAllShiftsFromFirebase() {
+            return database.ref('shifts').remove();
+        }
+
+        function backupDataToFirebase(data) {
+            return database.ref('backup/' + new Date().toISOString()).set(data);
+        }
 
         // ============================================================
-        //  CALCULATIONS
+        //  HELPER FUNCTIONS (Same as before, but using cache)
         // ============================================================
+        function getOrders() { return ordersCache; }
+        function getShifts() { return shiftsCache; }
+
+        function getOrderById(id) {
+            return ordersCache.find(o => o.id === id);
+        }
+
+        function getShiftsForOrder(orderId) {
+            return shiftsCache.filter(s => s.orderId === orderId);
+        }
+
+        function genId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+
         function getShiftAggregate(orderId, shiftType) {
             const shifts = getShiftsForOrder(orderId).filter(s => s.shiftType === shiftType);
             let totalCounter = 0, totalGood = 0, totalReject = 0, totalDT = 0;
@@ -1380,114 +1318,120 @@
             return shifts[0].good || 0;
         }
 
+        function isDuplicateShift(orderId, date, shiftType, excludeId) {
+            return shiftsCache.some(s => s.orderId === orderId && s.date === date && s.shiftType === shiftType && s.id !== excludeId);
+        }
+
         // ============================================================
-        //  VALIDATION & EDIT FUNCTIONS
+        //  TOAST NOTIFICATION
         // ============================================================
-        function validateAndCalc() {
-            calculateShift();
-            const totalCounter = parseInt(document.getElementById('totalCounter').value) || 0;
-            const good = parseInt(document.getElementById('counterGood').value) || 0;
-            const msgDiv = document.getElementById('validationMsg');
-            if (good > totalCounter) {
-                msgDiv.style.display = 'block';
-                msgDiv.innerHTML = '⚠️ সতর্কতা: Good-এর মান Total Counter-এর চেয়ে বেশি! অনুগ্রহ করে সঠিক মান দিন।';
-                document.querySelector('#shiftForm .btn-save-shift').disabled = true;
+        function showToast(message, type = 'success', duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            const icons = { success: '✅', warning: '⚠️', danger: '❌', info: 'ℹ️' };
+            const toast = document.createElement('div');
+            toast.className = `toast-custom toast-${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+                <span class="toast-body">${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove();">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 400);
+            }, duration);
+        }
+
+        // ============================================================
+        //  LIVE CLOCK
+        // ============================================================
+        function updateClockAndShift() {
+            const now = new Date();
+            const hours = now.getHours();
+            const timeStr = String(hours).padStart(2, '0') + ':' +
+                           String(now.getMinutes()).padStart(2, '0') + ':' +
+                           String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('liveClock').textContent = timeStr;
+
+            let shiftType, shiftEndHour;
+            if (hours >= 6 && hours < 18) {
+                shiftType = 'Day';
+                shiftEndHour = 18;
             } else {
-                msgDiv.style.display = 'none';
-                document.querySelector('#shiftForm .btn-save-shift').disabled = false;
+                shiftType = 'Night';
+                shiftEndHour = 6;
+            }
+            document.getElementById('shiftLabel').textContent = shiftType;
+
+            let endTime = new Date(now);
+            if (hours >= 6 && hours < 18) {
+                endTime.setHours(18, 0, 0, 0);
+            } else {
+                endTime.setHours(6, 0, 0, 0);
+                if (hours >= 18) endTime.setDate(endTime.getDate() + 1);
+            }
+            const diffMs = endTime - now;
+            if (diffMs <= 0) {
+                document.getElementById('shiftCountdown').textContent = '⏳ শেষ!';
+                return;
+            }
+            const diffH = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffM = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            document.getElementById('shiftCountdown').textContent = `⏳ ${diffH}h ${diffM}m বাকি`;
+        }
+        setInterval(updateClockAndShift, 1000);
+        updateClockAndShift();
+
+        // ============================================================
+        //  NAVIGATION
+        // ============================================================
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => el.classList.remove('active'));
+            if (event && event.target) {
+                event.target.closest('.menu-item').classList.add('active');
+            }
+            ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            const title = document.getElementById('pageTitle');
+            if (section === 'dashboard') {
+                document.getElementById('section-dashboard').style.display = 'block';
+                title.innerHTML = 'ড্যাশবোর্ড <small>প্রোডাকশন মনিটরিং</small>';
+                renderExcelTable();
+            } else if (section === 'injection') {
+                document.getElementById('section-injection').style.display = 'block';
+                title.innerHTML = 'ইনজেকশন ডিমান্ড <small>নতুন অর্ডার যোগ করুন</small>';
+            } else if (section === 'production') {
+                document.getElementById('section-production').style.display = 'block';
+                title.innerHTML = 'প্রোডাকশন এন্ট্রি <small>শিফট ইনপুট</small>';
+            } else if (section === 'mcstatus') {
+                document.getElementById('section-mcstatus').style.display = 'block';
+                title.innerHTML = 'এমসি স্ট্যাটাস <small>অর্ডার মনিটরিং</small>';
+                populateStatusFilter();
+                renderMcStatus();
+            } else if (section === 'lastday') {
+                document.getElementById('section-lastday').style.display = 'block';
+                title.innerHTML = 'Last Day Prod <small>সর্বশেষ শিফট ডেটা</small>';
+                populateLastdayFilter();
+                renderLastDay();
+            }
+            if (window.innerWidth <= 992) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('overlay').classList.remove('show');
             }
         }
 
-        function isDuplicateShift(orderId, date, shiftType, excludeId) {
-            const shifts = getShifts();
-            return shifts.some(s => s.orderId === orderId && s.date === date && s.shiftType === shiftType && s.id !== excludeId);
+        function showDummy() {
+            showToast('এই ফিচারটি ডেভেলপমেন্ট চলছে। শীঘ্রই যোগ করা হবে।', 'info', 3000);
         }
 
         // ============================================================
-        //  EDIT SHIFT ENTRY
-        // ============================================================
-        function editShiftEntry(shiftId) {
-            const shifts = getShifts();
-            const shift = shifts.find(s => s.id === shiftId);
-            if (!shift) { alert('শিফট এন্ট্রি খুঁজে পাওয়া যায়নি!'); return; }
-            const order = getOrderById(shift.orderId);
-            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
-
-            document.getElementById('editShiftId').value = shiftId;
-            document.getElementById('shiftDate').value = shift.date || '';
-            document.getElementById('shiftType').value = shift.shiftType || 'A-Shift';
-
-            const mcSelect = document.getElementById('mcSlSelect');
-            const uniqueMCs = [...new Set(getOrders().map(o => o.mcSl))];
-            mcSelect.innerHTML = '<option value="">-- MC --</option>';
-            uniqueMCs.forEach(mc => { mcSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
-            mcSelect.value = order.mcSl;
-
-            const orderSelect = document.getElementById('shiftOrderSelect');
-            const ordersForMc = getOrders().filter(o => o.mcSl === order.mcSl);
-            orderSelect.innerHTML = '<option value="">-- অর্ডার --</option>';
-            ordersForMc.forEach(o => { orderSelect.innerHTML += `<option value="${o.id}">${o.orderName}</option>`; });
-            orderSelect.value = shift.orderId;
-
-            document.getElementById('shiftItem').value = order.itemName || '';
-            document.getElementById('shiftColor').value = order.color || '';
-            document.getElementById('logoInfo').value = order.logoSymble || '';
-            document.getElementById('shiftCavity').value = shift.counterCycle ? Math.round(shift.totalCounter / shift.counterCycle) : order.cavity || 1;
-            document.getElementById('shiftCt').value = order.ct || 30;
-            document.getElementById('counterCycle').value = shift.counterCycle || 0;
-            document.getElementById('counterGood').value = shift.good || 0;
-            document.getElementById('rejectReason').value = shift.rejectReason || '';
-
-            document.getElementById('editModeBadge').style.display = 'inline-block';
-            document.getElementById('cancelEditBtn').style.display = 'inline-block';
-            document.querySelector('#shiftForm .btn-save-shift').innerHTML = '<i class="bi bi-pencil"></i> আপডেট করুন';
-            document.getElementById('shiftSubmitBtn').classList.add('btn-warning-custom');
-            document.getElementById('shiftSubmitBtn').classList.remove('btn-save-shift');
-
-            calculateShift();
-            showSection('production');
-            showToast('✏️ এডিট মোড: শিফট এন্ট্রি আপডেট করুন', 'info', 3000);
-        }
-
-        function cancelEdit() {
-            document.getElementById('editShiftId').value = '';
-            document.getElementById('editModeBadge').style.display = 'none';
-            document.getElementById('cancelEditBtn').style.display = 'none';
-            document.querySelector('#shiftForm .btn-save-shift').innerHTML = '<i class="bi bi-check-circle"></i> শিফট সেভ';
-            document.getElementById('shiftSubmitBtn').classList.remove('btn-warning-custom');
-            document.getElementById('shiftSubmitBtn').classList.add('btn-save-shift');
-            document.getElementById('shiftForm').reset();
-            document.getElementById('counterCycle').value = 0;
-            document.getElementById('counterGood').value = 0;
-            document.getElementById('rejectReason').value = '';
-            calculateShift();
-            showToast('এডিট মোড বাতিল করা হয়েছে।', 'info', 2000);
-        }
-
-        // ============================================================
-        //  CHECK AND SEND ALERTS
-        // ============================================================
-        function checkAndNotify() {
-            const orders = getOrders();
-            orders.forEach(order => {
-                const due = getDueProduction(order);
-                const isCompleted = due <= 0;
-                const isNear = isNearingCompletion(order) && !isCompleted;
-                const orderKey = order.id;
-
-                if (isCompleted && !notifiedOrders.has(orderKey + '_completed')) {
-                    notifiedOrders.add(orderKey + '_completed');
-                    showToast(`✅ ${order.mcSl} - ${order.orderName} অর্ডার সম্পন্ন হয়েছে!`, 'success', 6000);
-                } else if (isNear && !notifiedOrders.has(orderKey + '_near')) {
-                    notifiedOrders.add(orderKey + '_near');
-                    showToast(`⚠️ ${order.mcSl} - ${order.orderName} অর্ডার শেষের দিকে! নতুন অর্ডার অ্যাসাইন করুন।`, 'warning', 6000);
-                }
-            });
-        }
-        setInterval(checkAndNotify, 30000);
-
-        // ============================================================
-        //  RENDER EXCEL TABLE (with Search)
+        //  RENDER FUNCTIONS
         // ============================================================
         function renderExcelTable() {
             const orders = getOrders();
@@ -1521,7 +1465,7 @@
 
             const tbody = document.getElementById('excelBody');
             if (filteredOrders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="30" class="text-center text-muted py-4">কোনো অর্ডার নেই (ফিল্টার পরিবর্তন করুন)।</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="30" class="text-center text-muted py-4">কোনো অর্ডার নেই।</td></tr>`;
                 return;
             }
 
@@ -1582,55 +1526,6 @@
             tbody.innerHTML = html;
         }
 
-        // ============================================================
-        //  TRANSFER
-        // ============================================================
-        function openTransferModal(orderId) {
-            document.getElementById('transferOrderId').value = orderId;
-            const order = getOrderById(orderId);
-            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
-            document.getElementById('transferCurrentMc').innerText = order.mcSl || '-';
-            document.getElementById('transferOrderName').innerText = order.orderName || '-';
-            document.getElementById('transferItemName').innerText = order.itemName || '-';
-            document.getElementById('transferDemand').innerText = parseInt(order.demand).toLocaleString() || '0';
-            document.getElementById('transferTotalGood').innerText = getTotalGood(order.id).toLocaleString() || '0';
-            document.getElementById('transferDueProd').innerText = getDueProduction(order).toLocaleString() || '0';
-
-            const allMCs = [...new Set(getOrders().map(o => o.mcSl))];
-            const targetSelect = document.getElementById('transferTargetMc');
-            targetSelect.innerHTML = '<option value="">-- সিলেক্ট --</option>';
-            allMCs.forEach(mc => { if (mc !== order.mcSl) targetSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
-            if (targetSelect.options.length === 1) targetSelect.innerHTML = '<option value="">কোনো অন্য MC নেই</option>';
-            new bootstrap.Modal(document.getElementById('transferModal')).show();
-        }
-
-        function confirmTransfer() {
-            const orderId = document.getElementById('transferOrderId').value;
-            const newMc = document.getElementById('transferTargetMc').value;
-            if (!newMc) { alert('দয়া করে একটি MC সিলেক্ট করুন!'); return; }
-            let orders = getOrders();
-            const idx = orders.findIndex(o => o.id === orderId);
-            if (idx === -1) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
-            orders[idx].mcSl = newMc;
-            saveOrders(orders);
-            bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
-            refreshAll();
-            showToast(`✅ অর্ডার ${newMc} তে ট্রান্সফার হয়েছে!`, 'success', 4000);
-        }
-
-        // ============================================================
-        //  STATUS PAGE
-        // ============================================================
-        function populateStatusFilter() {
-            const orders = getOrders();
-            const select = document.getElementById('statusMcFilter');
-            const currentVal = select.value;
-            const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
-            select.innerHTML = '<option value="">-- সব MC --</option>';
-            uniqueMCs.forEach(mc => { select.innerHTML += `<option value="${mc}">${mc}</option>`; });
-            if (currentVal && uniqueMCs.includes(currentVal)) select.value = currentVal;
-        }
-
         function renderMcStatus() {
             const orders = getOrders();
             const mcFilter = document.getElementById('statusMcFilter').value;
@@ -1679,48 +1574,6 @@
             document.getElementById('statusCompleted').innerText = totalCompleted;
             document.getElementById('statusPending').innerText = totalPending;
             document.getElementById('statusTotalGood').innerText = totalGoodSum;
-        }
-
-        // ============================================================
-        //  SHIFT DETAILS MODAL
-        // ============================================================
-        function showShiftDetails(orderId) {
-            const order = getOrderById(orderId);
-            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
-            const shifts = getShiftsForOrder(orderId);
-            shifts.sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return b.date.localeCompare(a.date); });
-            document.getElementById('shiftDetailsTitle').innerHTML = `শিফট ডিটেইলস: <strong>${order.mcSl}</strong> - <strong>${order.orderName}</strong>`;
-            let content = '';
-            if (shifts.length === 0) {
-                content = `<p class="text-muted text-center py-3">এই অর্ডারের জন্য কোনো শিফট এন্ট্রি নেই।</p>`;
-            } else {
-                content = `<div class="table-responsive"><table class="table table-bordered table-striped shift-detail-table"><thead><tr><th>তারিখ</th><th>শিফট</th><th>Counter</th><th>Total Counter</th><th>Good</th><th>Util%</th><th>Reject</th><th>কারণ</th><th>Prod Time</th><th>DT</th></tr></thead><tbody>`;
-                shifts.forEach(s => {
-                    const util = s.totalCounter === 0 ? 0 : Math.round((s.good / s.totalCounter) * 100);
-                    content += `<tr><td>${s.date || '-'}</td><td><span class="badge bg-${s.shiftType === 'A-Shift' ? 'primary' : 'secondary'}">${s.shiftType}</span></td><td>${s.counterCycle || 0}</td><td>${s.totalCounter || 0}</td><td><strong>${s.good || 0}</strong></td><td>${util}%</td><td>${s.reject || 0}</td><td style="font-size:11px;">${s.rejectReason || '-'}</td><td>${s.prodMinutes ? s.prodMinutes.toFixed(1) : 0}</td><td>${s.downtime || 0}</td></tr>`;
-                });
-                content += `</tbody></table></div>`;
-                const totalGood = shifts.reduce((sum, s) => sum + (s.good || 0), 0);
-                const totalCounter = shifts.reduce((sum, s) => sum + (s.totalCounter || 0), 0);
-                const totalReject = shifts.reduce((sum, s) => sum + (s.reject || 0), 0);
-                const overallUtil = totalCounter === 0 ? 0 : Math.round((totalGood / totalCounter) * 100);
-                content += `<div class="mt-3 p-2 bg-light rounded"><strong>সামারি:</strong> মোট এন্ট্রি: ${shifts.length} | মোট Good: ${totalGood} | মোট Counter: ${totalCounter} | মোট Reject: ${totalReject} | গড় Utilization: ${overallUtil}%</div>`;
-            }
-            document.getElementById('shiftDetailsContent').innerHTML = content;
-            new bootstrap.Modal(document.getElementById('shiftDetailsModal')).show();
-        }
-
-        // ============================================================
-        //  LAST DAY PROD (with Edit button)
-        // ============================================================
-        function populateLastdayFilter() {
-            const orders = getOrders();
-            const select = document.getElementById('lastdayMcFilter');
-            const currentVal = select.value;
-            const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
-            select.innerHTML = '<option value="">-- সব MC --</option>';
-            uniqueMCs.forEach(mc => { select.innerHTML += `<option value="${mc}">${mc}</option>`; });
-            if (currentVal && uniqueMCs.includes(currentVal)) select.value = currentVal;
         }
 
         function renderLastDay() {
@@ -1772,37 +1625,71 @@
             document.getElementById('lastdayLatestDate').innerText = latestDate;
         }
 
-        function deleteShift(shiftId) {
-            if (!confirm('এই শিফট এন্ট্রি মুছে ফেলবেন?')) return;
-            saveShifts(getShifts().filter(s => s.id !== shiftId));
-            refreshAll();
-            showToast('✅ শিফট এন্ট্রি মুছে ফেলা হয়েছে।', 'success', 3000);
+        // ============================================================
+        //  SHIFT DETAILS MODAL
+        // ============================================================
+        function showShiftDetails(orderId) {
+            const order = getOrderById(orderId);
+            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
+            const shifts = getShiftsForOrder(orderId);
+            shifts.sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return b.date.localeCompare(a.date); });
+            document.getElementById('shiftDetailsTitle').innerHTML = `শিফট ডিটেইলস: <strong>${order.mcSl}</strong> - <strong>${order.orderName}</strong>`;
+            let content = '';
+            if (shifts.length === 0) {
+                content = `<p class="text-muted text-center py-3">এই অর্ডারের জন্য কোনো শিফট এন্ট্রি নেই।</p>`;
+            } else {
+                content = `<div class="table-responsive"><table class="table table-bordered table-striped shift-detail-table"><thead><tr><th>তারিখ</th><th>শিফট</th><th>Counter</th><th>Total Counter</th><th>Good</th><th>Util%</th><th>Reject</th><th>কারণ</th><th>Prod Time</th><th>DT</th></tr></thead><tbody>`;
+                shifts.forEach(s => {
+                    const util = s.totalCounter === 0 ? 0 : Math.round((s.good / s.totalCounter) * 100);
+                    content += `<tr><td>${s.date || '-'}</td><td><span class="badge bg-${s.shiftType === 'A-Shift' ? 'primary' : 'secondary'}">${s.shiftType}</span></td><td>${s.counterCycle || 0}</td><td>${s.totalCounter || 0}</td><td><strong>${s.good || 0}</strong></td><td>${util}%</td><td>${s.reject || 0}</td><td style="font-size:11px;">${s.rejectReason || '-'}</td><td>${s.prodMinutes ? s.prodMinutes.toFixed(1) : 0}</td><td>${s.downtime || 0}</td></tr>`;
+                });
+                content += `</tbody></table></div>`;
+                const totalGood = shifts.reduce((sum, s) => sum + (s.good || 0), 0);
+                const totalCounter = shifts.reduce((sum, s) => sum + (s.totalCounter || 0), 0);
+                const totalReject = shifts.reduce((sum, s) => sum + (s.reject || 0), 0);
+                const overallUtil = totalCounter === 0 ? 0 : Math.round((totalGood / totalCounter) * 100);
+                content += `<div class="mt-3 p-2 bg-light rounded"><strong>সামারি:</strong> মোট এন্ট্রি: ${shifts.length} | মোট Good: ${totalGood} | মোট Counter: ${totalCounter} | মোট Reject: ${totalReject} | গড় Utilization: ${overallUtil}%</div>`;
+            }
+            document.getElementById('shiftDetailsContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('shiftDetailsModal')).show();
         }
 
         // ============================================================
-        //  EXPORT LAST DAY
+        //  TRANSFER FUNCTIONS
         // ============================================================
-        function exportLastDayExcel() {
-            const shifts = getShifts();
-            if (shifts.length === 0) { alert('কোনো শিফট ডেটা নেই!'); return; }
-            const sorted = [...shifts].sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return b.date.localeCompare(a.date); });
-            const data = sorted.map(shift => {
-                const order = getOrderById(shift.orderId);
-                const util = shift.totalCounter === 0 ? 0 : Math.round((shift.good / shift.totalCounter) * 100);
-                return {
-                    'তারিখ': shift.date || '', 'শিফট': shift.shiftType || '', 'MC SL': order ? order.mcSl : '',
-                    'JOB Order': order ? order.orderName : '', 'Item Name': order ? order.itemName : '',
-                    'Color': order ? order.color : '', 'Logo': shift.logoInfo || '', 'Capacity': shift.capacityShift || 0,
-                    'Counter (Cycle)': shift.counterCycle || 0, 'Total Counter': shift.totalCounter || 0,
-                    'Good': shift.good || 0, 'Util%': util + '%', 'Reject': shift.reject || 0,
-                    'কারণ': shift.rejectReason || '', 'Prod Time (min)': shift.prodMinutes ? shift.prodMinutes.toFixed(1) : 0,
-                    'DT (min)': shift.downtime || 0
-                };
+        function openTransferModal(orderId) {
+            document.getElementById('transferOrderId').value = orderId;
+            const order = getOrderById(orderId);
+            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
+            document.getElementById('transferCurrentMc').innerText = order.mcSl || '-';
+            document.getElementById('transferOrderName').innerText = order.orderName || '-';
+            document.getElementById('transferItemName').innerText = order.itemName || '-';
+            document.getElementById('transferDemand').innerText = parseInt(order.demand).toLocaleString() || '0';
+            document.getElementById('transferTotalGood').innerText = getTotalGood(order.id).toLocaleString() || '0';
+            document.getElementById('transferDueProd').innerText = getDueProduction(order).toLocaleString() || '0';
+
+            const allMCs = [...new Set(getOrders().map(o => o.mcSl))];
+            const targetSelect = document.getElementById('transferTargetMc');
+            targetSelect.innerHTML = '<option value="">-- সিলেক্ট --</option>';
+            allMCs.forEach(mc => { if (mc !== order.mcSl) targetSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (targetSelect.options.length === 1) targetSelect.innerHTML = '<option value="">কোনো অন্য MC নেই</option>';
+            new bootstrap.Modal(document.getElementById('transferModal')).show();
+        }
+
+        function confirmTransfer() {
+            const orderId = document.getElementById('transferOrderId').value;
+            const newMc = document.getElementById('transferTargetMc').value;
+            if (!newMc) { alert('দয়া করে একটি MC সিলেক্ট করুন!'); return; }
+            
+            const order = getOrderById(orderId);
+            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
+            
+            order.mcSl = newMc;
+            saveOrderToFirebase(order).then(() => {
+                bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
+                refreshAll();
+                showToast(`✅ অর্ডার ${newMc} তে ট্রান্সফার হয়েছে!`, 'success', 4000);
             });
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(data);
-            XLSX.utils.book_append_sheet(wb, ws, 'LastDayProd');
-            XLSX.writeFile(wb, 'LastDay_Prod_Entry.xlsx');
         }
 
         // ============================================================
@@ -1839,28 +1726,36 @@
             document.getElementById('shiftOrderSelect').dispatchEvent(new Event('change'));
         }
 
+        function populateStatusFilter() {
+            const orders = getOrders();
+            const select = document.getElementById('statusMcFilter');
+            const currentVal = select.value;
+            const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
+            select.innerHTML = '<option value="">-- সব MC --</option>';
+            uniqueMCs.forEach(mc => { select.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (currentVal && uniqueMCs.includes(currentVal)) select.value = currentVal;
+        }
+
+        function populateLastdayFilter() {
+            const orders = getOrders();
+            const select = document.getElementById('lastdayMcFilter');
+            const currentVal = select.value;
+            const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
+            select.innerHTML = '<option value="">-- সব MC --</option>';
+            uniqueMCs.forEach(mc => { select.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (currentVal && uniqueMCs.includes(currentVal)) select.value = currentVal;
+        }
+
         // ============================================================
-        //  SHIFT CALCULATIONS
+        //  CALCULATIONS
         // ============================================================
-        document.getElementById('shiftOrderSelect').addEventListener('change', function() {
-            const orderId = this.value;
-            if (!orderId) {
-                document.getElementById('shiftItem').value = '';
-                document.getElementById('shiftColor').value = '';
-                document.getElementById('logoInfo').value = '';
-                document.getElementById('shiftCavity').value = 1;
-                document.getElementById('shiftCt').value = 30;
-                return;
-            }
-            const order = getOrderById(orderId);
-            if (!order) return;
-            document.getElementById('shiftItem').value = order.itemName || '';
-            document.getElementById('shiftColor').value = order.color || '';
-            document.getElementById('logoInfo').value = order.logoSymble || '';
-            document.getElementById('shiftCavity').value = order.cavity || 1;
-            document.getElementById('shiftCt').value = order.ct || 30;
-            calculateShift();
-        });
+        function calcCap() {
+            const cav = parseInt(document.getElementById('cavity').value) || 1;
+            const ct = parseFloat(document.getElementById('ct').value) || 1;
+            const cap = Math.round((3600 / ct) * cav * 12);
+            document.getElementById('capDay').value = cap;
+            document.getElementById('capNight').value = cap;
+        }
 
         function calculateShift() {
             const cav = parseInt(document.getElementById('shiftCavity').value) || 1;
@@ -1887,149 +1782,117 @@
             validateAndCalc();
         }
 
-        // ============================================================
-        //  CALC CAP
-        // ============================================================
-        function calcCap() {
-            const cav = parseInt(document.getElementById('cavity').value) || 1;
-            const ct = parseFloat(document.getElementById('ct').value) || 1;
-            const cap = Math.round((3600 / ct) * cav * 12);
-            document.getElementById('capDay').value = cap;
-            document.getElementById('capNight').value = cap;
+        function validateAndCalc() {
+            calculateShift();
+            const totalCounter = parseInt(document.getElementById('totalCounter').value) || 0;
+            const good = parseInt(document.getElementById('counterGood').value) || 0;
+            const msgDiv = document.getElementById('validationMsg');
+            if (good > totalCounter) {
+                msgDiv.style.display = 'block';
+                msgDiv.innerHTML = '⚠️ সতর্কতা: Good-এর মান Total Counter-এর চেয়ে বেশি!';
+                document.querySelector('#shiftForm .btn-save-shift').disabled = true;
+            } else {
+                msgDiv.style.display = 'none';
+                document.querySelector('#shiftForm .btn-save-shift').disabled = false;
+            }
         }
 
         // ============================================================
-        //  SAVE SHIFT (Supports Edit)
+        //  EDIT SHIFT
         // ============================================================
-        document.getElementById('shiftForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const orderId = document.getElementById('shiftOrderSelect').value;
-            if (!orderId) { alert('অর্ডার সিলেক্ট করুন!'); return; }
+        function editShiftEntry(shiftId) {
+            const shift = shiftsCache.find(s => s.id === shiftId);
+            if (!shift) { alert('শিফট এন্ট্রি খুঁজে পাওয়া যায়নি!'); return; }
+            const order = getOrderById(shift.orderId);
+            if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
 
-            const date = document.getElementById('shiftDate').value;
-            const shiftType = document.getElementById('shiftType').value;
-            const editId = document.getElementById('editShiftId').value;
+            document.getElementById('editShiftId').value = shiftId;
+            document.getElementById('shiftDate').value = shift.date || '';
+            document.getElementById('shiftType').value = shift.shiftType || 'A-Shift';
 
-            if (!editId && isDuplicateShift(orderId, date, shiftType, null)) {
-                if (!confirm('⚠️ এই তারিখ ও শিফটে ইতিমধ্যে এন্ট্রি করা হয়েছে! তবুও কি সেভ করবেন?')) return;
-            }
+            const mcSelect = document.getElementById('mcSlSelect');
+            const uniqueMCs = [...new Set(getOrders().map(o => o.mcSl))];
+            mcSelect.innerHTML = '<option value="">-- MC --</option>';
+            uniqueMCs.forEach(mc => { mcSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            mcSelect.value = order.mcSl;
 
-            const totalCounter = parseInt(document.getElementById('totalCounter').value) || 0;
-            const good = parseInt(document.getElementById('counterGood').value) || 0;
-            if (good > totalCounter) {
-                alert('⚠️ Good-এর মান Total Counter-এর চেয়ে বেশি! সঠিক মান দিন।');
-                return;
-            }
+            const orderSelect = document.getElementById('shiftOrderSelect');
+            const ordersForMc = getOrders().filter(o => o.mcSl === order.mcSl);
+            orderSelect.innerHTML = '<option value="">-- অর্ডার --</option>';
+            ordersForMc.forEach(o => { orderSelect.innerHTML += `<option value="${o.id}">${o.orderName}</option>`; });
+            orderSelect.value = shift.orderId;
 
-            const shiftData = {
-                id: editId || genId(),
-                orderId: orderId,
-                date: date,
-                shiftType: shiftType,
-                logoInfo: document.getElementById('logoInfo').value.trim(),
-                counterCycle: parseInt(document.getElementById('counterCycle').value) || 0,
-                totalCounter: totalCounter,
-                good: good,
-                reject: parseInt(document.getElementById('counterReject').value) || 0,
-                rejectReason: document.getElementById('rejectReason').value.trim(),
-                downtime: parseInt(document.getElementById('downtime').value) || 0,
-                prodMinutes: parseFloat(document.getElementById('prodMinutes').value) || 0,
-                capacityShift: parseInt(document.getElementById('capacityShift').value) || 0,
-                utilizationPercent: parseFloat(document.getElementById('utilizationPercent').value) || 0,
-            };
+            document.getElementById('shiftItem').value = order.itemName || '';
+            document.getElementById('shiftColor').value = order.color || '';
+            document.getElementById('logoInfo').value = order.logoSymble || '';
+            document.getElementById('shiftCavity').value = shift.counterCycle ? Math.round(shift.totalCounter / shift.counterCycle) : order.cavity || 1;
+            document.getElementById('shiftCt').value = order.ct || 30;
+            document.getElementById('counterCycle').value = shift.counterCycle || 0;
+            document.getElementById('counterGood').value = shift.good || 0;
+            document.getElementById('rejectReason').value = shift.rejectReason || '';
 
-            if (shiftData.totalCounter === 0 && shiftData.good === 0) {
-                alert('Counter বা Good দিন!');
-                return;
-            }
+            document.getElementById('editModeBadge').style.display = 'inline-block';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+            document.querySelector('#shiftForm .btn-save-shift').innerHTML = '<i class="bi bi-pencil"></i> আপডেট করুন';
+            document.getElementById('shiftSubmitBtn').classList.add('btn-warning-custom');
+            document.getElementById('shiftSubmitBtn').classList.remove('btn-save-shift');
 
-            let shifts = getShifts();
-            if (editId) {
-                const idx = shifts.findIndex(s => s.id === editId);
-                if (idx !== -1) {
-                    shifts[idx] = shiftData;
-                    showToast('✏️ শিফট এন্ট্রি আপডেট করা হয়েছে!', 'success', 3000);
-                } else {
-                    alert('এন্ট্রি খুঁজে পাওয়া যায়নি!');
-                    return;
-                }
-                document.getElementById('editShiftId').value = '';
-                document.getElementById('editModeBadge').style.display = 'none';
-                document.getElementById('cancelEditBtn').style.display = 'none';
-                document.querySelector('#shiftForm .btn-save-shift').innerHTML = '<i class="bi bi-check-circle"></i> শিফট সেভ';
-                document.getElementById('shiftSubmitBtn').classList.remove('btn-warning-custom');
-                document.getElementById('shiftSubmitBtn').classList.add('btn-save-shift');
-            } else {
-                shifts.push(shiftData);
-                showToast(`✅ ${shiftData.shiftType} সেভ!`, 'success', 3000);
-            }
-            saveShifts(shifts);
+            calculateShift();
+            showSection('production');
+            showToast('✏️ এডিট মোড: শিফট এন্ট্রি আপডেট করুন', 'info', 3000);
+        }
 
+        function cancelEdit() {
+            document.getElementById('editShiftId').value = '';
+            document.getElementById('editModeBadge').style.display = 'none';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.querySelector('#shiftForm .btn-save-shift').innerHTML = '<i class="bi bi-check-circle"></i> শিফট সেভ';
+            document.getElementById('shiftSubmitBtn').classList.remove('btn-warning-custom');
+            document.getElementById('shiftSubmitBtn').classList.add('btn-save-shift');
+            document.getElementById('shiftForm').reset();
             document.getElementById('counterCycle').value = 0;
             document.getElementById('counterGood').value = 0;
             document.getElementById('rejectReason').value = '';
             calculateShift();
-
-            refreshAll();
-            const order = getOrderById(orderId);
-            if (order) {
-                showToast(`বাকি Due: ${getDueProduction(order).toLocaleString()}`, 'info', 3000);
-            }
-        });
+            showToast('এডিট মোড বাতিল করা হয়েছে।', 'info', 2000);
+        }
 
         // ============================================================
-        //  ADD ORDER
-        // ============================================================
-        document.getElementById('addOrderForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const order = {
-                id: genId(),
-                mcSl: document.getElementById('mcSl').value.trim(),
-                orderName: document.getElementById('orderName').value.trim(),
-                accCode: document.getElementById('accCode').value.trim(),
-                itemName: document.getElementById('itemName').value.trim(),
-                unitWt: parseFloat(document.getElementById('unitWt').value) || 0,
-                logoSymble: document.getElementById('logoSymble').value.trim(),
-                origin: document.getElementById('origin').value.trim(),
-                scmCode: document.getElementById('scmCode').value.trim(),
-                color: document.getElementById('color').value.trim(),
-                cavity: parseInt(document.getElementById('cavity').value) || 1,
-                ct: parseInt(document.getElementById('ct').value) || 0,
-                capDay: parseInt(document.getElementById('capDay').value) || 0,
-                capNight: parseInt(document.getElementById('capNight').value) || 0,
-                demand: parseInt(document.getElementById('demand').value) || 0,
-            };
-            if (!order.mcSl || !order.orderName || order.demand <= 0) {
-                alert('MC, অর্ডার নাম ও Demand দিন!');
-                return;
-            }
-            const orders = getOrders();
-            orders.push(order);
-            saveOrders(orders);
-            this.reset();
-            document.getElementById('capDay').value = '';
-            document.getElementById('capNight').value = '';
-            refreshAll();
-            showToast('✅ অর্ডার যোগ হয়েছে!', 'success', 3000);
-        });
-
-        // ============================================================
-        //  DELETE
+        //  DELETE FUNCTIONS
         // ============================================================
         function deleteOrder(id) {
             if (!confirm('এই অর্ডার ও সব শিফট ডেটা মুছবেন?')) return;
-            saveOrders(getOrders().filter(o => o.id !== id));
-            saveShifts(getShifts().filter(s => s.orderId !== id));
-            refreshAll();
-            showToast('🗑️ অর্ডার মুছে ফেলা হয়েছে।', 'info', 3000);
+            
+            const shiftsToDelete = getShiftsForOrder(id);
+            const promises = shiftsToDelete.map(s => deleteShiftFromFirebase(s.id));
+            
+            Promise.all(promises).then(() => {
+                return deleteOrderFromFirebase(id);
+            }).then(() => {
+                refreshAll();
+                showToast('🗑️ অর্ডার মুছে ফেলা হয়েছে।', 'info', 3000);
+            });
+        }
+
+        function deleteShift(shiftId) {
+            if (!confirm('এই শিফট এন্ট্রি মুছে ফেলবেন?')) return;
+            
+            deleteShiftFromFirebase(shiftId).then(() => {
+                refreshAll();
+                showToast('✅ শিফট এন্ট্রি মুছে ফেলা হয়েছে।', 'success', 3000);
+            });
         }
 
         function deleteAllOrders() {
             if (!confirm('সতর্কতা: সমস্ত অর্ডার ও শিফট ডেটা মুছে ফেলা হবে। আপনি কি নিশ্চিত?')) return;
-            saveOrders([]);
-            saveShifts([]);
-            refreshAll();
-            showToast('🗑️ সব অর্ডার মুছে ফেলা হয়েছে।', 'info', 3000);
+            
+            Promise.all([
+                deleteAllOrdersFromFirebase(),
+                deleteAllShiftsFromFirebase()
+            ]).then(() => {
+                refreshAll();
+                showToast('🗑️ সব অর্ডার মুছে ফেলা হয়েছে।', 'info', 3000);
+            });
         }
 
         // ============================================================
@@ -2041,14 +1904,18 @@
                 shifts: getShifts(),
                 exportedAt: new Date().toISOString()
             };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Production_Backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('✅ ডেটা ব্যাকআপ নেওয়া হয়েছে!', 'success', 3000);
+            
+            backupDataToFirebase(data).then(() => {
+                // Also download as JSON
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Production_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('✅ ডেটা ব্যাকআপ নেওয়া হয়েছে!', 'success', 3000);
+            });
         }
 
         function restoreData(event) {
@@ -2059,14 +1926,29 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     if (!data.orders || !data.shifts) {
-                        alert('❌ ভুল ফাইল ফরম্যাট! সঠিক JSON ফাইল নির্বাচন করুন।');
+                        alert('❌ ভুল ফাইল ফরম্যাট!');
                         return;
                     }
                     if (!confirm('বর্তমান ডেটা মুছে নতুন ডেটা রিস্টোর করতে চান?')) return;
-                    saveOrders(data.orders);
-                    saveShifts(data.shifts);
-                    refreshAll();
-                    showToast('✅ ডেটা সফলভাবে রিস্টোর করা হয়েছে!', 'success', 4000);
+                    
+                    // Clear existing data
+                    Promise.all([
+                        deleteAllOrdersFromFirebase(),
+                        deleteAllShiftsFromFirebase()
+                    ]).then(() => {
+                        // Save new data
+                        const promises = [];
+                        data.orders.forEach(order => {
+                            promises.push(saveOrderToFirebase(order));
+                        });
+                        data.shifts.forEach(shift => {
+                            promises.push(saveShiftToFirebase(shift));
+                        });
+                        return Promise.all(promises);
+                    }).then(() => {
+                        refreshAll();
+                        showToast('✅ ডেটা সফলভাবে রিস্টোর করা হয়েছে!', 'success', 4000);
+                    });
                 } catch (err) {
                     alert('❌ ফাইল পড়তে সমস্যা হয়েছে: ' + err.message);
                 }
@@ -2129,6 +2011,29 @@
             const ws = XLSX.utils.json_to_sheet(data);
             XLSX.utils.book_append_sheet(wb, ws, 'Production');
             XLSX.writeFile(wb, 'Production_Report.xlsx');
+        }
+
+        function exportLastDayExcel() {
+            const shifts = getShifts();
+            if (shifts.length === 0) { alert('কোনো শিফট ডেটা নেই!'); return; }
+            const sorted = [...shifts].sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return b.date.localeCompare(a.date); });
+            const data = sorted.map(shift => {
+                const order = getOrderById(shift.orderId);
+                const util = shift.totalCounter === 0 ? 0 : Math.round((shift.good / shift.totalCounter) * 100);
+                return {
+                    'তারিখ': shift.date || '', 'শিফট': shift.shiftType || '', 'MC SL': order ? order.mcSl : '',
+                    'JOB Order': order ? order.orderName : '', 'Item Name': order ? order.itemName : '',
+                    'Color': order ? order.color : '', 'Logo': shift.logoInfo || '', 'Capacity': shift.capacityShift || 0,
+                    'Counter (Cycle)': shift.counterCycle || 0, 'Total Counter': shift.totalCounter || 0,
+                    'Good': shift.good || 0, 'Util%': util + '%', 'Reject': shift.reject || 0,
+                    'কারণ': shift.rejectReason || '', 'Prod Time (min)': shift.prodMinutes ? shift.prodMinutes.toFixed(1) : 0,
+                    'DT (min)': shift.downtime || 0
+                };
+            });
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'LastDayProd');
+            XLSX.writeFile(wb, 'LastDay_Prod_Entry.xlsx');
         }
 
         // ============================================================
@@ -2195,13 +2100,14 @@
 
         function confirmImport() {
             if (importedData.length === 0) { alert('ডেটা নেই!'); return; }
-            const orders = getOrders();
             let added = 0;
+            const promises = [];
+            
             importedData.forEach(d => {
-                const exists = orders.some(o => o.mcSl === d.mcSl && o.orderName === d.orderName);
+                const exists = ordersCache.some(o => o.mcSl === d.mcSl && o.orderName === d.orderName);
                 if (!exists) {
                     const cap = Math.round((3600 / (d.ct || 1)) * (d.cavity || 1) * 12);
-                    orders.push({
+                    const order = {
                         id: genId(),
                         mcSl: d.mcSl,
                         orderName: d.orderName,
@@ -2217,34 +2123,161 @@
                         capDay: cap,
                         capNight: cap,
                         demand: d.demand,
-                    });
+                    };
+                    promises.push(saveOrderToFirebase(order));
                     added++;
                 }
             });
-            saveOrders(orders);
-            clearImport();
-            refreshAll();
-            showToast(`✅ ${added} টি অর্ডার ইমপোর্ট হয়েছে।`, 'success', 3000);
+            
+            Promise.all(promises).then(() => {
+                clearImport();
+                refreshAll();
+                showToast(`✅ ${added} টি অর্ডার ইমপোর্ট হয়েছে।`, 'success', 3000);
+            });
         }
 
         // ============================================================
-        //  REFRESH
+        //  ADD ORDER
+        // ============================================================
+        document.getElementById('addOrderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const order = {
+                id: genId(),
+                mcSl: document.getElementById('mcSl').value.trim(),
+                orderName: document.getElementById('orderName').value.trim(),
+                accCode: document.getElementById('accCode').value.trim(),
+                itemName: document.getElementById('itemName').value.trim(),
+                unitWt: parseFloat(document.getElementById('unitWt').value) || 0,
+                logoSymble: document.getElementById('logoSymble').value.trim(),
+                origin: document.getElementById('origin').value.trim(),
+                scmCode: document.getElementById('scmCode').value.trim(),
+                color: document.getElementById('color').value.trim(),
+                cavity: parseInt(document.getElementById('cavity').value) || 1,
+                ct: parseInt(document.getElementById('ct').value) || 0,
+                capDay: parseInt(document.getElementById('capDay').value) || 0,
+                capNight: parseInt(document.getElementById('capNight').value) || 0,
+                demand: parseInt(document.getElementById('demand').value) || 0,
+            };
+            if (!order.mcSl || !order.orderName || order.demand <= 0) {
+                alert('MC, অর্ডার নাম ও Demand দিন!');
+                return;
+            }
+            
+            saveOrderToFirebase(order).then(() => {
+                this.reset();
+                document.getElementById('capDay').value = '';
+                document.getElementById('capNight').value = '';
+                refreshAll();
+                showToast('✅ অর্ডার যোগ হয়েছে!', 'success', 3000);
+            });
+        });
+
+        // ============================================================
+        //  SAVE SHIFT
+        // ============================================================
+        document.getElementById('shiftForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const orderId = document.getElementById('shiftOrderSelect').value;
+            if (!orderId) { alert('অর্ডার সিলেক্ট করুন!'); return; }
+
+            const date = document.getElementById('shiftDate').value;
+            const shiftType = document.getElementById('shiftType').value;
+            const editId = document.getElementById('editShiftId').value;
+
+            if (!editId && isDuplicateShift(orderId, date, shiftType, null)) {
+                if (!confirm('⚠️ এই তারিখ ও শিফটে ইতিমধ্যে এন্ট্রি করা হয়েছে! তবুও কি সেভ করবেন?')) return;
+            }
+
+            const totalCounter = parseInt(document.getElementById('totalCounter').value) || 0;
+            const good = parseInt(document.getElementById('counterGood').value) || 0;
+            if (good > totalCounter) {
+                alert('⚠️ Good-এর মান Total Counter-এর চেয়ে বেশি!');
+                return;
+            }
+
+            const shiftData = {
+                id: editId || genId(),
+                orderId: orderId,
+                date: date,
+                shiftType: shiftType,
+                logoInfo: document.getElementById('logoInfo').value.trim(),
+                counterCycle: parseInt(document.getElementById('counterCycle').value) || 0,
+                totalCounter: totalCounter,
+                good: good,
+                reject: parseInt(document.getElementById('counterReject').value) || 0,
+                rejectReason: document.getElementById('rejectReason').value.trim(),
+                downtime: parseInt(document.getElementById('downtime').value) || 0,
+                prodMinutes: parseFloat(document.getElementById('prodMinutes').value) || 0,
+                capacityShift: parseInt(document.getElementById('capacityShift').value) || 0,
+                utilizationPercent: parseFloat(document.getElementById('utilizationPercent').value) || 0,
+            };
+
+            if (shiftData.totalCounter === 0 && shiftData.good === 0) {
+                alert('Counter বা Good দিন!');
+                return;
+            }
+
+            saveShiftToFirebase(shiftData).then(() => {
+                if (editId) {
+                    showToast('✏️ শিফট এন্ট্রি আপডেট করা হয়েছে!', 'success', 3000);
+                    document.getElementById('editShiftId').value = '';
+                    document.getElementById('editModeBadge').style.display = 'none';
+                    document.getElementById('cancelEditBtn').style.display = 'none';
+                    document.querySelector('#shiftForm .btn-save-shift').innerHTML = '<i class="bi bi-check-circle"></i> শিফট সেভ';
+                    document.getElementById('shiftSubmitBtn').classList.remove('btn-warning-custom');
+                    document.getElementById('shiftSubmitBtn').classList.add('btn-save-shift');
+                } else {
+                    showToast(`✅ ${shiftData.shiftType} সেভ!`, 'success', 3000);
+                }
+
+                document.getElementById('counterCycle').value = 0;
+                document.getElementById('counterGood').value = 0;
+                document.getElementById('rejectReason').value = '';
+                calculateShift();
+
+                refreshAll();
+                const order = getOrderById(orderId);
+                if (order) {
+                    showToast(`বাকি Due: ${getDueProduction(order).toLocaleString()}`, 'info', 3000);
+                }
+            });
+        });
+
+        // ============================================================
+        //  CHECK AND NOTIFY
+        // ============================================================
+        function checkAndNotify() {
+            const orders = getOrders();
+            orders.forEach(order => {
+                const due = getDueProduction(order);
+                const isCompleted = due <= 0;
+                const isNear = isNearingCompletion(order) && !isCompleted;
+                const orderKey = order.id;
+
+                if (isCompleted && !notifiedOrders.has(orderKey + '_completed')) {
+                    notifiedOrders.add(orderKey + '_completed');
+                    showToast(`✅ ${order.mcSl} - ${order.orderName} অর্ডার সম্পন্ন হয়েছে!`, 'success', 6000);
+                } else if (isNear && !notifiedOrders.has(orderKey + '_near')) {
+                    notifiedOrders.add(orderKey + '_near');
+                    showToast(`⚠️ ${order.mcSl} - ${order.orderName} অর্ডার শেষের দিকে! নতুন অর্ডার অ্যাসাইন করুন।`, 'warning', 6000);
+                }
+            });
+        }
+
+        // ============================================================
+        //  REFRESH ALL
         // ============================================================
         function refreshAll() {
-            populateFilters();
-            renderExcelTable();
-            renderMcStatus();
-            renderLastDay();
-            if (!document.getElementById('shiftDate').value) {
-                document.getElementById('shiftDate').value = new Date().toISOString().split('T')[0];
-            }
-            document.getElementById('section-dashboard').style.display = 'block';
-            document.getElementById('section-injection').style.display = 'none';
-            document.getElementById('section-production').style.display = 'none';
-            document.getElementById('section-mcstatus').style.display = 'none';
-            document.getElementById('section-lastday').style.display = 'none';
-            document.querySelector('.sidebar-menu .menu-item.active')?.classList.remove('active');
-            document.querySelector('.sidebar-menu .menu-item:first-child')?.classList.add('active');
+            Promise.all([fetchOrders(), fetchShifts()]).then(() => {
+                populateFilters();
+                renderExcelTable();
+                renderMcStatus();
+                renderLastDay();
+                if (!document.getElementById('shiftDate').value) {
+                    document.getElementById('shiftDate').value = new Date().toISOString().split('T')[0];
+                }
+                checkAndNotify();
+            });
         }
 
         // ============================================================
@@ -2253,12 +2286,18 @@
         document.addEventListener('DOMContentLoaded', function() {
             refreshAll();
             calcCap();
-            setTimeout(checkAndNotify, 2000);
-        });
-
-        document.getElementById('mcSlSelect').addEventListener('change', updateOrderDropdown);
-        ['shiftCavity','shiftCt','counterCycle','counterGood'].forEach(id => {
-            document.getElementById(id).addEventListener('input', calculateShift);
+            
+            // Event listeners
+            document.getElementById('mcSlSelect').addEventListener('change', updateOrderDropdown);
+            ['shiftCavity','shiftCt','counterCycle','counterGood'].forEach(id => {
+                document.getElementById(id).addEventListener('input', calculateShift);
+            });
+            
+            // Check for updates every 30 seconds
+            setInterval(refreshAll, 30000);
+            
+            // Show dashboard by default
+            document.getElementById('section-dashboard').style.display = 'block';
         });
     </script>
 </body>
