@@ -14,7 +14,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <style>
-        /* আপনার সমস্ত স্টাইল এখানে রাখুন (আমি সংক্ষিপ্ত করছি) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -957,35 +956,35 @@
                             </div>
                             <div class="field-group">
                                 <label class="form-label">১৩. Good</label>
-                                <input type="number" class="form-control" id="counterGood" value="0" oninput="validateAndCalc()">
+                                <input type="number" class="form-control" id="counterGood" value="0" oninput="calculateShift()">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="field-group">
-                                <label class="form-label">১৪. Prod Utilization %</label>
-                                <input type="number" step="0.01" class="form-control" id="utilizationPercent" readonly>
+                                <label class="form-label">১৪. Reject QTY</label>
+                                <input type="number" class="form-control" id="counterReject" value="0" oninput="calculateShift()">
                             </div>
                             <div class="field-group">
-                                <label class="form-label">১৫. Reject QTY</label>
-                                <input type="number" class="form-control" id="counterReject" readonly>
-                            </div>
-                            <div class="field-group">
-                                <label class="form-label">১৬. কম উৎপাদনের কারণ</label>
+                                <label class="form-label">১৫. কম উৎপাদনের কারণ</label>
                                 <input type="text" class="form-control" id="rejectReason" placeholder="Power trip, Mold issue">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="field-group">
-                                <label class="form-label">১৭. Prod Time (Minutes)</label>
-                                <input type="number" step="0.1" class="form-control" id="prodMinutes" readonly>
-                            </div>
-                            <div class="field-group">
-                                <label class="form-label">১৮. DT (min)</label>
-                                <input type="number" class="form-control" id="downtime" readonly>
                             </div>
                             <div class="field-group d-flex align-items-end gap-2">
                                 <button type="submit" class="btn-save-shift" id="shiftSubmitBtn"><i class="bi bi-check-circle"></i> শিফট সেভ</button>
                                 <button type="button" class="btn btn-secondary" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()"><i class="bi bi-x-circle"></i> বাতিল</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">Prod Utilization %</label>
+                                <input type="number" step="0.01" class="form-control" id="utilizationPercent" readonly>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">Prod Time (Minutes)</label>
+                                <input type="number" step="0.1" class="form-control" id="prodMinutes" readonly>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">DT (min)</label>
+                                <input type="number" class="form-control" id="downtime" readonly>
                             </div>
                         </div>
                     </form>
@@ -1213,7 +1212,7 @@
         }
 
         // ============================================================
-        //  HELPER FUNCTIONS (Same as before, but using cache)
+        //  HELPER FUNCTIONS
         // ============================================================
         function getOrders() { return ordersCache; }
         function getShifts() { return shiftsCache; }
@@ -1747,7 +1746,7 @@
         }
 
         // ============================================================
-        //  CALCULATIONS
+        //  CALCULATIONS (UPDATED - Good ↔ Reject Auto)
         // ============================================================
         function calcCap() {
             const cav = parseInt(document.getElementById('cavity').value) || 1;
@@ -1761,35 +1760,62 @@
             const cav = parseInt(document.getElementById('shiftCavity').value) || 1;
             const ct = parseFloat(document.getElementById('shiftCt').value) || 1;
             const counterCycle = parseInt(document.getElementById('counterCycle').value) || 0;
-            const good = parseInt(document.getElementById('counterGood').value) || 0;
-            const capacityShift = (3600 / ct) * cav * 12;
-            document.getElementById('capacityShift').value = Math.round(capacityShift);
             const totalCounter = counterCycle * cav;
             document.getElementById('totalCounter').value = totalCounter;
-            const reject = Math.max(0, totalCounter - good);
-            document.getElementById('counterReject').value = reject;
+
+            const good = parseInt(document.getElementById('counterGood').value) || 0;
+            const reject = parseInt(document.getElementById('counterReject').value) || 0;
+
+            // Auto calculate Good ↔ Reject
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.id === 'counterReject') {
+                // User entered Reject → calculate Good
+                const newGood = Math.max(0, totalCounter - reject);
+                document.getElementById('counterGood').value = newGood;
+            } else if (activeElement && activeElement.id === 'counterGood') {
+                // User entered Good → calculate Reject
+                const newReject = Math.max(0, totalCounter - good);
+                document.getElementById('counterReject').value = newReject;
+            } else {
+                // Default: calculate Reject from Good
+                const newReject = Math.max(0, totalCounter - good);
+                document.getElementById('counterReject').value = newReject;
+            }
+
+            // Recalculate final values
+            const finalGood = parseInt(document.getElementById('counterGood').value) || 0;
+            const finalReject = parseInt(document.getElementById('counterReject').value) || 0;
+
+            // Capacity
+            const capacityShift = (3600 / ct) * cav * 12;
+            document.getElementById('capacityShift').value = Math.round(capacityShift);
+
+            // Utilization
             let utilPercent = 0;
-            if (capacityShift > 0 && good > 0) utilPercent = (good / capacityShift) * 100;
+            if (capacityShift > 0 && finalGood > 0) {
+                utilPercent = (finalGood / capacityShift) * 100;
+            }
             document.getElementById('utilizationPercent').value = utilPercent.toFixed(2);
+
+            // Prod Time
             const perHour = (3600 / ct) * cav;
             let prodMinutes = 0;
-            if (perHour > 0 && totalCounter > 0) prodMinutes = (totalCounter / perHour) * 60;
+            if (perHour > 0 && totalCounter > 0) {
+                prodMinutes = (totalCounter / perHour) * 60;
+            }
             document.getElementById('prodMinutes').value = prodMinutes.toFixed(1);
+
+            // DT
             const prodHours = prodMinutes / 60;
             let dt = 0;
             if (prodHours < 12) dt = (12 - prodHours) * 60;
             document.getElementById('downtime').value = Math.round(dt);
-            validateAndCalc();
-        }
 
-        function validateAndCalc() {
-            calculateShift();
-            const totalCounter = parseInt(document.getElementById('totalCounter').value) || 0;
-            const good = parseInt(document.getElementById('counterGood').value) || 0;
+            // Validation
             const msgDiv = document.getElementById('validationMsg');
-            if (good > totalCounter) {
+            if (finalGood + finalReject !== totalCounter) {
                 msgDiv.style.display = 'block';
-                msgDiv.innerHTML = '⚠️ সতর্কতা: Good-এর মান Total Counter-এর চেয়ে বেশি!';
+                msgDiv.innerHTML = `⚠️ Good (${finalGood}) + Reject (${finalReject}) = ${finalGood + finalReject} | Total Counter = ${totalCounter}`;
                 document.querySelector('#shiftForm .btn-save-shift').disabled = true;
             } else {
                 msgDiv.style.display = 'none';
@@ -1829,6 +1855,7 @@
             document.getElementById('shiftCt').value = order.ct || 30;
             document.getElementById('counterCycle').value = shift.counterCycle || 0;
             document.getElementById('counterGood').value = shift.good || 0;
+            document.getElementById('counterReject').value = shift.reject || 0;
             document.getElementById('rejectReason').value = shift.rejectReason || '';
 
             document.getElementById('editModeBadge').style.display = 'inline-block';
@@ -1852,6 +1879,7 @@
             document.getElementById('shiftForm').reset();
             document.getElementById('counterCycle').value = 0;
             document.getElementById('counterGood').value = 0;
+            document.getElementById('counterReject').value = 0;
             document.getElementById('rejectReason').value = '';
             calculateShift();
             showToast('এডিট মোড বাতিল করা হয়েছে।', 'info', 2000);
@@ -1906,7 +1934,6 @@
             };
             
             backupDataToFirebase(data).then(() => {
-                // Also download as JSON
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1931,12 +1958,10 @@
                     }
                     if (!confirm('বর্তমান ডেটা মুছে নতুন ডেটা রিস্টোর করতে চান?')) return;
                     
-                    // Clear existing data
                     Promise.all([
                         deleteAllOrdersFromFirebase(),
                         deleteAllShiftsFromFirebase()
                     ]).then(() => {
-                        // Save new data
                         const promises = [];
                         data.orders.forEach(order => {
                             promises.push(saveOrderToFirebase(order));
@@ -2190,8 +2215,11 @@
 
             const totalCounter = parseInt(document.getElementById('totalCounter').value) || 0;
             const good = parseInt(document.getElementById('counterGood').value) || 0;
-            if (good > totalCounter) {
-                alert('⚠️ Good-এর মান Total Counter-এর চেয়ে বেশি!');
+            const reject = parseInt(document.getElementById('counterReject').value) || 0;
+            
+            // Validate Good + Reject = Total Counter
+            if (good + reject !== totalCounter) {
+                alert('⚠️ Good + Reject অবশ্যই Total Counter এর সমান হতে হবে!');
                 return;
             }
 
@@ -2204,7 +2232,7 @@
                 counterCycle: parseInt(document.getElementById('counterCycle').value) || 0,
                 totalCounter: totalCounter,
                 good: good,
-                reject: parseInt(document.getElementById('counterReject').value) || 0,
+                reject: reject,
                 rejectReason: document.getElementById('rejectReason').value.trim(),
                 downtime: parseInt(document.getElementById('downtime').value) || 0,
                 prodMinutes: parseFloat(document.getElementById('prodMinutes').value) || 0,
@@ -2232,6 +2260,7 @@
 
                 document.getElementById('counterCycle').value = 0;
                 document.getElementById('counterGood').value = 0;
+                document.getElementById('counterReject').value = 0;
                 document.getElementById('rejectReason').value = '';
                 calculateShift();
 
@@ -2287,16 +2316,16 @@
             refreshAll();
             calcCap();
             
-            // Event listeners
             document.getElementById('mcSlSelect').addEventListener('change', updateOrderDropdown);
-            ['shiftCavity','shiftCt','counterCycle','counterGood'].forEach(id => {
+            ['shiftCavity','shiftCt','counterCycle'].forEach(id => {
                 document.getElementById(id).addEventListener('input', calculateShift);
             });
             
-            // Check for updates every 30 seconds
-            setInterval(refreshAll, 30000);
+            // NEW: Separate listeners for Good and Reject
+            document.getElementById('counterGood').addEventListener('input', calculateShift);
+            document.getElementById('counterReject').addEventListener('input', calculateShift);
             
-            // Show dashboard by default
+            setInterval(refreshAll, 30000);
             document.getElementById('section-dashboard').style.display = 'block';
         });
     </script>
