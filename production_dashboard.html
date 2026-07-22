@@ -1164,10 +1164,12 @@
         //  FIREBASE DATA OPERATIONS
         // ============================================================
         function fetchOrders() {
+            console.log("🔄 Fetching orders from Firebase...");
             return new Promise((resolve, reject) => {
                 database.ref('orders').once('value', snapshot => {
                     const data = snapshot.val();
                     ordersCache = data ? Object.values(data) : [];
+                    console.log("📋 Total orders in Firebase:", ordersCache.length);
                     resolve(ordersCache);
                 }, reject);
             });
@@ -1184,7 +1186,15 @@
         }
 
         function saveOrderToFirebase(order) {
-            return database.ref('orders/' + order.id).set(order);
+            console.log("💾 Saving to Firebase:", order.id, order.orderName);
+            return database.ref('orders/' + order.id).set(order)
+                .then(() => {
+                    console.log("✅ Saved successfully:", order.orderName);
+                })
+                .catch((err) => {
+                    console.error("❌ Save failed:", err);
+                    throw err;
+                });
         }
 
         function saveShiftToFirebase(shift) {
@@ -2191,17 +2201,29 @@
             fileInput.value = '';
         }
 
+        // ============================================================
+        //  CONFIRM IMPORT (FIXED)
+        // ============================================================
         function confirmImport() {
             if (importedData.length === 0) {
                 alert('⚠️ ডেটা নেই! আগে Excel ফাইল সিলেক্ট করুন।');
                 return;
             }
             
+            console.log("📦 Total data to import:", importedData.length);
+            console.log("📦 Sample data:", importedData[0]);
+            
             let added = 0;
+            let skipped = 0;
             const promises = [];
             
-            importedData.forEach(d => {
-                const exists = ordersCache.some(o => o.mcSl === d.mcSl && o.orderName === d.orderName);
+            importedData.forEach((d, index) => {
+                // Check if order already exists (case insensitive)
+                const exists = ordersCache.some(o => 
+                    o.mcSl.toLowerCase() === d.mcSl.toLowerCase() && 
+                    o.orderName.toLowerCase() === d.orderName.toLowerCase()
+                );
+                
                 if (!exists) {
                     const cap = Math.round((3600 / (d.ct || 1)) * (d.cavity || 1) * 12);
                     const order = {
@@ -2221,25 +2243,39 @@
                         capNight: cap,
                         demand: d.demand,
                     };
+                    
+                    console.log(`📝 Saving order #${index + 1}:`, order.orderName);
                     promises.push(saveOrderToFirebase(order));
                     added++;
+                } else {
+                    skipped++;
+                    console.log(`⏭️ Skipped (already exists): ${d.mcSl} - ${d.orderName}`);
                 }
             });
             
             if (added === 0) {
-                alert('✅ সব অর্ডার ইতিমধ্যে আছে!');
+                alert(`✅ সব ${skipped} টি অর্ডার ইতিমধ্যে আছে! নতুন কিছু যোগ হয়নি।`);
                 clearImport();
                 return;
             }
             
-            Promise.all(promises).then(() => {
-                clearImport();
-                refreshAll();
-                showToast(`✅ ${added} টি অর্ডার ইমপোর্ট হয়েছে।`, 'success', 3000);
-            }).catch(err => {
-                alert('❌ ইমপোর্ট করতে সমস্যা: ' + err.message);
-                console.error(err);
-            });
+            showToast(`⏳ ${added} টি অর্ডার ইমপোর্ট হচ্ছে...`, 'info', 4000);
+            
+            // Wait for all orders to be saved
+            Promise.all(promises)
+                .then(() => {
+                    clearImport();
+                    // Force refresh data from Firebase
+                    return refreshAll();
+                })
+                .then(() => {
+                    showToast(`✅ ${added} টি অর্ডার সফলভাবে ইমপোর্ট হয়েছে! (${skipped} টি স্কিপ করা হয়েছে)`, 'success', 5000);
+                    console.log("✅ All orders imported successfully!");
+                })
+                .catch(err => {
+                    alert('❌ ইমপোর্ট করতে সমস্যা: ' + err.message);
+                    console.error('❌ Error:', err);
+                });
         }
 
         // ============================================================
@@ -2377,7 +2413,7 @@
         //  REFRESH ALL
         // ============================================================
         function refreshAll() {
-            Promise.all([fetchOrders(), fetchShifts()]).then(() => {
+            return Promise.all([fetchOrders(), fetchShifts()]).then(() => {
                 populateFilters();
                 renderExcelTable();
                 renderMcStatus();
