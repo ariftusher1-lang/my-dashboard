@@ -883,7 +883,7 @@
                 </div>
             </div>
 
-            <!-- PRODUCTION ENTRY -->
+            <!-- PRODUCTION ENTRY (UPDATED) -->
             <div id="section-production" style="display:none;">
                 <div class="form-card">
                     <div class="form-title d-flex justify-content-between align-items-center">
@@ -902,8 +902,21 @@
                             <div class="field-group">
                                 <label class="form-label">২. শিফট *</label>
                                 <select class="form-select" id="shiftType">
-                                    <option value="A-Shift">Day</option>
-                                    <option value="B-Shift">Night</option>
+                                    <option value="A-Shift">Day (সকাল ৯টা - রাত ৯টা)</option>
+                                    <option value="B-Shift">Night (রাত ৯টা - সকাল ৯টা)</option>
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">IC Name *</label>
+                                <select class="form-select" id="icName" required>
+                                    <option value="">-- সিলেক্ট করুন --</option>
+                                    <option value="Babul">Babul</option>
+                                    <option value="Rony">Rony</option>
+                                    <option value="Roton">Roton</option>
+                                    <option value="Suruj">Suruj</option>
+                                    <option value="Sakib">Sakib</option>
+                                    <option value="Shakil">Shakil</option>
+                                    <option value="Al amin">Al amin</option>
                                 </select>
                             </div>
                         </div>
@@ -1198,7 +1211,15 @@
         }
 
         function saveShiftToFirebase(shift) {
-            return database.ref('shifts/' + shift.id).set(shift);
+            console.log("💾 Saving shift:", shift.id, shift.shiftType, shift.icName);
+            return database.ref('shifts/' + shift.id).set(shift)
+                .then(() => {
+                    console.log("✅ Shift saved successfully");
+                })
+                .catch((err) => {
+                    console.error("❌ Shift save failed:", err);
+                    throw err;
+                });
         }
 
         function deleteOrderFromFirebase(orderId) {
@@ -1242,17 +1263,18 @@
         function getShiftAggregate(orderId, shiftType) {
             const shifts = getShiftsForOrder(orderId).filter(s => s.shiftType === shiftType);
             let totalCounter = 0, totalGood = 0, totalReject = 0, totalDT = 0;
-            let reasons = [], lastDate = null;
+            let reasons = [], lastDate = null, icNames = [];
             shifts.forEach(s => {
                 totalCounter += parseInt(s.totalCounter) || 0;
                 totalGood += parseInt(s.good) || 0;
                 totalReject += parseInt(s.reject) || 0;
                 totalDT += parseInt(s.downtime) || 0;
                 if (s.rejectReason) reasons.push(s.rejectReason);
+                if (s.icName) icNames.push(s.icName);
                 if (s.date && (!lastDate || s.date > lastDate)) lastDate = s.date;
             });
             const util = totalCounter === 0 ? 0 : Math.round((totalGood / totalCounter) * 100);
-            return { totalCounter, totalGood, totalReject, totalDT, util, reasons: [...new Set(reasons)].join(', '), lastDate };
+            return { totalCounter, totalGood, totalReject, totalDT, util, reasons: [...new Set(reasons)].join(', '), lastDate, icNames: [...new Set(icNames)].join(', ') };
         }
 
         function getDueProduction(order) {
@@ -1332,6 +1354,27 @@
         }
 
         // ============================================================
+        //  AUTO SET DATE & SHIFT
+        // ============================================================
+        function setDefaultDateAndShift() {
+            const now = new Date();
+            const hours = now.getHours();
+            
+            // Set current date
+            const dateStr = now.toISOString().split('T')[0];
+            document.getElementById('shiftDate').value = dateStr;
+            
+            // Auto set shift based on time
+            // 9:00 AM to 9:00 PM = Day Shift (A-Shift)
+            // 9:01 PM to 8:59 AM = Night Shift (B-Shift)
+            if (hours >= 9 && hours < 21) {
+                document.getElementById('shiftType').value = 'A-Shift';
+            } else {
+                document.getElementById('shiftType').value = 'B-Shift';
+            }
+        }
+
+        // ============================================================
         //  TOAST NOTIFICATION
         // ============================================================
         function showToast(message, type = 'success', duration = 5000) {
@@ -1363,21 +1406,21 @@
             document.getElementById('liveClock').textContent = timeStr;
 
             let shiftType, shiftEndHour;
-            if (hours >= 6 && hours < 18) {
+            if (hours >= 9 && hours < 21) {
                 shiftType = 'Day';
-                shiftEndHour = 18;
+                shiftEndHour = 21;
             } else {
                 shiftType = 'Night';
-                shiftEndHour = 6;
+                shiftEndHour = 9;
             }
             document.getElementById('shiftLabel').textContent = shiftType;
 
             let endTime = new Date(now);
-            if (hours >= 6 && hours < 18) {
-                endTime.setHours(18, 0, 0, 0);
+            if (hours >= 9 && hours < 21) {
+                endTime.setHours(21, 0, 0, 0);
             } else {
-                endTime.setHours(6, 0, 0, 0);
-                if (hours >= 18) endTime.setDate(endTime.getDate() + 1);
+                endTime.setHours(9, 0, 0, 0);
+                if (hours >= 21) endTime.setDate(endTime.getDate() + 1);
             }
             const diffMs = endTime - now;
             if (diffMs <= 0) {
@@ -1418,6 +1461,7 @@
             } else if (section === 'production') {
                 document.getElementById('section-production').style.display = 'block';
                 title.innerHTML = 'প্রোডাকশন এন্ট্রি <small>শিফট ইনপুট</small>';
+                setDefaultDateAndShift();
             } else if (section === 'mcstatus') {
                 document.getElementById('section-mcstatus').style.display = 'block';
                 title.innerHTML = 'এমসি স্ট্যাটাস <small>অর্ডার মনিটরিং</small>';
@@ -1647,10 +1691,10 @@
             if (shifts.length === 0) {
                 content = `<p class="text-muted text-center py-3">এই অর্ডারের জন্য কোনো শিফট এন্ট্রি নেই।</p>`;
             } else {
-                content = `<div class="table-responsive"><table class="table table-bordered table-striped shift-detail-table"><thead><tr><th>তারিখ</th><th>শিফট</th><th>Counter</th><th>Total Counter</th><th>Good</th><th>Util%</th><th>Reject</th><th>কারণ</th><th>Prod Time</th><th>DT</th></tr></thead><tbody>`;
+                content = `<div class="table-responsive"><table class="table table-bordered table-striped shift-detail-table"><thead><tr><th>তারিখ</th><th>শিফট</th><th>IC Name</th><th>Counter</th><th>Total Counter</th><th>Good</th><th>Util%</th><th>Reject</th><th>কারণ</th><th>Prod Time</th><th>DT</th></tr></thead><tbody>`;
                 shifts.forEach(s => {
                     const util = s.totalCounter === 0 ? 0 : Math.round((s.good / s.totalCounter) * 100);
-                    content += `<tr><td>${s.date || '-'}</td><td><span class="badge bg-${s.shiftType === 'A-Shift' ? 'primary' : 'secondary'}">${s.shiftType}</span></td><td>${s.counterCycle || 0}</td><td>${s.totalCounter || 0}</td><td><strong>${s.good || 0}</strong></td><td>${util}%</td><td>${s.reject || 0}</td><td style="font-size:11px;">${s.rejectReason || '-'}</td><td>${s.prodMinutes ? s.prodMinutes.toFixed(1) : 0}</td><td>${s.downtime || 0}</td></tr>`;
+                    content += `<tr><td>${s.date || '-'}</td><td><span class="badge bg-${s.shiftType === 'A-Shift' ? 'primary' : 'secondary'}">${s.shiftType}</span></td><td>${s.icName || '-'}</td><td>${s.counterCycle || 0}</td><td>${s.totalCounter || 0}</td><td><strong>${s.good || 0}</strong></td><td>${util}%</td><td>${s.reject || 0}</td><td style="font-size:11px;">${s.rejectReason || '-'}</td><td>${s.prodMinutes ? s.prodMinutes.toFixed(1) : 0}</td><td>${s.downtime || 0}</td></tr>`;
                 });
                 content += `</tbody></table></div>`;
                 const totalGood = shifts.reduce((sum, s) => sum + (s.good || 0), 0);
@@ -1845,6 +1889,7 @@
             document.getElementById('editShiftId').value = shiftId;
             document.getElementById('shiftDate').value = shift.date || '';
             document.getElementById('shiftType').value = shift.shiftType || 'A-Shift';
+            document.getElementById('icName').value = shift.icName || '';
 
             const mcSelect = document.getElementById('mcSlSelect');
             const uniqueMCs = [...new Set(getOrders().map(o => o.mcSl))];
@@ -1891,6 +1936,7 @@
             document.getElementById('counterGood').value = 0;
             document.getElementById('counterReject').value = 0;
             document.getElementById('rejectReason').value = '';
+            setDefaultDateAndShift();
             calculateShift();
             showToast('এডিট মোড বাতিল করা হয়েছে।', 'info', 2000);
         }
@@ -2056,9 +2102,10 @@
                 const order = getOrderById(shift.orderId);
                 const util = shift.totalCounter === 0 ? 0 : Math.round((shift.good / shift.totalCounter) * 100);
                 return {
-                    'তারিখ': shift.date || '', 'শিফট': shift.shiftType || '', 'MC SL': order ? order.mcSl : '',
-                    'JOB Order': order ? order.orderName : '', 'Item Name': order ? order.itemName : '',
-                    'Color': order ? order.color : '', 'Logo': shift.logoInfo || '', 'Capacity': shift.capacityShift || 0,
+                    'তারিখ': shift.date || '', 'শিফট': shift.shiftType || '', 'IC Name': shift.icName || '',
+                    'MC SL': order ? order.mcSl : '', 'JOB Order': order ? order.orderName : '',
+                    'Item Name': order ? order.itemName : '', 'Color': order ? order.color : '',
+                    'Logo': shift.logoInfo || '', 'Capacity': shift.capacityShift || 0,
                     'Counter (Cycle)': shift.counterCycle || 0, 'Total Counter': shift.totalCounter || 0,
                     'Good': shift.good || 0, 'Util%': util + '%', 'Reject': shift.reject || 0,
                     'কারণ': shift.rejectReason || '', 'Prod Time (min)': shift.prodMinutes ? shift.prodMinutes.toFixed(1) : 0,
@@ -2201,9 +2248,6 @@
             fileInput.value = '';
         }
 
-        // ============================================================
-        //  CONFIRM IMPORT (FIXED)
-        // ============================================================
         function confirmImport() {
             if (importedData.length === 0) {
                 alert('⚠️ ডেটা নেই! আগে Excel ফাইল সিলেক্ট করুন।');
@@ -2218,7 +2262,6 @@
             const promises = [];
             
             importedData.forEach((d, index) => {
-                // Check if order already exists (case insensitive)
                 const exists = ordersCache.some(o => 
                     o.mcSl.toLowerCase() === d.mcSl.toLowerCase() && 
                     o.orderName.toLowerCase() === d.orderName.toLowerCase()
@@ -2261,11 +2304,9 @@
             
             showToast(`⏳ ${added} টি অর্ডার ইমপোর্ট হচ্ছে...`, 'info', 4000);
             
-            // Wait for all orders to be saved
             Promise.all(promises)
                 .then(() => {
                     clearImport();
-                    // Force refresh data from Firebase
                     return refreshAll();
                 })
                 .then(() => {
@@ -2315,12 +2356,15 @@
         });
 
         // ============================================================
-        //  SAVE SHIFT
+        //  SAVE SHIFT (UPDATED - with IC Name)
         // ============================================================
         document.getElementById('shiftForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const orderId = document.getElementById('shiftOrderSelect').value;
             if (!orderId) { alert('অর্ডার সিলেক্ট করুন!'); return; }
+
+            const icName = document.getElementById('icName').value;
+            if (!icName) { alert('IC Name সিলেক্ট করুন!'); return; }
 
             const date = document.getElementById('shiftDate').value;
             const shiftType = document.getElementById('shiftType').value;
@@ -2344,6 +2388,7 @@
                 orderId: orderId,
                 date: date,
                 shiftType: shiftType,
+                icName: icName,
                 logoInfo: document.getElementById('logoInfo').value.trim(),
                 counterCycle: parseInt(document.getElementById('counterCycle').value) || 0,
                 totalCounter: totalCounter,
@@ -2371,14 +2416,16 @@
                     document.getElementById('shiftSubmitBtn').classList.remove('btn-warning-custom');
                     document.getElementById('shiftSubmitBtn').classList.add('btn-save-shift');
                 } else {
-                    showToast(`✅ ${shiftData.shiftType} সেভ!`, 'success', 3000);
+                    showToast(`✅ ${shiftData.shiftType} সেভ! (IC: ${shiftData.icName})`, 'success', 3000);
                 }
 
                 document.getElementById('counterCycle').value = 0;
                 document.getElementById('counterGood').value = 0;
                 document.getElementById('counterReject').value = 0;
                 document.getElementById('rejectReason').value = '';
+                document.getElementById('icName').value = '';
                 calculateShift();
+                setDefaultDateAndShift();
 
                 refreshAll();
                 const order = getOrderById(orderId);
@@ -2419,7 +2466,7 @@
                 renderMcStatus();
                 renderLastDay();
                 if (!document.getElementById('shiftDate').value) {
-                    document.getElementById('shiftDate').value = new Date().toISOString().split('T')[0];
+                    setDefaultDateAndShift();
                 }
                 checkAndNotify();
             });
@@ -2431,6 +2478,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             refreshAll();
             calcCap();
+            setDefaultDateAndShift();
             
             document.getElementById('mcSlSelect').addEventListener('change', updateOrderDropdown);
             ['shiftCavity','shiftCt','counterCycle'].forEach(id => {
