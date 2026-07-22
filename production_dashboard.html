@@ -902,8 +902,8 @@
                             <div class="field-group">
                                 <label class="form-label">২. শিফট *</label>
                                 <select class="form-select" id="shiftType">
-                                    <option value="A-Shift">Day</option>
-                                    <option value="B-Shift">Night</option>
+                                    <option value="A-Shift">Day (সকাল ৯টা - রাত ৯টা)</option>
+                                    <option value="B-Shift">Night (রাত ৯টা - সকাল ৯টা)</option>
                                 </select>
                             </div>
                             <div class="field-group">
@@ -1005,7 +1005,7 @@
                 </div>
             </div>
 
-            <!-- MC STATUS -->
+            <!-- MC STATUS (UPDATED - REMOVED REMARK) -->
             <div id="section-mcstatus" style="display:none;">
                 <div class="table-wrapper">
                     <div class="table-header">
@@ -1035,14 +1035,20 @@
                             <table class="table table-bordered table-hover">
                                 <thead>
                                     <tr>
-                                        <th>MC SL</th><th>JOB Order</th><th>Item Name</th>
-                                        <th>Demand</th><th>As of Prod</th>
-                                        <th>Due Prod</th><th>Last Day Shift</th>
-                                        <th>Last Night Shift</th><th>Status</th><th>Remark</th>
+                                        <th>MC SL</th>
+                                        <th>JOB Order</th>
+                                        <th>Item Name</th>
+                                        <th>Demand</th>
+                                        <th>As of Prod</th>
+                                        <th>Due Prod</th>
+                                        <th>Last Day Shift</th>
+                                        <th>Last Night Shift</th>
+                                        <th>Status</th>
+                                        <!-- REMARK COLUMN REMOVED -->
                                     </tr>
                                 </thead>
                                 <tbody id="mcStatusBody">
-                                    <tr><td colspan="10" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
+                                    <tr><td colspan="9" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1580,6 +1586,9 @@
             tbody.innerHTML = html;
         }
 
+        // ============================================================
+        //  MC STATUS RENDER (UPDATED - REMOVED REMARK)
+        // ============================================================
         function renderMcStatus() {
             const orders = getOrders();
             const mcFilter = document.getElementById('statusMcFilter').value;
@@ -1589,7 +1598,7 @@
             const tbody = document.getElementById('mcStatusBody');
             let totalCompleted = 0, totalPending = 0, totalGoodSum = 0;
             if (filteredOrders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">কোনো অর্ডার নেই।</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">কোনো অর্ডার নেই।</td></tr>`;
                 document.getElementById('statusTotalOrders').innerText = 0;
                 document.getElementById('statusCompleted').innerText = 0;
                 document.getElementById('statusPending').innerText = 0;
@@ -1603,7 +1612,6 @@
                 const isCompleted = due <= 0;
                 const lastDayGood = getLastDayShiftProd(order.id);
                 const lastNightGood = getLastNightShiftProd(order.id);
-                const remark = getRemark(order);
                 const isNear = isNearingCompletion(order) && !isCompleted;
                 if (isCompleted) totalCompleted++; else totalPending++;
                 totalGoodSum += totalGood;
@@ -1620,7 +1628,6 @@
                             <td>${lastDayGood.toLocaleString()}</td>
                             <td>${lastNightGood.toLocaleString()}</td>
                             <td><span class="status-badge ${isCompleted ? 'status-completed' : 'status-pending'}">${isCompleted ? '✅ সম্পন্ন' : '⏳ চলমান'}</span></td>
-                            <td>${remark ? `<span class="remark-badge">${remark}</span>` : ''}</td>
                         </tr>`;
             });
             tbody.innerHTML = html;
