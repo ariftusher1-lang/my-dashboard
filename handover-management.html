@@ -388,6 +388,32 @@
             margin: 12px 0 8px;
         }
         .table-toolbar .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .table-toolbar .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .table-toolbar .filter-group select, 
+        .table-toolbar .filter-group input {
+            padding: 6px 12px;
+            border: 2px solid #e8ecf0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            transition: 0.3s;
+        }
+        .table-toolbar .filter-group select:focus,
+        .table-toolbar .filter-group input:focus {
+            outline: none;
+            border-color: #1565c0;
+            box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.1);
+        }
+        .table-toolbar .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2d3a4a;
+        }
         .table-toolbar .search-box {
             display: flex;
             align-items: center;
@@ -517,6 +543,11 @@
         .shift-day { background: #fff3e0; color: #e65100; }
         .shift-night { background: #e8eaf6; color: #283593; }
 
+        .filter-active {
+            border-color: #1565c0 !important;
+            box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.15) !important;
+        }
+
         @media (max-width: 768px) {
             .header-brand h1 { font-size: 16px; }
             .header-brand .dept-tag { font-size: 10px; padding: 2px 10px; }
@@ -533,6 +564,7 @@
             .modal-content { padding: 18px; margin: 10px; }
             .table-toolbar { flex-direction: column; align-items: stretch; }
             .table-toolbar .search-box input { width: 100%; }
+            .table-toolbar .filter-group { flex-wrap: wrap; }
             .pagination { gap: 4px; }
             .pagination .page-numbers button { padding: 4px 8px; min-width: 30px; font-size: 12px; }
         }
@@ -677,7 +709,7 @@
                 <div class="form-group"><label>📅 তারিখ</label><input type="text" id="currentDateDisplay" readonly style="font-weight:700;color:#0d47a1;font-size:16px;"></div>
                 <div class="form-group"><label>হ্যান্ডওভার কোয়ান্টিটি <span class="required">*</span></label><input type="number" id="handoverQty" placeholder="আজকের কোয়ান্টিটি" required min="1"></div>
                 <div class="form-group"><label>📦 প্যালেট সংখ্যা <span class="required">*</span></label><input type="number" id="palletQty" placeholder="প্যালেট সংখ্যা" required min="0"></div>
-                <div class="form-group"><label>লট নম্বর</label><input type="text" id="lotNumber" placeholder="লট নম্বর দিন"></div>
+                <div class="form-group"><label>লট নম্বর</label><input type="text" id="lotNumber" placeholder="লট নম্বর দিন" oninput="autoSetPallet()"></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>হ্যান্ডওভার করেছেন <span class="required">*</span></label><select id="handoverPerson" required><option value="">-- সিলেক্ট করুন --</option></select></div>
@@ -765,6 +797,17 @@
             <button class="btn btn-excel btn-sm" onclick="downloadHandoverExcel()"><i class="fas fa-file-excel"></i> এক্সেল ডাউনলোড</button>
             <button class="btn btn-danger btn-sm" onclick="clearAllHandover()"><i class="fas fa-trash-alt"></i> সব ডিলিট</button>
         </div>
+        <div class="filter-group">
+            <label><i class="fas fa-calendar"></i> তারিখ:</label>
+            <input type="date" id="filterDate" onchange="applyFilters()">
+            <label><i class="fas fa-clock"></i> শিফট:</label>
+            <select id="filterShift" onchange="applyFilters()">
+                <option value="">সব</option>
+                <option value="Day">☀️ ডে</option>
+                <option value="Night">🌙 নাইট</option>
+            </select>
+            <button class="btn btn-sm btn-outline" onclick="clearFilters()"><i class="fas fa-times"></i> ক্লিয়ার</button>
+        </div>
         <div class="search-box">
             <i class="fas fa-search" style="color:#8a9aaa;"></i>
             <input type="text" id="handoverSearchInput" placeholder="জব অর্ডার দ্বারা সার্চ..." oninput="filterHandoverTable()">
@@ -783,7 +826,7 @@
                     <th>নাম</th>
                     <th>রঙ</th>
                     <th>কোয়ান্টিটি</th>
-                    <th>প্যালেট</th> <!-- নতুন কলাম -->
+                    <th>প্যালেট</th>
                     <th>লট নং</th>
                     <th>দ্বারা</th>
                     <th>শিফট</th>
@@ -881,7 +924,7 @@
         <h3><i class="fas fa-edit"></i> এডিট করুন</h3>
         <p><strong>আইটেম:</strong> <span id="editItemDisplay"></span></p>
         <div class="form-group"><label>কোয়ান্টিটি:</label><input type="number" id="editHandoverQty" min="0"></div>
-        <div class="form-group"><label>প্যালেট সংখ্যা:</label><input type="number" id="editPalletQty" min="0"></div> <!-- নতুন ফিল্ড -->
+        <div class="form-group"><label>প্যালেট সংখ্যা:</label><input type="number" id="editPalletQty" min="0"></div>
         <div class="form-group"><label>লট নম্বর:</label><input type="text" id="editLotNumber" placeholder="লট নম্বর"></div>
         <div class="form-group"><label>হ্যান্ডওভার করেছেন:</label><input type="text" id="editHandoverPerson"></div>
         <div class="form-group"><label>শিফট:</label>
@@ -928,6 +971,10 @@
     const itemsPerPage = 10;
     let filteredData = [];
     let handoverSearchText = '';
+    
+    // ফিল্টার স্টেট
+    let filterDate = '';
+    let filterShift = '';
 
     // সার্চেবল সিলেক্টের জন্য
     let allJOList = [];
@@ -1015,6 +1062,14 @@
         return `${year}-${month}-${day}`;
     }
 
+    function formatDateForInput(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function getShiftDisplay(shift) {
         return shift === 'Day' ? '☀️ ডে (সকাল ৯টা - রাত ৯টা)' : '🌙 নাইট (রাত ৯টা - সকাল ৯টা)';
     }
@@ -1050,6 +1105,23 @@
     function getCurrentDateForDisplay() {
         const { shift, shiftDate } = getCurrentShiftInfo();
         return formatDateForDisplay(shiftDate);
+    }
+
+    // =========================================================
+    // Auto Pallet Set when Lot Number is entered
+    // =========================================================
+    function autoSetPallet() {
+        const lotNumber = document.getElementById('lotNumber').value.trim();
+        const palletQtyField = document.getElementById('palletQty');
+        
+        if (lotNumber !== '') {
+            palletQtyField.value = 1;
+        }
+        // যদি খালি করে দেন তাহলে প্যালেট সংখ্যা 0 দেখাবে (এক্সপেক্টেড বিহেভিয়ার)
+        // কিন্তু ফিল্ডে 0 থাকলে ভালো দেখায় না, তাই খালি রাখি
+        // else {
+        //     palletQtyField.value = 0;
+        // }
     }
 
     // =========================================================
@@ -2167,7 +2239,7 @@
         const name = document.getElementById('itemNameDisplay').value;
         const color = document.getElementById('colorDisplay').value;
         const qty = parseFloat(document.getElementById('handoverQty').value);
-        const palletQty = parseFloat(document.getElementById('palletQty').value); // নতুন
+        const palletQty = parseFloat(document.getElementById('palletQty').value);
         const lotNumber = document.getElementById('lotNumber').value.trim();
         const person = document.getElementById('handoverPerson').value;
         const shift = document.getElementById('handoverShift').value;
@@ -2179,6 +2251,13 @@
             alert('সব * ফিল্ড পূরণ করুন এবং প্যালেট সংখ্যা সঠিক দিন!');
             return;
         }
+        
+        // যদি লট নম্বর দেয়া থাকে কিন্তু প্যালেট সংখ্যা 0 হয়, তাহলে অটো 1 করে দিবে
+        let finalPalletQty = palletQty;
+        if (lotNumber !== '' && palletQty === 0) {
+            finalPalletQty = 1;
+        }
+        
         const master = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
         const due = master ? master.demandQty : 0;
         const asOf = handoverData.filter(h => h.jobOrder === jo && h.itemCode === code).reduce((s, h) => s + h.handoverQty, 0);
@@ -2193,7 +2272,7 @@
             itemName: name, 
             color, 
             handoverQty: qty,
-            palletQty: palletQty,
+            palletQty: finalPalletQty,
             lotNumber: lotNumber,
             handoverPerson: person, 
             shift, 
@@ -2215,19 +2294,51 @@
     });
 
     // =========================================================
+    // ফিল্টার ফাংশন
+    // =========================================================
+    function applyFilters() {
+        filterDate = document.getElementById('filterDate').value;
+        filterShift = document.getElementById('filterShift').value;
+        applyHandoverFilter();
+    }
+
+    function clearFilters() {
+        document.getElementById('filterDate').value = '';
+        document.getElementById('filterShift').value = '';
+        filterDate = '';
+        filterShift = '';
+        applyHandoverFilter();
+    }
+
+    // =========================================================
     // হ্যান্ডওভার টেবিল ফিল্টার, পেজিনেশন ও রেন্ডার
     // =========================================================
     function applyHandoverFilter() {
         const searchText = document.getElementById('handoverSearchInput').value.toLowerCase().trim();
         handoverSearchText = searchText;
         
-        if (searchText === '') {
-            filteredData = [...handoverData];
-        } else {
-            filteredData = handoverData.filter(item => 
-                item.jobOrder.toLowerCase().includes(searchText)
-            );
-        }
+        filteredData = handoverData.filter(item => {
+            // সার্চ ফিল্টার
+            let match = true;
+            if (searchText !== '') {
+                match = item.jobOrder.toLowerCase().includes(searchText);
+            }
+            if (!match) return false;
+            
+            // তারিখ ফিল্টার
+            if (filterDate !== '') {
+                const itemDate = item.entryDate || '';
+                if (itemDate !== filterDate) return false;
+            }
+            
+            // শিফট ফিল্টার
+            if (filterShift !== '') {
+                if (item.shift !== filterShift) return false;
+            }
+            
+            return true;
+        });
+        
         currentPage = 1;
         renderTablePage();
     }
