@@ -209,6 +209,7 @@
         .summary-card .value.red { color: #c62828; }
         .summary-card .value.orange { color: #e65100; }
         .summary-card .value.purple { color: #6a1b9a; }
+        .summary-card .value.teal { color: #00897b; } 
 
         .btn {
             padding: 12px 20px;
@@ -628,6 +629,7 @@
         <div class="summary-card"><div class="label">📦 মোট আইটেম</div><div class="value purple" id="totalItems">0</div></div>
         <div class="summary-card"><div class="label">✅ সম্পন্ন আইটেম</div><div class="value green" id="doneItems">0</div></div>
         <div class="summary-card"><div class="label">⏳ পেন্ডিং আইটেম</div><div class="value red" id="pendingItems">0</div></div>
+        <div class="summary-card"><div class="label">📦 মোট প্যালেট</div><div class="value teal" id="totalPallet">0</div></div>
     </div>
 
     <!-- ===== নিউ ডেটা এন্ট্রি ===== -->
@@ -674,6 +676,7 @@
             <div class="form-row">
                 <div class="form-group"><label>📅 তারিখ</label><input type="text" id="currentDateDisplay" readonly style="font-weight:700;color:#0d47a1;font-size:16px;"></div>
                 <div class="form-group"><label>হ্যান্ডওভার কোয়ান্টিটি <span class="required">*</span></label><input type="number" id="handoverQty" placeholder="আজকের কোয়ান্টিটি" required min="1"></div>
+                <div class="form-group"><label>📦 প্যালেট সংখ্যা <span class="required">*</span></label><input type="number" id="palletQty" placeholder="প্যালেট সংখ্যা" required min="0"></div>
                 <div class="form-group"><label>লট নম্বর</label><input type="text" id="lotNumber" placeholder="লট নম্বর দিন"></div>
             </div>
             <div class="form-row">
@@ -780,6 +783,7 @@
                     <th>নাম</th>
                     <th>রঙ</th>
                     <th>কোয়ান্টিটি</th>
+                    <th>প্যালেট</th> <!-- নতুন কলাম -->
                     <th>লট নং</th>
                     <th>দ্বারা</th>
                     <th>শিফট</th>
@@ -788,7 +792,7 @@
                 </tr>
             </thead>
             <tbody id="stockBody">
-                <tr><td colspan="11" class="text-muted" style="text-align:center;padding:20px;">কোন ডেটা নেই</td></tr>
+                <tr><td colspan="12" class="text-muted" style="text-align:center;padding:20px;">কোন ডেটা নেই</td></tr>
             </tbody>
         </table>
     </div>
@@ -877,6 +881,7 @@
         <h3><i class="fas fa-edit"></i> এডিট করুন</h3>
         <p><strong>আইটেম:</strong> <span id="editItemDisplay"></span></p>
         <div class="form-group"><label>কোয়ান্টিটি:</label><input type="number" id="editHandoverQty" min="0"></div>
+        <div class="form-group"><label>প্যালেট সংখ্যা:</label><input type="number" id="editPalletQty" min="0"></div> <!-- নতুন ফিল্ড -->
         <div class="form-group"><label>লট নম্বর:</label><input type="text" id="editLotNumber" placeholder="লট নম্বর"></div>
         <div class="form-group"><label>হ্যান্ডওভার করেছেন:</label><input type="text" id="editHandoverPerson"></div>
         <div class="form-group"><label>শিফট:</label>
@@ -1760,7 +1765,7 @@
         if (handoverJO.length === 0) {
             html += `<p class="text-muted">কোন হ্যান্ডওভার রেকর্ড নেই</p>`;
         } else {
-            html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>কোয়ান্টিটি</th><th>লট নং</th><th>দ্বারা</th><th>শিফট</th><th>তারিখ/সময়</th></tr></thead><tbody>`;
+            html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>কোয়ান্টিটি</th><th>প্যালেট</th><th>লট নং</th><th>দ্বারা</th><th>শিফট</th><th>তারিখ/সময়</th></tr></thead><tbody>`;
             handoverJO.forEach((item, idx) => {
                 // ডেট ফরম্যাট করে দেখানো
                 const displayDate = item.entryDate ? formatDateForDisplay(item.entryDate) : '';
@@ -1770,6 +1775,7 @@
                     <td class="text-left">${item.itemName}</td>
                     <td>${item.color || ''}</td>
                     <td>${item.handoverQty}</td>
+                    <td>${item.palletQty || 0}</td>
                     <td>${item.lotNumber || ''}</td>
                     <td>${item.handoverPerson}</td>
                     <td>${item.shift || ''}</td>
@@ -2136,12 +2142,12 @@
         document.getElementById('detailJobOrder').textContent = jo;
         document.getElementById('detailItemCode').textContent = code;
         document.getElementById('detailItemName').textContent = masterItems.find(i => i.jobOrder === jo && i.itemCode === code)?.itemName || '';
-        let html = `<table><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>দ্বারা</th><th>কোয়ান্টিটি</th><th>লট নং</th><th>সময়</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>#</th><th>তারিখ</th><th>শিফট</th><th>দ্বারা</th><th>কোয়ান্টিটি</th><th>প্যালেট</th><th>লট নং</th><th>সময়</th></tr></thead><tbody>`;
         let total = 0;
         details.forEach((d, i) => {
             total += d.handoverQty;
             const displayDate = d.entryDate ? formatDateForDisplay(d.entryDate) : '';
-            html += `<tr><td>${i+1}</td><td>${displayDate}</td><td>${d.shift||''}</td><td>${d.handoverPerson}</td><td>${d.handoverQty}</td><td>${d.lotNumber || ''}</td><td>${d.entryTime||''}</td></tr>`;
+            html += `<tr><td>${i+1}</td><td>${displayDate}</td><td>${d.shift||''}</td><td>${d.handoverPerson}</td><td>${d.handoverQty}</td><td>${d.palletQty || 0}</td><td>${d.lotNumber || ''}</td><td>${d.entryTime||''}</td></tr>`;
         });
         html += `</tbody></table>`;
         document.getElementById('detailTableContainer').innerHTML = html;
@@ -2161,6 +2167,7 @@
         const name = document.getElementById('itemNameDisplay').value;
         const color = document.getElementById('colorDisplay').value;
         const qty = parseFloat(document.getElementById('handoverQty').value);
+        const palletQty = parseFloat(document.getElementById('palletQty').value); // নতুন
         const lotNumber = document.getElementById('lotNumber').value.trim();
         const person = document.getElementById('handoverPerson').value;
         const shift = document.getElementById('handoverShift').value;
@@ -2168,8 +2175,8 @@
         // ডেট স্টোরেজের জন্য (YYYY-MM-DD)
         const entryDate = document.getElementById('currentDateDisplay').dataset.storageDate || getCurrentDateForStorage();
         
-        if (!jo || !code || !name || !qty || qty <= 0 || !person) {
-            alert('সব * ফিল্ড পূরণ করুন!');
+        if (!jo || !code || !name || !qty || qty <= 0 || !person || palletQty < 0) {
+            alert('সব * ফিল্ড পূরণ করুন এবং প্যালেট সংখ্যা সঠিক দিন!');
             return;
         }
         const master = masterItems.find(i => i.jobOrder === jo && i.itemCode === code);
@@ -2186,6 +2193,7 @@
             itemName: name, 
             color, 
             handoverQty: qty,
+            palletQty: palletQty,
             lotNumber: lotNumber,
             handoverPerson: person, 
             shift, 
@@ -2195,6 +2203,7 @@
         handoverData.push(entry);
         saveHandover().then(() => {
             document.getElementById('handoverQty').value = '';
+            document.getElementById('palletQty').value = '';
             document.getElementById('lotNumber').value = '';
             document.getElementById('handoverPerson').value = '';
             document.getElementById('handoverCount').textContent = handoverData.length;
@@ -2254,7 +2263,7 @@
         
         const tbody = document.getElementById('stockBody');
         if (pageData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#8a9aaa;padding:20px;">কোন ডেটা নেই</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#8a9aaa;padding:20px;">কোন ডেটা নেই</td></tr>';
         } else {
             let html = '';
             pageData.forEach((item, i) => {
@@ -2267,6 +2276,7 @@
                     <td class="text-left">${item.itemName}</td>
                     <td>${item.color||''}</td>
                     <td>${item.handoverQty}</td>
+                    <td>${item.palletQty || 0}</td>
                     <td>${item.lotNumber || ''}</td>
                     <td>${item.handoverPerson}</td>
                     <td>${item.shift||''}</td>
@@ -2365,6 +2375,10 @@
         document.getElementById('pendingJO').textContent = totalPendingJO;
         document.getElementById('doneItems').textContent = totalDoneItems;
         document.getElementById('pendingItems').textContent = totalPendingItems;
+
+        // মোট প্যালেট গণনা
+        const totalPallet = handoverData.reduce((sum, h) => sum + (h.palletQty || 0), 0);
+        document.getElementById('totalPallet').textContent = totalPallet;
     }
 
     // =========================================================
@@ -2376,6 +2390,7 @@
         editIndex = index;
         document.getElementById('editItemDisplay').textContent = `${item.itemName} (${item.itemCode})`;
         document.getElementById('editHandoverQty').value = item.handoverQty;
+        document.getElementById('editPalletQty').value = item.palletQty || 0;
         document.getElementById('editLotNumber').value = item.lotNumber || '';
         document.getElementById('editHandoverPerson').value = item.handoverPerson || '';
         document.getElementById('editShift').value = item.shift || 'Day';
@@ -2390,10 +2405,11 @@
     function confirmEdit() {
         if (editIndex === null) return;
         const qty = parseFloat(document.getElementById('editHandoverQty').value);
+        const palletQty = parseFloat(document.getElementById('editPalletQty').value);
         const lotNumber = document.getElementById('editLotNumber').value.trim();
         const person = document.getElementById('editHandoverPerson').value.trim();
         const shift = document.getElementById('editShift').value;
-        if (isNaN(qty) || qty < 0 || !person) {
+        if (isNaN(qty) || qty < 0 || isNaN(palletQty) || palletQty < 0 || !person) {
             alert('সঠিক ডেটা দিন!');
             return;
         }
@@ -2406,6 +2422,7 @@
             return;
         }
         item.handoverQty = qty;
+        item.palletQty = palletQty;
         item.lotNumber = lotNumber;
         item.handoverPerson = person;
         item.shift = shift;
@@ -2425,7 +2442,7 @@
             alert('কোন ডেটা নেই!');
             return;
         }
-        const rows = [['#', 'জব অর্ডার', 'আইটেম কোড', 'আইটেম নাম', 'রঙ', 'কোয়ান্টিটি', 'লট নং', 'হ্যান্ডওভার করেছেন', 'শিফট', 'তারিখ', 'সময়']];
+        const rows = [['#', 'জব অর্ডার', 'আইটেম কোড', 'আইটেম নাম', 'রঙ', 'কোয়ান্টিটি', 'প্যালেট', 'লট নং', 'হ্যান্ডওভার করেছেন', 'শিফট', 'তারিখ', 'সময়']];
         handoverData.forEach((item, i) => {
             const displayDate = item.entryDate ? formatDateForDisplay(item.entryDate) : '';
             rows.push([
@@ -2435,6 +2452,7 @@
                 item.itemName,
                 item.color || '',
                 item.handoverQty,
+                item.palletQty || 0,
                 item.lotNumber || '',
                 item.handoverPerson,
                 item.shift || '',
@@ -2546,7 +2564,7 @@
         if (handoverJO.length === 0) {
             html += `<p class="text-muted">কোন হ্যান্ডওভার রেকর্ড নেই</p>`;
         } else {
-            html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>কোয়ান্টিটি</th><th>লট নং</th><th>দ্বারা</th><th>শিফট</th><th>তারিখ/সময়</th></tr></thead><tbody>`;
+            html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>কোয়ান্টিটি</th><th>প্যালেট</th><th>লট নং</th><th>দ্বারা</th><th>শিফট</th><th>তারিখ/সময়</th></tr></thead><tbody>`;
             handoverJO.forEach((item, idx) => {
                 const displayDate = item.entryDate ? formatDateForDisplay(item.entryDate) : '';
                 html += `<tr>
@@ -2555,6 +2573,7 @@
                     <td class="text-left">${item.itemName}</td>
                     <td>${item.color || ''}</td>
                     <td>${item.handoverQty}</td>
+                    <td>${item.palletQty || 0}</td>
                     <td>${item.lotNumber || ''}</td>
                     <td>${item.handoverPerson}</td>
                     <td>${item.shift || ''}</td>
@@ -2645,10 +2664,10 @@
         rows.push([], ['মোট','','', td, ta, tr, '']);
         rows.push(['অর্ডার স্ট্যাটাস:', allDone ? 'সম্পূর্ণ' : 'চলমান']);
         rows.push([], ['===== ডিটেইলস =====']);
-        rows.push(['#','কোড','নাম','রঙ','কোয়ান্টিটি','লট নং','দ্বারা','শিফট','তারিখ']);
+        rows.push(['#','কোড','নাম','রঙ','কোয়ান্টিটি','প্যালেট','লট নং','দ্বারা','শিফট','তারিখ']);
         handoverData.filter(h => h.jobOrder === currentReportJO).forEach((h,i) => {
             const displayDate = h.entryDate ? formatDateForDisplay(h.entryDate) : '';
-            rows.push([i+1, h.itemCode, h.itemName, h.color||'', h.handoverQty, h.lotNumber||'', h.handoverPerson, h.shift||'', displayDate]);
+            rows.push([i+1, h.itemCode, h.itemName, h.color||'', h.handoverQty, h.palletQty||0, h.lotNumber||'', h.handoverPerson, h.shift||'', displayDate]);
         });
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'JO Report');
@@ -2661,10 +2680,10 @@
             alert('কোন ডেটা নেই!');
             return;
         }
-        let csv = 'জব অর্ডার,কোড,নাম,রঙ,কোয়ান্টিটি,লট নং,দ্বারা,শিফট,তারিখ,সময়\n';
+        let csv = 'জব অর্ডার,কোড,নাম,রঙ,কোয়ান্টিটি,প্যালেট,লট নং,দ্বারা,শিফট,তারিখ,সময়\n';
         handoverData.forEach(h => {
             const displayDate = h.entryDate ? formatDateForDisplay(h.entryDate) : '';
-            csv += `${h.jobOrder},${h.itemCode},${h.itemName},${h.color||''},${h.handoverQty},${h.lotNumber||''},${h.handoverPerson},${h.shift||''},${displayDate},${h.entryTime||''}\n`;
+            csv += `${h.jobOrder},${h.itemCode},${h.itemName},${h.color||''},${h.handoverQty},${h.palletQty||0},${h.lotNumber||''},${h.handoverPerson},${h.shift||''},${displayDate},${h.entryTime||''}\n`;
         });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
