@@ -41,6 +41,8 @@
         .btn-excel:hover { background: #145a33; }
         .btn-back { background: #17a2b8; color: #fff; }
         .btn-back:hover { background: #138496; }
+        .btn-search { background: #0d47a1; color: #fff; }
+        .btn-search:hover { background: #0a3a7a; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
         th { background: #0d47a1; color: white; position: sticky; top: 0; white-space: nowrap; font-size: 12px; }
@@ -83,17 +85,77 @@
         .password-modal input { margin-bottom: 12px; }
         .import-section { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
         .import-section input[type="file"] { display: none; }
-        .search-section { display: flex; gap: 15px; align-items: center; margin: 15px 0; padding: 15px; background: #e8f0fe; border-radius: 8px; flex-wrap: wrap; }
-        .search-section input { flex: 1; min-width: 200px; }
-        .search-section button { flex: 0 0 auto; }
+        .search-section { 
+            display: flex; 
+            gap: 15px; 
+            align-items: center; 
+            margin: 15px 0; 
+            padding: 15px; 
+            background: #e8f0fe; 
+            border-radius: 8px; 
+            flex-wrap: wrap;
+            border: 2px solid #0d47a1;
+        }
+        .search-section .search-label {
+            font-weight: bold;
+            color: #0d47a1;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .search-section input { 
+            flex: 1; 
+            min-width: 200px; 
+            padding: 10px 15px;
+            border: 2px solid #0d47a1;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+        .search-section input:focus {
+            outline: none;
+            border-color: #ff6f00;
+            box-shadow: 0 0 0 3px rgba(255, 111, 0, 0.2);
+        }
+        .search-section .filter-badge {
+            background: #0d47a1;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .search-section .filter-badge.active {
+            background: #ff6f00;
+        }
+        .search-section .clear-search-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .search-section .clear-search-btn:hover {
+            background: #b02a37;
+        }
+        .search-info {
+            font-size: 13px;
+            color: #555;
+            padding: 5px 10px;
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
         @media (max-width: 600px) {
             .form-row > div, .filter-section > div { min-width: 100%; }
             table { font-size: 10px; }
             th, td { padding: 2px 3px; }
             .modal-content { padding: 20px; }
             .action-buttons button { font-size: 9px; padding: 2px 4px; }
-            .search-section { flex-direction: column; }
+            .search-section { flex-direction: column; align-items: stretch; }
             .search-section input { width: 100%; }
+            .search-section .search-label { text-align: center; }
         }
     </style>
 </head>
@@ -113,8 +175,10 @@
 
     <!-- JOB ORDER সার্চ সেকশন -->
     <div class="search-section">
-        <input type="text" id="jobOrderSearch" placeholder="🔍 JOB ORDER অনুযায়ী সার্চ করুন..." onkeyup="filterByJobOrder()">
-        <button class="btn-secondary" onclick="clearJobOrderFilter()">✖️ ক্লিয়ার</button>
+        <span class="search-label">🔍 JOB ORDER সার্চ:</span>
+        <input type="text" id="jobOrderSearch" placeholder="JOB ORDER লিখুন (যেমন: JO-2026-001)" onkeyup="filterByJobOrder()">
+        <button class="clear-search-btn" onclick="clearJobOrderFilter()">✖️ ক্লিয়ার</button>
+        <span id="filterInfo" class="search-info">সব ডেটা দেখাচ্ছে</span>
     </div>
 
     <!-- এন্ট্রি ফর্ম -->
@@ -407,12 +471,29 @@
         const searchInput = document.getElementById('jobOrderSearch');
         currentJobOrderFilter = searchInput.value.trim().toLowerCase();
         applyFilter();
+        updateFilterInfo();
     }
 
     function clearJobOrderFilter() {
         document.getElementById('jobOrderSearch').value = '';
         currentJobOrderFilter = '';
         applyFilter();
+        updateFilterInfo();
+        document.getElementById('jobOrderSearch').focus();
+    }
+
+    function updateFilterInfo() {
+        const infoSpan = document.getElementById('filterInfo');
+        if (currentJobOrderFilter === '') {
+            infoSpan.innerHTML = `📋 সব ডেটা দেখাচ্ছে (${allData.length} টি আইটেম)`;
+            infoSpan.style.background = '#e8f5e9';
+            infoSpan.style.border = '1px solid #4caf50';
+        } else {
+            const count = filteredData.length;
+            infoSpan.innerHTML = `🔍 "${currentJobOrderFilter}" - ${count} টি আইটেম পাওয়া গেছে`;
+            infoSpan.style.background = '#fff3e0';
+            infoSpan.style.border = '1px solid #ff9800';
+        }
     }
 
     function applyFilter() {
@@ -478,7 +559,11 @@
         const displayData = data || filteredData;
         const tbody = document.getElementById('stockBody');
         if (displayData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#999; padding:20px;">কোনো ডেটা নেই</td></tr>`;
+            let msg = 'কোনো ডেটা নেই';
+            if (currentJobOrderFilter !== '') {
+                msg = `"${currentJobOrderFilter}" এর জন্য কোনো ডেটা পাওয়া যায়নি`;
+            }
+            tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#999; padding:20px;">${msg}</td></tr>`;
         } else {
             let html = '';
             displayData.forEach((item, index) => {
@@ -499,7 +584,7 @@
                     <td>${item.floorName || ''}</td>
                     <td>${item.irPerson || ''}</td>
                     <td>${item.irDate || ''}</td>
-                    <td>${item.jobOrder}</td>
+                    <td><strong>${item.jobOrder}</strong></td>
                     <td>${item.itemCode}</td>
                     <td style="text-align:left; padding-left:8px;">${item.itemName}</td>
                     <td>${item.prQty}</td>
