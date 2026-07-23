@@ -506,6 +506,16 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        .shift-indicator {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .shift-day { background: #fff3e0; color: #e65100; }
+        .shift-night { background: #e8eaf6; color: #283593; }
+
         @media (max-width: 768px) {
             .header-brand h1 { font-size: 16px; }
             .header-brand .dept-tag { font-size: 10px; padding: 2px 10px; }
@@ -550,6 +560,7 @@
         .gap-8 { gap: 8px; }
         .flex-wrap { flex-wrap: wrap; }
         .flex-center { display: flex; align-items: center; justify-content: center; }
+        .date-display { font-weight: 600; color: #0d47a1; }
     </style>
 </head>
 <body class="login-active" id="bodyEl">
@@ -661,7 +672,7 @@
                 <div class="form-group"><label>⏳ বাকি</label><input type="number" id="remainingDisplay" readonly></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>তারিখ</label><input type="date" id="currentDateDisplay" readonly></div>
+                <div class="form-group"><label>📅 তারিখ</label><input type="text" id="currentDateDisplay" readonly style="font-weight:700;color:#0d47a1;font-size:16px;"></div>
                 <div class="form-group"><label>হ্যান্ডওভার কোয়ান্টিটি <span class="required">*</span></label><input type="number" id="handoverQty" placeholder="আজকের কোয়ান্টিটি" required min="1"></div>
                 <div class="form-group"><label>লট নম্বর</label><input type="text" id="lotNumber" placeholder="লট নম্বর দিন"></div>
             </div>
@@ -669,17 +680,17 @@
                 <div class="form-group"><label>হ্যান্ডওভার করেছেন <span class="required">*</span></label><select id="handoverPerson" required><option value="">-- সিলেক্ট করুন --</option></select></div>
                 <div class="form-group"><label>শিফট</label>
                     <select id="handoverShift">
-                        <option value="Day">☀️ ডে</option>
-                        <option value="Night">🌙 নাইট</option>
+                        <option value="Day">☀️ ডে (সকাল ৯টা - রাত ৯টা)</option>
+                        <option value="Night">🌙 নাইট (রাত ৯টা - সকাল ৯টা)</option>
                     </select>
                 </div>
                 <div class="form-group" style="justify-content:flex-end;">
                     <button type="submit" class="btn btn-success" style="width:100%;"><i class="fas fa-plus"></i> এন্ট্রি</button>
                 </div>
             </div>
-            <div style="margin-top:10px;font-size:12px;color:#8a9aaa;text-align:center;">
-                <i class="fas fa-clock"></i> বর্তমান শিফট: <span id="currentShiftDisplay">ডে</span> 
-                (সকাল ৯টা - রাত ৯টা পর্যন্ত ডে | রাত ৯টা - সকাল ৯টা পর্যন্ত নাইট)
+            <div style="margin-top:10px;font-size:13px;color:#2d3a4a;text-align:center;background:#e8f0fe;padding:8px;border-radius:8px;">
+                <i class="fas fa-clock"></i> বর্তমান শিফট: <span id="currentShiftDisplay" class="shift-indicator shift-day">ডে</span> 
+                <span style="margin-left:10px;">📅 <span id="currentShiftDateDisplay"></span></span>
             </div>
         </form>
     </div>
@@ -945,22 +956,95 @@
     };
 
     // =========================================================
-    // শিফট ডিটেক্ট ফাংশন
+    // 📅 ডেট এবং শিফট ফাংশন
     // =========================================================
-    function detectShift() {
+    function getCurrentShiftInfo() {
         const now = new Date();
         const hours = now.getHours();
-        // Day Shift: 9am (9) to 9pm (21)
-        // Night Shift: 9pm (21) to 9am (9)
+        const minutes = now.getMinutes();
+        
+        // Day Shift: 9:00 AM (9) to 8:59 PM (20:59)
+        // Night Shift: 9:00 PM (21) to 8:59 AM (8:59)
+        
+        let shift, shiftDate;
+        
         if (hours >= 9 && hours < 21) {
-            return 'Day';
+            // Day Shift - current date
+            shift = 'Day';
+            shiftDate = new Date(now);
         } else {
-            return 'Night';
+            // Night Shift
+            shift = 'Night';
+            // যদি রাত ৯টা থেকে ১২টা পর্যন্ত হয়, তাহলে আজকের তারিখ
+            // যদি রাত ১২টা থেকে সকাল ৯টা পর্যন্ত হয়, তাহলে আগের দিনের তারিখ
+            if (hours >= 21 || hours < 9) {
+                if (hours >= 0 && hours < 9) {
+                    // সকাল ০০:০০ - ৮:৫৯ = আগের দিনের নাইট শিফট
+                    shiftDate = new Date(now);
+                    shiftDate.setDate(shiftDate.getDate() - 1);
+                } else {
+                    // রাত ৯টা - ১১:৫৯ = আজকের নাইট শিফট
+                    shiftDate = new Date(now);
+                }
+            } else {
+                shiftDate = new Date(now);
+            }
         }
+        
+        return { shift, shiftDate };
+    }
+
+    function formatDateForDisplay(date) {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    function formatDateForStorage(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     function getShiftDisplay(shift) {
         return shift === 'Day' ? '☀️ ডে (সকাল ৯টা - রাত ৯টা)' : '🌙 নাইট (রাত ৯টা - সকাল ৯টা)';
+    }
+
+    function getShiftClass(shift) {
+        return shift === 'Day' ? 'shift-day' : 'shift-night';
+    }
+
+    function updateShiftAndDate() {
+        const { shift, shiftDate } = getCurrentShiftInfo();
+        
+        // শিফট সেট
+        document.getElementById('handoverShift').value = shift;
+        const shiftDisplay = document.getElementById('currentShiftDisplay');
+        shiftDisplay.textContent = shift === 'Day' ? '☀️ ডে' : '🌙 নাইট';
+        shiftDisplay.className = `shift-indicator ${getShiftClass(shift)}`;
+        
+        // ডেট সেট (DD/MM/YYYY ফরম্যাটে)
+        const formattedDate = formatDateForDisplay(shiftDate);
+        document.getElementById('currentDateDisplay').value = formattedDate;
+        document.getElementById('currentShiftDateDisplay').textContent = formattedDate;
+        
+        // স্টোরেজের জন্য ডেট (YYYY-MM-DD)
+        const storageDate = formatDateForStorage(shiftDate);
+        document.getElementById('currentDateDisplay').dataset.storageDate = storageDate;
+    }
+
+    function getCurrentDateForStorage() {
+        const { shift, shiftDate } = getCurrentShiftInfo();
+        return formatDateForStorage(shiftDate);
+    }
+
+    function getCurrentDateForDisplay() {
+        const { shift, shiftDate } = getCurrentShiftInfo();
+        return formatDateForDisplay(shiftDate);
     }
 
     // =========================================================
@@ -1051,16 +1135,6 @@
         updateShiftAndDate();
         // প্রতি মিনিটে শিফট চেক
         setInterval(updateShiftAndDate, 60000);
-    }
-    
-    function updateShiftAndDate() {
-        const shift = detectShift();
-        document.getElementById('handoverShift').value = shift;
-        document.getElementById('currentShiftDisplay').textContent = getShiftDisplay(shift);
-        
-        // তারিখ সেট
-        const today = new Date().toISOString().slice(0,10);
-        document.getElementById('currentDateDisplay').value = today;
     }
 
     function updateHandoverByDropdown() {
@@ -1688,6 +1762,8 @@
         } else {
             html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>কোয়ান্টিটি</th><th>লট নং</th><th>দ্বারা</th><th>শিফট</th><th>তারিখ/সময়</th></tr></thead><tbody>`;
             handoverJO.forEach((item, idx) => {
+                // ডেট ফরম্যাট করে দেখানো
+                const displayDate = item.entryDate ? formatDateForDisplay(item.entryDate) : '';
                 html += `<tr>
                     <td>${idx+1}</td>
                     <td>${item.itemCode}</td>
@@ -1697,7 +1773,7 @@
                     <td>${item.lotNumber || ''}</td>
                     <td>${item.handoverPerson}</td>
                     <td>${item.shift || ''}</td>
-                    <td>${item.entryDate || ''} ${item.entryTime || ''}</td>
+                    <td>${displayDate} ${item.entryTime || ''}</td>
                 </tr>`;
             });
             html += `</tbody></table>`;
@@ -2064,7 +2140,8 @@
         let total = 0;
         details.forEach((d, i) => {
             total += d.handoverQty;
-            html += `<tr><td>${i+1}</td><td>${d.entryDate||''}</td><td>${d.shift||''}</td><td>${d.handoverPerson}</td><td>${d.handoverQty}</td><td>${d.lotNumber || ''}</td><td>${d.entryTime||''}</td></tr>`;
+            const displayDate = d.entryDate ? formatDateForDisplay(d.entryDate) : '';
+            html += `<tr><td>${i+1}</td><td>${displayDate}</td><td>${d.shift||''}</td><td>${d.handoverPerson}</td><td>${d.handoverQty}</td><td>${d.lotNumber || ''}</td><td>${d.entryTime||''}</td></tr>`;
         });
         html += `</tbody></table>`;
         document.getElementById('detailTableContainer').innerHTML = html;
@@ -2087,7 +2164,10 @@
         const lotNumber = document.getElementById('lotNumber').value.trim();
         const person = document.getElementById('handoverPerson').value;
         const shift = document.getElementById('handoverShift').value;
-        const date = document.getElementById('currentDateDisplay').value.trim();
+        
+        // ডেট স্টোরেজের জন্য (YYYY-MM-DD)
+        const entryDate = document.getElementById('currentDateDisplay').dataset.storageDate || getCurrentDateForStorage();
+        
         if (!jo || !code || !name || !qty || qty <= 0 || !person) {
             alert('সব * ফিল্ড পূরণ করুন!');
             return;
@@ -2099,7 +2179,6 @@
             alert(`⚠️ ডিমান্ড (${due}) এর বেশি দেওয়া যাবে না!`);
             return;
         }
-        const entryDate = date || new Date().toISOString().slice(0,10);
         const entryTime = new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
         const entry = { 
             jobOrder: jo, 
@@ -2140,7 +2219,6 @@
                 item.jobOrder.toLowerCase().includes(searchText)
             );
         }
-        // পেজ রিসেট
         currentPage = 1;
         renderTablePage();
     }
@@ -2167,7 +2245,6 @@
         const totalItems = filteredData.length;
         const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
         
-        // বর্তমান পেজ ঠিক করা
         if (currentPage < 1) currentPage = 1;
         if (currentPage > totalPages) currentPage = totalPages;
         
@@ -2182,6 +2259,7 @@
             let html = '';
             pageData.forEach((item, i) => {
                 const globalIndex = handoverData.indexOf(item);
+                const displayDate = item.entryDate ? formatDateForDisplay(item.entryDate) : '';
                 html += `<tr>
                     <td>${startIndex + i + 1}</td>
                     <td>${item.jobOrder}</td>
@@ -2192,7 +2270,7 @@
                     <td>${item.lotNumber || ''}</td>
                     <td>${item.handoverPerson}</td>
                     <td>${item.shift||''}</td>
-                    <td>${item.entryDate||''} ${item.entryTime||''}</td>
+                    <td>${displayDate} ${item.entryTime||''}</td>
                     <td>
                         <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">
                             <button class="btn btn-warning btn-xs" onclick="openEditModal(${globalIndex})"><i class="fas fa-edit"></i></button>
@@ -2204,7 +2282,6 @@
             tbody.innerHTML = html;
         }
         
-        // পেজিনেশন আপডেট
         updatePagination(totalPages, totalItems);
     }
 
@@ -2217,14 +2294,12 @@
         nextBtn.disabled = (currentPage >= totalPages);
         
         let html = '';
-        // সর্বদা ১ম পেজ
         html += `<button class="${currentPage === 1 ? 'active' : ''}" onclick="goToPage(1)">1</button>`;
         
         if (totalPages > 5) {
             if (currentPage > 3) {
                 html += `<button disabled>…</button>`;
             }
-            // current page এর আশেপাশে
             for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
                 if (i === 1 || i === totalPages) continue;
                 html += `<button class="${currentPage === i ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
@@ -2252,7 +2327,6 @@
         if (page > totalPages) page = totalPages;
         currentPage = page;
         renderTablePage();
-        // স্ক্রল টপ
         document.querySelector('.table-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -2353,6 +2427,7 @@
         }
         const rows = [['#', 'জব অর্ডার', 'আইটেম কোড', 'আইটেম নাম', 'রঙ', 'কোয়ান্টিটি', 'লট নং', 'হ্যান্ডওভার করেছেন', 'শিফট', 'তারিখ', 'সময়']];
         handoverData.forEach((item, i) => {
+            const displayDate = item.entryDate ? formatDateForDisplay(item.entryDate) : '';
             rows.push([
                 i+1,
                 item.jobOrder,
@@ -2363,7 +2438,7 @@
                 item.lotNumber || '',
                 item.handoverPerson,
                 item.shift || '',
-                item.entryDate || '',
+                displayDate,
                 item.entryTime || ''
             ]);
         });
@@ -2473,6 +2548,7 @@
         } else {
             html += `<table><thead><tr><th>#</th><th>কোড</th><th>নাম</th><th>রঙ</th><th>কোয়ান্টিটি</th><th>লট নং</th><th>দ্বারা</th><th>শিফট</th><th>তারিখ/সময়</th></tr></thead><tbody>`;
             handoverJO.forEach((item, idx) => {
+                const displayDate = item.entryDate ? formatDateForDisplay(item.entryDate) : '';
                 html += `<tr>
                     <td>${idx+1}</td>
                     <td>${item.itemCode}</td>
@@ -2482,7 +2558,7 @@
                     <td>${item.lotNumber || ''}</td>
                     <td>${item.handoverPerson}</td>
                     <td>${item.shift || ''}</td>
-                    <td>${item.entryDate || ''} ${item.entryTime || ''}</td>
+                    <td>${displayDate} ${item.entryTime || ''}</td>
                 </tr>`;
             });
             html += `</tbody></table>`;
@@ -2571,7 +2647,8 @@
         rows.push([], ['===== ডিটেইলস =====']);
         rows.push(['#','কোড','নাম','রঙ','কোয়ান্টিটি','লট নং','দ্বারা','শিফট','তারিখ']);
         handoverData.filter(h => h.jobOrder === currentReportJO).forEach((h,i) => {
-            rows.push([i+1, h.itemCode, h.itemName, h.color||'', h.handoverQty, h.lotNumber||'', h.handoverPerson, h.shift||'', h.entryDate||'']);
+            const displayDate = h.entryDate ? formatDateForDisplay(h.entryDate) : '';
+            rows.push([i+1, h.itemCode, h.itemName, h.color||'', h.handoverQty, h.lotNumber||'', h.handoverPerson, h.shift||'', displayDate]);
         });
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'JO Report');
@@ -2586,7 +2663,8 @@
         }
         let csv = 'জব অর্ডার,কোড,নাম,রঙ,কোয়ান্টিটি,লট নং,দ্বারা,শিফট,তারিখ,সময়\n';
         handoverData.forEach(h => {
-            csv += `${h.jobOrder},${h.itemCode},${h.itemName},${h.color||''},${h.handoverQty},${h.lotNumber||''},${h.handoverPerson},${h.shift||''},${h.entryDate||''},${h.entryTime||''}\n`;
+            const displayDate = h.entryDate ? formatDateForDisplay(h.entryDate) : '';
+            csv += `${h.jobOrder},${h.itemCode},${h.itemName},${h.color||''},${h.handoverQty},${h.lotNumber||''},${h.handoverPerson},${h.shift||''},${displayDate},${h.entryTime||''}\n`;
         });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
