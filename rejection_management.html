@@ -649,8 +649,8 @@
         </div>
         <nav class="nav-menu">
             <span class="nav-item active" onclick="switchTab('entry')"><i class="fas fa-plus-circle"></i> নিউ ডেটা এন্ট্রি</span>
-            <span class="nav-item" onclick="switchTab('report')"><i class="fas fa-chart-bar"></i> রিপোর্ট</span>
             <span class="nav-item" onclick="switchTab('summary')"><i class="fas fa-chart-pie"></i> সামারি</span>
+            <span class="nav-item" onclick="switchTab('report')"><i class="fas fa-chart-bar"></i> রিপোর্ট</span>
         </nav>
     </header>
 
@@ -704,7 +704,7 @@
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                     <div class="date-nav">
                         <button onclick="changeSummaryDate(-1)"><i class="fas fa-chevron-left"></i></button>
-                        <span class="date-display" id="summaryDateDisplay" style="font-weight:700; padding:0 10px;"><?php echo date('d/m/Y'); ?></span>
+                        <span class="date-display" id="summaryDateDisplay" style="font-weight:700; padding:0 10px;">23/07/2026</span>
                         <button onclick="changeSummaryDate(1)"><i class="fas fa-chevron-right"></i></button>
                         <button onclick="goToTodaySummary()" class="btn btn-sm btn-primary" style="padding:4px 12px;font-size:12px;">আজ</button>
                     </div>
@@ -836,19 +836,27 @@
 
 <script>
     // =========================================================
-    // Firebase Config
+    // 🔥 Firebase Config - Rejection Management
     // =========================================================
     const firebaseConfig = {
-        apiKey: "AIzaSyDbT-5voxU6UGWvzJ3i0VgZhagQICr2EBk",
-        authDomain: "handover-management-766fe.firebaseapp.com",
-        databaseURL: "https://handover-management-766fe-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "handover-management-766fe",
-        storageBucket: "handover-management-766fe.firebasestorage.app",
-        messagingSenderId: "572037213551",
-        appId: "1:572037213551:web:1b1514548fbc471c308c9a",
-        measurementId: "G-RPBDQR2G35"
+        apiKey: "AIzaSyD69St8w42LfoAT1oHYMZmRDmufqUVBGk",
+        authDomain: "rejection-management.firebaseapp.com",
+        projectId: "rejection-management",
+        storageBucket: "rejection-management.firebasestorage.app",
+        messagingSenderId: "510815850837",
+        appId: "1:510815850837:web:38e1500e78b2a17aab5fdc",
+        measurementId: "G-D4MQ7ZB831"
     };
 
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+
+    // =========================================================
+    // DEFAULT PASSWORDS
+    // =========================================================
     const DEFAULT_PASSWORDS = {
         'Plastic-03': '111',
         'Plastic-6.2': '444',
@@ -861,7 +869,6 @@
     // =========================================================
     let currentDepartment = '';
     let currentDepartmentKey = '';
-    let database = null;
     let currentStoredPassword = '';
 
     let rejectionData = [];
@@ -904,10 +911,8 @@
         errorEl.textContent = '⏳ যাচাই করা হচ্ছে...';
         errorEl.style.display = 'block';
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
         const deptKey = dept.replace(/\./g, '_');
-        const pwdRef = db.ref(`departments/${deptKey}/password`);
+        const pwdRef = database.ref(`departments/${deptKey}/password`);
 
         pwdRef.once('value').then(snap => {
             let storedPwd = snap.val();
@@ -923,7 +928,6 @@
                 currentDepartment = dept;
                 currentDepartmentKey = deptKey;
                 currentStoredPassword = storedPwd;
-                database = db;
                 initializeAppAfterLogin();
             } else {
                 errorEl.style.display = 'block';
@@ -1093,11 +1097,11 @@
             document.querySelector('.nav-item:nth-child(1)').classList.add('active');
         } else if (tab === 'summary') {
             document.getElementById('tabSummary').classList.add('active');
-            document.querySelector('.nav-item:nth-child(3)').classList.add('active');
+            document.querySelector('.nav-item:nth-child(2)').classList.add('active');
             updateShortSummary();
         } else if (tab === 'report') {
             document.getElementById('tabReport').classList.add('active');
-            document.querySelector('.nav-item:nth-child(2)').classList.add('active');
+            document.querySelector('.nav-item:nth-child(3)').classList.add('active');
             applyReportFilter();
         }
     }
