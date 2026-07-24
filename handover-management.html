@@ -21,7 +21,6 @@
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
 
-        /* Dark Mode Styles */
         body.dark-mode {
             background: #0a1628;
             color: #e0e8f0;
@@ -969,7 +968,6 @@
             box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.15) !important;
         }
 
-        /* Delete Section Styles */
         .delete-section {
             border: 2px solid #c62828;
             border-radius: 12px;
@@ -1040,7 +1038,6 @@
             transition: color 0.5s;
         }
 
-        /* Hide/Show Toggle Button */
         .section-toggle-btn {
             background: #6a1b9a;
             color: #fff;
@@ -1312,8 +1309,8 @@
                 <div class="form-group"><label>হ্যান্ডওভার করেছেন <span class="required">*</span></label><select id="handoverPerson" required><option value="">-- সিলেক্ট করুন --</option></select></div>
                 <div class="form-group"><label>শিফট</label>
                     <select id="handoverShift">
-                        <option value="Day">☀️ ডে (সকাল ৯টা - রাত ৯টা)</option>
-                        <option value="Night">🌙 নাইট (রাত ৯টা - সকাল ৯টা)</option>
+                        <option value="Day">☀️ ডে (সকাল ১১টা - রাত ১১টা)</option>
+                        <option value="Night">🌙 নাইট (রাত ১১টা - সকাল ১১টা)</option>
                     </select>
                 </div>
                 <div class="form-group" style="justify-content:flex-end;">
@@ -1713,23 +1710,31 @@
     };
 
     // =========================================================
-    // 📅 ডেট এবং শিফট ফাংশন
+    // 📅 ডেট এবং শিফট ফাংশন (নতুন টাইম অনুযায়ী)
     // =========================================================
     function getCurrentShiftInfo() {
         const now = new Date();
         const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const totalMinutes = hours * 60 + minutes;
         
         let shift, shiftDate;
         
-        if (hours >= 9 && hours < 21) {
+        // ডে শিফট: সকাল 11:00 AM থেকে রাত 11:00 PM
+        // নাইট শিফট: রাত 11:00 PM থেকে সকাল 11:00 AM
+        if (totalMinutes >= 11 * 60 && totalMinutes < 23 * 60) {
+            // সকাল 11am থেকে রাত 11pm - ডে শিফট
             shift = 'Day';
             shiftDate = new Date(now);
         } else {
+            // রাত 11pm থেকে সকাল 11am - নাইট শিফট
             shift = 'Night';
-            if (hours >= 0 && hours < 9) {
+            if (totalMinutes >= 0 && totalMinutes < 11 * 60) {
+                // সকাল 12am থেকে 11am - আগের দিনের নাইট শিফট
                 shiftDate = new Date(now);
                 shiftDate.setDate(shiftDate.getDate() - 1);
             } else {
+                // রাত 11pm থেকে 12am - আজকের নাইট শিফট
                 shiftDate = new Date(now);
             }
         }
@@ -1762,7 +1767,7 @@
     }
 
     function getShiftDisplay(shift) {
-        return shift === 'Day' ? '☀️ ডে (সকাল ৯টা - রাত ৯টা)' : '🌙 নাইট (রাত ৯টা - সকাল ৯টা)';
+        return shift === 'Day' ? '☀️ ডে (সকাল ১১টা - রাত ১১টা)' : '🌙 নাইট (রাত ১১টা - সকাল ১১টা)';
     }
 
     function getShiftClass(shift) {
@@ -1784,7 +1789,7 @@
         const storageDate = formatDateForStorage(shiftDate);
         document.getElementById('currentDateDisplay').dataset.storageDate = storageDate;
 
-        // Night shift হলে Dark Mode On
+        // Night shift হলে Dark Mode On, Day shift হলে Off
         if (shift === 'Night' && !isDarkMode) {
             toggleDarkMode();
         } else if (shift === 'Day' && isDarkMode) {
@@ -1902,7 +1907,6 @@
 
     function refreshData() {
         if (database && window._basePath) {
-            // Firebase data reload - listeners already handle this
             const masterRef = database.ref(`${window._basePath}/masterItems`);
             masterRef.once('value', snap => {
                 const val = snap.val();
@@ -1916,6 +1920,16 @@
             handoverRef.once('value', snap => {
                 const val = snap.val();
                 handoverData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
+                // রিভার্স অর্ডার - নতুন এন্ট্রি উপরে
+                handoverData.sort((a, b) => {
+                    const dateA = a.entryDate ? new Date(a.entryDate) : new Date(0);
+                    const dateB = b.entryDate ? new Date(b.entryDate) : new Date(0);
+                    // প্রথমে তারিখ অনুযায়ী, তারপর সময় অনুযায়ী
+                    if (dateA.getTime() !== dateB.getTime()) {
+                        return dateB.getTime() - dateA.getTime();
+                    }
+                    return (b.entryTime || '').localeCompare(a.entryTime || '');
+                });
                 filteredData = [...handoverData];
                 document.getElementById('handoverCount').textContent = handoverData.length;
                 applyHandoverFilter();
@@ -2334,7 +2348,6 @@
         document.getElementById('loginError').style.display = 'none';
         document.getElementById('deptSelect').value = '';
         updateLoginSubtitle();
-        // Dark Mode off
         if (isDarkMode) {
             toggleDarkMode();
         }
@@ -2429,6 +2442,15 @@
         handoverRef.on('value', snap => {
             const val = snap.val();
             handoverData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
+            // রিভার্স অর্ডার - নতুন এন্ট্রি উপরে
+            handoverData.sort((a, b) => {
+                const dateA = a.entryDate ? new Date(a.entryDate) : new Date(0);
+                const dateB = b.entryDate ? new Date(b.entryDate) : new Date(0);
+                if (dateA.getTime() !== dateB.getTime()) {
+                    return dateB.getTime() - dateA.getTime();
+                }
+                return (b.entryTime || '').localeCompare(a.entryTime || '');
+            });
             filteredData = [...handoverData];
             document.getElementById('handoverCount').textContent = handoverData.length;
             applyHandoverFilter();
@@ -2716,7 +2738,6 @@
         const jo = document.getElementById('deleteJoFilter').value;
         const search = document.getElementById('deleteSearchInput').value.toLowerCase().trim();
         
-        // ড্রপডাউনে জব অর্ডার লোড
         const joSet = [...new Set(masterItems.map(i => i.jobOrder))];
         const select = document.getElementById('deleteJoFilter');
         const currentVal = select.value;
@@ -2726,7 +2747,6 @@
         });
         select.value = currentVal;
         
-        // আইটেম ফিল্টার
         deleteFilteredItems = masterItems.filter(item => {
             let match = true;
             if (jo && item.jobOrder !== jo) match = false;
@@ -2735,7 +2755,6 @@
             return match;
         });
         
-        // প্রতিটি আইটেমে _deleteChecked প্রপার্টি রাখি (যদি না থাকে)
         deleteFilteredItems.forEach(item => {
             if (item._deleteChecked === undefined) {
                 item._deleteChecked = false;
@@ -2772,7 +2791,6 @@
         tbody.innerHTML = html;
         count.textContent = selected;
         
-        // Select All চেকবক্স আপডেট
         const selectAll = document.getElementById('deleteSelectAll');
         const checkboxes = document.querySelectorAll('.delete-checkbox');
         if (checkboxes.length > 0) {
@@ -2795,7 +2813,6 @@
         });
         document.getElementById('deleteSelectedCount').textContent = selected;
         
-        // Select All চেকবক্স আপডেট
         const selectAll = document.getElementById('deleteSelectAll');
         if (checkboxes.length > 0) {
             const allChecked = Array.from(checkboxes).every(cb => cb.checked);
@@ -3503,7 +3520,7 @@
     function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
 
     // =========================================================
-    // ফর্ম সাবমিট (সিরিয়াল নম্বর যোগ করা হয়েছে)
+    // ফর্ম সাবমিট
     // =========================================================
     document.getElementById('entryForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -3537,7 +3554,6 @@
             return;
         }
         
-        // সিরিয়াল নম্বর জেনারেট
         const serialNumber = getNextSerialNumber(entryDate, shift);
         
         const entryTime = new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
@@ -3556,6 +3572,15 @@
             serialNumber: serialNumber
         };
         handoverData.push(entry);
+        // রিভার্স অর্ডার বজায় রাখতে সর্ট
+        handoverData.sort((a, b) => {
+            const dateA = a.entryDate ? new Date(a.entryDate) : new Date(0);
+            const dateB = b.entryDate ? new Date(b.entryDate) : new Date(0);
+            if (dateA.getTime() !== dateB.getTime()) {
+                return dateB.getTime() - dateA.getTime();
+            }
+            return (b.entryTime || '').localeCompare(a.entryTime || '');
+        });
         saveHandover().then(() => {
             document.getElementById('handoverQty').value = '';
             document.getElementById('palletQty').value = '';
