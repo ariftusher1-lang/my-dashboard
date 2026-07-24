@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PRAN-RFL | Rejection Management</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Bangla', Arial, sans-serif;
+            background: #f0f4f8;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
+
+        body.login-active {
+            background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0d3b3a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            max-width: 420px;
+            width: 100%;
+            padding: 40px 35px 30px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            text-align: center;
+        }
+        .login-logo {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, #e53935, #c62828);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(229, 57, 53, 0.4);
+        }
+        .login-container h1 { color: #fff; font-size: 26px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .login-container .subtitle { color: #8aabcf; font-size: 13px; letter-spacing: 2px; font-weight: 600; text-transform: uppercase; margin-bottom: 25px; }
+        .login-field { text-align: left; margin-bottom: 16px; }
+        .login-field label { display: block; color: #a0bcdd; font-size: 12px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; }
+        .login-field select, .login-field input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        .login-field select option { background: #1a2a40; color: #fff; }
+        .login-field select:focus, .login-field input:focus {
+            outline: none;
+            border-color: #e53935;
+            box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.2);
+        }
+        .login-field input::placeholder { color: #6a8aaa; }
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #e53935, #c62828);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: 0.3s;
+            box-shadow: 0 8px 25px rgba(229, 57, 53, 0.35);
+        }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(229, 57, 53, 0.5); }
+        .login-error { color: #ff6b6b; font-size: 14px; margin-top: 12px; display: none; }
+        .login-footer { margin-top: 20px; font-size: 12px; color: #5a7a9a; letter-spacing: 0.5px; }
+
+        #mainApp { display: none; background: #f0f4f8; min-height: 100vh; }
+
+        .app-header {
+            background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 100%);
+            padding: 12px 20px;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .header-brand .brand-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #e53935, #c62828);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #fff;
+            font-weight: 800;
+        }
+        .header-brand h1 { color: #fff; font-size: 20px; font-weight: 700; letter-spacing: 0.3px; }
+        .header-brand h1 span { color: #e53935; }
+        .header-brand .dept-tag {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #8aabcf;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header-user .user-name { color: #e0e8f0; font-size: 14px; font-weight: 600; }
+        .header-user .user-name i { color: #4caf50; margin-right: 4px; }
+        .header-actions { display: flex; gap: 8px; }
+        .header-actions button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-logout { background: rgba(229, 57, 53, 0.2); color: #ef5350; }
+        .btn-logout:hover { background: rgba(229, 57, 53, 0.35); }
+        .btn-password { background: rgba(255,255,255,0.08); color: #8aabcf; }
+        .btn-password:hover { background: rgba(255,255,255,0.15); }
+
+        .nav-menu {
+            display: flex;
+            gap: 6px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 14px;
+        }
+        .nav-menu .nav-item {
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #8aabcf;
+            cursor: pointer;
+            transition: 0.3s;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-menu .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .nav-menu .nav-item.active { background: rgba(229, 57, 53, 0.2); color: #ef5350; border-color: rgba(229, 57, 53, 0.3); }
+        .nav-menu .nav-item i { font-size: 14px; }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: #fff;
+            padding: 14px 12px;
+            border-radius: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: 0.3s;
+        }
+        .summary-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        .summary-card .label { font-size: 11px; color: #7a8a9a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .summary-card .value { font-size: 24px; font-weight: 800; margin-top: 4px; }
+        .summary-card .value.blue { color: #1565c0; }
+        .summary-card .value.green { color: #2e7d32; }
+        .summary-card .value.red { color: #c62828; }
+        .summary-card .value.orange { color: #e65100; }
+        .summary-card .value.purple { color: #6a1b9a; }
+        .summary-card .value.teal { color: #00897b; }
+
+        .form-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-size: 13px; font-weight: 600; color: #2d3a4a; }
+        .form-group label .required { color: #e53935; }
+        .form-group input, .form-group select {
+            padding: 12px 14px;
+            border: 2px solid #e8ecf0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: 0.3s;
+            background: #fafbfc;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #1565c0;
+            box-shadow: 0 0 0 4px rgba(21, 101, 192, 0.1);
+        }
+        .form-group input[readonly] {
+            background: #f0f2f5;
+            color: #0a1628;
+            font-weight: 600;
+            border-color: #e0e4e8;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        .btn-primary { background: linear-gradient(135deg, #1565c0, #0d47a1); color: #fff; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(21, 101, 192, 0.35); }
+        .btn-success { background: linear-gradient(135deg, #2e7d32, #1b5e20); color: #fff; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(46, 125, 50, 0.35); }
+        .btn-warning { background: linear-gradient(135deg, #f57c00, #e65100); color: #fff; }
+        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245, 124, 0, 0.35); }
+        .btn-danger { background: linear-gradient(135deg, #c62828, #b71c1c); color: #fff; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(198, 40, 40, 0.35); }
+        .btn-info { background: linear-gradient(135deg, #00838f, #006064); color: #fff; }
+        .btn-info:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 131, 143, 0.35); }
+        .btn-purple { background: linear-gradient(135deg, #6a1b9a, #4a148c); color: #fff; }
+        .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(106, 27, 154, 0.35); }
+        .btn-outline { background: transparent; border: 2px solid #1565c0; color: #1565c0; }
+        .btn-outline:hover { background: #1565c0; color: #fff; }
+        .btn-sm { padding: 6px 14px; font-size: 13px; border-radius: 8px; }
+        .btn-xs { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+        .btn-excel { background: #1d6f42; color: #fff; }
+        .btn-excel:hover { background: #145a33; }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0a1628;
+            margin: 20px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title i { color: #e53935; }
+
+        .table-wrapper {
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin: 12px 0;
+        }
+        .table-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .table-wrapper th {
+            background: #0a1628;
+            color: #fff;
+            padding: 12px 10px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .table-wrapper td { padding: 10px; border-bottom: 1px solid #f0f2f5; text-align: center; }
+        .table-wrapper tr:hover td { background: #f8faff; }
+        .table-wrapper .text-left { text-align: left; }
+
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 12px 0 8px;
+        }
+        .table-toolbar .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .table-toolbar .search-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .table-toolbar .search-box input {
+            padding: 8px 14px;
+            border: 2px solid #e8ecf0;
+            border-radius: 8px;
+            font-size: 13px;
+            width: 200px;
+            transition: 0.3s;
+            background: #fff;
+        }
+        .table-toolbar .search-box input:focus {
+            outline: none;
+            border-color: #1565c0;
+            box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.1);
+        }
+        .table-toolbar .search-box .clear-search {
+            background: none;
+            border: none;
+            color: #8a9aaa;
+            cursor: pointer;
+            display: none;
+            font-size: 16px;
+            padding: 4px;
+        }
+        .table-toolbar .search-box .clear-search.show { display: block; }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 0;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 6px 14px;
+            border: 2px solid #e8ecf0;
+            border-radius: 8px;
+            background: #fff;
+            color: #2d3a4a;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .pagination button:hover:not(:disabled) {
+            background: #1565c0;
+            color: #fff;
+            border-color: #1565c0;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination .page-info {
+            font-size: 14px;
+            color: #2d3a4a;
+            font-weight: 600;
+            padding: 0 10px;
+        }
+        .pagination .page-numbers {
+            display: flex;
+            gap: 4px;
+        }
+        .pagination .page-numbers button {
+            padding: 6px 12px;
+            min-width: 36px;
+            text-align: center;
+        }
+        .pagination .page-numbers button.active {
+            background: #1565c0;
+            color: #fff;
+            border-color: #1565c0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 20px;
+            max-width: 750px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 {
+            font-size: 20px;
+            color: #0a1628;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal-content h3 i { color: #e53935; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .shift-indicator {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .shift-day { background: #fff3e0; color: #e65100; }
+        .shift-night { background: #e8eaf6; color: #283593; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .badge-done { background: #e8f5e9; color: #2e7d32; }
+        .badge-pending { background: #fff3e0; color: #e65100; }
+        .badge-complete { background: #e3f2fd; color: #0d47a1; }
+
+        /* Summary Table Styles */
+        .summary-table-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .summary-table-wrap .shift-card {
+            background: #f8faff;
+            border-radius: 12px;
+            padding: 12px 15px;
+            border: 1px solid #e8ecf0;
+        }
+        .summary-table-wrap .shift-card .shift-title {
+            font-size: 14px;
+            font-weight: 700;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e8ecf0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-table-wrap .shift-card .shift-title .day-badge {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 2px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .summary-table-wrap .shift-card .shift-title .night-badge {
+            background: #e8eaf6;
+            color: #283593;
+            padding: 2px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .summary-table-wrap .shift-card table {
+            width: 100%;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .summary-table-wrap .shift-card table th {
+            text-align: left;
+            font-size: 11px;
+            color: #7a8a9a;
+            font-weight: 600;
+            padding: 4px 6px;
+            border-bottom: 1px solid #e8ecf0;
+        }
+        .summary-table-wrap .shift-card table td {
+            padding: 4px 6px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .summary-table-wrap .shift-card .total-row {
+            font-weight: 700;
+            border-top: 2px solid #e8ecf0;
+            padding-top: 6px;
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .summary-table-wrap .shift-card .no-data {
+            text-align: center;
+            color: #8a9aaa;
+            padding: 10px 0;
+            font-size: 13px;
+        }
+        .summary-total {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 2px solid #e8ecf0;
+            flex-wrap: wrap;
+        }
+        .summary-total span {
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .summary-total .day-total { color: #e65100; }
+        .summary-total .night-total { color: #283593; }
+        .summary-total .grand-total { color: #0a1628; font-size: 17px; }
+
+        .short-summary-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 2px solid #e8ecf0;
+        }
+
+        .mt-8 { margin-top: 8px; }
+        .mt-12 { margin-top: 12px; }
+        .mb-12 { margin-bottom: 12px; }
+        .gap-8 { gap: 8px; }
+        .flex-wrap { flex-wrap: wrap; }
+        .flex-center { display: flex; align-items: center; justify-content: center; }
+        .text-muted { color: #7a8a9a; font-size: 13px; }
+
+        @media (max-width: 768px) {
+            .header-brand h1 { font-size: 16px; }
+            .header-brand .dept-tag { font-size: 10px; padding: 2px 10px; }
+            .header-user .user-name { font-size: 12px; }
+            .nav-menu .nav-item { padding: 6px 12px; font-size: 12px; }
+            .summary-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .summary-card { padding: 10px 8px; }
+            .summary-card .value { font-size: 18px; }
+            .form-row { grid-template-columns: 1fr; gap: 10px; }
+            .form-card { padding: 14px; }
+            .btn { padding: 10px 16px; font-size: 14px; }
+            .table-wrapper { font-size: 12px; overflow-x: auto; }
+            .table-wrapper th, .table-wrapper td { padding: 6px 8px; }
+            .modal-content { padding: 18px; margin: 10px; }
+            .table-toolbar { flex-direction: column; align-items: stretch; }
+            .table-toolbar .search-box input { width: 100%; }
+            .pagination { gap: 4px; }
+            .pagination .page-numbers button { padding: 4px 8px; min-width: 30px; font-size: 12px; }
+            .summary-table-wrap { grid-template-columns: 1fr; }
+            .short-summary-section .section-header { flex-direction: column; align-items: stretch; gap: 10px; }
+            .summary-total { gap: 15px; font-size: 13px; }
+        }
+        @media (max-width: 480px) {
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+            .header-top { flex-direction: column; align-items: stretch; }
+            .header-user { justify-content: space-between; }
+            .nav-menu { justify-content: center; }
+            .header-actions button { padding: 6px 12px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body class="login-active" id="bodyEl">
+
+<!-- ===== লগইন স্ক্রিন ===== -->
+<div id="loginScreen" class="login-container">
+    <div class="login-logo"><i class="fas fa-industry"></i></div>
+    <h1>PRAN-RFL</h1>
+    <div class="subtitle" id="loginSubtitle">Rejection Management System</div>
+    <form id="loginForm" onsubmit="return handleLogin()">
+        <div class="login-field">
+            <label for="deptSelect"><i class="fas fa-building"></i> ডিপার্টমেন্ট নির্বাচন করুন</label>
+            <select id="deptSelect" required onchange="updateLoginSubtitle()">
+                <option value="">-- সিলেক্ট করুন --</option>
+                <option value="Plastic-03">প্লাস্টিক-০৩</option>
+                <option value="Plastic-6.2">প্লাস্টিক-৬.২</option>
+                <option value="Plastic-7.2">প্লাস্টিক-৭.২</option>
+                <option value="Plastic-7.3">প্লাস্টিক-৭.৩</option>
+            </select>
+        </div>
+        <div class="login-field">
+            <label for="passwordInput"><i class="fas fa-lock"></i> পাসওয়ার্ড</label>
+            <input type="password" id="passwordInput" placeholder="পাসওয়ার্ড দিন" required>
+        </div>
+        <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> লগইন</button>
+        <div id="loginError" class="login-error">❌ ভুল পাসওয়ার্ড বা ডিপার্টমেন্ট!</div>
+    </form>
+    <div class="login-footer">🔒 শুধুমাত্র প্রোডাকশন ফ্লোরের জন্য</div>
+</div>
+
+<!-- ===== মেইন অ্যাপ ===== -->
+<div id="mainApp">
+<div class="container">
+
+    <header class="app-header">
+        <div class="header-top">
+            <div class="header-brand">
+                <div class="brand-icon"><span>PR</span></div>
+                <div>
+                    <h1>PRAN-RFL <span>|</span> <span id="deptDisplay">প্লাস্টিক</span></h1>
+                    <div class="dept-tag" id="deptTag">Plastic-03</div>
+                </div>
+            </div>
+            <div class="header-user">
+                <span class="user-name"><i class="fas fa-circle" style="color:#4caf50;font-size:10px;"></i> <span id="userNameDisplay">Arifuzzaman</span></span>
+                <div class="header-actions">
+                    <button class="btn-password" onclick="openChangePassword()"><i class="fas fa-key"></i> পাসওয়ার্ড</button>
+                    <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> লগআউট</button>
+                </div>
+            </div>
+        </div>
+        <nav class="nav-menu">
+            <span class="nav-item active" onclick="switchTab('entry')"><i class="fas fa-plus-circle"></i> নিউ ডেটা এন্ট্রি</span>
+            <span class="nav-item" onclick="switchTab('report')"><i class="fas fa-chart-bar"></i> রিপোর্ট</span>
+            <span class="nav-item" onclick="switchTab('summary')"><i class="fas fa-chart-pie"></i> সামারি</span>
+        </nav>
+    </header>
+
+    <!-- ===== সারাংশ কার্ড ===== -->
+    <div class="summary-grid" id="summaryCard">
+        <div class="summary-card"><div class="label">📋 মোট এন্ট্রি</div><div class="value blue" id="totalEntries">0</div></div>
+        <div class="summary-card"><div class="label">📦 মোট রিজেকশন</div><div class="value red" id="totalRejection">0</div></div>
+        <div class="summary-card"><div class="label">🏃 রানার রিজেকশন</div><div class="value orange" id="totalRunnerRejection">0</div></div>
+        <div class="summary-card"><div class="label">🔧 ল্যাম রিজেকশন</div><div class="value purple" id="totalLamRejection">0</div></div>
+    </div>
+
+    <!-- ===== নিউ ডেটা এন্ট্রি ===== -->
+    <div id="tabEntry" class="tab-content active">
+        <div class="section-title"><i class="fas fa-pen"></i> রিজেকশন ডেটা এন্ট্রি</div>
+        <form id="entryForm" class="form-card">
+            <div class="form-row">
+                <div class="form-group"><label>তারিখ <span class="required">*</span></label><input type="date" id="entryDate" required></div>
+                <div class="form-group"><label>শিফট <span class="required">*</span></label>
+                    <select id="shiftSelect" required>
+                        <option value="">-- সিলেক্ট করুন --</option>
+                        <option value="Day">☀️ ডে</option>
+                        <option value="Night">🌙 নাইট</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>রিজেকশন প্রোডাক্ট (KG) <span class="required">*</span></label><input type="number" id="rejectionProduct" placeholder="০" required min="0" step="0.01"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>🏃 রানার রিজেকশন (KG) <span class="required">*</span></label><input type="number" id="runnerRejection" placeholder="০" required min="0" step="0.01"></div>
+                <div class="form-group"><label>🔧 ল্যাম রিজেকশন (KG) <span class="required">*</span></label><input type="number" id="lamRejection" placeholder="০" required min="0" step="0.01"></div>
+                <div class="form-group"><label>রিজেকশন করেছেন <span class="required">*</span></label>
+                    <select id="rejectionPerson" required>
+                        <option value="">-- সিলেক্ট করুন --</option>
+                        <option value="Mr. Sumon">মি. সুমন</option>
+                        <option value="Mr. Mithun">মি. মিঠুন</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="justify-content:flex-end;">
+                    <button type="submit" class="btn btn-success" style="width:100%;"><i class="fas fa-plus"></i> এন্ট্রি করুন</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== সামারি ===== -->
+    <div id="tabSummary" class="tab-content">
+        <div class="short-summary-section">
+            <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+                <h3><i class="fas fa-chart-pie"></i> 📊 রিজেকশন সামারি</h3>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <div class="date-nav">
+                        <button onclick="changeSummaryDate(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <span class="date-display" id="summaryDateDisplay" style="font-weight:700; padding:0 10px;"><?php echo date('d/m/Y'); ?></span>
+                        <button onclick="changeSummaryDate(1)"><i class="fas fa-chevron-right"></i></button>
+                        <button onclick="goToTodaySummary()" class="btn btn-sm btn-primary" style="padding:4px 12px;font-size:12px;">আজ</button>
+                    </div>
+                </div>
+            </div>
+            <div class="summary-table-wrap" id="summaryTableWrap">
+                <div class="shift-card">
+                    <div class="shift-title">
+                        <span><i class="fas fa-sun" style="color:#e65100;"></i> ডে শিফট</span>
+                        <span class="day-badge">☀️ ডে</span>
+                    </div>
+                    <div id="dayShiftSummary">
+                        <div class="no-data">কোন ডেটা নেই</div>
+                    </div>
+                </div>
+                <div class="shift-card">
+                    <div class="shift-title">
+                        <span><i class="fas fa-moon" style="color:#283593;"></i> নাইট শিফট</span>
+                        <span class="night-badge">🌙 নাইট</span>
+                    </div>
+                    <div id="nightShiftSummary">
+                        <div class="no-data">কোন ডেটা নেই</div>
+                    </div>
+                </div>
+            </div>
+            <div class="summary-total">
+                <span class="day-total">☀️ ডে মোট: <strong id="dayTotal">0</strong></span>
+                <span class="night-total">🌙 নাইট মোট: <strong id="nightTotal">0</strong></span>
+                <span class="grand-total">📦 মোট: <strong id="grandTotal">0</strong></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== রিপোর্ট ===== -->
+    <div id="tabReport" class="tab-content">
+        <div class="section-title"><i class="fas fa-chart-bar"></i> রিজেকশন রিপোর্ট</div>
+        <div class="form-card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>তারিখ ফিল্টার</label>
+                    <input type="date" id="reportFilterDate" onchange="applyReportFilter()">
+                </div>
+                <div class="form-group">
+                    <label>শিফট ফিল্টার</label>
+                    <select id="reportFilterShift" onchange="applyReportFilter()">
+                        <option value="">সব</option>
+                        <option value="Day">☀️ ডে</option>
+                        <option value="Night">🌙 নাইট</option>
+                    </select>
+                </div>
+                <div class="form-group" style="justify-content:flex-end;">
+                    <button class="btn btn-excel btn-sm" onclick="downloadReportExcel()"><i class="fas fa-file-excel"></i> এক্সেল ডাউনলোড</button>
+                    <button class="btn btn-info btn-sm" onclick="clearReportFilters()"><i class="fas fa-times"></i> ক্লিয়ার</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Summary -->
+        <div class="summary-grid" id="reportSummary">
+            <div class="summary-card"><div class="label">📦 মোট রিজেকশন</div><div class="value red" id="reportTotalRejection">0</div></div>
+            <div class="summary-card"><div class="label">🏃 রানার রিজেকশন</div><div class="value orange" id="reportTotalRunner">0</div></div>
+            <div class="summary-card"><div class="label">🔧 ল্যাম রিজেকশন</div><div class="value purple" id="reportTotalLam">0</div></div>
+        </div>
+
+        <!-- Report Table -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>তারিখ</th>
+                        <th>শিফট</th>
+                        <th>রিজেকশন প্রোডাক্ট</th>
+                        <th>রানার রিজেকশন</th>
+                        <th>ল্যাম রিজেকশন</th>
+                        <th>মোট রিজেকশন</th>
+                        <th>দ্বারা</th>
+                        <th>অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="reportBody">
+                    <tr><td colspan="9" class="text-muted" style="text-align:center;padding:20px;">কোন ডেটা নেই</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="reportPagination">
+            <button id="reportPrevBtn" onclick="goToReportPage(currentReportPage - 1)" disabled><i class="fas fa-chevron-left"></i> আগের</button>
+            <div class="page-numbers" id="reportPageNumbers"></div>
+            <button id="reportNextBtn" onclick="goToReportPage(currentReportPage + 1)">পরবর্তী <i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+
+    <div class="footer-note" style="margin-top:20px;text-align:center;color:#8a9aaa;font-size:12px;">
+        <i class="fas fa-fire"></i> Firebase দ্বারা পরিচালিত | © ২০২৬ PRAN-RFL
+    </div>
+</div>
+</div>
+
+<!-- ===== মডালসমূহ ===== -->
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <h3><i class="fas fa-edit"></i> এডিট করুন</h3>
+        <div class="form-group"><label>রিজেকশন প্রোডাক্ট (KG):</label><input type="number" id="editRejectionProduct" min="0" step="0.01"></div>
+        <div class="form-group"><label>রানার রিজেকশন (KG):</label><input type="number" id="editRunnerRejection" min="0" step="0.01"></div>
+        <div class="form-group"><label>ল্যাম রিজেকশন (KG):</label><input type="number" id="editLamRejection" min="0" step="0.01"></div>
+        <div class="form-group"><label>রিজেকশন করেছেন:</label><input type="text" id="editRejectionPerson"></div>
+        <div class="modal-actions">
+            <button class="btn btn-danger btn-sm" onclick="closeEditModal()">বাতিল</button>
+            <button class="btn btn-success btn-sm" onclick="confirmEdit()"><i class="fas fa-save"></i> সেভ</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="changePwdModal">
+    <div class="modal-content">
+        <h3><i class="fas fa-key"></i> পাসওয়ার্ড পরিবর্তন</h3>
+        <div class="form-group"><label>পুরাতন পাসওয়ার্ড</label><input type="password" id="oldPassword" placeholder="পুরাতন পাসওয়ার্ড"></div>
+        <div class="form-group"><label>নতুন পাসওয়ার্ড</label><input type="password" id="newPassword" placeholder="নতুন পাসওয়ার্ড"></div>
+        <div class="form-group"><label>নতুন পাসওয়ার্ড নিশ্চিত করুন</label><input type="password" id="confirmPassword" placeholder="নতুন পাসওয়ার্ড পুনরায়"></div>
+        <div id="pwdError" style="color:red;font-size:13px;display:none;margin:10px 0;"></div>
+        <div class="modal-actions">
+            <button class="btn btn-danger btn-sm" onclick="closeChangePassword()">বাতিল</button>
+            <button class="btn btn-success btn-sm" onclick="confirmChangePassword()"><i class="fas fa-save"></i> আপডেট</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =========================================================
+    // Firebase Config
+    // =========================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyDbT-5voxU6UGWvzJ3i0VgZhagQICr2EBk",
+        authDomain: "handover-management-766fe.firebaseapp.com",
+        databaseURL: "https://handover-management-766fe-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "handover-management-766fe",
+        storageBucket: "handover-management-766fe.firebasestorage.app",
+        messagingSenderId: "572037213551",
+        appId: "1:572037213551:web:1b1514548fbc471c308c9a",
+        measurementId: "G-RPBDQR2G35"
+    };
+
+    const DEFAULT_PASSWORDS = {
+        'Plastic-03': '111',
+        'Plastic-6.2': '444',
+        'Plastic-7.2': '555',
+        'Plastic-7.3': '666'
+    };
+
+    // =========================================================
+    // গ্লোবাল স্টেট
+    // =========================================================
+    let currentDepartment = '';
+    let currentDepartmentKey = '';
+    let database = null;
+    let currentStoredPassword = '';
+
+    let rejectionData = [];
+    let filteredReportData = [];
+    let currentReportPage = 1;
+    const itemsPerPage = 10;
+    let editIndex = null;
+
+    // Summary Date
+    let summaryDate = new Date();
+    let summaryDateStr = '';
+
+    // =========================================================
+    // লগইন
+    // =========================================================
+    function updateLoginSubtitle() {
+        const dept = document.getElementById('deptSelect').value;
+        const subtitle = document.getElementById('loginSubtitle');
+        const names = {
+            'Plastic-03': 'প্লাস্টিক-০৩',
+            'Plastic-6.2': 'প্লাস্টিক-৬.২',
+            'Plastic-7.2': 'প্লাস্টিক-৭.২',
+            'Plastic-7.3': 'প্লাস্টিক-৭.৩'
+        };
+        subtitle.textContent = dept ? (names[dept] || dept) + ' - Rejection Management' : 'Rejection Management System';
+    }
+
+    function handleLogin() {
+        const dept = document.getElementById('deptSelect').value;
+        const pwd = document.getElementById('passwordInput').value.trim();
+        const errorEl = document.getElementById('loginError');
+
+        if (!dept) {
+            errorEl.textContent = '❌ অনুগ্রহ করে একটি ডিপার্টমেন্ট নির্বাচন করুন!';
+            errorEl.style.display = 'block';
+            return false;
+        }
+
+        errorEl.style.display = 'none';
+        errorEl.textContent = '⏳ যাচাই করা হচ্ছে...';
+        errorEl.style.display = 'block';
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const deptKey = dept.replace(/\./g, '_');
+        const pwdRef = db.ref(`departments/${deptKey}/password`);
+
+        pwdRef.once('value').then(snap => {
+            let storedPwd = snap.val();
+            if (storedPwd === null) {
+                const defaultPwd = DEFAULT_PASSWORDS[dept] || '123';
+                storedPwd = defaultPwd;
+                return pwdRef.set(defaultPwd).then(() => defaultPwd);
+            }
+            return storedPwd;
+        }).then(storedPwd => {
+            if (pwd === storedPwd) {
+                errorEl.style.display = 'none';
+                currentDepartment = dept;
+                currentDepartmentKey = deptKey;
+                currentStoredPassword = storedPwd;
+                database = db;
+                initializeAppAfterLogin();
+            } else {
+                errorEl.style.display = 'block';
+                errorEl.textContent = '❌ ভুল পাসওয়ার্ড!';
+            }
+        }).catch(err => {
+            errorEl.style.display = 'block';
+            errorEl.textContent = '❌ এরর: ' + err.message;
+        });
+
+        return false;
+    }
+
+    function initializeAppAfterLogin() {
+        const basePath = `departments/${currentDepartmentKey}`;
+        window._basePath = basePath;
+        
+        const names = {
+            'Plastic-03': 'প্লাস্টিক-০৩',
+            'Plastic-6.2': 'প্লাস্টিক-৬.২',
+            'Plastic-7.2': 'প্লাস্টিক-৭.২',
+            'Plastic-7.3': 'প্লাস্টিক-৭.৩'
+        };
+        document.getElementById('deptDisplay').textContent = names[currentDepartment] || currentDepartment;
+        document.getElementById('deptTag').textContent = currentDepartment;
+        document.getElementById('userNameDisplay').textContent = 'Arifuzzaman';
+
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        document.getElementById('bodyEl').classList.remove('login-active');
+
+        startListening(basePath);
+        
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('entryDate').value = today;
+        
+        // Summary Date Set
+        const { shift, shiftDate } = getCurrentShiftInfo();
+        summaryDate = new Date(shiftDate);
+        updateShortSummary();
+    }
+
+    function logout() {
+        if (!confirm('আপনি কি লগআউট করতে চান?')) return;
+        if (database) {
+            database.ref(window._basePath + '/rejectionData').off();
+        }
+        rejectionData = [];
+        currentDepartment = ''; currentDepartmentKey = ''; currentStoredPassword = ''; database = null;
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('bodyEl').classList.add('login-active');
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('loginError').style.display = 'none';
+        document.getElementById('deptSelect').value = '';
+        updateLoginSubtitle();
+    }
+
+    // =========================================================
+    // পাসওয়ার্ড চেঞ্জ
+    // =========================================================
+    function openChangePassword() {
+        document.getElementById('oldPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.getElementById('pwdError').style.display = 'none';
+        document.getElementById('changePwdModal').style.display = 'flex';
+    }
+
+    function closeChangePassword() {
+        document.getElementById('changePwdModal').style.display = 'none';
+    }
+
+    function confirmChangePassword() {
+        const old = document.getElementById('oldPassword').value.trim();
+        const newPwd = document.getElementById('newPassword').value.trim();
+        const confirm = document.getElementById('confirmPassword').value.trim();
+        const errorEl = document.getElementById('pwdError');
+
+        if (!old || !newPwd || !confirm) {
+            errorEl.textContent = '❌ সব ফিল্ড পূরণ করুন।';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (old !== currentStoredPassword) {
+            errorEl.textContent = '❌ পুরাতন পাসওয়ার্ড ভুল।';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (newPwd.length < 4) {
+            errorEl.textContent = '❌ নতুন পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে।';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (newPwd !== confirm) {
+            errorEl.textContent = '❌ নতুন পাসওয়ার্ড এবং নিশ্চিতকরণ মেলে না।';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        const pwdRef = database.ref(`departments/${currentDepartmentKey}/password`);
+        pwdRef.set(newPwd).then(() => {
+            currentStoredPassword = newPwd;
+            closeChangePassword();
+            alert('✅ পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!');
+        }).catch(err => {
+            errorEl.textContent = '❌ আপডেট ব্যর্থ: ' + err.message;
+            errorEl.style.display = 'block';
+        });
+    }
+
+    // =========================================================
+    // 📅 ডেট এবং শিফট ফাংশন
+    // =========================================================
+    function getCurrentShiftInfo() {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        
+        let shift, shiftDate;
+        
+        if (hours >= 9 && hours < 21) {
+            shift = 'Day';
+            shiftDate = new Date(now);
+        } else {
+            shift = 'Night';
+            if (hours >= 21 || hours < 9) {
+                if (hours >= 0 && hours < 9) {
+                    shiftDate = new Date(now);
+                    shiftDate.setDate(shiftDate.getDate() - 1);
+                } else {
+                    shiftDate = new Date(now);
+                }
+            } else {
+                shiftDate = new Date(now);
+            }
+        }
+        
+        return { shift, shiftDate };
+    }
+
+    function formatDateForDisplay(date) {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    function formatDateForStorage(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // =========================================================
+    // ট্যাব স্যুইচ
+    // =========================================================
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        
+        if (tab === 'entry') {
+            document.getElementById('tabEntry').classList.add('active');
+            document.querySelector('.nav-item:nth-child(1)').classList.add('active');
+        } else if (tab === 'summary') {
+            document.getElementById('tabSummary').classList.add('active');
+            document.querySelector('.nav-item:nth-child(3)').classList.add('active');
+            updateShortSummary();
+        } else if (tab === 'report') {
+            document.getElementById('tabReport').classList.add('active');
+            document.querySelector('.nav-item:nth-child(2)').classList.add('active');
+            applyReportFilter();
+        }
+    }
+
+    // =========================================================
+    // ফায়ারবেস লিসেনার
+    // =========================================================
+    function startListening(basePath) {
+        const rejectionRef = database.ref(`${basePath}/rejectionData`);
+        rejectionRef.on('value', snap => {
+            const val = snap.val();
+            rejectionData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
+            updateSummary();
+            updateShortSummary();
+            applyReportFilter();
+        }, err => alert('❌ ডেটা লোড এরর: ' + err.message));
+    }
+
+    function saveRejectionData() {
+        const obj = {};
+        rejectionData.forEach(item => {
+            const key = item._firebaseKey || database.ref(`${window._basePath}/rejectionData`).push().key;
+            const { _firebaseKey, ...clean } = item;
+            obj[key] = clean;
+        });
+        return database.ref(`${window._basePath}/rejectionData`).set(obj);
+    }
+
+    // =========================================================
+    // সামারি আপডেট
+    // =========================================================
+    function updateSummary() {
+        const total = rejectionData.length;
+        const totalRejection = rejectionData.reduce((sum, item) => sum + (item.rejectionProduct || 0), 0);
+        const totalRunner = rejectionData.reduce((sum, item) => sum + (item.runnerRejection || 0), 0);
+        const totalLam = rejectionData.reduce((sum, item) => sum + (item.lamRejection || 0), 0);
+
+        document.getElementById('totalEntries').textContent = total;
+        document.getElementById('totalRejection').textContent = totalRejection.toFixed(2);
+        document.getElementById('totalRunnerRejection').textContent = totalRunner.toFixed(2);
+        document.getElementById('totalLamRejection').textContent = totalLam.toFixed(2);
+    }
+
+    // =========================================================
+    // Short Summary Functions
+    // =========================================================
+    function updateShortSummary() {
+        const dateStr = formatDateForStorage(summaryDate);
+        const displayStr = formatDateForDisplay(summaryDate);
+        document.getElementById('summaryDateDisplay').textContent = displayStr;
+        summaryDateStr = dateStr;
+
+        const dayData = rejectionData.filter(h => h.date === dateStr && h.shift === 'Day');
+        const nightData = rejectionData.filter(h => h.date === dateStr && h.shift === 'Night');
+
+        renderShiftSummary('dayShiftSummary', dayData, '☀️ ডে', 'day');
+        renderShiftSummary('nightShiftSummary', nightData, '🌙 নাইট', 'night');
+
+        const dayTotal = dayData.reduce((sum, h) => sum + (h.rejectionProduct || 0) + (h.runnerRejection || 0) + (h.lamRejection || 0), 0);
+        const nightTotal = nightData.reduce((sum, h) => sum + (h.rejectionProduct || 0) + (h.runnerRejection || 0) + (h.lamRejection || 0), 0);
+        document.getElementById('dayTotal').textContent = dayTotal.toFixed(2);
+        document.getElementById('nightTotal').textContent = nightTotal.toFixed(2);
+        document.getElementById('grandTotal').textContent = (dayTotal + nightTotal).toFixed(2);
+    }
+
+    function renderShiftSummary(containerId, data, shiftName, type) {
+        const container = document.getElementById(containerId);
+        
+        if (data.length === 0) {
+            container.innerHTML = `<div class="no-data">${shiftName} শিফটে কোন ডেটা নেই</div>`;
+            return;
+        }
+
+        // পার্সন ওয়াইজ রিজেকশন যোগ করা
+        const personMap = {};
+        data.forEach(item => {
+            const person = item.person || 'অজানা';
+            if (!personMap[person]) {
+                personMap[person] = { rejectionProduct: 0, runnerRejection: 0, lamRejection: 0, total: 0 };
+            }
+            personMap[person].rejectionProduct += (item.rejectionProduct || 0);
+            personMap[person].runnerRejection += (item.runnerRejection || 0);
+            personMap[person].lamRejection += (item.lamRejection || 0);
+            personMap[person].total += (item.rejectionProduct || 0) + (item.runnerRejection || 0) + (item.lamRejection || 0);
+        });
+
+        // সাজানো (যে বেশি রিজেকশন দিয়েছে সে আগে)
+        const sorted = Object.entries(personMap).sort((a, b) => b[1].total - a[1].total);
+        
+        let html = `<table>
+            <thead>
+                <tr>
+                    <th style="text-align:left;">রিজেকশন করেছেন</th>
+                    <th style="text-align:right;">রিজেকশন প্রোডাক্ট</th>
+                    <th style="text-align:right;">রানার রিজেকশন</th>
+                    <th style="text-align:right;">ল্যাম রিজেকশন</th>
+                    <th style="text-align:right;">মোট</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        
+        sorted.forEach(([person, values]) => {
+            html += `<tr>
+                <td style="text-align:left;font-weight:600;">${person}</td>
+                <td style="text-align:right;">${values.rejectionProduct.toFixed(2)}</td>
+                <td style="text-align:right;">${values.runnerRejection.toFixed(2)}</td>
+                <td style="text-align:right;">${values.lamRejection.toFixed(2)}</td>
+                <td style="text-align:right;font-weight:700;color:#c62828;">${values.total.toFixed(2)}</td>
+            </tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        html += `<div class="total-row">
+            <span>মোট</span>
+            <span style="color:#c62828;">${data.reduce((sum, h) => sum + (h.rejectionProduct || 0), 0).toFixed(2)}</span>
+            <span style="color:#c62828;">${data.reduce((sum, h) => sum + (h.runnerRejection || 0), 0).toFixed(2)}</span>
+            <span style="color:#c62828;">${data.reduce((sum, h) => sum + (h.lamRejection || 0), 0).toFixed(2)}</span>
+            <span style="color:#c62828;font-weight:700;">${data.reduce((sum, h) => sum + (h.rejectionProduct || 0) + (h.runnerRejection || 0) + (h.lamRejection || 0), 0).toFixed(2)}</span>
+        </div>`;
+        
+        container.innerHTML = html;
+    }
+
+    function changeSummaryDate(delta) {
+        summaryDate.setDate(summaryDate.getDate() + delta);
+        updateShortSummary();
+    }
+
+    function goToTodaySummary() {
+        const { shift, shiftDate } = getCurrentShiftInfo();
+        summaryDate = new Date(shiftDate);
+        updateShortSummary();
+    }
+
+    // =========================================================
+    // ফর্ম সাবমিট
+    // =========================================================
+    document.getElementById('entryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const date = document.getElementById('entryDate').value;
+        const shift = document.getElementById('shiftSelect').value;
+        const rejectionProduct = parseFloat(document.getElementById('rejectionProduct').value) || 0;
+        const runnerRejection = parseFloat(document.getElementById('runnerRejection').value) || 0;
+        const lamRejection = parseFloat(document.getElementById('lamRejection').value) || 0;
+        const person = document.getElementById('rejectionPerson').value;
+
+        if (!date || !shift || !person) {
+            alert('সব * ফিল্ড পূরণ করুন!');
+            return;
+        }
+
+        if (rejectionProduct <= 0 && runnerRejection <= 0 && lamRejection <= 0) {
+            alert('কমপক্ষে একটি রিজেকশন মান দিন!');
+            return;
+        }
+
+        const entry = {
+            date: date,
+            shift: shift,
+            rejectionProduct: rejectionProduct,
+            runnerRejection: runnerRejection,
+            lamRejection: lamRejection,
+            person: person,
+            entryTime: new Date().toLocaleString('bn-BD', { timeZone: 'Asia/Dhaka' })
+        };
+
+        rejectionData.push(entry);
+        saveRejectionData().then(() => {
+            document.getElementById('rejectionProduct').value = '';
+            document.getElementById('runnerRejection').value = '';
+            document.getElementById('lamRejection').value = '';
+            document.getElementById('rejectionPerson').value = '';
+            document.getElementById('shiftSelect').value = '';
+            alert('✅ রিজেকশন ডেটা সেভ হয়েছে!');
+        }).catch(err => alert('❌ সেভ ব্যর্থ! ' + err.message));
+    });
+
+    // =========================================================
+    // রিপোর্ট ফিল্টার
+    // =========================================================
+    function applyReportFilter() {
+        const filterDate = document.getElementById('reportFilterDate').value;
+        const filterShift = document.getElementById('reportFilterShift').value;
+
+        filteredReportData = rejectionData.filter(item => {
+            if (filterDate && item.date !== filterDate) return false;
+            if (filterShift && item.shift !== filterShift) return false;
+            return true;
+        });
+
+        // সাজানো (তারিখ অনুযায়ী নতুন থেকে পুরাতন)
+        filteredReportData.sort((a, b) => b.date.localeCompare(a.date));
+
+        // রিপোর্ট সামারি আপডেট
+        const totalRej = filteredReportData.reduce((sum, item) => sum + (item.rejectionProduct || 0), 0);
+        const totalRunner = filteredReportData.reduce((sum, item) => sum + (item.runnerRejection || 0), 0);
+        const totalLam = filteredReportData.reduce((sum, item) => sum + (item.lamRejection || 0), 0);
+
+        document.getElementById('reportTotalRejection').textContent = totalRej.toFixed(2);
+        document.getElementById('reportTotalRunner').textContent = totalRunner.toFixed(2);
+        document.getElementById('reportTotalLam').textContent = totalLam.toFixed(2);
+
+        currentReportPage = 1;
+        renderReportTable();
+    }
+
+    function clearReportFilters() {
+        document.getElementById('reportFilterDate').value = '';
+        document.getElementById('reportFilterShift').value = '';
+        applyReportFilter();
+    }
+
+    // =========================================================
+    // রিপোর্ট টেবিল রেন্ডার
+    // =========================================================
+    function renderReportTable() {
+        const totalItems = filteredReportData.length;
+        const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+        
+        if (currentReportPage < 1) currentReportPage = 1;
+        if (currentReportPage > totalPages) currentReportPage = totalPages;
+        
+        const startIndex = (currentReportPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+        const pageData = filteredReportData.slice(startIndex, endIndex);
+        
+        const tbody = document.getElementById('reportBody');
+        if (pageData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#8a9aaa;padding:20px;">কোন ডেটা নেই</td></tr>';
+        } else {
+            let html = '';
+            pageData.forEach((item, i) => {
+                const globalIndex = rejectionData.indexOf(item);
+                const total = (item.rejectionProduct || 0) + (item.runnerRejection || 0) + (item.lamRejection || 0);
+                html += `<tr>
+                    <td>${startIndex + i + 1}</td>
+                    <td>${item.date}</td>
+                    <td>${item.shift === 'Day' ? '☀️ ডে' : '🌙 নাইট'}</td>
+                    <td>${(item.rejectionProduct || 0).toFixed(2)}</td>
+                    <td>${(item.runnerRejection || 0).toFixed(2)}</td>
+                    <td>${(item.lamRejection || 0).toFixed(2)}</td>
+                    <td style="font-weight:bold;color:#c62828;">${total.toFixed(2)}</td>
+                    <td>${item.person}</td>
+                    <td>
+                        <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">
+                            <button class="btn btn-warning btn-xs" onclick="openEditModal(${globalIndex})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger btn-xs" onclick="deleteEntry(${globalIndex})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+        
+        updateReportPagination(totalPages, totalItems);
+    }
+
+    function updateReportPagination(totalPages, totalItems) {
+        const prevBtn = document.getElementById('reportPrevBtn');
+        const nextBtn = document.getElementById('reportNextBtn');
+        const pageNumbers = document.getElementById('reportPageNumbers');
+        
+        prevBtn.disabled = (currentReportPage <= 1);
+        nextBtn.disabled = (currentReportPage >= totalPages);
+        
+        let html = '';
+        html += `<button class="${currentReportPage === 1 ? 'active' : ''}" onclick="goToReportPage(1)">1</button>`;
+        
+        if (totalPages > 5) {
+            if (currentReportPage > 3) {
+                html += `<button disabled>…</button>`;
+            }
+            for (let i = Math.max(2, currentReportPage - 1); i <= Math.min(totalPages - 1, currentReportPage + 1); i++) {
+                if (i === 1 || i === totalPages) continue;
+                html += `<button class="${currentReportPage === i ? 'active' : ''}" onclick="goToReportPage(${i})">${i}</button>`;
+            }
+            if (currentReportPage < totalPages - 2) {
+                html += `<button disabled>…</button>`;
+            }
+        } else {
+            for (let i = 2; i < totalPages; i++) {
+                html += `<button class="${currentReportPage === i ? 'active' : ''}" onclick="goToReportPage(${i})">${i}</button>`;
+            }
+        }
+        
+        if (totalPages > 1) {
+            html += `<button class="${currentReportPage === totalPages ? 'active' : ''}" onclick="goToReportPage(${totalPages})">${totalPages}</button>`;
+        }
+        
+        pageNumbers.innerHTML = html;
+    }
+
+    function goToReportPage(page) {
+        const totalItems = filteredReportData.length;
+        const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+        currentReportPage = page;
+        renderReportTable();
+        document.querySelector('.table-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // =========================================================
+    // এডিট ফাংশন
+    // =========================================================
+    function openEditModal(index) {
+        const item = rejectionData[index];
+        if (!item) return;
+        editIndex = index;
+        document.getElementById('editRejectionProduct').value = item.rejectionProduct || 0;
+        document.getElementById('editRunnerRejection').value = item.runnerRejection || 0;
+        document.getElementById('editLamRejection').value = item.lamRejection || 0;
+        document.getElementById('editRejectionPerson').value = item.person || '';
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        editIndex = null;
+    }
+
+    function confirmEdit() {
+        if (editIndex === null) return;
+        const rejectionProduct = parseFloat(document.getElementById('editRejectionProduct').value) || 0;
+        const runnerRejection = parseFloat(document.getElementById('editRunnerRejection').value) || 0;
+        const lamRejection = parseFloat(document.getElementById('editLamRejection').value) || 0;
+        const person = document.getElementById('editRejectionPerson').value.trim();
+
+        if (!person) {
+            alert('রিজেকশন করেছেন এর নাম দিন!');
+            return;
+        }
+
+        const item = rejectionData[editIndex];
+        item.rejectionProduct = rejectionProduct;
+        item.runnerRejection = runnerRejection;
+        item.lamRejection = lamRejection;
+        item.person = person;
+
+        saveRejectionData().then(() => {
+            closeEditModal();
+            alert('✅ আপডেট হয়েছে!');
+            applyReportFilter();
+        }).catch(err => alert('❌ আপডেট ব্যর্থ! ' + err.message));
+    }
+
+    // =========================================================
+    // ডিলিট ফাংশন
+    // =========================================================
+    function deleteEntry(index) {
+        if (!confirm('এই এন্ট্রি ডিলিট করবেন?')) return;
+        const item = rejectionData[index];
+        if (!item) return;
+        if (item._firebaseKey) {
+            database.ref(`${window._basePath}/rejectionData`).child(item._firebaseKey).remove()
+                .then(() => {
+                    alert('🗑️ ডিলিট হয়েছে!');
+                    applyReportFilter();
+                })
+                .catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
+        } else {
+            rejectionData.splice(index, 1);
+            saveRejectionData().then(() => {
+                alert('🗑️ ডিলিট হয়েছে!');
+                applyReportFilter();
+            });
+        }
+    }
+
+    // =========================================================
+    // এক্সেল ডাউনলোড
+    // =========================================================
+    function downloadReportExcel() {
+        if (filteredReportData.length === 0) {
+            alert('কোন ডেটা নেই!');
+            return;
+        }
+        const rows = [['#', 'তারিখ', 'শিফট', 'রিজেকশন প্রোডাক্ট (KG)', 'রানার রিজেকশন (KG)', 'ল্যাম রিজেকশন (KG)', 'মোট রিজেকশন (KG)', 'রিজেকশন করেছেন']];
+        filteredReportData.forEach((item, i) => {
+            const total = (item.rejectionProduct || 0) + (item.runnerRejection || 0) + (item.lamRejection || 0);
+            rows.push([
+                i+1,
+                item.date,
+                item.shift === 'Day' ? 'ডে' : 'নাইট',
+                (item.rejectionProduct || 0).toFixed(2),
+                (item.runnerRejection || 0).toFixed(2),
+                (item.lamRejection || 0).toFixed(2),
+                total.toFixed(2),
+                item.person
+            ]);
+        });
+        const totalRej = filteredReportData.reduce((sum, item) => sum + (item.rejectionProduct || 0), 0);
+        const totalRunner = filteredReportData.reduce((sum, item) => sum + (item.runnerRejection || 0), 0);
+        const totalLam = filteredReportData.reduce((sum, item) => sum + (item.lamRejection || 0), 0);
+        rows.push([]);
+        rows.push(['মোট', '', '', totalRej.toFixed(2), totalRunner.toFixed(2), totalLam.toFixed(2), (totalRej+totalRunner+totalLam).toFixed(2), '']);
+        
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, 'Rejection Report');
+        XLSX.writeFile(wb, `Rejection_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+        alert('✅ এক্সেল ডাউনলোড শুরু হয়েছে!');
+    }
+
+    // =========================================================
+    // মডাল ক্লোজ ইভেন্ট
+    // =========================================================
+    document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
+    document.getElementById('changePwdModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeChangePassword(); });
+
+    // =========================================================
+    // ইনিশিয়ালাইজ
+    // =========================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('mainApp').style.display = 'none';
+    });
+</script>
+</body>
+</html>
