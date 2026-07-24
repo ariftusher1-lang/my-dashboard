@@ -8,6 +8,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- EmailJS -->
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -981,7 +983,7 @@
             </div>
             <div class="email-actions">
                 <button class="btn btn-email btn-sm" onclick="previewAndSendEmail()">
-                    <i class="fas fa-eye"></i> প্রিভিউ & গ্রুপ ইমেইল পাঠান
+                    <i class="fas fa-eye"></i> প্রিভিউ & ইমেইল পাঠান
                 </button>
             </div>
         </div>
@@ -1291,6 +1293,19 @@
 
 <script>
     // =========================================================
+    // EmailJS Initialize - আপনার User ID
+    // =========================================================
+    (function() {
+        emailjs.init("gB1NXu8clqQM1mNu1");
+    })();
+
+    // =========================================================
+    // EmailJS Config - আপনার Service ID ও Template ID
+    // =========================================================
+    const EMAILJS_SERVICE_ID = "service_nsfid5a";
+    const EMAILJS_TEMPLATE_ID = "template_7o6dvcr";
+
+    // =========================================================
     // গ্লোবাল স্টেট
     // =========================================================
     let currentDepartment = '';
@@ -1324,7 +1339,7 @@
     let allReportJOList = [];
     let currentReportJO = '';
 
-    // ⭐ Department-wise Email Recipients (mailto: এর জন্য)
+    // Department-wise Email Recipients
     const DEPT_EMAILS = {
         'Plastic-03': [
             'dplexport12@prangroup.com',
@@ -1556,7 +1571,7 @@
     }
 
     // =========================================================
-    // Email Functions - mailto: (ডিফল্ট ইমেইল ক্লায়েন্ট থেকে)
+    // Email Functions - EmailJS দিয়ে Auto ইমেইল
     // =========================================================
     function getYesterdaySummary() {
         const yesterday = new Date(summaryDate);
@@ -1584,100 +1599,108 @@
         return {
             date: displayStr,
             dateStr: dateStr,
-            dayData: dayData,
-            nightData: nightData,
-            dayPersonMap: dayPersonMap,
-            nightPersonMap: nightPersonMap,
+            dayData: dayData.map(d => ({ person: d.handoverPerson || 'অজানা', total: d.palletQty || 0 })),
+            nightData: nightData.map(d => ({ person: d.handoverPerson || 'অজানা', total: d.palletQty || 0 })),
             dayTotal: dayTotal,
             nightTotal: nightTotal,
             grandTotal: dayTotal + nightTotal
         };
     }
 
-    function generateEmailHTML(summary) {
-        let dayRows = '';
-        const daySorted = Object.entries(summary.dayPersonMap).sort((a, b) => b[1] - a[1]);
-        if (daySorted.length === 0) {
-            dayRows = '<tr><td colspan="2" style="text-align:center;color:#999;">কোন ডেটা নেই</td></tr>';
-        } else {
-            daySorted.forEach(([person, total]) => {
-                dayRows += `<tr><td>${person}</td><td style="text-align:right;font-weight:bold;">${total}</td></tr>`;
-            });
-        }
-        
-        let nightRows = '';
-        const nightSorted = Object.entries(summary.nightPersonMap).sort((a, b) => b[1] - a[1]);
-        if (nightSorted.length === 0) {
-            nightRows = '<tr><td colspan="2" style="text-align:center;color:#999;">কোন ডেটা নেই</td></tr>';
-        } else {
-            nightSorted.forEach(([person, total]) => {
-                nightRows += `<tr><td>${person}</td><td style="text-align:right;font-weight:bold;">${total}</td></tr>`;
-            });
-        }
-
-        const deptName = currentDepartment === 'Plastic-03' ? 'প্লাস্টিক-০৩' : 
-                        currentDepartment === 'Plastic-7.2' ? 'প্লাস্টিক-৭.২' : currentDepartment;
-
-        return `
-            📊 গতকালকের প্যালেট ডেলিভারি রিপোর্ট
-            ডিপার্টমেন্ট: ${deptName} | তারিখ: ${summary.date}
-            
-            ☀️ ডে শিফট:
-            ${daySorted.map(([person, total]) => `${person}: ${total} প্যালেট`).join('\n')}
-            মোট: ${summary.dayTotal}
-            
-            🌙 নাইট শিফট:
-            ${nightSorted.map(([person, total]) => `${person}: ${total} প্যালেট`).join('\n')}
-            মোট: ${summary.nightTotal}
-            
-            📦 মোট প্যালেট: ${summary.grandTotal}
-            
-            রিপোর্ট তৈরি: ${new Date().toLocaleString('bn-BD', {timeZone:'Asia/Dhaka'})}
-        `;
-    }
-
     function previewAndSendEmail() {
         const summary = getYesterdaySummary();
         
         if (summary.dayTotal === 0 && summary.nightTotal === 0) {
-            if (!confirm('⚠️ গতকালের কোন প্যালেট ডেলিভারি নেই। তবুও গ্রুপ ইমেইল পাঠাবেন?')) {
+            if (!confirm('⚠️ গতকালের কোন প্যালেট ডেলিভারি নেই। তবুও ইমেইল পাঠাবেন?')) {
                 return;
             }
         }
         
-        // ডিপার্টমেন্ট অনুযায়ী ইমেইল রিসিপিয়েন্ট সিলেক্ট
-        let toEmails = [];
-        if (currentDepartment === 'Plastic-03') {
-            toEmails = DEPT_EMAILS['Plastic-03'];
-        } else if (currentDepartment === 'Plastic-7.2') {
-            toEmails = DEPT_EMAILS['Plastic-7.2'];
-        } else {
-            toEmails = ['dplexport12@prangroup.com'];
-        }
-        
-        const html = generateEmailHTML(summary);
         const subject = `📊 প্যালেট ডেলিভারি রিপোর্ট - ${summary.date}`;
-        const deptName = currentDepartment === 'Plastic-03' ? 'Plastic-03' : 
-                        currentDepartment === 'Plastic-7.2' ? 'Plastic-7.2' : currentDepartment;
+        const reportTime = new Date().toLocaleString('bn-BD', {timeZone:'Asia/Dhaka'});
         
-        // mailto: লিংক তৈরি
-        const mailtoLink = `mailto:${toEmails.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(html)}`;
+        // Template এর জন্য ডেটা প্রস্তুত
+        const templateParams = {
+            date: summary.date,
+            dayData: summary.dayData,
+            nightData: summary.nightData,
+            dayTotal: summary.dayTotal,
+            nightTotal: summary.nightTotal,
+            grandTotal: summary.grandTotal,
+            reportTime: reportTime
+        };
         
-        if (confirm(`📧 গ্রুপ ইমেইল পাঠাবেন?\n\nডিপার্টমেন্ট: ${deptName}\nরিসিপিয়েন্ট: ${toEmails.length} জন\nসাবজেক্ট: ${subject}`)) {
-            window.open(mailtoLink, '_blank');
-            setTimeout(() => {
-                alert('✅ ইমেইল পাঠানোর জন্য আপনার ডিফল্ট ইমেইল ক্লায়েন্ট খোলা হয়েছে!\n\n"Send" বাটনে ক্লিক করুন।');
-            }, 500);
+        // প্রিভিউ দেখানোর জন্য
+        const win = window.open('', '_blank', 'width=700,height=600');
+        if (win) {
+            win.document.write(`
+                <html>
+                <head><title>ইমেইল প্রিভিউ - PRAN-RFL প্যালেট ডেলিভারি</title></head>
+                <body style="margin:0;padding:20px;background:#f0f4f8;font-family:Arial,sans-serif;">
+                    <div style="max-width:600px;margin:0 auto;background:#fff;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+                        <h2 style="color:#0a1628;">📊 প্যালেট ডেলিভারি রিপোর্ট</h2>
+                        <p><strong>ডিপার্টমেন্ট:</strong> Plastic-03</p>
+                        <p><strong>তারিখ:</strong> ${summary.date}</p>
+                        
+                        <h3 style="color:#e65100;">☀️ ডে শিফট</h3>
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead><tr><th style="text-align:left;border-bottom:1px solid #ddd;padding:6px;">হ্যান্ডওভার করেছেন</th><th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">প্যালেট</th></tr></thead>
+                            <tbody>
+                                ${summary.dayData.length === 0 ? '<tr><td colspan="2" style="text-align:center;color:#999;">কোন ডেটা নেই</td></tr>' : 
+                                    summary.dayData.map(d => `<tr><td style="padding:4px 6px;">${d.person}</td><td style="text-align:right;padding:4px 6px;font-weight:bold;">${d.total}</td></tr>`).join('')}
+                            </tbody>
+                            <tfoot><tr><td style="border-top:2px solid #0a1628;padding:6px;font-weight:bold;">📌 মোট</td><td style="border-top:2px solid #0a1628;padding:6px;text-align:right;font-weight:bold;">${summary.dayTotal}</td></tr></tfoot>
+                        </table>
+                        
+                        <h3 style="color:#283593;">🌙 নাইট শিফট</h3>
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead><tr><th style="text-align:left;border-bottom:1px solid #ddd;padding:6px;">হ্যান্ডওভার করেছেন</th><th style="text-align:right;border-bottom:1px solid #ddd;padding:6px;">প্যালেট</th></tr></thead>
+                            <tbody>
+                                ${summary.nightData.length === 0 ? '<tr><td colspan="2" style="text-align:center;color:#999;">কোন ডেটা নেই</td></tr>' : 
+                                    summary.nightData.map(d => `<tr><td style="padding:4px 6px;">${d.person}</td><td style="text-align:right;padding:4px 6px;font-weight:bold;">${d.total}</td></tr>`).join('')}
+                            </tbody>
+                            <tfoot><tr><td style="border-top:2px solid #0a1628;padding:6px;font-weight:bold;">📌 মোট</td><td style="border-top:2px solid #0a1628;padding:6px;text-align:right;font-weight:bold;">${summary.nightTotal}</td></tr></tfoot>
+                        </table>
+                        
+                        <div style="background:#e53935;color:#fff;padding:15px;text-align:center;font-size:20px;font-weight:bold;border-radius:10px;margin-top:15px;">
+                            📦 মোট প্যালেট: ${summary.grandTotal}
+                        </div>
+                        
+                        <p style="text-align:center;font-size:12px;color:#8a9aaa;margin-top:15px;border-top:1px solid #e8ecf0;padding-top:12px;">
+                            🕐 রিপোর্ট তৈরি: ${reportTime}
+                        </p>
+                    </div>
+                    <div style="text-align:center;margin-top:20px;">
+                        <button onclick="window.close()" style="padding:10px 25px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:bold;margin:5px;">
+                            <i class="fas fa-times"></i> বন্ধ করুন
+                        </button>
+                        <button onclick="sendEmailFromPreview()" style="padding:10px 25px;background:#c62828;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:bold;margin:5px;">
+                            <i class="fas fa-paper-plane"></i> ইমেইল পাঠান
+                        </button>
+                    </div>
+                    <script>
+                        function sendEmailFromPreview() {
+                            if (confirm('📧 ইমেইল পাঠাতে চান?')) {
+                                window.opener.sendEmailNow();
+                                alert('✅ ইমেইল পাঠানোর অনুরোধ করা হয়েছে!');
+                                window.close();
+                            }
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `);
+            win.document.close();
         }
     }
 
-    // ⭐ mailto: দিয়ে ইমেইল পাঠানোর ফাংশন
+    // ⭐ Auto Email Send - EmailJS দিয়ে (কোন ক্লিক লাগবে না!)
     function sendEmailNow() {
         const summary = getYesterdaySummary();
-        const html = generateEmailHTML(summary);
         const subject = `📊 প্যালেট ডেলিভারি রিপোর্ট - ${summary.date}`;
+        const reportTime = new Date().toLocaleString('bn-BD', {timeZone:'Asia/Dhaka'});
         
-        // ডিপার্টমেন্ট অনুযায়ী ইমেইল রিসিপিয়েন্ট সিলেক্ট
+        // ডিপার্টমেন্ট অনুযায়ী ইমেইল রিসিপিয়েন্ট
         let toEmails = [];
         if (currentDepartment === 'Plastic-03') {
             toEmails = DEPT_EMAILS['Plastic-03'];
@@ -1690,13 +1713,27 @@
         const deptName = currentDepartment === 'Plastic-03' ? 'Plastic-03' : 
                         currentDepartment === 'Plastic-7.2' ? 'Plastic-7.2' : currentDepartment;
         
-        const mailtoLink = `mailto:${toEmails.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(html)}`;
+        // Template এর জন্য ডেটা
+        const templateParams = {
+            to_email: toEmails.join(','),
+            date: summary.date,
+            dayData: summary.dayData,
+            nightData: summary.nightData,
+            dayTotal: summary.dayTotal,
+            nightTotal: summary.nightTotal,
+            grandTotal: summary.grandTotal,
+            reportTime: reportTime
+        };
         
-        if (confirm(`📧 গ্রুপ ইমেইল পাঠাবেন?\n\nডিপার্টমেন্ট: ${deptName}\nরিসিপিয়েন্ট: ${toEmails.length} জন\nসাবজেক্ট: ${subject}`)) {
-            window.open(mailtoLink, '_blank');
-            setTimeout(() => {
-                alert('✅ ইমেইল পাঠানোর জন্য আপনার ডিফল্ট ইমেইল ক্লায়েন্ট খোলা হয়েছে!\n\n"Send" বাটনে ক্লিক করুন।');
-            }, 500);
+        if (confirm(`📧 গ্রুপ ইমেইল পাঠাবেন?\n\nডিপার্টমেন্ট: ${deptName}\nরিসিপিয়েন্ট: ${toEmails.length} জন\nথেকে: dplexport12@prangroup.com\nসাবজেক্ট: ${subject}`)) {
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+                .then(function(response) {
+                    alert('✅ ইমেইল সফলভাবে Auto পাঠানো হয়েছে!');
+                    console.log('SUCCESS!', response.status, response.text);
+                }, function(error) {
+                    alert('❌ ইমেইল পাঠাতে ব্যর্থ! ' + error.text);
+                    console.log('FAILED...', error);
+                });
         }
     }
 
