@@ -1324,6 +1324,20 @@
     let allReportJOList = [];
     let currentReportJO = '';
 
+    // ⭐ Department-wise Email Recipients (mailto: এর জন্য)
+    const DEPT_EMAILS = {
+        'Plastic-03': [
+            'dplexport12@prangroup.com',
+            'ripdpl369@prangroup.com',
+            'ripdpl334@prangroup.com'
+        ],
+        'Plastic-7.2': [
+            'ripdpl261@prangroup.com',
+            'ripdpl277@prangroup.com',
+            'ripdpl100@prangroup.com'
+        ]
+    };
+
     const firebaseConfig = {
         apiKey: "AIzaSyDbT-5voxU6UGWvzJ3i0VgZhagQICr2EBk",
         authDomain: "handover-management-766fe.firebaseapp.com",
@@ -1542,7 +1556,7 @@
     }
 
     // =========================================================
-    // Email Functions - Group Email
+    // Email Functions - mailto: (ডিফল্ট ইমেইল ক্লায়েন্ট থেকে)
     // =========================================================
     function getYesterdaySummary() {
         const yesterday = new Date(summaryDate);
@@ -1601,44 +1615,24 @@
             });
         }
 
+        const deptName = currentDepartment === 'Plastic-03' ? 'প্লাস্টিক-০৩' : 
+                        currentDepartment === 'Plastic-7.2' ? 'প্লাস্টিক-৭.২' : currentDepartment;
+
         return `
-            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f8faff;border-radius:12px;border:1px solid #e8ecf0;">
-                <div style="text-align:center;padding-bottom:15px;border-bottom:3px solid #e53935;">
-                    <h2 style="color:#0a1628;margin:0;">📊 গতকালকের প্যালেট ডেলিভারি রিপোর্ট</h2>
-                    <p style="color:#7a8a9a;font-size:14px;margin:5px 0 0;">তারিখ: ${summary.date}</p>
-                </div>
-                
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px;">
-                    <div style="background:#fff;border-radius:10px;padding:12px;border:1px solid #e8ecf0;">
-                        <h4 style="color:#e65100;margin:0 0 8px;">☀️ ডে শিফট</h4>
-                        <table style="width:100%;font-size:13px;border-collapse:collapse;">
-                            <thead><tr><th style="text-align:left;border-bottom:1px solid #e8ecf0;padding:4px 0;">হ্যান্ডওভার করেছেন</th><th style="text-align:right;border-bottom:1px solid #e8ecf0;padding:4px 0;">প্যালেট</th></tr></thead>
-                            <tbody>${dayRows}</tbody>
-                            <tfoot><tr><td style="border-top:2px solid #e8ecf0;padding-top:6px;font-weight:700;">মোট</td><td style="border-top:2px solid #e8ecf0;padding-top:6px;text-align:right;font-weight:700;color:#e65100;">${summary.dayTotal}</td></tr></tfoot>
-                        </table>
-                    </div>
-                    <div style="background:#fff;border-radius:10px;padding:12px;border:1px solid #e8ecf0;">
-                        <h4 style="color:#283593;margin:0 0 8px;">🌙 নাইট শিফট</h4>
-                        <table style="width:100%;font-size:13px;border-collapse:collapse;">
-                            <thead><tr><th style="text-align:left;border-bottom:1px solid #e8ecf0;padding:4px 0;">হ্যান্ডওভার করেছেন</th><th style="text-align:right;border-bottom:1px solid #e8ecf0;padding:4px 0;">প্যালেট</th></tr></thead>
-                            <tbody>${nightRows}</tbody>
-                            <tfoot><tr><td style="border-top:2px solid #e8ecf0;padding-top:6px;font-weight:700;">মোট</td><td style="border-top:2px solid #e8ecf0;padding-top:6px;text-align:right;font-weight:700;color:#283593;">${summary.nightTotal}</td></tr></tfoot>
-                        </table>
-                    </div>
-                </div>
-                
-                <div style="text-align:center;padding:12px;background:#e3f2fd;border-radius:10px;margin-top:15px;">
-                    <p style="font-size:18px;font-weight:700;margin:0;color:#0a1628;">
-                        📦 মোট প্যালেট: <span style="color:#e53935;font-size:22px;">${summary.grandTotal}</span>
-                    </p>
-                </div>
-                
-                <div style="text-align:center;padding-top:12px;border-top:1px solid #e8ecf0;margin-top:12px;">
-                    <p style="font-size:12px;color:#8a9aaa;margin:0;">
-                        <i class="fas fa-clock"></i> রিপোর্ট তৈরি: ${new Date().toLocaleString('bn-BD', {timeZone:'Asia/Dhaka'})}
-                    </p>
-                </div>
-            </div>
+            📊 গতকালকের প্যালেট ডেলিভারি রিপোর্ট
+            ডিপার্টমেন্ট: ${deptName} | তারিখ: ${summary.date}
+            
+            ☀️ ডে শিফট:
+            ${daySorted.map(([person, total]) => `${person}: ${total} প্যালেট`).join('\n')}
+            মোট: ${summary.dayTotal}
+            
+            🌙 নাইট শিফট:
+            ${nightSorted.map(([person, total]) => `${person}: ${total} প্যালেট`).join('\n')}
+            মোট: ${summary.nightTotal}
+            
+            📦 মোট প্যালেট: ${summary.grandTotal}
+            
+            রিপোর্ট তৈরি: ${new Date().toLocaleString('bn-BD', {timeZone:'Asia/Dhaka'})}
         `;
     }
 
@@ -1651,65 +1645,57 @@
             }
         }
         
-        const html = generateEmailHTML(summary);
-        
-        const win = window.open('', '_blank', 'width=700,height=600');
-        if (win) {
-            win.document.write(`
-                <html>
-                <head><title>ইমেইল প্রিভিউ - PRAN-RFL প্যালেট ডেলিভারি</title></head>
-                <body style="margin:0;padding:20px;background:#f0f4f8;">
-                    ${html}
-                    <div style="text-align:center;margin-top:20px;">
-                        <button onclick="window.close()" style="padding:12px 30px;background:#1565c0;color:#fff;border:none;border-radius:10px;font-size:16px;cursor:pointer;font-weight:700;">
-                            <i class="fas fa-times"></i> বন্ধ করুন
-                        </button>
-                        <button onclick="sendEmailFromPreview()" style="padding:12px 30px;background:#c62828;color:#fff;border:none;border-radius:10px;font-size:16px;cursor:pointer;font-weight:700;margin-left:10px;">
-                            <i class="fas fa-paper-plane"></i> গ্রুপ ইমেইল পাঠান
-                        </button>
-                    </div>
-                    <script>
-                        function sendEmailFromPreview() {
-                            if (confirm('📧 গ্রুপ ইমেইল পাঠাতে চান?')) {
-                                window.opener.sendEmailNow();
-                                alert('✅ গ্রুপ ইমেইল পাঠানোর অনুরোধ করা হয়েছে!');
-                                window.close();
-                            }
-                        }
-                    <\/script>
-                </body>
-                </html>
-            `);
-            win.document.close();
+        // ডিপার্টমেন্ট অনুযায়ী ইমেইল রিসিপিয়েন্ট সিলেক্ট
+        let toEmails = [];
+        if (currentDepartment === 'Plastic-03') {
+            toEmails = DEPT_EMAILS['Plastic-03'];
+        } else if (currentDepartment === 'Plastic-7.2') {
+            toEmails = DEPT_EMAILS['Plastic-7.2'];
         } else {
-            if (confirm('📧 গ্রুপ ইমেইল পাঠাতে চান?')) {
-                sendEmailNow();
-            }
+            toEmails = ['dplexport12@prangroup.com'];
+        }
+        
+        const html = generateEmailHTML(summary);
+        const subject = `📊 প্যালেট ডেলিভারি রিপোর্ট - ${summary.date}`;
+        const deptName = currentDepartment === 'Plastic-03' ? 'Plastic-03' : 
+                        currentDepartment === 'Plastic-7.2' ? 'Plastic-7.2' : currentDepartment;
+        
+        // mailto: লিংক তৈরি
+        const mailtoLink = `mailto:${toEmails.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(html)}`;
+        
+        if (confirm(`📧 গ্রুপ ইমেইল পাঠাবেন?\n\nডিপার্টমেন্ট: ${deptName}\nরিসিপিয়েন্ট: ${toEmails.length} জন\nসাবজেক্ট: ${subject}`)) {
+            window.open(mailtoLink, '_blank');
+            setTimeout(() => {
+                alert('✅ ইমেইল পাঠানোর জন্য আপনার ডিফল্ট ইমেইল ক্লায়েন্ট খোলা হয়েছে!\n\n"Send" বাটনে ক্লিক করুন।');
+            }, 500);
         }
     }
 
+    // ⭐ mailto: দিয়ে ইমেইল পাঠানোর ফাংশন
     function sendEmailNow() {
         const summary = getYesterdaySummary();
         const html = generateEmailHTML(summary);
         const subject = `📊 প্যালেট ডেলিভারি রিপোর্ট - ${summary.date}`;
         
-        // গ্রুপ ইমেইল ঠিকানা (সবাই একসাথে TO তে)
-        const groupEmail = [
-            'dplexport12@prangroup.com',
-            'ripdpl369@prangroup.com',
-            'ripdpl334@prangroup.com',
-            'ripdpl261@prangroup.com',
-            'ripdpl277@prangroup.com',
-            'ripdpl100@prangroup.com'
-        ].join(',');
+        // ডিপার্টমেন্ট অনুযায়ী ইমেইল রিসিপিয়েন্ট সিলেক্ট
+        let toEmails = [];
+        if (currentDepartment === 'Plastic-03') {
+            toEmails = DEPT_EMAILS['Plastic-03'];
+        } else if (currentDepartment === 'Plastic-7.2') {
+            toEmails = DEPT_EMAILS['Plastic-7.2'];
+        } else {
+            toEmails = ['dplexport12@prangroup.com'];
+        }
         
-        const mailtoLink = `mailto:${groupEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(html.replace(/<[^>]+>/g, ''))}`;
+        const deptName = currentDepartment === 'Plastic-03' ? 'Plastic-03' : 
+                        currentDepartment === 'Plastic-7.2' ? 'Plastic-7.2' : currentDepartment;
         
-        if (confirm(`📧 গ্রুপ ইমেইল পাঠাবেন?\n\nরিসিপিয়েন্ট: ৬ জন\nসাবজেক্ট: ${subject}`)) {
-            window.location.href = mailtoLink;
-            
+        const mailtoLink = `mailto:${toEmails.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(html)}`;
+        
+        if (confirm(`📧 গ্রুপ ইমেইল পাঠাবেন?\n\nডিপার্টমেন্ট: ${deptName}\nরিসিপিয়েন্ট: ${toEmails.length} জন\nসাবজেক্ট: ${subject}`)) {
+            window.open(mailtoLink, '_blank');
             setTimeout(() => {
-                alert('✅ গ্রুপ ইমেইল পাঠানোর জন্য আপনার ডিফল্ট ইমেইল ক্লায়েন্ট খোলা হয়েছে!\n\nদয়া করে "Send" বাটনে ক্লিক করুন।');
+                alert('✅ ইমেইল পাঠানোর জন্য আপনার ডিফল্ট ইমেইল ক্লায়েন্ট খোলা হয়েছে!\n\n"Send" বাটনে ক্লিক করুন।');
             }, 500);
         }
     }
