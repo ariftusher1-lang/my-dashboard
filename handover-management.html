@@ -9,6 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -161,6 +163,11 @@
         body.dark-mode .text-muted { color: #6a8aaa; }
         body.dark-mode .shift-day { background: #2a1a0a; color: #f5a623; }
         body.dark-mode .shift-night { background: #0a1a2a; color: #64b5f6; }
+        body.dark-mode .chart-card {
+            background: #1a2a40;
+            border-color: #2a3a50;
+        }
+        body.dark-mode .chart-card h4 { color: #e0e8f0; }
 
         body.login-active {
             background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0d3b3a 100%);
@@ -1069,6 +1076,80 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Chart Section Styles */
+        .chart-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 2px solid #e8ecf0;
+            transition: background 0.5s, border-color 0.5s;
+        }
+        .chart-section .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .chart-section .chart-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0a1628;
+            transition: color 0.5s;
+        }
+        .chart-section .chart-header h3 i { color: #e53935; }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .chart-card {
+            background: #f8faff;
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #e8ecf0;
+            transition: background 0.5s, border-color 0.5s;
+        }
+        .chart-card h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3a4a;
+            margin-bottom: 10px;
+            text-align: center;
+            transition: color 0.5s;
+        }
+        .chart-card .chart-wrapper {
+            position: relative;
+            height: 250px;
+        }
+        .chart-card .chart-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .chart-card .chart-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .chart-card .chart-stats .stat-item {
+            text-align: center;
+            font-size: 13px;
+        }
+        .chart-card .chart-stats .stat-item .stat-value {
+            font-weight: 700;
+            font-size: 16px;
+            color: #1565c0;
+        }
+        .chart-card .chart-stats .stat-item .stat-label {
+            color: #7a8a9a;
+            font-size: 11px;
+        }
+
         @media (max-width: 768px) {
             .header-brand h1 { font-size: 16px; }
             .header-brand .dept-tag { font-size: 10px; padding: 2px 10px; }
@@ -1099,6 +1180,8 @@
             .delete-section .delete-toolbar { flex-direction: column; }
             .delete-section .delete-toolbar select,
             .delete-section .delete-toolbar input { width: 100%; }
+            .chart-grid { grid-template-columns: 1fr; }
+            .chart-card .chart-wrapper { height: 200px; }
         }
         @media (max-width: 480px) {
             .summary-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1183,6 +1266,7 @@
                 <span class="nav-item active" onclick="switchTab('entry')"><i class="fas fa-plus-circle"></i> নিউ ডেটা এন্ট্রি</span>
                 <span class="nav-item" onclick="switchTab('master')"><i class="fas fa-database"></i> মাস্টার ডেটা ম্যানেজ</span>
                 <span class="nav-item" onclick="switchTab('report')"><i class="fas fa-chart-bar"></i> রিপোর্ট</span>
+                <span class="nav-item" onclick="switchTab('chart')"><i class="fas fa-chart-pie"></i> গ্রাফ</span>
                 <span class="nav-item" onclick="showJOList()"><i class="fas fa-list"></i> জব অর্ডার লিস্ট</span>
             </nav>
             <div class="auto-refresh-indicator">
@@ -1434,6 +1518,92 @@
         </div>
     </div>
 
+    <!-- ===== গ্রাফিক্যাল রিপোর্ট সেকশন ===== -->
+    <div id="tabChart" class="tab-content">
+        <div class="chart-section" id="chartSection">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-pie"></i> 📊 গ্রাফিক্যাল রিপোর্ট</h3>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-primary" onclick="updateCharts()"><i class="fas fa-sync"></i> রিফ্রেশ</button>
+                    <button class="btn btn-sm btn-success" onclick="exportChartAsImage()"><i class="fas fa-image"></i> ইমেজ ডাউনলোড</button>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <!-- চার্ট ১: শিফট ভিত্তিক ডেলিভারি (Pie Chart) -->
+                <div class="chart-card">
+                    <h4>🔄 শিফট ভিত্তিক ডেলিভারি</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="shiftChart"></canvas>
+                    </div>
+                    <div class="chart-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="shiftDayTotal">০</div>
+                            <div class="stat-label">☀️ ডে শিফট</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="shiftNightTotal">০</div>
+                            <div class="stat-label">🌙 নাইট শিফট</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- চার্ট ২: টপ পারফর্মার (Bar Chart) -->
+                <div class="chart-card">
+                    <h4>🏆 টপ পারফর্মার</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="performerChart"></canvas>
+                    </div>
+                    <div class="chart-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="topPerformerName">-</div>
+                            <div class="stat-label">🏅 সেরা কর্মী</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="topPerformerCount">০</div>
+                            <div class="stat-label">📦 প্যালেট</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- চার্ট ৩: জব অর্ডার স্ট্যাটাস (Doughnut Chart) -->
+                <div class="chart-card">
+                    <h4>📋 জব অর্ডার স্ট্যাটাস</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="chart-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="statusComplete">০</div>
+                            <div class="stat-label">✅ সম্পন্ন</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statusPending">০</div>
+                            <div class="stat-label">⏳ পেন্ডিং</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- চার্ট ৪: দৈনিক ডেলিভারি ট্রেন্ড (Line Chart) -->
+                <div class="chart-card">
+                    <h4>📈 গত ৭ দিনের ডেলিভারি ট্রেন্ড</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <div class="chart-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="trendTotal">০</div>
+                            <div class="stat-label">📦 মোট প্যালেট</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="trendAvg">০</div>
+                            <div class="stat-label">📊 গড় (প্রতিদিন)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== হ্যান্ডওভার রেকর্ড ===== -->
     <div class="section-title mt-12"><i class="fas fa-table"></i> হ্যান্ডওভার রেকর্ড</div>
     
@@ -1670,6 +1840,12 @@
     let refreshCounter = 5;
     let refreshInterval = null;
 
+    // Chart Instances
+    let shiftChart = null;
+    let performerChart = null;
+    let statusChart = null;
+    let trendChart = null;
+
     // Department-wise Email Recipients
     const DEPT_EMAILS = {
         'Plastic-03': [
@@ -1710,7 +1886,7 @@
     };
 
     // =========================================================
-    // 📅 ডেট এবং শিফট ফাংশন (নতুন টাইম অনুযায়ী)
+    // 📅 ডেট এবং শিফট ফাংশন
     // =========================================================
     function getCurrentShiftInfo() {
         const now = new Date();
@@ -1720,21 +1896,15 @@
         
         let shift, shiftDate;
         
-        // ডে শিফট: সকাল 11:00 AM থেকে রাত 11:00 PM
-        // নাইট শিফট: রাত 11:00 PM থেকে সকাল 11:00 AM
         if (totalMinutes >= 11 * 60 && totalMinutes < 23 * 60) {
-            // সকাল 11am থেকে রাত 11pm - ডে শিফট
             shift = 'Day';
             shiftDate = new Date(now);
         } else {
-            // রাত 11pm থেকে সকাল 11am - নাইট শিফট
             shift = 'Night';
             if (totalMinutes >= 0 && totalMinutes < 11 * 60) {
-                // সকাল 12am থেকে 11am - আগের দিনের নাইট শিফট
                 shiftDate = new Date(now);
                 shiftDate.setDate(shiftDate.getDate() - 1);
             } else {
-                // রাত 11pm থেকে 12am - আজকের নাইট শিফট
                 shiftDate = new Date(now);
             }
         }
@@ -1789,7 +1959,6 @@
         const storageDate = formatDateForStorage(shiftDate);
         document.getElementById('currentDateDisplay').dataset.storageDate = storageDate;
 
-        // Night shift হলে Dark Mode On, Day shift হলে Off
         if (shift === 'Night' && !isDarkMode) {
             toggleDarkMode();
         } else if (shift === 'Day' && isDarkMode) {
@@ -1847,7 +2016,7 @@
     }
 
     // =========================================================
-    // Delete Section Toggle (Hide/Show)
+    // Delete Section Toggle
     // =========================================================
     function toggleDeleteSection() {
         const wrap = document.getElementById('deleteTableWrap');
@@ -1881,6 +2050,8 @@
             btn.innerHTML = '<i class="fas fa-moon"></i> ডার্ক';
             btn.classList.remove('active');
         }
+        // Chart color update for dark mode
+        setTimeout(updateCharts, 300);
     }
 
     // =========================================================
@@ -1914,17 +2085,16 @@
                 populateSearchableSelects();
                 updateSummary();
                 loadItemsForDelete();
+                updateCharts();
             });
 
             const handoverRef = database.ref(`${window._basePath}/handoverEntries`);
             handoverRef.once('value', snap => {
                 const val = snap.val();
                 handoverData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
-                // রিভার্স অর্ডার - নতুন এন্ট্রি উপরে
                 handoverData.sort((a, b) => {
                     const dateA = a.entryDate ? new Date(a.entryDate) : new Date(0);
                     const dateB = b.entryDate ? new Date(b.entryDate) : new Date(0);
-                    // প্রথমে তারিখ অনুযায়ী, তারপর সময় অনুযায়ী
                     if (dateA.getTime() !== dateB.getTime()) {
                         return dateB.getTime() - dateA.getTime();
                     }
@@ -1936,6 +2106,7 @@
                 renderTablePage();
                 updateSummary();
                 updateShortSummary();
+                updateCharts();
             });
         }
     }
@@ -2013,12 +2184,14 @@
     function changeSummaryDate(delta) {
         summaryDate.setDate(summaryDate.getDate() + delta);
         updateShortSummary();
+        updateCharts();
     }
 
     function goToTodaySummary() {
         const { shift, shiftDate } = getCurrentShiftInfo();
         summaryDate = new Date(shiftDate);
         updateShortSummary();
+        updateCharts();
     }
 
     // =========================================================
@@ -2292,9 +2465,10 @@
         setInterval(updateShiftAndDate, 60000);
         
         scheduleDailyEmail();
-
-        // Auto Refresh Start
         startAutoRefresh();
+        
+        // Initialize charts after data loads
+        setTimeout(updateCharts, 2000);
     }
 
     function scheduleDailyEmail() {
@@ -2351,6 +2525,8 @@
         if (isDarkMode) {
             toggleDarkMode();
         }
+        // Destroy charts
+        destroyCharts();
     }
 
     // =========================================================
@@ -2413,15 +2589,22 @@
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         
-        if (tab === 'entry') {
-            document.getElementById('tabEntry').classList.add('active');
-            document.querySelector('.nav-item:nth-child(1)').classList.add('active');
-        } else if (tab === 'master') {
-            document.getElementById('tabMaster').classList.add('active');
-            document.querySelector('.nav-item:nth-child(2)').classList.add('active');
-        } else if (tab === 'report') {
-            document.getElementById('tabReport').classList.add('active');
-            document.querySelector('.nav-item:nth-child(3)').classList.add('active');
+        const tabMap = {
+            'entry': { content: 'tabEntry', nav: 0 },
+            'master': { content: 'tabMaster', nav: 1 },
+            'report': { content: 'tabReport', nav: 2 },
+            'chart': { content: 'tabChart', nav: 3 }
+        };
+        
+        if (tabMap[tab]) {
+            document.getElementById(tabMap[tab].content).classList.add('active');
+            const navItems = document.querySelectorAll('.nav-item');
+            if (navItems[tabMap[tab].nav]) {
+                navItems[tabMap[tab].nav].classList.add('active');
+            }
+            if (tab === 'chart') {
+                setTimeout(updateCharts, 300);
+            }
         }
     }
 
@@ -2436,13 +2619,13 @@
             populateSearchableSelects();
             updateSummary();
             loadItemsForDelete();
+            updateCharts();
         }, err => alert('❌ মাস্টার ডেটা লোড এরর: ' + err.message));
 
         const handoverRef = database.ref(`${basePath}/handoverEntries`);
         handoverRef.on('value', snap => {
             const val = snap.val();
             handoverData = val ? Object.keys(val).map(k => ({ ...val[k], _firebaseKey: k })) : [];
-            // রিভার্স অর্ডার - নতুন এন্ট্রি উপরে
             handoverData.sort((a, b) => {
                 const dateA = a.entryDate ? new Date(a.entryDate) : new Date(0);
                 const dateB = b.entryDate ? new Date(b.entryDate) : new Date(0);
@@ -2457,6 +2640,7 @@
             renderTablePage();
             updateSummary();
             updateShortSummary();
+            updateCharts();
         }, err => alert('❌ হ্যান্ডওভার ডেটা লোড এরর: ' + err.message));
 
         const deletedRef = database.ref(`${basePath}/deletedMasterItems`);
@@ -2885,6 +3069,7 @@
             populateSearchableSelects();
             updateSummary();
             loadItemsForDelete();
+            updateCharts();
             alert(`✅ ${selectedItems.length} টি আইটেম ডিলিটেডে সরানো হয়েছে।`);
         }).catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message))
           .finally(() => {
@@ -2921,6 +3106,7 @@
             populateSearchableSelects();
             updateSummary();
             loadItemsForDelete();
+            updateCharts();
             alert('🗑️ সব মাস্টার আইটেম ডিলিটেডে সরানো হয়েছে।');
         }).catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
     }
@@ -2940,6 +3126,7 @@
                     document.getElementById('handoverCount').textContent = handoverData.length;
                     applyHandoverFilter();
                     renderTablePage();
+                    updateCharts();
                 })
                 .catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
         } else {
@@ -2949,6 +3136,7 @@
                 document.getElementById('handoverCount').textContent = handoverData.length;
                 applyHandoverFilter();
                 renderTablePage();
+                updateCharts();
             });
         }
     }
@@ -2965,7 +3153,8 @@
                 filteredData = [];
                 document.getElementById('handoverCount').textContent = 0;
                 renderTablePage(); 
-                updateSummary(); 
+                updateSummary();
+                updateCharts(); 
                 alert('🗑️ সব হ্যান্ডওভার ডেটা ডিলিট হয়েছে!'); 
             })
             .catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
@@ -3022,7 +3211,7 @@
         const masterRef = database.ref(`${window._basePath}/masterItems`).child(originalKey);
         masterRef.set(restoreData)
             .then(() => database.ref(`${window._basePath}/deletedMasterItems`).child(deletedKey).remove())
-            .then(() => { alert('✅ আইটেম পুনরুদ্ধার হয়েছে!'); viewDeletedItems(); })
+            .then(() => { alert('✅ আইটেম পুনরুদ্ধার হয়েছে!'); viewDeletedItems(); updateCharts(); })
             .catch(err => alert('❌ পুনরুদ্ধার ব্যর্থ! ' + err.message));
     }
 
@@ -3242,6 +3431,7 @@
                 saveMaster().then(() => {
                     populateSearchableSelects();
                     updateSummary();
+                    updateCharts();
                     alert(`✅ ${added} টি নতুন আইটেম যোগ হয়েছে এবং ${updated} টি আপডেট হয়েছে!`);
                     btn.value = '';
                 }).catch(() => btn.value = '')
@@ -3293,6 +3483,7 @@
         saveMaster().then(() => {
             populateSearchableSelects();
             updateSummary();
+            updateCharts();
             alert(`✅ ডিমান্ড আপডেট হয়েছে: ${newDemandNum}`);
         }).catch(err => alert('❌ আপডেট ব্যর্থ! ' + err.message));
     }
@@ -3572,7 +3763,6 @@
             serialNumber: serialNumber
         };
         handoverData.push(entry);
-        // রিভার্স অর্ডার বজায় রাখতে সর্ট
         handoverData.sort((a, b) => {
             const dateA = a.entryDate ? new Date(a.entryDate) : new Date(0);
             const dateB = b.entryDate ? new Date(b.entryDate) : new Date(0);
@@ -3590,6 +3780,7 @@
             loadItemDetailsByCode(code);
             applyHandoverFilter();
             renderTablePage();
+            updateCharts();
             
             const shiftDisplay = shift === 'Day' ? 'ডে' : 'নাইট';
             showCongrats(person, shift, finalPalletQty);
@@ -3843,6 +4034,7 @@
             alert('✅ আপডেট হয়েছে!');
             applyHandoverFilter();
             renderTablePage();
+            updateCharts();
         });
     }
 
@@ -4103,6 +4295,295 @@
         link.download = `Handover_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
         alert('✅ সিএসভি ডাউনলোড শুরু হয়েছে!');
+    }
+
+    // =========================================================
+    // 📊 গ্রাফিক্যাল রিপোর্ট ফাংশন
+    // =========================================================
+    function getChartColors() {
+        if (isDarkMode) {
+            return {
+                text: '#e0e8f0',
+                grid: 'rgba(255,255,255,0.1)',
+                day: '#f5a623',
+                night: '#64b5f6',
+                complete: '#4caf50',
+                pending: '#ff9800',
+                gradient1: 'rgba(100, 181, 246, 0.2)',
+                gradient2: 'rgba(245, 166, 35, 0.2)',
+                border1: '#64b5f6',
+                border2: '#f5a623'
+            };
+        }
+        return {
+            text: '#2d3a4a',
+            grid: 'rgba(0,0,0,0.08)',
+            day: '#e65100',
+            night: '#283593',
+            complete: '#2e7d32',
+            pending: '#e65100',
+            gradient1: 'rgba(21, 101, 192, 0.2)',
+            gradient2: 'rgba(230, 81, 0, 0.2)',
+            border1: '#1565c0',
+            border2: '#e65100'
+        };
+    }
+
+    function destroyCharts() {
+        if (shiftChart) { shiftChart.destroy(); shiftChart = null; }
+        if (performerChart) { performerChart.destroy(); performerChart = null; }
+        if (statusChart) { statusChart.destroy(); statusChart = null; }
+        if (trendChart) { trendChart.destroy(); trendChart = null; }
+    }
+
+    function updateCharts() {
+        const colors = getChartColors();
+        
+        // 1. Shift Chart (Pie)
+        const dayTotal = handoverData.filter(h => h.shift === 'Day').reduce((s, h) => s + (h.palletQty || 0), 0);
+        const nightTotal = handoverData.filter(h => h.shift === 'Night').reduce((s, h) => s + (h.palletQty || 0), 0);
+        
+        document.getElementById('shiftDayTotal').textContent = dayTotal;
+        document.getElementById('shiftNightTotal').textContent = nightTotal;
+
+        const shiftCtx = document.getElementById('shiftChart').getContext('2d');
+        if (shiftChart) shiftChart.destroy();
+        shiftChart = new Chart(shiftCtx, {
+            type: 'pie',
+            data: {
+                labels: ['☀️ ডে শিফট', '🌙 নাইট শিফট'],
+                datasets: [{
+                    data: [dayTotal || 0, nightTotal || 0],
+                    backgroundColor: [colors.day, colors.night],
+                    borderColor: ['#fff', '#fff'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: colors.text,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Performer Chart (Bar)
+        const performerMap = {};
+        handoverData.forEach(h => {
+            const person = h.handoverPerson || 'অজানা';
+            performerMap[person] = (performerMap[person] || 0) + (h.palletQty || 0);
+        });
+        const sortedPerformers = Object.entries(performerMap).sort((a, b) => b[1] - a[1]);
+        const top5 = sortedPerformers.slice(0, 5);
+        const labels = top5.map(p => p[0]);
+        const data = top5.map(p => p[1]);
+
+        if (top5.length > 0) {
+            document.getElementById('topPerformerName').textContent = top5[0][0];
+            document.getElementById('topPerformerCount').textContent = top5[0][1];
+        } else {
+            document.getElementById('topPerformerName').textContent = '-';
+            document.getElementById('topPerformerCount').textContent = '০';
+        }
+
+        const performerCtx = document.getElementById('performerChart').getContext('2d');
+        if (performerChart) performerChart.destroy();
+        performerChart = new Chart(performerCtx, {
+            type: 'bar',
+            data: {
+                labels: labels.length ? labels : ['কোন ডেটা নেই'],
+                datasets: [{
+                    label: 'প্যালেট',
+                    data: data.length ? data : [0],
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
+                    ],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: colors.text,
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: colors.grid
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: colors.text,
+                            font: { size: 10 }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. Status Chart (Doughnut)
+        const joSet = new Set(masterItems.map(i => i.jobOrder));
+        let completeJO = 0, pendingJO = 0;
+        joSet.forEach(jo => {
+            const items = masterItems.filter(i => i.jobOrder === jo);
+            let allDone = true;
+            items.forEach(item => {
+                const asOf = handoverData.filter(h => h.jobOrder === jo && h.itemCode === item.itemCode)
+                    .reduce((s, h) => s + (h.handoverQty || 0), 0);
+                if (asOf < item.demandQty) allDone = false;
+            });
+            if (allDone && items.length > 0) completeJO++;
+            else if (items.length > 0) pendingJO++;
+        });
+
+        document.getElementById('statusComplete').textContent = completeJO;
+        document.getElementById('statusPending').textContent = pendingJO;
+
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        if (statusChart) statusChart.destroy();
+        statusChart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['✅ সম্পন্ন', '⏳ পেন্ডিং'],
+                datasets: [{
+                    data: [completeJO || 0, pendingJO || 0],
+                    backgroundColor: [colors.complete, colors.pending],
+                    borderColor: ['#fff', '#fff'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: colors.text,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 4. Trend Chart (Line) - Last 7 Days
+        const today = new Date();
+        const trendData = [];
+        const trendLabels = [];
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = formatDateForStorage(date);
+            const total = handoverData
+                .filter(h => h.entryDate === dateStr)
+                .reduce((s, h) => s + (h.palletQty || 0), 0);
+            trendData.push(total);
+            trendLabels.push(formatDateForDisplay(date));
+        }
+
+        const totalPallet = trendData.reduce((s, v) => s + v, 0);
+        const avgPallet = trendData.length > 0 ? Math.round(totalPallet / trendData.length) : 0;
+        document.getElementById('trendTotal').textContent = totalPallet;
+        document.getElementById('trendAvg').textContent = avgPallet;
+
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        if (trendChart) trendChart.destroy();
+        trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'প্যালেট',
+                    data: trendData,
+                    borderColor: colors.border1,
+                    backgroundColor: colors.gradient1,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: colors.border1,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: colors.text,
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: colors.grid
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: colors.text,
+                            font: { size: 10 },
+                            maxRotation: 45,
+                            minRotation: 30
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function exportChartAsImage() {
+        const chartSection = document.getElementById('chartSection');
+        if (!chartSection) return;
+        
+        const btns = chartSection.querySelector('.chart-header .btn-group');
+        if (btns) btns.style.display = 'none';
+        
+        html2canvas(chartSection, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: isDarkMode ? '#0a1628' : '#fff',
+            allowTaint: true,
+            logging: false
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Chart_Report_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            if (btns) btns.style.display = 'flex';
+        }).catch(() => {
+            if (btns) btns.style.display = 'flex';
+            alert('চার্ট ইমেজ ডাউনলোড ব্যর্থ!');
+        });
     }
 
     // =========================================================
