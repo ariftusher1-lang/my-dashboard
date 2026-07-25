@@ -1150,6 +1150,89 @@
             font-size: 11px;
         }
 
+        /* Edit Demand Section Styles */
+        .edit-demand-section {
+            border: 2px solid #1565c0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+            background: #f0f8ff;
+            transition: background 0.5s, border-color 0.5s;
+        }
+        .edit-demand-section h4 {
+            color: #1565c0;
+            margin-bottom: 8px;
+        }
+        .edit-demand-section .edit-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .edit-demand-section .edit-toolbar select,
+        .edit-demand-section .edit-toolbar input {
+            padding: 8px 12px;
+            border: 2px solid #e8ecf0;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: 0.3s, background 0.5s, border-color 0.5s, color 0.5s;
+        }
+        .edit-demand-section .edit-toolbar select:focus,
+        .edit-demand-section .edit-toolbar input:focus {
+            outline: none;
+            border-color: #1565c0;
+        }
+        .edit-table-wrap {
+            max-height: 350px;
+            overflow-y: auto;
+            border: 1px solid #e8ecf0;
+            border-radius: 8px;
+            background: #fff;
+            transition: background 0.5s, border-color 0.5s;
+        }
+        .edit-table-wrap table {
+            width: 100%;
+            font-size: 13px;
+            border-collapse: collapse;
+        }
+        .edit-table-wrap table th {
+            background: #f5f5f5;
+            position: sticky;
+            top: 0;
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #2d3a4a;
+            border-bottom: 2px solid #e8ecf0;
+            transition: background 0.5s, color 0.5s, border-bottom-color 0.5s;
+        }
+        .edit-table-wrap table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #f0f2f5;
+            transition: border-bottom-color 0.5s;
+        }
+        .edit-table-wrap table tr:hover td {
+            background: #f8faff;
+        }
+        .edit-table-wrap table td input[type="number"] {
+            width: 80px;
+            padding: 4px 6px;
+            border: 1px solid #e8ecf0;
+            border-radius: 4px;
+            font-size: 13px;
+            background: #fafbfc;
+            transition: 0.3s;
+        }
+        .edit-table-wrap table td input[type="number"]:focus {
+            outline: none;
+            border-color: #1565c0;
+        }
+        .edit-count {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+        }
+
         @media (max-width: 768px) {
             .header-brand h1 { font-size: 16px; }
             .header-brand .dept-tag { font-size: 10px; padding: 2px 10px; }
@@ -1182,6 +1265,10 @@
             .delete-section .delete-toolbar input { width: 100%; }
             .chart-grid { grid-template-columns: 1fr; }
             .chart-card .chart-wrapper { height: 200px; }
+            .edit-demand-section .edit-toolbar { flex-direction: column; }
+            .edit-demand-section .edit-toolbar select,
+            .edit-demand-section .edit-toolbar input { width: 100%; }
+            .edit-table-wrap table td input[type="number"] { width: 60px; }
         }
         @media (max-width: 480px) {
             .summary-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1422,12 +1509,62 @@
             </div>
             <div class="form-row mt-8">
                 <div class="form-group"><button class="btn btn-success" onclick="downloadMasterExcel()" style="width:100%;"><i class="fas fa-file-download"></i> মাস্টার ডেটা ডাউনলোড</button></div>
-                <div class="form-group"><button class="btn btn-purple" onclick="editDemand()" style="width:100%;"><i class="fas fa-edit"></i> ডিমান্ড এডিট</button></div>
+                <div class="form-group"><button class="btn btn-purple" onclick="toggleEditDemand()" style="width:100%;"><i class="fas fa-edit"></i> ডিমান্ড এডিট</button></div>
                 <div class="form-group"><button class="btn btn-danger" onclick="clearMasterData()" style="width:100%;"><i class="fas fa-trash-alt"></i> সব ডিলিট</button></div>
             </div>
             <div class="form-row mt-8">
                 <div class="form-group"><button class="btn btn-outline" onclick="viewDeletedItems()" style="width:100%;"><i class="fas fa-recycle"></i> ডিলিটেড আইটেম দেখুন</button></div>
                 <div class="form-group"><button class="btn btn-success" onclick="toggleManualMaster()" style="width:100%;"><i class="fas fa-plus-circle"></i> ম্যানুয়াল অ্যাড</button></div>
+            </div>
+        </div>
+
+        <!-- ===== ডিমান্ড এডিট সেকশন (পাসওয়ার্ড ছাড়া) ===== -->
+        <div class="edit-demand-section" id="editDemandSection" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <h4 style="margin:0;"><i class="fas fa-edit"></i> ডিমান্ড এডিট (পাসওয়ার্ড ছাড়া)</h4>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                    <span style="font-size:12px;color:#666;" id="editSectionStatus">🟢 দৃশ্যমান</span>
+                    <button class="section-toggle-btn" onclick="toggleEditSection()" style="background:#1565c0;">
+                        <i class="fas fa-eye-slash"></i> <span id="editToggleText">লুকান</span>
+                    </button>
+                </div>
+            </div>
+            <p style="font-size:13px;color:#666;margin:8px 0;">জব অর্ডার সিলেক্ট করুন, তারপর আইটেম সিলেক্ট করে ডিমান্ড আপডেট করুন</p>
+            
+            <div class="edit-toolbar">
+                <div class="searchable-select" id="editSelectContainer" style="flex:2;min-width:200px;">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="editSearchInput" placeholder="টাইপ করে জব অর্ডার খুঁজুন..." oninput="filterEditSearchable()" onfocus="showEditDropdown()">
+                    <button type="button" class="clear-btn" id="editClearBtn" onclick="clearEditSearch()"><i class="fas fa-times-circle"></i></button>
+                    <div class="select-options" id="editOptions"></div>
+                </div>
+                <input type="hidden" id="editJoSelect" value="">
+                <button class="btn btn-success btn-sm" onclick="applyEditDemand()" style="white-space:nowrap;">
+                    <i class="fas fa-save"></i> সিলেক্টেড আপডেট
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="selectAllEditItems()" style="white-space:nowrap;">সব সিলেক্ট</button>
+                <button class="btn btn-outline btn-sm" onclick="deselectAllEditItems()" style="white-space:nowrap;">সব আনসিলেক্ট</button>
+            </div>
+            
+            <div class="edit-table-wrap" id="editTableWrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:40px;"><input type="checkbox" id="editSelectAll" onchange="toggleAllEditItems()"></th>
+                            <th style="text-align:left;">কোড</th>
+                            <th style="text-align:left;">আইটেম নাম</th>
+                            <th style="text-align:left;">রঙ</th>
+                            <th style="text-align:right;">বর্তমান ডিমান্ড</th>
+                            <th style="text-align:right;">নতুন ডিমান্ড</th>
+                        </tr>
+                    </thead>
+                    <tbody id="editItemsBody">
+                        <tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9aaa;">জব অর্ডার সিলেক্ট করুন</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="edit-count">
+                <span id="editSelectedCount">০</span> টি আইটেম সিলেক্টেড
             </div>
         </div>
 
@@ -1529,7 +1666,6 @@
                 </div>
             </div>
             <div class="chart-grid">
-                <!-- চার্ট ১: শিফট ভিত্তিক ডেলিভারি (Pie Chart) -->
                 <div class="chart-card">
                     <h4>🔄 শিফট ভিত্তিক ডেলিভারি</h4>
                     <div class="chart-wrapper">
@@ -1546,8 +1682,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- চার্ট ২: টপ পারফর্মার (Bar Chart) -->
                 <div class="chart-card">
                     <h4>🏆 টপ পারফর্মার</h4>
                     <div class="chart-wrapper">
@@ -1564,8 +1698,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- চার্ট ৩: জব অর্ডার স্ট্যাটাস (Doughnut Chart) -->
                 <div class="chart-card">
                     <h4>📋 জব অর্ডার স্ট্যাটাস</h4>
                     <div class="chart-wrapper">
@@ -1582,8 +1714,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- চার্ট ৪: দৈনিক ডেলিভারি ট্রেন্ড (Line Chart) -->
                 <div class="chart-card">
                     <h4>📈 গত ৭ দিনের ডেলিভারি ট্রেন্ড</h4>
                     <div class="chart-wrapper">
@@ -1833,6 +1963,11 @@
     let deleteFilteredItems = [];
     let isDeleteSectionVisible = true;
 
+    // Edit Demand Section
+    let editFilteredItems = [];
+    let isEditSectionVisible = true;
+    let allEditJOList = [];
+
     // Dark Mode
     let isDarkMode = false;
 
@@ -2037,6 +2172,37 @@
     }
 
     // =========================================================
+    // Edit Demand Section Toggle
+    // =========================================================
+    function toggleEditSection() {
+        const wrap = document.getElementById('editTableWrap');
+        const status = document.getElementById('editSectionStatus');
+        const text = document.getElementById('editToggleText');
+        
+        if (isEditSectionVisible) {
+            wrap.style.display = 'none';
+            status.textContent = '🔴 লুকানো';
+            text.textContent = 'দেখান';
+            isEditSectionVisible = false;
+        } else {
+            wrap.style.display = 'block';
+            status.textContent = '🟢 দৃশ্যমান';
+            text.textContent = 'লুকান';
+            isEditSectionVisible = true;
+        }
+    }
+
+    function toggleEditDemand() {
+        const section = document.getElementById('editDemandSection');
+        if (section.style.display === 'block') {
+            section.style.display = 'none';
+        } else {
+            section.style.display = 'block';
+            loadEditJOList();
+        }
+    }
+
+    // =========================================================
     // Dark Mode
     // =========================================================
     function toggleDarkMode() {
@@ -2050,7 +2216,6 @@
             btn.innerHTML = '<i class="fas fa-moon"></i> ডার্ক';
             btn.classList.remove('active');
         }
-        // Chart color update for dark mode
         setTimeout(updateCharts, 300);
     }
 
@@ -2062,7 +2227,7 @@
             clearInterval(refreshInterval);
         }
         
-        refreshCounter = 5;
+        refreshCounter = 60;
         document.getElementById('refreshCounter').textContent = refreshCounter;
         
         refreshInterval = setInterval(() => {
@@ -2070,7 +2235,7 @@
             document.getElementById('refreshCounter').textContent = refreshCounter;
             
             if (refreshCounter <= 0) {
-                refreshCounter = 5;
+                refreshCounter = 60;
                 refreshData();
             }
         }, 1000);
@@ -2085,6 +2250,7 @@
                 populateSearchableSelects();
                 updateSummary();
                 loadItemsForDelete();
+                loadEditJOList();
                 updateCharts();
             });
 
@@ -2467,7 +2633,6 @@
         scheduleDailyEmail();
         startAutoRefresh();
         
-        // Initialize charts after data loads
         setTimeout(updateCharts, 2000);
     }
 
@@ -2525,7 +2690,6 @@
         if (isDarkMode) {
             toggleDarkMode();
         }
-        // Destroy charts
         destroyCharts();
     }
 
@@ -2619,6 +2783,7 @@
             populateSearchableSelects();
             updateSummary();
             loadItemsForDelete();
+            loadEditJOList();
             updateCharts();
         }, err => alert('❌ মাস্টার ডেটা লোড এরর: ' + err.message));
 
@@ -3069,9 +3234,247 @@
             populateSearchableSelects();
             updateSummary();
             loadItemsForDelete();
+            loadEditJOList();
             updateCharts();
             alert(`✅ ${selectedItems.length} টি আইটেম ডিলিটেডে সরানো হয়েছে।`);
         }).catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message))
+          .finally(() => {
+              btn.innerHTML = originalText;
+              btn.disabled = false;
+          });
+    }
+
+    // =========================================================
+    // ডিমান্ড এডিট ফাংশন (পাসওয়ার্ড ছাড়া)
+    // =========================================================
+    function loadEditJOList() {
+        allEditJOList = [...new Set(masterItems.map(i => i.jobOrder))].sort();
+        renderEditDropdown(allEditJOList);
+    }
+
+    function renderEditDropdown(list) {
+        const container = document.getElementById('editOptions');
+        const selected = document.getElementById('editJoSelect').value;
+        if (!container) return;
+        if (list.length === 0) {
+            container.innerHTML = '<div class="no-result">কোন জব অর্ডার নেই</div>';
+            return;
+        }
+        let html = '';
+        list.forEach(jo => {
+            const isSelected = (jo === selected);
+            html += `<div class="option ${isSelected ? 'selected' : ''}" onclick="selectEditJO('${jo}')">${jo}</div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function filterEditSearchable() {
+        const searchText = document.getElementById('editSearchInput').value.toLowerCase().trim();
+        const clearBtn = document.getElementById('editClearBtn');
+        const container = document.getElementById('editOptions');
+        if (searchText.length > 0) { clearBtn.classList.add('show'); } else { clearBtn.classList.remove('show'); }
+        const filtered = allEditJOList.filter(jo => jo.toLowerCase().includes(searchText));
+        renderEditDropdown(filtered);
+        container.style.display = 'block';
+    }
+
+    function showEditDropdown() { document.getElementById('editOptions').style.display = 'block'; }
+
+    function selectEditJO(jo) {
+        document.getElementById('editJoSelect').value = jo;
+        document.getElementById('editSearchInput').value = jo;
+        document.getElementById('editOptions').style.display = 'none';
+        document.getElementById('editClearBtn').classList.add('show');
+        loadEditItems(jo);
+    }
+
+    function clearEditSearch() {
+        document.getElementById('editSearchInput').value = '';
+        document.getElementById('editClearBtn').classList.remove('show');
+        document.getElementById('editOptions').style.display = 'none';
+        renderEditDropdown(allEditJOList);
+        document.getElementById('editSearchInput').focus();
+    }
+
+    function loadEditItems(jo) {
+        if (!jo) {
+            document.getElementById('editItemsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9aaa;">জব অর্ডার সিলেক্ট করুন</td></tr>';
+            document.getElementById('editSelectedCount').textContent = '০';
+            return;
+        }
+
+        editFilteredItems = masterItems.filter(item => item.jobOrder === jo);
+        editFilteredItems.forEach(item => {
+            if (item._editChecked === undefined) {
+                item._editChecked = false;
+            }
+            if (item._newDemand === undefined) {
+                item._newDemand = item.demandQty;
+            }
+        });
+
+        renderEditItems();
+    }
+
+    function renderEditItems() {
+        const tbody = document.getElementById('editItemsBody');
+        const count = document.getElementById('editSelectedCount');
+        
+        if (editFilteredItems.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9aaa;">কোন আইটেম নেই</td></tr>';
+            count.textContent = '০';
+            return;
+        }
+        
+        let html = '';
+        let selected = 0;
+        editFilteredItems.forEach((item, idx) => {
+            const checked = item._editChecked ? 'checked' : '';
+            if (item._editChecked) selected++;
+            html += `<tr>
+                <td><input type="checkbox" class="edit-checkbox" data-index="${idx}" ${checked} onchange="updateEditCount()"></td>
+                <td style="text-align:left;">${item.itemCode}</td>
+                <td style="text-align:left;">${item.itemName}</td>
+                <td style="text-align:left;">${item.color || ''}</td>
+                <td style="text-align:right;"><strong>${item.demandQty}</strong></td>
+                <td style="text-align:right;">
+                    <input type="number" class="edit-demand-input" data-index="${idx}" value="${item._newDemand || item.demandQty}" min="0" onchange="updateEditDemand(${idx}, this.value)">
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+        count.textContent = selected;
+        
+        const selectAll = document.getElementById('editSelectAll');
+        const checkboxes = document.querySelectorAll('.edit-checkbox');
+        if (checkboxes.length > 0) {
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            selectAll.checked = allChecked;
+        } else {
+            selectAll.checked = false;
+        }
+    }
+
+    function updateEditCount() {
+        const checkboxes = document.querySelectorAll('.edit-checkbox');
+        let selected = 0;
+        checkboxes.forEach(cb => {
+            const idx = parseInt(cb.dataset.index);
+            if (!isNaN(idx) && editFilteredItems[idx]) {
+                editFilteredItems[idx]._editChecked = cb.checked;
+                if (cb.checked) selected++;
+            }
+        });
+        document.getElementById('editSelectedCount').textContent = selected;
+        
+        const selectAll = document.getElementById('editSelectAll');
+        if (checkboxes.length > 0) {
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            selectAll.checked = allChecked;
+        }
+    }
+
+    function updateEditDemand(index, value) {
+        if (editFilteredItems[index]) {
+            const val = parseFloat(value);
+            if (!isNaN(val) && val >= 0) {
+                editFilteredItems[index]._newDemand = val;
+            }
+        }
+    }
+
+    function toggleAllEditItems() {
+        const checked = document.getElementById('editSelectAll').checked;
+        document.querySelectorAll('.edit-checkbox').forEach(cb => {
+            cb.checked = checked;
+            const idx = parseInt(cb.dataset.index);
+            if (!isNaN(idx) && editFilteredItems[idx]) {
+                editFilteredItems[idx]._editChecked = checked;
+            }
+        });
+        updateEditCount();
+    }
+
+    function selectAllEditItems() {
+        document.querySelectorAll('.edit-checkbox').forEach(cb => {
+            cb.checked = true;
+            const idx = parseInt(cb.dataset.index);
+            if (!isNaN(idx) && editFilteredItems[idx]) {
+                editFilteredItems[idx]._editChecked = true;
+            }
+        });
+        updateEditCount();
+    }
+
+    function deselectAllEditItems() {
+        document.querySelectorAll('.edit-checkbox').forEach(cb => {
+            cb.checked = false;
+            const idx = parseInt(cb.dataset.index);
+            if (!isNaN(idx) && editFilteredItems[idx]) {
+                editFilteredItems[idx]._editChecked = false;
+            }
+        });
+        updateEditCount();
+    }
+
+    function applyEditDemand() {
+        const selectedItems = editFilteredItems.filter(item => item._editChecked);
+        if (selectedItems.length === 0) {
+            alert('⚠️ আপডেট করার জন্য কোন আইটেম সিলেক্ট করেননি!');
+            return;
+        }
+
+        let changes = [];
+        selectedItems.forEach(item => {
+            const newDemand = item._newDemand !== undefined ? item._newDemand : item.demandQty;
+            if (newDemand !== item.demandQty) {
+                changes.push({
+                    item: item,
+                    oldDemand: item.demandQty,
+                    newDemand: newDemand
+                });
+            }
+        });
+
+        if (changes.length === 0) {
+            alert('⚠️ কোন ডিমান্ড পরিবর্তন করা হয়নি!');
+            return;
+        }
+
+        let msg = `📌 ${changes.length} টি আইটেমের ডিমান্ড পরিবর্তন হবে:\n\n`;
+        changes.forEach((c, i) => {
+            msg += `${i+1}. ${c.item.itemCode} - ${c.item.itemName}\n   পুরাতন: ${c.oldDemand} → নতুন: ${c.newDemand}\n`;
+        });
+        msg += `\n✅ আপনি কি নিশ্চিত?`;
+
+        if (!confirm(msg)) return;
+
+        const btn = document.querySelector('.edit-demand-section .btn-success');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> আপডেট হচ্ছে...';
+        btn.disabled = true;
+
+        // আপডেট করা আইটেমগুলো masterItems এ আপডেট করি
+        changes.forEach(c => {
+            const masterItem = masterItems.find(i => 
+                i.jobOrder === c.item.jobOrder && 
+                i.itemCode === c.item.itemCode
+            );
+            if (masterItem) {
+                masterItem.demandQty = c.newDemand;
+            }
+            // editFilteredItems-ও আপডেট করি
+            c.item.demandQty = c.newDemand;
+            c.item._newDemand = c.newDemand;
+        });
+
+        saveMaster().then(() => {
+            populateSearchableSelects();
+            updateSummary();
+            loadEditItems(document.getElementById('editJoSelect').value);
+            updateCharts();
+            alert(`✅ ${changes.length} টি আইটেমের ডিমান্ড আপডেট হয়েছে!`);
+        }).catch(err => alert('❌ আপডেট ব্যর্থ! ' + err.message))
           .finally(() => {
               btn.innerHTML = originalText;
               btn.disabled = false;
@@ -3106,6 +3509,7 @@
             populateSearchableSelects();
             updateSummary();
             loadItemsForDelete();
+            loadEditJOList();
             updateCharts();
             alert('🗑️ সব মাস্টার আইটেম ডিলিটেডে সরানো হয়েছে।');
         }).catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
@@ -3432,6 +3836,7 @@
                     populateSearchableSelects();
                     updateSummary();
                     updateCharts();
+                    loadEditJOList();
                     alert(`✅ ${added} টি নতুন আইটেম যোগ হয়েছে এবং ${updated} টি আপডেট হয়েছে!`);
                     btn.value = '';
                 }).catch(() => btn.value = '')
@@ -3446,50 +3851,7 @@
     }
 
     // =========================================================
-    // ডিমান্ড এডিট
-    // =========================================================
-    function editDemand() {
-        const jo = prompt('🔍 ডিমান্ড এডিট করার জন্য জব অর্ডার দিন (প্রয়োজনীয়):');
-        if (jo === null) return;
-        const trimmedJo = jo.trim();
-        if (!trimmedJo) {
-            alert('❌ জব অর্ডার প্রয়োজন!');
-            return;
-        }
-
-        const codeInput = prompt('🔍 আইটেম কোড দিন (প্রয়োজনীয়):');
-        if (codeInput === null) return;
-        const trimmedCode = codeInput.trim();
-        if (!trimmedCode) {
-            alert('❌ আইটেম কোড প্রয়োজন!');
-            return;
-        }
-
-        const item = masterItems.find(i => i.jobOrder === trimmedJo && i.itemCode === trimmedCode);
-        if (!item) {
-            alert(`⚠️ "${trimmedJo}" - "${trimmedCode}" খুঁজে পাওয়া যায়নি!`);
-            return;
-        }
-
-        const newDemand = prompt(`📌 বর্তমান ডিমান্ড: ${item.demandQty}\nনতুন ডিমান্ড দিন:`);
-        if (newDemand === null) return;
-        const newDemandNum = parseFloat(newDemand.trim());
-        if (isNaN(newDemandNum) || newDemandNum < 0) {
-            alert('❌ সঠিক সংখ্যা দিন!');
-            return;
-        }
-
-        item.demandQty = newDemandNum;
-        saveMaster().then(() => {
-            populateSearchableSelects();
-            updateSummary();
-            updateCharts();
-            alert(`✅ ডিমান্ড আপডেট হয়েছে: ${newDemandNum}`);
-        }).catch(err => alert('❌ আপডেট ব্যর্থ! ' + err.message));
-    }
-
-    // =========================================================
-    // সার্চেবল সিলেক্ট ফাংশন
+    // সার্চেবল সিলেক্ট ফাংশন (Entry Form)
     // =========================================================
     function populateSearchableSelects() {
         allJOList = [...new Set(masterItems.map(i => i.jobOrder))].sort();
@@ -3649,9 +4011,11 @@
         const joContainer = document.getElementById('joSelectContainer');
         const codeContainer = document.getElementById('codeSelectContainer');
         const reportContainer = document.getElementById('reportSelectContainer');
+        const editContainer = document.getElementById('editSelectContainer');
         if (joContainer && !joContainer.contains(e.target)) { document.getElementById('joOptions').style.display = 'none'; }
         if (codeContainer && !codeContainer.contains(e.target)) { document.getElementById('codeOptions').style.display = 'none'; }
         if (reportContainer && !reportContainer.contains(e.target)) { document.getElementById('reportOptions').style.display = 'none'; }
+        if (editContainer && !editContainer.contains(e.target)) { document.getElementById('editOptions').style.display = 'none'; }
     });
 
     // =========================================================
