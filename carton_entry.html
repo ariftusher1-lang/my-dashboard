@@ -773,7 +773,7 @@
         });
     };
 
-    // ===== Add Entry (FIXED) =====
+    // ===== Add Entry =====
     window.addEntry = async function() {
         alertBox.classList.remove('show');
         alertBox.className = 'alert-box';
@@ -793,7 +793,6 @@
         if (!dept) { showAlert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!', 'error'); return; }
         if (dayHr <= 0) { showAlert('Day HR অবশ্যই ০-এর বেশি হতে হবে!', 'error'); return; }
 
-        // Check existing Day entries for this date and department
         const existingDayEntries = allEntries.filter(e =>
             e.entryDate === entryDate && e.shift === 'Day' && e.dept === dept
         );
@@ -820,7 +819,6 @@
             }
         }
 
-        // ✅ সঠিকভাবে output সহ সব ডেটা পাঠানো হচ্ছে
         const newEntry = {
             dept: dept,
             prodIC: prodIC,
@@ -828,7 +826,7 @@
             icName: icName,
             dayHr: dayHr,
             target: target,
-            output: output,  // ← এখানে output সঠিকভাবে পাঠানো হচ্ছে
+            output: output,
             perHr: perHr,
             utilPct: utilPct,
             entryDate: entryDate,
@@ -839,7 +837,6 @@
         try {
             await push(cartonRef, newEntry);
             
-            // ফর্ম রিসেট
             document.getElementById('deptSelect').value = '';
             document.getElementById('prodIC').value = '';
             document.getElementById('icName').value = '';
@@ -888,39 +885,70 @@
         }
     };
 
-    // ===== Output Update =====
+    // ===== Output Update (FIXED) =====
     window.showOutputUpdateForm = function(key) {
+        // সব ফর্ম লুকান
         document.querySelectorAll('.output-update-form').forEach(el => el.classList.remove('show'));
+        
+        // এই এন্ট্রির ফর্ম দেখান
         const form = document.getElementById(`edit-form-${key}`);
         if (form) {
             form.classList.toggle('show');
+            // Input ফিল্ডে ফোকাস দিন
             const input = form.querySelector('input[type="number"]');
-            if (input) setTimeout(() => input.focus(), 100);
+            if (input) {
+                setTimeout(() => input.focus(), 100);
+            }
         }
     };
 
     window.updateOutput = async function(key) {
+        // ইনপুট ফিল্ড থেকে মান নিন
         const input = document.getElementById(`edit-output-${key}`);
+        if (!input) {
+            alert('Input field not found!');
+            return;
+        }
+        
         const newOutput = parseFloat(input.value) || 0;
-        if (newOutput < 0) { alert('Output ০ বা তার বেশি হতে হবে!'); return; }
+        if (newOutput < 0) {
+            alert('Output ০ বা তার বেশি হতে হবে!');
+            return;
+        }
 
+        // Entry খুঁজুন
         const entry = allEntries.find(e => e.key === key);
-        if (!entry) { alert('এন্ট্রি পাওয়া যায়নি!'); return; }
+        if (!entry) {
+            alert('এন্ট্রি পাওয়া যায়নি!');
+            return;
+        }
 
         const dayHr = entry.dayHr || 0;
         const perHr = dayHr > 0 ? newOutput / dayHr : 0;
         const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
 
         try {
+            // Firebase আপডেট
             await update(ref(database, `cartonEntries/${key}`), {
                 output: newOutput,
                 perHr: perHr,
                 utilPct: utilPct
             });
+            
+            // সাফল্যের মেসেজ
             showAlert(`✅ Output সফলভাবে আপডেট হয়েছে! নতুন Output: ${newOutput}`, 'success');
-            setTimeout(() => alertBox.classList.remove('show'), 4000);
+            
+            // ফর্ম লুকান
+            const form = document.getElementById(`edit-form-${key}`);
+            if (form) {
+                form.classList.remove('show');
+            }
+            
+            setTimeout(() => {
+                alertBox.classList.remove('show');
+            }, 4000);
         } catch (error) {
-            alert('আপডেট করতে সমস্যা: ' + error.message);
+            alert('❌ আপডেট করতে সমস্যা: ' + error.message);
         }
     };
 
