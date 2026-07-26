@@ -1150,6 +1150,103 @@
             font-size: 11px;
         }
 
+        /* Top Performer Card Styles */
+        .top-performer-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: 0.3s;
+            cursor: default;
+        }
+        .top-performer-card:hover {
+            background: rgba(255,255,255,0.08);
+            transform: translateX(4px);
+        }
+        .top-performer-card .rank {
+            font-size: 18px;
+            font-weight: 800;
+            min-width: 26px;
+            text-align: center;
+        }
+        .top-performer-card .rank.gold { color: #ffd700; }
+        .top-performer-card .rank.silver { color: #c0c0c0; }
+        .top-performer-card .rank.bronze { color: #cd7f32; }
+        .top-performer-card .rank.normal { color: #6a8aaa; font-size: 14px; }
+        .top-performer-card .info {
+            flex: 1;
+        }
+        .top-performer-card .info .name {
+            font-weight: 600;
+            font-size: 13px;
+            color: #0a1628;
+        }
+        .top-performer-card .info .detail {
+            font-size: 11px;
+            color: #6a8aaa;
+        }
+        .top-performer-card .perf-bar {
+            width: 80px;
+            height: 5px;
+            background: rgba(0,0,0,0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        .top-performer-card .perf-bar .fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease;
+        }
+        .top-performer-card .perf-value {
+            font-weight: 700;
+            font-size: 14px;
+            min-width: 32px;
+            text-align: right;
+            color: #1565c0;
+        }
+        .top-performer-card .badge-rating {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .badge-excellent { background: rgba(76, 175, 80, 0.2); color: #2e7d32; }
+        .badge-good { background: rgba(33, 150, 243, 0.2); color: #0d47a1; }
+        .badge-average { background: rgba(255, 193, 7, 0.2); color: #e65100; }
+        .badge-low { background: rgba(244, 67, 54, 0.2); color: #c62828; }
+
+        /* Dark mode adjustments for performer cards */
+        body.dark-mode .top-performer-card {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.06);
+        }
+        body.dark-mode .top-performer-card:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        body.dark-mode .top-performer-card .info .name {
+            color: #e0e8f0;
+        }
+        body.dark-mode .top-performer-card .info .detail {
+            color: #8aabcf;
+        }
+        body.dark-mode .top-performer-card .perf-value {
+            color: #64b5f6;
+        }
+        body.dark-mode .top-performer-card .perf-bar {
+            background: rgba(255,255,255,0.1);
+        }
+        body.dark-mode .badge-excellent { background: rgba(76, 175, 80, 0.2); color: #66bb6a; }
+        body.dark-mode .badge-good { background: rgba(33, 150, 243, 0.2); color: #42a5f5; }
+        body.dark-mode .badge-average { background: rgba(255, 193, 7, 0.2); color: #ffca28; }
+        body.dark-mode .badge-low { background: rgba(244, 67, 54, 0.2); color: #ef5350; }
+
         /* Edit Demand Section Styles */
         .edit-demand-section {
             border: 2px solid #1565c0;
@@ -1314,6 +1411,8 @@
             .rename-section .rename-toolbar { flex-direction: column; }
             .rename-section .rename-toolbar select,
             .rename-section .rename-toolbar input { width: 100%; }
+            .top-performer-card .perf-bar { width: 50px; }
+            .top-performer-card .badge-rating { font-size: 8px; padding: 1px 6px; }
         }
         @media (max-width: 480px) {
             .summary-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1744,6 +1843,7 @@
                 </div>
             </div>
             <div class="chart-grid">
+                <!-- চার্ট ১: শিফট ভিত্তিক ডেলিভারি (Pie Chart) -->
                 <div class="chart-card">
                     <h4>🔄 শিফট ভিত্তিক ডেলিভারি</h4>
                     <div class="chart-wrapper">
@@ -1760,9 +1860,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="chart-card">
+
+                <!-- চার্ট ২: টপ পারফর্মার (বার চার্ট + কার্ড) -->
+                <div class="chart-card" style="grid-column: span 1;">
                     <h4>🏆 টপ পারফর্মার</h4>
-                    <div class="chart-wrapper">
+                    <!-- টপ পারফর্মার লিস্ট (কার্ড ভিউ) -->
+                    <div id="topPerformerList" style="margin-bottom:10px;"></div>
+                    <!-- বার চার্ট -->
+                    <div class="chart-wrapper" style="height:180px;">
                         <canvas id="performerChart"></canvas>
                     </div>
                     <div class="chart-stats">
@@ -1776,6 +1881,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- চার্ট ৩: জব অর্ডার স্ট্যাটাস (Doughnut Chart) -->
                 <div class="chart-card">
                     <h4>📋 জব অর্ডার স্ট্যাটাস</h4>
                     <div class="chart-wrapper">
@@ -1792,6 +1899,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- চার্ট ৪: দৈনিক ডেলিভারি ট্রেন্ড (Line Chart) -->
                 <div class="chart-card">
                     <h4>📈 গত ৭ দিনের ডেলিভারি ট্রেন্ড</h4>
                     <div class="chart-wrapper">
@@ -3401,12 +3510,10 @@
         document.getElementById('renameClearBtn').classList.add('show');
         selectedRenameJO = jo;
         
-        // ডিসপ্লে আপডেট
         const itemCount = masterItems.filter(i => i.jobOrder === jo).length;
         document.getElementById('selectedJoDisplay').textContent = jo;
         document.getElementById('renameItemCount').textContent = itemCount;
         
-        // নতুন নাম ইনপুটে পুরাতন নাম দেখান
         document.getElementById('newJoNameInput').value = jo;
     }
 
@@ -3437,7 +3544,6 @@
             return;
         }
         
-        // চেক করা নতুন নাম ইতিমধ্যে আছে কিনা
         const exists = masterItems.some(i => i.jobOrder === newJo);
         if (exists) {
             alert(`⚠️ "${newJo}" নামে আরেকটি জব অর্ডার ইতিমধ্যে আছে!`);
@@ -3452,19 +3558,16 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> আপডেট হচ্ছে...';
         btn.disabled = true;
         
-        // সব আইটেমের JO নাম আপডেট করি
         const itemsToUpdate = masterItems.filter(i => i.jobOrder === oldJo);
         itemsToUpdate.forEach(item => {
             item.jobOrder = newJo;
         });
         
-        // হ্যান্ডওভার ডেটাও আপডেট করি (যদি থাকে)
         const handoverToUpdate = handoverData.filter(h => h.jobOrder === oldJo);
         handoverToUpdate.forEach(item => {
             item.jobOrder = newJo;
         });
         
-        // উভয় ডেটাবেস আপডেট
         Promise.all([saveMaster(), saveHandover()]).then(() => {
             populateSearchableSelects();
             updateSummary();
@@ -4907,7 +5010,7 @@
     }
 
     // =========================================================
-    // 📊 গ্রাফিক্যাল রিপোর্ট ফাংশন
+    // 📊 গ্রাফিক্যাল রিপোর্ট ফাংশন - টপ পারফর্মার এনহ্যান্সড
     // =========================================================
     function getChartColors() {
         if (isDarkMode) {
@@ -4983,7 +5086,9 @@
             }
         });
 
-        // 2. Performer Chart (Bar)
+        // =========================================================
+        // 2. TOP PERFORMER - Enhanced with Cards + Bar Chart
+        // =========================================================
         const performerMap = {};
         handoverData.forEach(h => {
             const person = h.handoverPerson || 'অজানা';
@@ -4993,15 +5098,47 @@
         const top5 = sortedPerformers.slice(0, 5);
         const labels = top5.map(p => p[0]);
         const data = top5.map(p => p[1]);
+        const maxVal = data.length > 0 ? Math.max(...data) : 1;
 
-        if (top5.length > 0) {
-            document.getElementById('topPerformerName').textContent = top5[0][0];
-            document.getElementById('topPerformerCount').textContent = top5[0][1];
-        } else {
+        // Top Performer Cards
+        const listContainer = document.getElementById('topPerformerList');
+        if (top5.length === 0) {
+            listContainer.innerHTML = '<div style="text-align:center;padding:15px;color:#8a9aaa;">কোন ডেটা নেই</div>';
             document.getElementById('topPerformerName').textContent = '-';
             document.getElementById('topPerformerCount').textContent = '০';
+        } else {
+            const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+            const rankClasses = ['gold', 'silver', 'bronze', 'normal', 'normal'];
+            const ratingLabels = ['Excellent', 'Good', 'Good', 'Average', 'Average'];
+            const ratingClasses = ['badge-excellent', 'badge-good', 'badge-good', 'badge-average', 'badge-average'];
+            
+            let html = '';
+            top5.forEach(([name, count], idx) => {
+                const percentage = Math.round((count / maxVal) * 100);
+                const barColor = idx === 0 ? '#ffd700' : idx === 1 ? '#c0c0c0' : idx === 2 ? '#cd7f32' : '#42a5f5';
+                
+                html += `
+                    <div class="top-performer-card">
+                        <div class="rank ${rankClasses[idx] || 'normal'}">${medals[idx] || '•'}</div>
+                        <div class="info">
+                            <div class="name">${name}</div>
+                            <div class="detail">${count} প্যালেট</div>
+                            <div class="perf-bar">
+                                <div class="fill" style="width:${percentage}%; background:${barColor};"></div>
+                            </div>
+                        </div>
+                        <span class="badge-rating ${ratingClasses[idx] || 'badge-average'}">${ratingLabels[idx] || 'Average'}</span>
+                        <div class="perf-value">${count}</div>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = html;
+            
+            document.getElementById('topPerformerName').textContent = top5[0][0];
+            document.getElementById('topPerformerCount').textContent = top5[0][1];
         }
 
+        // Performer Bar Chart
         const performerCtx = document.getElementById('performerChart').getContext('2d');
         if (performerChart) performerChart.destroy();
         performerChart = new Chart(performerCtx, {
@@ -5011,10 +5148,12 @@
                 datasets: [{
                     label: 'প্যালেট',
                     data: data.length ? data : [0],
-                    backgroundColor: [
-                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
-                    ],
-                    borderRadius: 4
+                    backgroundColor: data.length ? data.map((_, i) => {
+                        const colors = ['#ffd700', '#c0c0c0', '#cd7f32', '#42a5f5', '#66bb6a'];
+                        return colors[i] || '#42a5f5';
+                    }) : ['#6a8aaa'],
+                    borderRadius: 4,
+                    borderSkipped: false
                 }]
             },
             options: {
@@ -5023,6 +5162,13 @@
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '📦 ' + context.parsed.y + ' প্যালেট';
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -5039,7 +5185,9 @@
                     x: {
                         ticks: {
                             color: colors.text,
-                            font: { size: 10 }
+                            font: { size: 10 },
+                            maxRotation: 20,
+                            minRotation: 10
                         },
                         grid: {
                             display: false
