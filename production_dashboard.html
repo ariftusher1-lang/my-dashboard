@@ -339,7 +339,7 @@
         .form-control[readonly] { background: #f8f9fa; color: #1a2332; }
         .form-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 8px 14px;
             margin-bottom: 6px;
         }
@@ -412,6 +412,36 @@
         }
         .overlay.show { display: block; }
 
+        /* Report Card */
+        .report-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            margin-bottom: 12px;
+            border-left: 4px solid #0d6efd;
+        }
+        .report-card .report-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1a2332;
+        }
+        .report-card .report-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0d6efd;
+        }
+        .report-card .report-sub {
+            font-size: 11px;
+            color: #6c7a8d;
+        }
+        .report-stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
         @media (max-width: 992px) {
             .sidebar { transform: translateX(-100%); width: 280px; }
             .sidebar.open { transform: translateX(0); }
@@ -421,9 +451,11 @@
             .header-right .clock-section { font-size: 12px; padding: 2px 10px; }
             .content-body { padding: 14px 16px; }
             .form-row { grid-template-columns: 1fr 1fr; }
+            .report-stats-row { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 576px) {
             .form-row { grid-template-columns: 1fr; }
+            .report-stats-row { grid-template-columns: 1fr; }
             .header-left .page-title { font-size: 15px; }
             .header-right .user-profile .user-name { display: none; }
             .header-right .user-profile .user-role { display: none; }
@@ -466,7 +498,7 @@
                 <span class="lock-icon"><i class="bi bi-lock"></i></span>
             </a>
             
-            <!-- ===== Plastic Product Printing with Toggle ===== -->
+            <!-- ===== Plastic Product Printing ===== -->
             <div class="menu-label">Printing</div>
             <a class="menu-item" onclick="togglePrintingSection()" style="border-left-color: #17a2b8;">
                 <i class="bi bi-printer"></i> Plastic Product Printing
@@ -478,6 +510,9 @@
                 </a>
                 <a class="menu-item" onclick="showPrintingTab('master')">
                     <i class="bi bi-database"></i> Printing Master
+                </a>
+                <a class="menu-item" onclick="showPrintingTab('report')">
+                    <i class="bi bi-file-earmark-text"></i> Print Report
                 </a>
             </div>
 
@@ -554,7 +589,7 @@
                         <button class="unlock-btn" onclick="checkLockAndShow('dashboard')"><i class="bi bi-unlock"></i> আনলক করুন</button>
                     </div>
                     <div style="pointer-events:none; opacity:0.3;">
-                        <div class="table-wrapper"><div class="table-header"><h6>ড্যাশবোর্ড</h6></div><div class="p-3 text-center text-muted">লোড হচ্ছে...</div></div>
+                        <div class="table-wrapper"><div class="table-header"><h6>ড্যাশবোর্ড</h6></div><div class="p-3 text-center text-muted">লক করা আছে</div></div>
                     </div>
                 </div>
             </div>
@@ -629,6 +664,9 @@
                     <button class="printing-tab-btn" onclick="switchPrintingTab('master')">
                         <i class="bi bi-database"></i> Printing Master
                     </button>
+                    <button class="printing-tab-btn" onclick="switchPrintingTab('report')">
+                        <i class="bi bi-file-earmark-text"></i> Print Report
+                    </button>
                 </div>
 
                 <!-- ===== TAB 1: Daily Print Entry ===== -->
@@ -682,6 +720,20 @@
                                 <div class="field-group">
                                     <label class="form-label">📜 Foil Name</label>
                                     <input type="text" class="form-control" id="printFoilName" readonly>
+                                </div>
+                                <div class="field-group">
+                                    <label class="form-label">📊 Demand QTY</label>
+                                    <input type="number" class="form-control" id="printDemand" readonly placeholder="অটো ফিল">
+                                </div>
+                                <div class="field-group">
+                                    <label class="form-label">📊 As of Print</label>
+                                    <input type="number" class="form-control" id="printAsOf" readonly placeholder="অটো ক্যালকুলেশন">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="field-group">
+                                    <label class="form-label">⏳ Due Print QTY</label>
+                                    <input type="number" class="form-control" id="printDue" readonly placeholder="অটো ক্যালকুলেশন">
                                 </div>
                                 <div class="field-group">
                                     <label class="form-label">⏱️ Cycle Time (sec)</label>
@@ -752,13 +804,13 @@
                                 <thead>
                                     <tr>
                                         <th>তারিখ</th><th>শিফট</th><th>MC No</th><th>Print Order</th>
-                                        <th>Item</th><th>Foil</th><th>Cycle</th><th>Cav</th>
-                                        <th>Capacity</th><th>Util%</th><th>Good</th><th>Reject</th>
-                                        <th>কারণ</th><th>IC</th><th>অপারেটর</th><th>Action</th>
+                                        <th>Item</th><th>Foil</th><th>Demand</th><th>As of</th><th>Due</th>
+                                        <th>Cycle</th><th>Cav</th><th>Capacity</th><th>Util%</th>
+                                        <th>Good</th><th>Reject</th><th>কারণ</th><th>IC</th><th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="printLogBody">
-                                    <tr><td colspan="16" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
+                                    <tr><td colspan="18" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -804,6 +856,10 @@
                                 <input type="text" class="form-control" id="masterFoilName" placeholder="Foil Name">
                             </div>
                             <div class="field-group">
+                                <label class="form-label">Demand QTY</label>
+                                <input type="number" class="form-control" id="masterDemand" placeholder="ডিমান্ড কোয়ান্টিটি" value="0">
+                            </div>
+                            <div class="field-group">
                                 <label class="form-label">Cycle Time (sec)</label>
                                 <input type="number" class="form-control" id="masterCycleTime" placeholder="যেমন: 30" value="30">
                             </div>
@@ -811,6 +867,8 @@
                                 <label class="form-label">Cavity</label>
                                 <input type="number" class="form-control" id="masterCavity" placeholder="যেমন: 1" value="1">
                             </div>
+                        </div>
+                        <div class="form-row">
                             <div class="field-group d-flex align-items-end">
                                 <button class="btn btn-primary w-100" onclick="savePrintMaster()"><i class="bi bi-save"></i> মাস্টার সেভ</button>
                             </div>
@@ -828,11 +886,86 @@
                                 <thead>
                                     <tr>
                                         <th>#</th><th>Print Order</th><th>Item Code</th><th>Item Name</th>
-                                        <th>Color</th><th>Foil</th><th>Cycle</th><th>Cav</th><th>Action</th>
+                                        <th>Color</th><th>Foil</th><th>Demand</th><th>Cycle</th><th>Cav</th><th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="printMasterBody">
-                                    <tr><td colspan="9" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
+                                    <tr><td colspan="10" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== TAB 3: Print Report ===== -->
+                <div class="printing-tab-content" id="printTabReport">
+                    <div class="form-card">
+                        <div class="form-title">
+                            <i class="bi bi-file-earmark-text section-title-icon"></i>প্রিন্ট রিপোর্ট
+                        </div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="form-label">📅 তারিখ ফিল্টার</label>
+                                <input type="date" class="form-control" id="reportDateFilter" onchange="generatePrintReport()">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label">🖨️ MC No ফিল্টার</label>
+                                <select class="form-select" id="reportMcFilter" onchange="generatePrintReport()">
+                                    <option value="">-- সব MC --</option>
+                                    <option value="Print MC No-01">Print MC No-01</option>
+                                    <option value="Print MC No-02">Print MC No-02</option>
+                                    <option value="Print MC No-03">Print MC No-03</option>
+                                    <option value="Print MC No-04">Print MC No-04</option>
+                                    <option value="Print MC No-05">Print MC No-05</option>
+                                </select>
+                            </div>
+                            <div class="field-group d-flex align-items-end">
+                                <button class="btn btn-success w-100" onclick="exportPrintReportExcel()"><i class="bi bi-file-earmark-excel"></i> রিপোর্ট Excel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Report Stats -->
+                    <div class="report-stats-row" id="reportStatsRow">
+                        <div class="report-card">
+                            <div class="report-title">📦 মোট Print QTY</div>
+                            <div class="report-value" id="reportTotalQty">0</div>
+                            <div class="report-sub">সব এন্ট্রি</div>
+                        </div>
+                        <div class="report-card" style="border-left-color: #28a745;">
+                            <div class="report-title">✅ মোট Good</div>
+                            <div class="report-value" id="reportTotalGood" style="color: #28a745;">0</div>
+                            <div class="report-sub">গুড কোয়ান্টিটি</div>
+                        </div>
+                        <div class="report-card" style="border-left-color: #dc3545;">
+                            <div class="report-title">❌ মোট Reject</div>
+                            <div class="report-value" id="reportTotalReject" style="color: #dc3545;">0</div>
+                            <div class="report-sub">রিজেক্ট কোয়ান্টিটি</div>
+                        </div>
+                        <div class="report-card" style="border-left-color: #ffc107;">
+                            <div class="report-title">📊 গড় Utilization</div>
+                            <div class="report-value" id="reportAvgUtil" style="color: #ffc107;">0%</div>
+                            <div class="report-sub">পারফরম্যান্স</div>
+                        </div>
+                    </div>
+
+                    <!-- Report Table -->
+                    <div class="table-wrapper">
+                        <div class="table-header">
+                            <h6><i class="bi bi-list me-2"></i>প্রিন্ট রিপোর্ট ডিটেইলস</h6>
+                            <span id="reportTotalEntries" style="font-size:12px;color:#6c7a8d;">মোট: 0টি এন্ট্রি</span>
+                        </div>
+                        <div class="table-responsive-custom">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>তারিখ</th><th>শিফট</th><th>MC No</th><th>Print Order</th>
+                                        <th>Item Name</th><th>Foil</th><th>Good</th><th>Reject</th>
+                                        <th>Util%</th><th>IC Name</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportBody">
+                                    <tr><td colspan="10" class="text-center text-muted py-4">ফিল্টার সিলেক্ট করুন অথবা ডেটা লোড হচ্ছে...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -963,15 +1096,17 @@
         }
 
         // ============================================================
-        //  LOCKED SECTIONS
+        //  LOCKED SECTIONS - FIXED
         // ============================================================
         let unlockedSections = {};
 
         function checkLockAndShow(section) {
+            // If already unlocked, show directly
             if (unlockedSections[section]) {
                 showSection(section);
                 return;
             }
+            
             document.getElementById('lockTargetSection').value = section;
             document.getElementById('lockPasswordInput').value = '';
             document.getElementById('lockPasswordInput').focus();
@@ -1010,20 +1145,22 @@
             });
             
             const title = document.getElementById('pageTitle');
+            const sectionNames = {
+                'dashboard': ['ড্যাশবোর্ড', 'প্রোডাকশন মনিটরিং'],
+                'injection': ['ইনজেকশন ডিমান্ড', 'নতুন অর্ডার যোগ করুন'],
+                'production': ['প্রোডাকশন এন্ট্রি', 'শিফট ইনপুট'],
+                'mcstatus': ['এমসি স্ট্যাটাস', 'অর্ডার মনিটরিং'],
+                'lastday': ['Last Day Prod', 'সর্বশেষ শিফট ডেটা']
+            };
+            
             if (section === 'dashboard' || section === 'injection' || section === 'production' || 
                 section === 'mcstatus' || section === 'lastday') {
                 document.getElementById('section-' + section).style.display = 'block';
-                const names = {
-                    'dashboard': ['ড্যাশবোর্ড', 'প্রোডাকশন মনিটরিং'],
-                    'injection': ['ইনজেকশন ডিমান্ড', 'নতুন অর্ডার যোগ করুন'],
-                    'production': ['প্রোডাকশন এন্ট্রি', 'শিফট ইনপুট'],
-                    'mcstatus': ['এমসি স্ট্যাটাস', 'অর্ডার মনিটরিং'],
-                    'lastday': ['Last Day Prod', 'সর্বশেষ শিফট ডেটা']
-                };
-                const n = names[section] || ['সেকশন', ''];
+                const n = sectionNames[section] || ['সেকশন', ''];
                 title.innerHTML = `${n[0]} <small>${n[1]}</small>`;
             } else if (section === 'line' || section === 'packaging' || section === 'quality') {
                 showToast(`🚧 এই সেকশনটি ডেভেলপমেন্ট চলছে।`, 'info', 4000);
+                title.innerHTML = `${section} <small>ডেভেলপমেন্ট চলছে</small>`;
             }
             
             if (window.innerWidth <= 992) {
@@ -1064,12 +1201,16 @@
             
             if (tab === 'daily') {
                 document.getElementById('printTabDaily').classList.add('active');
-                document.querySelector('.printing-tab-btn:first-child').classList.add('active');
+                document.querySelector('.printing-tab-btn:nth-child(1)').classList.add('active');
                 renderPrintLog();
-            } else {
+            } else if (tab === 'master') {
                 document.getElementById('printTabMaster').classList.add('active');
-                document.querySelector('.printing-tab-btn:last-child').classList.add('active');
+                document.querySelector('.printing-tab-btn:nth-child(2)').classList.add('active');
                 renderPrintMasterList();
+            } else if (tab === 'report') {
+                document.getElementById('printTabReport').classList.add('active');
+                document.querySelector('.printing-tab-btn:nth-child(3)').classList.add('active');
+                generatePrintReport();
             }
         }
 
@@ -1078,7 +1219,7 @@
         }
 
         // ============================================================
-        //  GET CURRENT SHIFT (Day: 9am-9pm, Night: 9:01pm-8:59am)
+        //  GET CURRENT SHIFT
         // ============================================================
         function getCurrentShift() {
             const now = new Date();
@@ -1086,8 +1227,6 @@
             const minutes = now.getMinutes();
             const totalMinutes = hours * 60 + minutes;
             
-            // Day: 9:00 AM (540 min) to 9:00 PM (1260 min)
-            // Night: 9:01 PM (1261 min) to 8:59 AM (539 min next day)
             if (totalMinutes >= 540 && totalMinutes < 1260) {
                 return 'Day';
             } else {
@@ -1108,7 +1247,7 @@
             const masters = getPrintMasters();
             const tbody = document.getElementById('printMasterBody');
             if (masters.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">কোনো মাস্টার ডেটা নেই।</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">কোনো মাস্টার ডেটা নেই।</td></tr>`;
                 return;
             }
             let html = '';
@@ -1120,6 +1259,7 @@
                     <td>${m.itemName || ''}</td>
                     <td>${m.color || ''}</td>
                     <td>${m.foilName || ''}</td>
+                    <td>${m.demand || 0}</td>
                     <td>${m.cycleTime || ''}</td>
                     <td>${m.cavity || ''}</td>
                     <td>
@@ -1136,6 +1276,7 @@
             const itemName = document.getElementById('masterItemName').value.trim();
             const color = document.getElementById('masterColor').value.trim();
             const foilName = document.getElementById('masterFoilName').value.trim();
+            const demand = parseInt(document.getElementById('masterDemand').value) || 0;
             const cycleTime = parseFloat(document.getElementById('masterCycleTime').value) || 30;
             const cavity = parseInt(document.getElementById('masterCavity').value) || 1;
 
@@ -1151,6 +1292,7 @@
                 itemName: itemName,
                 color: color,
                 foilName: foilName,
+                demand: demand,
                 cycleTime: cycleTime,
                 cavity: cavity
             };
@@ -1161,6 +1303,7 @@
                 document.getElementById('masterItemName').value = '';
                 document.getElementById('masterColor').value = '';
                 document.getElementById('masterFoilName').value = '';
+                document.getElementById('masterDemand').value = '0';
                 document.getElementById('masterCycleTime').value = '30';
                 document.getElementById('masterCavity').value = '1';
                 refreshPrintData();
@@ -1196,6 +1339,7 @@
                 'Item Name': m.itemName || '',
                 'Color': m.color || '',
                 'Foil Name': m.foilName || '',
+                'Demand QTY': m.demand || 0,
                 'Cycle Time (sec)': m.cycleTime || '',
                 'Cavity': m.cavity || ''
             }));
@@ -1239,6 +1383,7 @@
                                 itemName: itemName,
                                 color: (row['Color'] || row['color'] || '').toString().trim(),
                                 foilName: (row['Foil Name'] || row['foilName'] || '').toString().trim(),
+                                demand: parseInt(row['Demand QTY'] || row['demand'] || 0) || 0,
                                 cycleTime: parseFloat(row['Cycle Time (sec)'] || row['cycleTime'] || 30) || 30,
                                 cavity: parseInt(row['Cavity'] || row['cavity'] || 1) || 1
                             }));
@@ -1276,6 +1421,14 @@
                 document.getElementById('printFoilName').value = master.foilName || '';
                 document.getElementById('printCycleTime').value = master.cycleTime || '';
                 document.getElementById('printCavity').value = master.cavity || '';
+                document.getElementById('printDemand').value = master.demand || 0;
+                
+                // Calculate As of Print & Due
+                const totalGood = getTotalPrintGood(orderId);
+                document.getElementById('printAsOf').value = totalGood;
+                const due = Math.max(0, (master.demand || 0) - totalGood);
+                document.getElementById('printDue').value = due;
+                
                 calculateCapacity();
             } else {
                 document.getElementById('printItemName').value = '';
@@ -1283,9 +1436,19 @@
                 document.getElementById('printFoilName').value = '';
                 document.getElementById('printCycleTime').value = '';
                 document.getElementById('printCavity').value = '';
+                document.getElementById('printDemand').value = '';
+                document.getElementById('printAsOf').value = '';
+                document.getElementById('printDue').value = '';
                 document.getElementById('printCapacity').value = '';
                 document.getElementById('printUtilization').value = '';
             }
+        }
+
+        function getTotalPrintGood(orderId) {
+            const master = printMastersCache.find(m => m.id === orderId);
+            if (!master) return 0;
+            const entries = printEntriesCache.filter(e => e.printOrder === master.printOrder);
+            return entries.reduce((sum, e) => sum + (e.qty || 0), 0);
         }
 
         function calculateCapacity() {
@@ -1333,7 +1496,7 @@
             const entries = getPrintEntries();
             const tbody = document.getElementById('printLogBody');
             if (entries.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="16" class="text-center text-muted py-4">কোনো প্রিন্ট এন্ট্রি নেই।</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="18" class="text-center text-muted py-4">কোনো প্রিন্ট এন্ট্রি নেই।</td></tr>`;
                 return;
             }
             entries.sort((a, b) => {
@@ -1343,6 +1506,12 @@
             });
             let html = '';
             entries.forEach(e => {
+                // Get master for demand
+                const master = printMastersCache.find(m => m.printOrder === e.printOrder);
+                const demand = master ? master.demand : 0;
+                const totalGood = getTotalPrintGoodByOrder(e.printOrder);
+                const due = Math.max(0, demand - totalGood);
+                
                 html += `<tr>
                     <td>${e.date || '-'}</td>
                     <td><span class="badge bg-${e.shift === 'Day' ? 'primary' : 'secondary'}">${e.shift}</span></td>
@@ -1350,6 +1519,9 @@
                     <td>${e.printOrder || '-'}</td>
                     <td>${e.itemName || '-'}</td>
                     <td>${e.foilName || '-'}</td>
+                    <td>${demand}</td>
+                    <td>${totalGood}</td>
+                    <td>${due}</td>
                     <td>${e.cycleTime || '-'}</td>
                     <td>${e.cavity || '-'}</td>
                     <td>${e.capacity || '-'}</td>
@@ -1358,13 +1530,17 @@
                     <td>${e.reject || 0}</td>
                     <td style="font-size:10px;">${e.rejectReason || '-'}</td>
                     <td>${e.icName || '-'}</td>
-                    <td>${e.operator || '-'}</td>
                     <td>
                         <i class="bi bi-trash3 delete-btn" onclick="deletePrintEntry('${e.id}')" title="ডিলিট"></i>
                     </td>
                 </tr>`;
             });
             tbody.innerHTML = html;
+        }
+
+        function getTotalPrintGoodByOrder(printOrder) {
+            const entries = printEntriesCache.filter(e => e.printOrder === printOrder);
+            return entries.reduce((sum, e) => sum + (e.qty || 0), 0);
         }
 
         // ============================================================
@@ -1442,30 +1618,136 @@
                 alert('কোনো ডেটা নেই!');
                 return;
             }
-            const data = entries.map(e => ({
-                'তারিখ': e.date || '',
-                'শিফট': e.shift || '',
-                'MC No': e.machineNo || '',
-                'Print Order': e.printOrder || '',
-                'Item Code': e.itemCode || '',
-                'Item Name': e.itemName || '',
-                'Color': e.color || '',
-                'Foil Name': e.foilName || '',
-                'Cycle Time': e.cycleTime || '',
-                'Cavity': e.cavity || '',
-                'Capacity': e.capacity || '',
-                'Utilization %': e.utilization || '',
-                'Good QTY': e.qty || 0,
-                'Reject QTY': e.reject || 0,
-                'Causes of Rejection': e.rejectReason || '',
-                'IC Name': e.icName || '',
-                'Operator': e.operator || ''
-            }));
+            const data = entries.map(e => {
+                const master = printMastersCache.find(m => m.printOrder === e.printOrder);
+                const demand = master ? master.demand : 0;
+                const totalGood = getTotalPrintGoodByOrder(e.printOrder);
+                const due = Math.max(0, demand - totalGood);
+                return {
+                    'তারিখ': e.date || '',
+                    'শিফট': e.shift || '',
+                    'MC No': e.machineNo || '',
+                    'Print Order': e.printOrder || '',
+                    'Item Name': e.itemName || '',
+                    'Foil Name': e.foilName || '',
+                    'Demand QTY': demand,
+                    'As of Print': totalGood,
+                    'Due Print': due,
+                    'Good QTY': e.qty || 0,
+                    'Reject QTY': e.reject || 0,
+                    'Utilization %': e.utilization || '',
+                    'IC Name': e.icName || ''
+                };
+            });
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(data);
             XLSX.utils.book_append_sheet(wb, ws, 'PrintEntries');
             XLSX.writeFile(wb, `Print_Entries_${new Date().toISOString().slice(0,10)}.xlsx`);
             showToast('✅ প্রিন্ট এক্সেল ডাউনলোড শুরু হয়েছে!', 'success', 3000);
+        }
+
+        // ============================================================
+        //  PRINT REPORT FUNCTIONS
+        // ============================================================
+        function generatePrintReport() {
+            const dateFilter = document.getElementById('reportDateFilter').value;
+            const mcFilter = document.getElementById('reportMcFilter').value;
+            
+            let entries = getPrintEntries();
+            
+            // Apply filters
+            if (dateFilter) {
+                entries = entries.filter(e => e.date === dateFilter);
+            }
+            if (mcFilter) {
+                entries = entries.filter(e => e.machineNo === mcFilter);
+            }
+            
+            // Sort by date descending
+            entries.sort((a, b) => {
+                if (!a.date) return 1;
+                if (!b.date) return -1;
+                return b.date.localeCompare(a.date);
+            });
+            
+            // Calculate totals
+            let totalQty = 0, totalGood = 0, totalReject = 0, totalUtil = 0, utilCount = 0;
+            entries.forEach(e => {
+                totalQty += (e.qty || 0) + (e.reject || 0);
+                totalGood += (e.qty || 0);
+                totalReject += (e.reject || 0);
+                if (e.utilization) {
+                    totalUtil += parseFloat(e.utilization) || 0;
+                    utilCount++;
+                }
+            });
+            
+            const avgUtil = utilCount > 0 ? (totalUtil / utilCount) : 0;
+            
+            document.getElementById('reportTotalQty').textContent = totalQty.toLocaleString();
+            document.getElementById('reportTotalGood').textContent = totalGood.toLocaleString();
+            document.getElementById('reportTotalReject').textContent = totalReject.toLocaleString();
+            document.getElementById('reportAvgUtil').textContent = avgUtil.toFixed(1) + '%';
+            document.getElementById('reportTotalEntries').textContent = `মোট: ${entries.length}টি এন্ট্রি`;
+            
+            // Render table
+            const tbody = document.getElementById('reportBody');
+            if (entries.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">কোনো ডেটা নেই।</td></tr>`;
+                return;
+            }
+            
+            let html = '';
+            entries.forEach(e => {
+                html += `<tr>
+                    <td>${e.date || '-'}</td>
+                    <td><span class="badge bg-${e.shift === 'Day' ? 'primary' : 'secondary'}">${e.shift}</span></td>
+                    <td>${e.machineNo || '-'}</td>
+                    <td>${e.printOrder || '-'}</td>
+                    <td>${e.itemName || '-'}</td>
+                    <td>${e.foilName || '-'}</td>
+                    <td><strong>${e.qty || 0}</strong></td>
+                    <td>${e.reject || 0}</td>
+                    <td>${e.utilization || '0'}%</td>
+                    <td>${e.icName || '-'}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function exportPrintReportExcel() {
+            const entries = getPrintEntries();
+            if (entries.length === 0) {
+                alert('কোনো ডেটা নেই!');
+                return;
+            }
+            
+            const dateFilter = document.getElementById('reportDateFilter').value;
+            const mcFilter = document.getElementById('reportMcFilter').value;
+            
+            let filtered = entries;
+            if (dateFilter) filtered = filtered.filter(e => e.date === dateFilter);
+            if (mcFilter) filtered = filtered.filter(e => e.machineNo === mcFilter);
+            
+            const data = filtered.map(e => ({
+                'তারিখ': e.date || '',
+                'শিফট': e.shift || '',
+                'MC No': e.machineNo || '',
+                'Print Order': e.printOrder || '',
+                'Item Name': e.itemName || '',
+                'Foil Name': e.foilName || '',
+                'Good QTY': e.qty || 0,
+                'Reject QTY': e.reject || 0,
+                'Utilization %': e.utilization || '',
+                'IC Name': e.icName || '',
+                'Operator': e.operator || ''
+            }));
+            
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'PrintReport');
+            XLSX.writeFile(wb, `Print_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showToast('✅ রিপোর্ট এক্সেল ডাউনলোড শুরু হয়েছে!', 'success', 3000);
         }
 
         // ============================================================
@@ -1476,6 +1758,7 @@
                 populatePrintOrderDropdown();
                 renderPrintMasterList();
                 renderPrintLog();
+                generatePrintReport();
             });
         }
 
@@ -1549,13 +1832,7 @@
                            String(now.getSeconds()).padStart(2, '0');
             document.getElementById('liveClock').textContent = timeStr;
 
-            // Auto update shift in form
             const currentShift = getCurrentShift();
-            const shiftSelect = document.getElementById('printShift');
-            if (shiftSelect && shiftSelect.value !== currentShift) {
-                // Only update if user hasn't manually changed it recently
-                // We'll update on page load only
-            }
             document.getElementById('shiftLabel').textContent = currentShift;
 
             let shiftEndHour = currentShift === 'Day' ? 21 : 9;
@@ -1584,6 +1861,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             refreshPrintData();
             setDefaultDateAndShift();
+            
+            // Set default report date to today
+            document.getElementById('reportDateFilter').value = new Date().toISOString().split('T')[0];
             
             // Show default section (locked dashboard)
             document.getElementById('section-dashboard').style.display = 'block';
