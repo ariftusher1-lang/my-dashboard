@@ -225,6 +225,7 @@
         }
         .locked-overlay .lock-overlay .unlock-btn:hover { background: #c0392b; }
 
+        /* Printing Tabs */
         .printing-tab-btn {
             padding: 8px 18px;
             border: none;
@@ -1362,7 +1363,7 @@
         }
 
         // ============================================================
-        //  IMPORT FUNCTION - FIXED (Drop Down Update)
+        //  IMPORT FUNCTION
         // ============================================================
         function importPrintMaster(event) {
             const file = event.target.files[0];
@@ -1385,8 +1386,6 @@
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
                     
-                    console.log("📊 Excel থেকে ডেটা:", jsonData.length, "টি রো");
-                    
                     if (jsonData.length === 0) {
                         showToast('⚠️ ফাইল খালি!', 'warning', 3000);
                         event.target.value = '';
@@ -1395,7 +1394,6 @@
 
                     const firstRow = jsonData[0];
                     const headers = Object.keys(firstRow);
-                    console.log("📋 হেডারসমূহ:", headers);
                     
                     const headerMap = {};
                     headers.forEach(h => {
@@ -1474,13 +1472,11 @@
                         showToast(`✅ ${added} টি ডেটা সফলভাবে ইমপোর্ট হয়েছে!${skipped > 0 ? ` (${skipped} টি স্কিপ)` : ''}`, 'success', 5000);
                         event.target.value = '';
                         
-                        // 🔥 ফোর্সড রিফ্রেশ - ড্রপডাউন আপডেট করতে
+                        // ফোর্সড রিফ্রেশ
                         setTimeout(function() {
-                            console.log("🔄 Force refreshing dropdown...");
                             populatePrintOrderDropdown();
                             renderPrintMasterList();
                             renderPrintLog();
-                            console.log("✅ ড্রপডাউন আপডেট হয়েছে!");
                         }, 500);
                         
                     }).catch(err => {
@@ -1565,10 +1561,7 @@
             const currentVal = select.value;
             select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
             
-            console.log("🔄 Populating dropdown with", printMastersCache.length, "items");
-            
             if (printMastersCache.length === 0) {
-                console.warn("⚠️ No masters found!");
                 return;
             }
             
@@ -1583,13 +1576,11 @@
                 select.value = currentVal;
             }
             
-            console.log("✅ Dropdown populated with", select.options.length - 1, "items");
-            // 🔥 Print Order সিলেক্ট করলেই অটো ফিল
             loadPrintOrderDetails();
         }
 
         // ============================================================
-        //  LOAD PRINT ORDER DETAILS - AUTO FILL
+        //  LOAD PRINT ORDER DETAILS
         // ============================================================
         function loadPrintOrderDetails() {
             const orderId = document.getElementById('printOrderSelect').value;
@@ -1602,7 +1593,6 @@
             const master = printMastersCache.find(m => m.id === orderId);
             
             if (master) {
-                // 🔥 সব ডেটা অটো ফিল
                 document.getElementById('printItemCode').value = master.itemCode || '';
                 document.getElementById('printItemName').value = master.itemName || '';
                 document.getElementById('printColor').value = master.color || '';
@@ -1611,13 +1601,10 @@
                 document.getElementById('printCavity').value = master.cavity || '';
                 document.getElementById('printDemand').value = master.demand || 0;
                 
-                // As of Print & Due Print ক্যালকুলেশন
                 const totalGood = getTotalPrintGood(orderId);
                 document.getElementById('printAsOf').value = totalGood;
-                const due = Math.max(0, (master.demand || 0) - totalGood);
-                document.getElementById('printDue').value = due;
+                document.getElementById('printDue').value = Math.max(0, (master.demand || 0) - totalGood);
                 
-                // 🔥 Capacity/Shift অটো ক্যালকুলেশন
                 calculateCapacity();
             } else {
                 clearPrintFields();
@@ -1646,11 +1633,8 @@
             const secondsPerHour = 3600;
             
             if (cycleTime > 0) {
-                // 🔥 Capacity/Shift অটো ক্যালকুলেশন
                 const capacity = Math.round((secondsPerHour / cycleTime) * cavity * shiftHours);
                 document.getElementById('printCapacity').value = capacity;
-                
-                // Utilization % অটো ক্যালকুলেশন
                 calculateUtilization();
             } else {
                 document.getElementById('printCapacity').value = '';
@@ -1663,8 +1647,7 @@
             const good = parseFloat(document.getElementById('printQty').value) || 0;
             
             if (capacity > 0 && good > 0) {
-                const util = (good / capacity) * 100;
-                document.getElementById('printUtilization').value = util.toFixed(2);
+                document.getElementById('printUtilization').value = ((good / capacity) * 100).toFixed(2);
             } else {
                 document.getElementById('printUtilization').value = '0.00';
             }
@@ -1926,19 +1909,14 @@
         }
 
         // ============================================================
-        //  REFRESH PRINT DATA - FIXED
+        //  REFRESH PRINT DATA
         // ============================================================
         function refreshPrintData() {
             return Promise.all([fetchPrintMasters(), fetchPrintEntries()]).then(() => {
-                console.log("🔄 Refreshing print data...");
-                console.log("📋 Masters found:", printMastersCache.length);
-                console.log("📋 Entries found:", printEntriesCache.length);
-                
                 renderPrintMasterList();
                 renderPrintLog();
                 populatePrintOrderDropdown();
                 generatePrintReport();
-                
                 return true;
             });
         }
