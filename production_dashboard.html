@@ -993,7 +993,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // ============================================================
-        //  FIREBASE CONFIGURATION (আপডেটেড)
+        //  FIREBASE CONFIGURATION
         // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSy0gLzu4V9F0BENkInvu6dLWG0aMUFkra",
@@ -1010,44 +1010,6 @@
         const database = firebase.database();
 
         console.log("✅ Firebase initialized successfully!");
-        console.log("📡 Database URL:", firebaseConfig.databaseURL);
-
-        // ============================================================
-        //  ডেটাবেস চেক করুন
-        // ============================================================
-        function checkDatabase() {
-            console.log("🔍 Checking database...");
-            
-            database.ref('orders').once('value')
-                .then(snapshot => {
-                    const data = snapshot.val();
-                    console.log("📦 Orders data:", data);
-                    if (data) {
-                        console.log("📊 Total orders:", Object.keys(data).length);
-                    } else {
-                        console.log("⚠️ No orders found!");
-                    }
-                })
-                .catch(err => {
-                    console.error("❌ Error reading orders:", err);
-                });
-
-            database.ref('shifts').once('value')
-                .then(snapshot => {
-                    const data = snapshot.val();
-                    console.log("🔄 Shifts data:", data);
-                    if (data) {
-                        console.log("📊 Total shifts:", Object.keys(data).length);
-                    } else {
-                        console.log("⚠️ No shifts found!");
-                    }
-                })
-                .catch(err => {
-                    console.error("❌ Error reading shifts:", err);
-                });
-        }
-
-        setTimeout(checkDatabase, 2000);
 
         // ============================================================
         //  GLOBAL STATE
@@ -1060,10 +1022,10 @@
         // ============================================================
         function fetchPrintMasters() {
             return new Promise((resolve, reject) => {
-                database.ref('orders').once('value', snapshot => {
+                database.ref('printMasters').once('value', snapshot => {
                     const data = snapshot.val();
                     printMastersCache = data ? Object.values(data) : [];
-                    console.log("✅ Orders fetched:", printMastersCache.length);
+                    console.log("✅ Print masters fetched:", printMastersCache.length);
                     resolve(printMastersCache);
                 }, reject);
             });
@@ -1071,33 +1033,33 @@
 
         function fetchPrintEntries() {
             return new Promise((resolve, reject) => {
-                database.ref('shifts').once('value', snapshot => {
+                database.ref('printEntries').once('value', snapshot => {
                     const data = snapshot.val();
                     printEntriesCache = data ? Object.values(data) : [];
-                    console.log("✅ Shifts fetched:", printEntriesCache.length);
+                    console.log("✅ Print entries fetched:", printEntriesCache.length);
                     resolve(printEntriesCache);
                 }, reject);
             });
         }
 
         function savePrintMaster(data) {
-            return database.ref('orders/' + data.id).set(data);
+            return database.ref('printMasters/' + data.id).set(data);
         }
 
         function savePrintEntry(data) {
-            return database.ref('shifts/' + data.id).set(data);
+            return database.ref('printEntries/' + data.id).set(data);
         }
 
         function deletePrintMaster(id) {
-            return database.ref('orders/' + id).remove();
+            return database.ref('printMasters/' + id).remove();
         }
 
         function deletePrintEntry(id) {
-            return database.ref('shifts/' + id).remove();
+            return database.ref('printEntries/' + id).remove();
         }
 
         function deleteAllPrintMasters() {
-            return database.ref('orders').remove();
+            return database.ref('printMasters').remove();
         }
 
         // ============================================================
@@ -1363,7 +1325,7 @@
             
             showToast('⏳ ডেটা মুছে ফেলা হচ্ছে...', 'info', 3000);
             
-            database.ref('orders').remove()
+            database.ref('printMasters').remove()
                 .then(() => {
                     printMastersCache = [];
                     renderPrintMasterList();
@@ -1987,7 +1949,7 @@
                         cycleTime: parseFloat(d.cycleTime) || 30,
                         cavity: parseInt(d.cavity) || 1
                     };
-                    promises.push(database.ref('orders/' + data.id).set(data));
+                    promises.push(database.ref('printMasters/' + data.id).set(data));
                     added++;
                 } else {
                     skipped++;
@@ -2083,7 +2045,6 @@
         });
 
         // Console Help
-        console.log('📌 ডেটা চেক করতে checkDatabase() টাইপ করুন');
         console.log('📌 ডেটা যোগ করতে importCustomData() টাইপ করুন');
         console.log('📌 ডেমো ডেটা যোগ করতে addDemoData() টাইপ করুন');
         console.log('📌 সব ডেটা ডিলিট করতে deleteAllPrintMasters() টাইপ করুন');
