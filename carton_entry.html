@@ -351,6 +351,17 @@
         }
         .filter-bar .btn-clear-filter:hover { background: #5a6268; }
 
+        /* Output Highlighter */
+        .output-highlight {
+            font-weight: 700;
+            color: #0d47a1;
+            font-size: 15px;
+        }
+        .output-zero {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
         @media (max-width: 480px) {
             .summary-grid { grid-template-columns: 1fr; }
             .summary-modal-box { padding: 20px; }
@@ -762,7 +773,7 @@
         });
     };
 
-    // ===== Add Entry =====
+    // ===== Add Entry (FIXED) =====
     window.addEntry = async function() {
         alertBox.classList.remove('show');
         alertBox.className = 'alert-box';
@@ -782,6 +793,7 @@
         if (!dept) { showAlert('দয়া করে ডিপার্টমেন্ট সিলেক্ট করুন!', 'error'); return; }
         if (dayHr <= 0) { showAlert('Day HR অবশ্যই ০-এর বেশি হতে হবে!', 'error'); return; }
 
+        // Check existing Day entries for this date and department
         const existingDayEntries = allEntries.filter(e =>
             e.entryDate === entryDate && e.shift === 'Day' && e.dept === dept
         );
@@ -1082,6 +1094,8 @@
                 const globalIdx = startIndex + idx + 1;
                 const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-mc' : 'badge-pack';
                 const showOutputBtn = (e.output === 0 || !e.output);
+                const outputDisplay = e.output || 0;
+                const outputClass = outputDisplay > 0 ? 'output-highlight' : 'output-zero';
 
                 html += `<tr>
                     <td>${globalIdx}</td>
@@ -1091,8 +1105,8 @@
                     <td>${e.icName}</td>
                     <td>${e.dayHr}</td>
                     <td>${e.target}</td>
-                    <td><strong style="color:#0d47a1;">${e.output || 0}</strong></td>
-                    <td>${e.perHr}</td>
+                    <td><span class="${outputClass}">${outputDisplay}</span></td>
+                    <td>${e.perHr ? e.perHr.toFixed(2) : '0.00'}</td>
                     <td>${e.utilPct ? e.utilPct.toFixed(1) + '%' : '0%'}</td>
                     <td>${e.entryDate}</td>
                     <td>${e.timestamp}</td>
