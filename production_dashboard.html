@@ -225,7 +225,6 @@
         }
         .locked-overlay .lock-overlay .unlock-btn:hover { background: #c0392b; }
 
-        /* Printing Tabs */
         .printing-tab-btn {
             padding: 8px 18px;
             border: none;
@@ -503,7 +502,7 @@
                 <span class="lock-icon"><i class="bi bi-lock"></i></span>
             </a>
             
-            <!-- ===== PRINTING SECTION ===== -->
+            <!-- PRINTING SECTION -->
             <div class="menu-label">Printing</div>
             <a class="menu-item" onclick="togglePrintingSection()" style="border-left-color: #17a2b8;">
                 <i class="bi bi-printer"></i> Plastic Product Printing
@@ -567,7 +566,7 @@
 
         <div class="content-body">
 
-            <!-- ===== DASHBOARD (LOCKED) ===== -->
+            <!-- DASHBOARD (LOCKED) -->
             <div id="section-dashboard" style="display:none;">
                 <div class="locked-overlay">
                     <div class="lock-overlay">
@@ -582,7 +581,7 @@
                 </div>
             </div>
 
-            <!-- ===== INJECTION DEMAND (LOCKED) ===== -->
+            <!-- INJECTION DEMAND (LOCKED) -->
             <div id="section-injection" style="display:none;">
                 <div class="locked-overlay">
                     <div class="lock-overlay">
@@ -597,7 +596,7 @@
                 </div>
             </div>
 
-            <!-- ===== PRODUCTION ENTRY (LOCKED) ===== -->
+            <!-- PRODUCTION ENTRY (LOCKED) -->
             <div id="section-production" style="display:none;">
                 <div class="locked-overlay">
                     <div class="lock-overlay">
@@ -612,7 +611,7 @@
                 </div>
             </div>
 
-            <!-- ===== MC STATUS (LOCKED) ===== -->
+            <!-- MC STATUS (LOCKED) -->
             <div id="section-mcstatus" style="display:none;">
                 <div class="locked-overlay">
                     <div class="lock-overlay">
@@ -627,7 +626,7 @@
                 </div>
             </div>
 
-            <!-- ===== LAST DAY PROD (LOCKED) ===== -->
+            <!-- LAST DAY PROD (LOCKED) -->
             <div id="section-lastday" style="display:none;">
                 <div class="locked-overlay">
                     <div class="lock-overlay">
@@ -642,7 +641,7 @@
                 </div>
             </div>
 
-            <!-- ===== PRINTING SECTION ===== -->
+            <!-- PRINTING SECTION -->
             <div id="section-printing" style="display:none;">
                 <div class="d-flex gap-2 mb-3 flex-wrap">
                     <button class="printing-tab-btn active" onclick="switchPrintingTab('daily')">
@@ -994,37 +993,77 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // ============================================================
-        //  FIREBASE CONFIGURATION
+        //  FIREBASE CONFIGURATION (আপডেটেড)
         // ============================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDgLzu4Y9Bf08ENKnv8u6LWGodAMNJfKrA",
+            apiKey: "AIzaSy0gLzu4V9F0BENkInvu6dLWG0aMUFkra",
             authDomain: "production-dashboard-35a79.firebaseapp.com",
             databaseURL: "https://production-dashboard-35a79-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "production-dashboard-35a79",
             storageBucket: "production-dashboard-35a79.firebasestorage.app",
-            messagingSenderId: "900557086431",
-            appId: "1:900557086431:web:b3cdfd1d95f86597d1936a",
+            messagingSenderId: "998557886431",
+            appId: "1:998557886431:web:b3cdfd1d95f86597d1936a",
             measurementId: "G-E26DVHKE0W"
         };
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+        console.log("✅ Firebase initialized successfully!");
+        console.log("📡 Database URL:", firebaseConfig.databaseURL);
+
         // ============================================================
-        //  GLOBAL STATE - PRINTING
+        //  ডেটাবেস চেক করুন
+        // ============================================================
+        function checkDatabase() {
+            console.log("🔍 Checking database...");
+            
+            database.ref('orders').once('value')
+                .then(snapshot => {
+                    const data = snapshot.val();
+                    console.log("📦 Orders data:", data);
+                    if (data) {
+                        console.log("📊 Total orders:", Object.keys(data).length);
+                    } else {
+                        console.log("⚠️ No orders found!");
+                    }
+                })
+                .catch(err => {
+                    console.error("❌ Error reading orders:", err);
+                });
+
+            database.ref('shifts').once('value')
+                .then(snapshot => {
+                    const data = snapshot.val();
+                    console.log("🔄 Shifts data:", data);
+                    if (data) {
+                        console.log("📊 Total shifts:", Object.keys(data).length);
+                    } else {
+                        console.log("⚠️ No shifts found!");
+                    }
+                })
+                .catch(err => {
+                    console.error("❌ Error reading shifts:", err);
+                });
+        }
+
+        setTimeout(checkDatabase, 2000);
+
+        // ============================================================
+        //  GLOBAL STATE
         // ============================================================
         let printMastersCache = [];
         let printEntriesCache = [];
 
         // ============================================================
-        //  FIREBASE DATA OPERATIONS - PRINTING
+        //  FIREBASE DATA OPERATIONS
         // ============================================================
         function fetchPrintMasters() {
             return new Promise((resolve, reject) => {
-                database.ref('printMasters').once('value', snapshot => {
+                database.ref('orders').once('value', snapshot => {
                     const data = snapshot.val();
                     printMastersCache = data ? Object.values(data) : [];
-                    console.log("✅ Print masters fetched:", printMastersCache.length);
+                    console.log("✅ Orders fetched:", printMastersCache.length);
                     resolve(printMastersCache);
                 }, reject);
             });
@@ -1032,37 +1071,37 @@
 
         function fetchPrintEntries() {
             return new Promise((resolve, reject) => {
-                database.ref('printEntries').once('value', snapshot => {
+                database.ref('shifts').once('value', snapshot => {
                     const data = snapshot.val();
                     printEntriesCache = data ? Object.values(data) : [];
-                    console.log("✅ Print entries fetched:", printEntriesCache.length);
+                    console.log("✅ Shifts fetched:", printEntriesCache.length);
                     resolve(printEntriesCache);
                 }, reject);
             });
         }
 
         function savePrintMaster(data) {
-            return database.ref('printMasters/' + data.id).set(data);
+            return database.ref('orders/' + data.id).set(data);
         }
 
         function savePrintEntry(data) {
-            return database.ref('printEntries/' + data.id).set(data);
+            return database.ref('shifts/' + data.id).set(data);
         }
 
         function deletePrintMaster(id) {
-            return database.ref('printMasters/' + id).remove();
+            return database.ref('orders/' + id).remove();
         }
 
         function deletePrintEntry(id) {
-            return database.ref('printEntries/' + id).remove();
+            return database.ref('shifts/' + id).remove();
         }
 
         function deleteAllPrintMasters() {
-            return database.ref('printMasters').remove();
+            return database.ref('orders').remove();
         }
 
         // ============================================================
-        //  HELPER FUNCTIONS - PRINTING
+        //  HELPER FUNCTIONS
         // ============================================================
         function getPrintMasters() { return printMastersCache; }
         function getPrintEntries() { return printEntriesCache; }
@@ -1276,7 +1315,6 @@
                 return;
             }
 
-            // Item Code দিয়ে ডুপ্লিকেট চেক করুন
             const exists = printMastersCache.some(m => m.itemCode && m.itemCode === itemCode);
             if (exists) {
                 showToast(`⚠️ Item Code "${itemCode}" ইতিমধ্যে আছে!`, 'warning', 4000);
@@ -1325,7 +1363,7 @@
             
             showToast('⏳ ডেটা মুছে ফেলা হচ্ছে...', 'info', 3000);
             
-            database.ref('printMasters').remove()
+            database.ref('orders').remove()
                 .then(() => {
                     printMastersCache = [];
                     renderPrintMasterList();
@@ -1364,7 +1402,7 @@
         }
 
         // ============================================================
-        //  IMPORT FUNCTION (UPDATED - Item Code দিয়ে ডুপ্লিকেট চেক)
+        //  IMPORT FUNCTION
         // ============================================================
         function importPrintMaster(event) {
             const file = event.target.files[0];
@@ -1424,7 +1462,6 @@
                             return;
                         }
                         
-                        // Item Code দিয়ে ডুপ্লিকেট চেক করুন
                         const exists = printMastersCache.some(m => 
                             m.itemCode && m.itemCode === itemCode
                         );
@@ -1495,7 +1532,7 @@
         }
 
         // ============================================================
-        //  DEMO DATA ADD (UPDATED - Item Code দিয়ে চেক)
+        //  DEMO DATA ADD
         // ============================================================
         function addDemoData() {
             const demoData = [
@@ -1553,7 +1590,7 @@
         }
 
         // ============================================================
-        //  PRINT DAILY ENTRY FUNCTIONS (UPDATED - Item Code দেখাবে)
+        //  PRINT DAILY ENTRY FUNCTIONS
         // ============================================================
         function populatePrintOrderDropdown() {
             const select = document.getElementById('printOrderSelect');
@@ -1566,7 +1603,6 @@
                 return;
             }
             
-            // Print Order + Item Code + Item Name দেখান
             printMastersCache.forEach(m => {
                 const option = document.createElement('option');
                 option.value = m.id;
@@ -1924,7 +1960,7 @@
         }
 
         // ============================================================
-        //  KUSTOM DATA IMPORT FUNCTION (কনসোলে রান করুন)
+        //  CUSTOM DATA IMPORT (কনসোলে রান করুন)
         // ============================================================
         function importCustomData() {
             const myData = [
@@ -1951,7 +1987,7 @@
                         cycleTime: parseFloat(d.cycleTime) || 30,
                         cavity: parseInt(d.cavity) || 1
                     };
-                    promises.push(database.ref('printMasters/' + data.id).set(data));
+                    promises.push(database.ref('orders/' + data.id).set(data));
                     added++;
                 } else {
                     skipped++;
@@ -2030,13 +2066,13 @@
             console.log("🚀 App initializing...");
             
             refreshPrintData().then(() => {
-                console.log("✅ Printing data loaded successfully!");
+                console.log("✅ Data loaded successfully!");
                 setDefaultDateAndShift();
                 document.getElementById('reportDateFilter').value = new Date().toISOString().split('T')[0];
                 document.getElementById('section-dashboard').style.display = 'block';
                 
                 if (printMastersCache.length === 0) {
-                    console.log("⚠️ No printing data found, adding demo data...");
+                    console.log("⚠️ No data found, adding demo data...");
                     setTimeout(addDemoData, 1000);
                 } else {
                     console.log(`📊 মোট ${printMastersCache.length} টি ডেটা আছে`);
@@ -2046,10 +2082,11 @@
             });
         });
 
-        // কনসোলে হেল্প মেসেজ
-        console.log('📌 ডেটা যোগ করতে কনসোলে importCustomData() টাইপ করুন');
-        console.log('📌 সব ডেটা ডিলিট করতে deleteAllPrintMasters() টাইপ করুন');
+        // Console Help
+        console.log('📌 ডেটা চেক করতে checkDatabase() টাইপ করুন');
+        console.log('📌 ডেটা যোগ করতে importCustomData() টাইপ করুন');
         console.log('📌 ডেমো ডেটা যোগ করতে addDemoData() টাইপ করুন');
+        console.log('📌 সব ডেটা ডিলিট করতে deleteAllPrintMasters() টাইপ করুন');
     </script>
 </body>
 </html>
