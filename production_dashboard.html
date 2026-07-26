@@ -1318,142 +1318,151 @@
         }
 
         // ============================================================
-        //  IMPORT FUNCTION (FIXED)
-        // ============================================================
-        function importPrintMaster(event) {
-            const file = event.target.files[0];
-            if (!file) {
-                showToast('⚠️ কোনো ফাইল সিলেক্ট করা হয়নি!', 'warning', 3000);
-                return;
-            }
+// ============================================================
+//  IMPORT FUNCTION - FIXED (Maximum call stack size exceeded)
+// ============================================================
+function importPrintMaster(event) {
+    const file = event.target.files[0];
+    if (!file) {
+        showToast('⚠️ কোনো ফাইল সিলেক্ট করা হয়নি!', 'warning', 3000);
+        return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('⚠️ ফাইল সাইজ ৫MB এর বেশি!', 'danger', 3000);
+        event.target.value = '';
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
             
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('⚠️ ফাইল সাইজ ৫MB এর বেশি!', 'danger', 3000);
+            console.log("📊 Excel থেকে ডেটা:", jsonData.length, "টি রো");
+            
+            if (jsonData.length === 0) {
+                showToast('⚠️ ফাইল খালি!', 'warning', 3000);
                 event.target.value = '';
                 return;
             }
+
+            // হেডার চেক - প্রথম রো থেকে
+            const firstRow = jsonData[0];
+            const headers = Object.keys(firstRow);
+            console.log("📋 হেডারসমূহ:", headers);
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                    
-                    console.log("📊 Excel থেকে ডেটা:", jsonData);
-                    
-                    if (jsonData.length === 0) {
-                        showToast('⚠️ ফাইল খালি!', 'warning', 3000);
-                        event.target.value = '';
-                        return;
-                    }
+            // হেডার ম্যাপ তৈরি (Case Insensitive)
+            const headerMap = {};
+            headers.forEach(h => {
+                headerMap[h.trim().toLowerCase()] = h;
+            });
+            
+            // আবশ্যক হেডার চেক
+            const requiredHeaders = ['print order', 'item code', 'item name'];
+            const missingHeaders = requiredHeaders.filter(h => !headerMap[h]);
+            
+            if (missingHeaders.length > 0) {
+                showToast(`⚠️ আবশ্যক হেডার খুঁজে পাওয়া যায়নি: ${missingHeaders.join(', ')}`, 'danger', 5000);
+                event.target.value = '';
+                return;
+            }
 
-                    const firstRow = jsonData[0];
-                    const headers = Object.keys(firstRow);
-                    console.log("📋 হেডারসমূহ:", headers);
-                    
-                    // আবশ্যক হেডার চেক
-                    const requiredHeaders = ['Print Order', 'Item Code', 'Item Name'];
-                    const missingHeaders = requiredHeaders.filter(h => 
-                        !headers.some(header => header.trim().toLowerCase() === h.toLowerCase())
-                    );
-                    
-                    if (missingHeaders.length > 0) {
-                        showToast(`⚠️ আবশ্যক হেডার খুঁজে পাওয়া যায়নি: ${missingHeaders.join(', ')}`, 'danger', 5000);
-                        event.target.value = '';
-                        return;
-                    }
-
-                    let added = 0;
-                    let skipped = 0;
-                    const promises = [];
-                    
-                    jsonData.forEach((row, index) => {
-                        const getVal = (key) => {
-                            for (let k in row) {
-                                if (k.trim().toLowerCase() === key.toLowerCase()) {
-                                    return row[k];
-                                }
-                            }
-                            return undefined;
-                        };
-                        
-                        const printOrder = (getVal('Print Order') || '').toString().trim();
-                        const itemCode = (getVal('Item Code') || '').toString().trim();
-                        const itemName = (getVal('Item Name') || '').toString().trim();
-                        
-                        if (!printOrder || !itemCode || !itemName) {
-                            console.warn(`⚠️ Row ${index + 1} skipped: Print Order, Item Code or Item Name missing`);
-                            skipped++;
-                            return;
-                        }
-                        
-                        const exists = printMastersCache.some(m => 
-                            m.printOrder && m.printOrder.toLowerCase() === printOrder.toLowerCase()
-                        );
-                        
-                        if (exists) {
-                            console.log(`⏭️ Skipped (already exists): ${printOrder}`);
-                            skipped++;
-                            return;
-                        }
-                        
-                        const masterData = {
-                            id: genId(),
-                            printOrder: printOrder,
-                            itemCode: itemCode,
-                            itemName: itemName,
-                            color: (getVal('Color') || '').toString().trim(),
-                            foilName: (getVal('Foil Name') || '').toString().trim(),
-                            demand: parseInt(getVal('Demand QTY')) || 0,
-                            cycleTime: parseFloat(getVal('Cycle Time (sec)')) || 30,
-                            cavity: parseInt(getVal('Cavity')) || 1
-                        };
-                        
-                        console.log(`📝 Saving: ${printOrder}`, masterData);
-                        promises.push(savePrintMaster(masterData));
-                        added++;
-                    });
-
-                    if (added === 0) {
-                        let msg = '⚠️ কোনো নতুন ডেটা যোগ হয়নি!';
-                        if (skipped > 0) {
-                            msg += ` (${skipped} টি স্কিপ করা হয়েছে)`;
-                        }
-                        showToast(msg, 'warning', 4000);
-                        event.target.value = '';
-                        return;
-                    }
-
-                    showToast(`⏳ ${added} টি ডেটা ইমপোর্ট হচ্ছে...`, 'info', 3000);
-
-                    Promise.all(promises).then(() => {
-                        return refreshPrintData();
-                    }).then(() => {
-                        showToast(`✅ ${added} টি ডেটা সফলভাবে ইমপোর্ট হয়েছে!${skipped > 0 ? ` (${skipped} টি স্কিপ)` : ''}`, 'success', 5000);
-                        console.log("✅ All data imported successfully!");
-                        event.target.value = '';
-                    }).catch(err => {
-                        console.error('❌ Error:', err);
-                        showToast('❌ ইমপোর্ট করতে সমস্যা: ' + err.message, 'danger', 5000);
-                        event.target.value = '';
-                    });
-
-                } catch (err) {
-                    console.error('❌ Error:', err);
-                    showToast('❌ ফাইল পড়তে সমস্যা: ' + err.message, 'danger', 5000);
-                    event.target.value = '';
+            let added = 0;
+            let skipped = 0;
+            const promises = [];
+            
+            // ডেটা প্রসেস করা (সরাসরি লুপ, ফাংশন কল ছাড়া)
+            jsonData.forEach((row, index) => {
+                // সরাসরি row থেকে ডেটা নেওয়া
+                const printOrder = (row[headerMap['print order']] || '').toString().trim();
+                const itemCode = (row[headerMap['item code']] || '').toString().trim();
+                const itemName = (row[headerMap['item name']] || '').toString().trim();
+                
+                // আবশ্যক ফিল্ড চেক
+                if (!printOrder || !itemCode || !itemName) {
+                    console.warn(`⚠️ Row ${index + 1} skipped: Required fields missing`);
+                    skipped++;
+                    return;
                 }
-            };
-            
-            reader.onerror = function() {
-                showToast('❌ ফাইল পড়তে সমস্যা!', 'danger', 3000);
+                
+                // ডুপ্লিকেট চেক (Case Insensitive)
+                const exists = printMastersCache.some(m => 
+                    m.printOrder && m.printOrder.toLowerCase() === printOrder.toLowerCase()
+                );
+                
+                if (exists) {
+                    console.log(`⏭️ Skipped (already exists): ${printOrder}`);
+                    skipped++;
+                    return;
+                }
+                
+                // Color, Foil Name, Demand, Cycle Time, Cavity - সরাসরি এক্সট্র্যাক্ট
+                const color = (row[headerMap['color']] || '').toString().trim();
+                const foilName = (row[headerMap['foil name']] || '').toString().trim();
+                const demand = parseInt(row[headerMap['demand qty']]) || 0;
+                const cycleTime = parseFloat(row[headerMap['cycle time (sec)']]) || 30;
+                const cavity = parseInt(row[headerMap['cavity']]) || 1;
+                
+                const masterData = {
+                    id: genId(),
+                    printOrder: printOrder,
+                    itemCode: itemCode,
+                    itemName: itemName,
+                    color: color,
+                    foilName: foilName,
+                    demand: demand,
+                    cycleTime: cycleTime,
+                    cavity: cavity
+                };
+                
+                console.log(`📝 Saving: ${printOrder}`);
+                promises.push(savePrintMaster(masterData));
+                added++;
+            });
+
+            if (added === 0) {
+                let msg = '⚠️ কোনো নতুন ডেটা যোগ হয়নি!';
+                if (skipped > 0) {
+                    msg += ` (${skipped} টি স্কিপ করা হয়েছে)`;
+                }
+                showToast(msg, 'warning', 4000);
                 event.target.value = '';
-            };
-            
-            reader.readAsArrayBuffer(file);
+                return;
+            }
+
+            showToast(`⏳ ${added} টি ডেটা ইমপোর্ট হচ্ছে...`, 'info', 3000);
+
+            // সব প্রমিস রেজলভ হলে রিফ্রেশ
+            Promise.all(promises).then(() => {
+                return refreshPrintData();
+            }).then(() => {
+                showToast(`✅ ${added} টি ডেটা সফলভাবে ইমপোর্ট হয়েছে!${skipped > 0 ? ` (${skipped} টি স্কিপ)` : ''}`, 'success', 5000);
+                console.log("✅ All data imported successfully!");
+                event.target.value = '';
+            }).catch(err => {
+                console.error('❌ Error:', err);
+                showToast('❌ ইমপোর্ট করতে সমস্যা: ' + err.message, 'danger', 5000);
+                event.target.value = '';
+            });
+
+        } catch (err) {
+            console.error('❌ Error:', err);
+            showToast('❌ ফাইল পড়তে সমস্যা: ' + err.message, 'danger', 5000);
+            event.target.value = '';
         }
+    };
+    
+    reader.onerror = function() {
+        showToast('❌ ফাইল পড়তে সমস্যা!', 'danger', 3000);
+        event.target.value = '';
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
 
         // ============================================================
         //  DEMO DATA ADD
