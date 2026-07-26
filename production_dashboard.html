@@ -1276,9 +1276,10 @@
                 return;
             }
 
-            const exists = printMastersCache.some(m => m.printOrder && m.printOrder.toLowerCase() === printOrder.toLowerCase());
+            // Item Code দিয়ে ডুপ্লিকেট চেক করুন
+            const exists = printMastersCache.some(m => m.itemCode && m.itemCode === itemCode);
             if (exists) {
-                showToast(`⚠️ "${printOrder}" ইতিমধ্যে আছে!`, 'warning', 4000);
+                showToast(`⚠️ Item Code "${itemCode}" ইতিমধ্যে আছে!`, 'warning', 4000);
                 return;
             }
 
@@ -1363,7 +1364,7 @@
         }
 
         // ============================================================
-        //  IMPORT FUNCTION
+        //  IMPORT FUNCTION (UPDATED - Item Code দিয়ে ডুপ্লিকেট চেক)
         // ============================================================
         function importPrintMaster(event) {
             const file = event.target.files[0];
@@ -1423,8 +1424,9 @@
                             return;
                         }
                         
+                        // Item Code দিয়ে ডুপ্লিকেট চেক করুন
                         const exists = printMastersCache.some(m => 
-                            m.printOrder && m.printOrder.toLowerCase() === printOrder.toLowerCase()
+                            m.itemCode && m.itemCode === itemCode
                         );
                         
                         if (exists) {
@@ -1472,7 +1474,6 @@
                         showToast(`✅ ${added} টি ডেটা সফলভাবে ইমপোর্ট হয়েছে!${skipped > 0 ? ` (${skipped} টি স্কিপ)` : ''}`, 'success', 5000);
                         event.target.value = '';
                         
-                        // ফোর্সড রিফ্রেশ
                         setTimeout(function() {
                             populatePrintOrderDropdown();
                             renderPrintMasterList();
@@ -1494,7 +1495,7 @@
         }
 
         // ============================================================
-        //  DEMO DATA ADD
+        //  DEMO DATA ADD (UPDATED - Item Code দিয়ে চেক)
         // ============================================================
         function addDemoData() {
             const demoData = [
@@ -1511,7 +1512,7 @@
 
             demoData.forEach(d => {
                 const exists = printMastersCache.some(m => 
-                    m.printOrder && m.printOrder.toLowerCase() === d.printOrder.toLowerCase()
+                    m.itemCode && m.itemCode === d.itemCode
                 );
                 
                 if (exists) {
@@ -1552,7 +1553,7 @@
         }
 
         // ============================================================
-        //  PRINT DAILY ENTRY FUNCTIONS
+        //  PRINT DAILY ENTRY FUNCTIONS (UPDATED - Item Code দেখাবে)
         // ============================================================
         function populatePrintOrderDropdown() {
             const select = document.getElementById('printOrderSelect');
@@ -1565,10 +1566,11 @@
                 return;
             }
             
+            // Print Order + Item Code + Item Name দেখান
             printMastersCache.forEach(m => {
                 const option = document.createElement('option');
                 option.value = m.id;
-                option.textContent = `${m.printOrder} - ${m.itemName}`;
+                option.textContent = `${m.printOrder} | ${m.itemCode} | ${m.itemName}`;
                 select.appendChild(option);
             });
             
@@ -1922,6 +1924,60 @@
         }
 
         // ============================================================
+        //  KUSTOM DATA IMPORT FUNCTION (কনসোলে রান করুন)
+        // ============================================================
+        function importCustomData() {
+            const myData = [
+                { printOrder: 'LIDL-26-05', itemCode: '962452', itemName: 'LDIL Measuring Jug Big', color: 'Trans', foilName: 'Common Foil Big', demand: 10000, cycleTime: 30, cavity: 1 },
+                { printOrder: 'LIDL-26-05', itemCode: '962453', itemName: 'LDIL Measuring Jug Med', color: 'Trans', foilName: 'Common Foil Med', demand: 5000, cycleTime: 35, cavity: 1 },
+                { printOrder: 'LIDL-26-05', itemCode: '962454', itemName: 'LDIL Measuring Jug Small', color: 'Trans', foilName: 'Common Foil Small', demand: 8000, cycleTime: 28, cavity: 1 }
+            ];
+
+            let added = 0;
+            let skipped = 0;
+            const promises = [];
+
+            myData.forEach(d => {
+                const exists = printMastersCache.some(m => m.itemCode && m.itemCode === d.itemCode);
+                if (!exists) {
+                    const data = {
+                        id: genId(),
+                        printOrder: d.printOrder,
+                        itemCode: d.itemCode,
+                        itemName: d.itemName,
+                        color: d.color || '',
+                        foilName: d.foilName || '',
+                        demand: parseInt(d.demand) || 0,
+                        cycleTime: parseFloat(d.cycleTime) || 30,
+                        cavity: parseInt(d.cavity) || 1
+                    };
+                    promises.push(database.ref('printMasters/' + data.id).set(data));
+                    added++;
+                } else {
+                    skipped++;
+                }
+            });
+
+            if (added === 0) {
+                showToast(`⚠️ কোনো নতুন ডেটা যোগ হয়নি! (${skipped} টি ডুপ্লিকেট)`, 'warning', 4000);
+                return;
+            }
+
+            showToast(`⏳ ${added} টি ডেটা যোগ করা হচ্ছে...`, 'info', 3000);
+
+            Promise.all(promises)
+                .then(() => refreshPrintData())
+                .then(() => {
+                    showToast(`✅ ${added} টি ডেটা যোগ হয়েছে!${skipped > 0 ? ` (${skipped} টি ডুপ্লিকেট স্কিপ)` : ''}`, 'success', 5000);
+                    renderPrintMasterList();
+                    populatePrintOrderDropdown();
+                })
+                .catch(err => {
+                    showToast('❌ সমস্যা: ' + err.message, 'danger', 5000);
+                });
+        }
+
+        // ============================================================
         //  BACKUP & RESTORE
         // ============================================================
         function backupData() {
@@ -1982,9 +2038,18 @@
                 if (printMastersCache.length === 0) {
                     console.log("⚠️ No printing data found, adding demo data...");
                     setTimeout(addDemoData, 1000);
+                } else {
+                    console.log(`📊 মোট ${printMastersCache.length} টি ডেটা আছে`);
+                    populatePrintOrderDropdown();
+                    renderPrintMasterList();
                 }
             });
         });
+
+        // কনসোলে হেল্প মেসেজ
+        console.log('📌 ডেটা যোগ করতে কনসোলে importCustomData() টাইপ করুন');
+        console.log('📌 সব ডেটা ডিলিট করতে deleteAllPrintMasters() টাইপ করুন');
+        console.log('📌 ডেমো ডেটা যোগ করতে addDemoData() টাইপ করুন');
     </script>
 </body>
 </html>
