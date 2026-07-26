@@ -89,11 +89,6 @@
             padding: 2px 8px;
             border-radius: 12px;
         }
-        .sidebar-menu .menu-item .lock-icon {
-            margin-left: auto;
-            color: #ffc107;
-            font-size: 12px;
-        }
         .sidebar-menu .sub-menu {
             padding-left: 20px;
             background: #15202b;
@@ -193,37 +188,6 @@
         }
         .content-body::-webkit-scrollbar { width: 6px; }
         .content-body::-webkit-scrollbar-thumb { background: #c1c9d6; border-radius: 4px; }
-
-        .locked-overlay {
-            position: relative;
-        }
-        .locked-overlay .lock-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(26, 35, 50, 0.85);
-            backdrop-filter: blur(4px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            z-index: 50;
-            color: #fff;
-        }
-        .locked-overlay .lock-overlay i { font-size: 48px; color: #ffc107; margin-bottom: 12px; }
-        .locked-overlay .lock-overlay h4 { font-weight: 600; }
-        .locked-overlay .lock-overlay p { color: #a8b5c7; font-size: 14px; }
-        .locked-overlay .lock-overlay .unlock-btn {
-            margin-top: 12px;
-            padding: 8px 30px;
-            border: none;
-            background: #e74c3c;
-            color: #fff;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .locked-overlay .lock-overlay .unlock-btn:hover { background: #c0392b; }
 
         .printing-tab-btn {
             padding: 8px 18px;
@@ -481,25 +445,20 @@
         </div>
         <nav class="sidebar-menu">
             <div class="menu-label">Navigation</div>
-            <a class="menu-item active" onclick="checkLockAndShow('dashboard')">
+            <a class="menu-item active" onclick="showSection('dashboard')">
                 <i class="bi bi-speedometer2"></i> ড্যাশবোর্ড
-                <span class="lock-icon"><i class="bi bi-lock"></i></span>
             </a>
-            <a class="menu-item" onclick="checkLockAndShow('injection')">
+            <a class="menu-item" onclick="showSection('injection')">
                 <i class="bi bi-boxes"></i> ইনজেকশন ডিমান্ড
-                <span class="lock-icon"><i class="bi bi-lock"></i></span>
             </a>
-            <a class="menu-item" onclick="checkLockAndShow('production')">
+            <a class="menu-item" onclick="showSection('production')">
                 <i class="bi bi-pencil-square"></i> প্রোডাকশন এন্ট্রি
-                <span class="lock-icon"><i class="bi bi-lock"></i></span>
             </a>
-            <a class="menu-item" onclick="checkLockAndShow('mcstatus')">
+            <a class="menu-item" onclick="showSection('mcstatus')">
                 <i class="bi bi-clipboard-check"></i> এমসি স্ট্যাটাস
-                <span class="lock-icon"><i class="bi bi-lock"></i></span>
             </a>
-            <a class="menu-item" onclick="checkLockAndShow('lastday')">
+            <a class="menu-item" onclick="showSection('lastday')">
                 <i class="bi bi-calendar-day"></i> Last Day Prod
-                <span class="lock-icon"><i class="bi bi-lock"></i></span>
             </a>
             
             <!-- PRINTING SECTION -->
@@ -566,77 +525,86 @@
 
         <div class="content-body">
 
-            <!-- DASHBOARD (LOCKED) -->
+            <!-- DASHBOARD -->
             <div id="section-dashboard" style="display:none;">
-                <div class="locked-overlay">
-                    <div class="lock-overlay">
-                        <i class="bi bi-lock-fill"></i>
-                        <h4>🔒 এই সেকশনটি লক করা আছে</h4>
-                        <p>দয়া করে পাসওয়ার্ড দিন</p>
-                        <button class="unlock-btn" onclick="checkLockAndShow('dashboard')"><i class="bi bi-unlock"></i> আনলক করুন</button>
+                <div class="table-wrapper">
+                    <div class="table-header">
+                        <h6><i class="bi bi-speedometer2 me-2"></i>ড্যাশবোর্ড</h6>
                     </div>
-                    <div style="pointer-events:none; opacity:0.3;">
-                        <div class="table-wrapper"><div class="table-header"><h6>ড্যাশবোর্ড</h6></div><div class="p-3 text-center text-muted">লক করা আছে</div></div>
+                    <div class="p-4 text-center">
+                        <h4>👋 স্বাগতম!</h4>
+                        <p class="text-muted">প্রোডাকশন ড্যাশবোর্ডে আপনাকে স্বাগতম।</p>
+                        <div class="row mt-4">
+                            <div class="col-md-4">
+                                <div class="report-card">
+                                    <div class="report-title">📦 মোট অর্ডার</div>
+                                    <div class="report-value" id="totalOrders">0</div>
+                                    <div class="report-sub">সব অর্ডার</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="report-card" style="border-left-color: #28a745;">
+                                    <div class="report-title">✅ সম্পন্ন</div>
+                                    <div class="report-value" id="completedOrders" style="color: #28a745;">0</div>
+                                    <div class="report-sub">সম্পন্ন অর্ডার</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="report-card" style="border-left-color: #ffc107;">
+                                    <div class="report-title">⏳ বাকি</div>
+                                    <div class="report-value" id="pendingOrders" style="color: #ffc107;">0</div>
+                                    <div class="report-sub">বাকি অর্ডার</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- INJECTION DEMAND (LOCKED) -->
+            <!-- INJECTION DEMAND -->
             <div id="section-injection" style="display:none;">
-                <div class="locked-overlay">
-                    <div class="lock-overlay">
-                        <i class="bi bi-lock-fill"></i>
-                        <h4>🔒 এই সেকশনটি লক করা আছে</h4>
-                        <p>দয়া করে পাসওয়ার্ড দিন</p>
-                        <button class="unlock-btn" onclick="checkLockAndShow('injection')"><i class="bi bi-unlock"></i> আনলক করুন</button>
-                    </div>
-                    <div style="pointer-events:none; opacity:0.3;">
-                        <div class="form-card"><div class="form-title">ইনজেকশন ডিমান্ড</div></div>
+                <div class="form-card">
+                    <div class="form-title"><i class="bi bi-boxes me-2"></i>ইনজেকশন ডিমান্ড</div>
+                    <div class="text-center p-4">
+                        <h5>📋 ইনজেকশন ডিমান্ড সেকশন</h5>
+                        <p class="text-muted">এই সেকশনে ইনজেকশন ডিমান্ড দেখা যাবে।</p>
                     </div>
                 </div>
             </div>
 
-            <!-- PRODUCTION ENTRY (LOCKED) -->
+            <!-- PRODUCTION ENTRY -->
             <div id="section-production" style="display:none;">
-                <div class="locked-overlay">
-                    <div class="lock-overlay">
-                        <i class="bi bi-lock-fill"></i>
-                        <h4>🔒 এই সেকশনটি লক করা আছে</h4>
-                        <p>দয়া করে পাসওয়ার্ড দিন</p>
-                        <button class="unlock-btn" onclick="checkLockAndShow('production')"><i class="bi bi-unlock"></i> আনলক করুন</button>
-                    </div>
-                    <div style="pointer-events:none; opacity:0.3;">
-                        <div class="form-card"><div class="form-title">প্রোডাকশন এন্ট্রি</div></div>
+                <div class="form-card">
+                    <div class="form-title"><i class="bi bi-pencil-square me-2"></i>প্রোডাকশন এন্ট্রি</div>
+                    <div class="text-center p-4">
+                        <h5>🏭 প্রোডাকশন এন্ট্রি সেকশন</h5>
+                        <p class="text-muted">এই সেকশনে প্রোডাকশন এন্ট্রি করা যাবে।</p>
                     </div>
                 </div>
             </div>
 
-            <!-- MC STATUS (LOCKED) -->
+            <!-- MC STATUS -->
             <div id="section-mcstatus" style="display:none;">
-                <div class="locked-overlay">
-                    <div class="lock-overlay">
-                        <i class="bi bi-lock-fill"></i>
-                        <h4>🔒 এই সেকশনটি লক করা আছে</h4>
-                        <p>দয়া করে পাসওয়ার্ড দিন</p>
-                        <button class="unlock-btn" onclick="checkLockAndShow('mcstatus')"><i class="bi bi-unlock"></i> আনলক করুন</button>
+                <div class="table-wrapper">
+                    <div class="table-header">
+                        <h6><i class="bi bi-clipboard-check me-2"></i>এমসি স্ট্যাটাস</h6>
                     </div>
-                    <div style="pointer-events:none; opacity:0.3;">
-                        <div class="table-wrapper"><div class="table-header"><h6>এমসি স্ট্যাটাস</h6></div></div>
+                    <div class="text-center p-4">
+                        <h5>🖥️ এমসি স্ট্যাটাস সেকশন</h5>
+                        <p class="text-muted">এই সেকশনে এমসি স্ট্যাটাস দেখা যাবে।</p>
                     </div>
                 </div>
             </div>
 
-            <!-- LAST DAY PROD (LOCKED) -->
+            <!-- LAST DAY PROD -->
             <div id="section-lastday" style="display:none;">
-                <div class="locked-overlay">
-                    <div class="lock-overlay">
-                        <i class="bi bi-lock-fill"></i>
-                        <h4>🔒 এই সেকশনটি লক করা আছে</h4>
-                        <p>দয়া করে পাসওয়ার্ড দিন</p>
-                        <button class="unlock-btn" onclick="checkLockAndShow('lastday')"><i class="bi bi-unlock"></i> আনলক করুন</button>
+                <div class="table-wrapper">
+                    <div class="table-header">
+                        <h6><i class="bi bi-calendar-day me-2"></i>Last Day Prod</h6>
                     </div>
-                    <div style="pointer-events:none; opacity:0.3;">
-                        <div class="table-wrapper"><div class="table-header"><h6>Last Day Prod</h6></div></div>
+                    <div class="text-center p-4">
+                        <h5>📅 গতকালের প্রোডাকশন</h5>
+                        <p class="text-muted">এই সেকশনে গতকালের প্রোডাকশন দেখা যাবে।</p>
                     </div>
                 </div>
             </div>
@@ -969,27 +937,6 @@
         </div>
     </div>
 
-    <!-- LOCK PASSWORD MODAL -->
-    <div class="modal fade" id="lockPasswordModal" tabindex="-1">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-lock"></i> পাসওয়ার্ড দিন</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted">এই সেকশনটি লক করা আছে। পাসওয়ার্ড দিন:</p>
-                    <input type="password" class="form-control" id="lockPasswordInput" placeholder="পাসওয়ার্ড">
-                    <input type="hidden" id="lockTargetSection" value="">
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">বাতিল</button>
-                    <button class="btn btn-primary" onclick="verifyLockPassword()"><i class="bi bi-check"></i> যাচাই করুন</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // ============================================================
@@ -1090,39 +1037,7 @@
         }
 
         // ============================================================
-        //  LOCKED SECTIONS
-        // ============================================================
-        let unlockedSections = {};
-
-        function checkLockAndShow(section) {
-            if (unlockedSections[section]) {
-                showSection(section);
-                return;
-            }
-            document.getElementById('lockTargetSection').value = section;
-            document.getElementById('lockPasswordInput').value = '';
-            document.getElementById('lockPasswordInput').focus();
-            new bootstrap.Modal(document.getElementById('lockPasswordModal')).show();
-        }
-
-        function verifyLockPassword() {
-            const pwd = document.getElementById('lockPasswordInput').value.trim();
-            const section = document.getElementById('lockTargetSection').value;
-            
-            if (pwd === 'admin') {
-                bootstrap.Modal.getInstance(document.getElementById('lockPasswordModal')).hide();
-                unlockedSections[section] = true;
-                showToast(`🔓 "${section}" সেকশনটি আনলক করা হয়েছে!`, 'success', 3000);
-                showSection(section);
-            } else {
-                showToast('❌ ভুল পাসওয়ার্ড!', 'danger', 3000);
-                document.getElementById('lockPasswordInput').value = '';
-                document.getElementById('lockPasswordInput').focus();
-            }
-        }
-
-        // ============================================================
-        //  NAVIGATION
+        //  NAVIGATION - আনলক করা
         // ============================================================
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
@@ -1131,6 +1046,13 @@
 
         function showSection(section) {
             document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => el.classList.remove('active'));
+            
+            // সেকশন আইডি অনুযায়ী মেনুতে active যোগ করুন
+            document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => {
+                if (el.getAttribute('onclick') && el.getAttribute('onclick').includes(section)) {
+                    el.classList.add('active');
+                }
+            });
             
             ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday','section-printing'].forEach(id => {
                 document.getElementById(id).style.display = 'none';
@@ -1917,8 +1839,21 @@
                 renderPrintLog();
                 populatePrintOrderDropdown();
                 generatePrintReport();
+                updateDashboardStats();
                 return true;
             });
+        }
+
+        // ============================================================
+        //  DASHBOARD STATS
+        // ============================================================
+        function updateDashboardStats() {
+            const totalOrders = printMastersCache.length;
+            const totalEntries = printEntriesCache.length;
+            
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('completedOrders').textContent = totalEntries;
+            document.getElementById('pendingOrders').textContent = Math.max(0, totalOrders - totalEntries);
         }
 
         // ============================================================
@@ -2031,7 +1966,9 @@
                 console.log("✅ Data loaded successfully!");
                 setDefaultDateAndShift();
                 document.getElementById('reportDateFilter').value = new Date().toISOString().split('T')[0];
-                document.getElementById('section-dashboard').style.display = 'block';
+                
+                // ডিফল্টভাবে ড্যাশবোর্ড দেখান
+                showSection('dashboard');
                 
                 if (printMastersCache.length === 0) {
                     console.log("⚠️ No data found, adding demo data...");
@@ -2048,6 +1985,7 @@
         console.log('📌 ডেটা যোগ করতে importCustomData() টাইপ করুন');
         console.log('📌 ডেমো ডেটা যোগ করতে addDemoData() টাইপ করুন');
         console.log('📌 সব ডেটা ডিলিট করতে deleteAllPrintMasters() টাইপ করুন');
+        console.log('📌 সেকশন পরিবর্তন করতে showSection("dashboard") টাইপ করুন');
     </script>
 </body>
 </html>
