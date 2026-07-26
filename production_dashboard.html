@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
@@ -598,6 +598,151 @@
         .backup-btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
         .backup-btn-group .btn-outline-secondary { font-size: 12px; padding: 3px 12px; }
 
+        /* Toggle Switch CSS */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-radius: 30px;
+            border: 1px solid #e9ecef;
+        }
+        .toggle-container .toggle-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a2332;
+        }
+        .toggle-container .toggle-status {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 2px 12px;
+            border-radius: 20px;
+        }
+        .toggle-status.active { background: #d4edda; color: #155724; }
+        .toggle-status.inactive { background: #f8d7da; color: #721c24; }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background: #28a745;
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        .rip-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 10px 16px;
+            background: #fff;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .rip-status-bar .rip-stat {
+            font-size: 13px;
+            color: #495057;
+        }
+        .rip-status-bar .rip-stat strong {
+            color: #1a2332;
+            font-size: 16px;
+        }
+
+        /* Print Report Styles */
+        .print-report-area {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            margin-top: 12px;
+        }
+        .print-report-area .print-title {
+            font-weight: 600;
+            color: #1a2332;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+        .print-report-area .print-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .print-report-area .print-controls select,
+        .print-report-area .print-controls input {
+            padding: 5px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #fff;
+        }
+        .print-report-area .print-controls .btn-print {
+            padding: 5px 20px;
+            background: #0d6efd;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .print-report-area .print-controls .btn-print:hover { background: #0a58ca; }
+        .print-report-area .print-preview {
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .print-report-area .print-preview table { font-size: 11px; }
+        .print-report-area .print-preview table th {
+            background: #f8f9fa;
+            font-size: 10px;
+            padding: 4px 6px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        .print-report-area .print-preview table td {
+            padding: 4px 6px;
+            text-align: center;
+            font-size: 11px;
+        }
+
         @media (max-width: 992px) {
             .sidebar { transform: translateX(-100%); width: 280px; }
             .sidebar.open { transform: translateX(0); }
@@ -617,6 +762,7 @@
             .header-right .user-profile .user-name { display: none; }
             .header-right .user-profile .user-role { display: none; }
             .filter-bar .search-box input { width: 100px; }
+            .rip-status-bar { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -649,6 +795,10 @@
             </a>
             <a class="menu-item" onclick="showSection('lastday')">
                 <i class="bi bi-calendar-day"></i> Last Day Prod
+            </a>
+            <!-- NEW RIP PRINTING SECTION -->
+            <a class="menu-item" onclick="showSection('ripprinting')">
+                <i class="bi bi-printer"></i> RIP Printing Update
             </a>
             <div class="menu-label">Tools</div>
             <a class="menu-item" onclick="backupData()">
@@ -883,7 +1033,7 @@
                 </div>
             </div>
 
-            <!-- PRODUCTION ENTRY (UPDATED) -->
+            <!-- PRODUCTION ENTRY -->
             <div id="section-production" style="display:none;">
                 <div class="form-card">
                     <div class="form-title d-flex justify-content-between align-items-center">
@@ -1009,7 +1159,7 @@
                 </div>
             </div>
 
-            <!-- MC STATUS (UPDATED - REMOVED REMARK) -->
+            <!-- MC STATUS -->
             <div id="section-mcstatus" style="display:none;">
                 <div class="table-wrapper">
                     <div class="table-header">
@@ -1104,6 +1254,109 @@
                 </div>
             </div>
 
+            <!-- NEW: RIP PRINTING UPDATE SECTION -->
+            <div id="section-ripprinting" style="display:none;">
+                <div class="form-card">
+                    <div class="form-title d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-printer section-title-icon"></i>RIP Printing Update – সিস্টেম এন্ট্রি ও রিপোর্ট</span>
+                        <span class="badge bg-success" id="ripLiveStatus">🟢 লাইভ</span>
+                    </div>
+
+                    <!-- Toggle Switch -->
+                    <div class="rip-status-bar">
+                        <div class="toggle-container">
+                            <span class="toggle-label"><i class="bi bi-power"></i> RIP System</span>
+                            <label class="switch">
+                                <input type="checkbox" id="ripToggle" onchange="toggleRipSystem()">
+                                <span class="slider"></span>
+                            </label>
+                            <span class="toggle-status inactive" id="ripToggleStatus">⏹ বন্ধ</span>
+                        </div>
+                        <div class="rip-stat">
+                            <strong id="ripEntryCount">0</strong> টি এন্ট্রি
+                        </div>
+                        <div class="rip-stat">
+                            শেষ আপডেট: <strong id="ripLastUpdate">-</strong>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshRipData()">
+                            <i class="bi bi-arrow-clockwise"></i> রিফ্রেশ
+                        </button>
+                    </div>
+
+                    <!-- Entry Form -->
+                    <div id="ripEntryForm" style="display:none;">
+                        <h6 class="mt-3"><i class="bi bi-pencil-square"></i> নতুন RIP এন্ট্রি</h6>
+                        <form id="ripEntryFormSubmit">
+                            <div class="form-row">
+                                <div class="field-group">
+                                    <label class="form-label">MC SL *</label>
+                                    <select class="form-select" id="ripMcSelect" required>
+                                        <option value="">-- সিলেক্ট --</option>
+                                    </select>
+                                </div>
+                                <div class="field-group">
+                                    <label class="form-label">JOB Order *</label>
+                                    <select class="form-select" id="ripOrderSelect" required>
+                                        <option value="">-- সিলেক্ট --</option>
+                                    </select>
+                                </div>
+                                <div class="field-group">
+                                    <label class="form-label">Item Name</label>
+                                    <input type="text" class="form-control" id="ripItemName" readonly placeholder="অটো ফিল">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="field-group">
+                                    <label class="form-label">RIP Counter</label>
+                                    <input type="number" class="form-control" id="ripCounter" placeholder="যেমন: 500" required>
+                                </div>
+                                <div class="field-group">
+                                    <label class="form-label">RIP Good</label>
+                                    <input type="number" class="form-control" id="ripGood" placeholder="যেমন: 480" required>
+                                </div>
+                                <div class="field-group">
+                                    <label class="form-label">RIP Reject</label>
+                                    <input type="number" class="form-control" id="ripReject" placeholder="যেমন: 20" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="field-group">
+                                    <label class="form-label">রিমার্ক</label>
+                                    <input type="text" class="form-control" id="ripRemark" placeholder="যদি থাকে">
+                                </div>
+                                <div class="field-group d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> RIP সেভ</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="ripValidationMsg" class="mt-2 text-danger small" style="display:none;"></div>
+                        <hr>
+                    </div>
+
+                    <!-- Print Report -->
+                    <div class="print-report-area">
+                        <div class="print-title">
+                            <i class="bi bi-file-earmark-text"></i> RIP Printing Report
+                            <button class="btn btn-sm btn-outline-success float-end" onclick="printRipReport()">
+                                <i class="bi bi-printer"></i> প্রিন্ট রিপোর্ট
+                            </button>
+                        </div>
+                        <div class="print-controls">
+                            <select id="ripReportMcFilter" onchange="renderRipReport()">
+                                <option value="">-- সব MC --</option>
+                            </select>
+                            <input type="date" id="ripReportDateFrom" onchange="renderRipReport()">
+                            <input type="date" id="ripReportDateTo" onchange="renderRipReport()">
+                            <button class="btn-print" onclick="renderRipReport()"><i class="bi bi-search"></i> দেখুন</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="resetRipReportFilters()">রিসেট</button>
+                        </div>
+                        <div class="print-preview" id="ripReportPreview">
+                            <p class="text-muted text-center py-3">RIP সিস্টেম ON করলে রিপোর্ট দেখাবে।</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -1181,6 +1434,7 @@
         // ============================================================
         let ordersCache = [];
         let shiftsCache = [];
+        let ripEntriesCache = [];
         let notifiedOrders = new Set();
 
         // ============================================================
@@ -1204,6 +1458,16 @@
                     const data = snapshot.val();
                     shiftsCache = data ? Object.values(data) : [];
                     resolve(shiftsCache);
+                }, reject);
+            });
+        }
+
+        function fetchRipEntries() {
+            return new Promise((resolve, reject) => {
+                database.ref('ripEntries').once('value', snapshot => {
+                    const data = snapshot.val();
+                    ripEntriesCache = data ? Object.values(data) : [];
+                    resolve(ripEntriesCache);
                 }, reject);
             });
         }
@@ -1232,6 +1496,22 @@
                 });
         }
 
+        function saveRipEntryToFirebase(entry) {
+            console.log("💾 Saving RIP entry:", entry.id);
+            return database.ref('ripEntries/' + entry.id).set(entry)
+                .then(() => {
+                    console.log("✅ RIP entry saved successfully");
+                })
+                .catch((err) => {
+                    console.error("❌ RIP entry save failed:", err);
+                    throw err;
+                });
+        }
+
+        function deleteRipEntryFromFirebase(id) {
+            return database.ref('ripEntries/' + id).remove();
+        }
+
         function deleteOrderFromFirebase(orderId) {
             return database.ref('orders/' + orderId).remove();
         }
@@ -1257,6 +1537,7 @@
         // ============================================================
         function getOrders() { return ordersCache; }
         function getShifts() { return shiftsCache; }
+        function getRipEntries() { return ripEntriesCache; }
 
         function getOrderById(id) {
             return ordersCache.find(o => o.id === id);
@@ -1264,6 +1545,10 @@
 
         function getShiftsForOrder(orderId) {
             return shiftsCache.filter(s => s.orderId === orderId);
+        }
+
+        function getRipEntriesForOrder(orderId) {
+            return ripEntriesCache.filter(r => r.orderId === orderId);
         }
 
         function genId() {
@@ -1370,13 +1655,9 @@
             const now = new Date();
             const hours = now.getHours();
             
-            // Set current date
             const dateStr = now.toISOString().split('T')[0];
             document.getElementById('shiftDate').value = dateStr;
             
-            // Auto set shift based on time
-            // 9:00 AM to 9:00 PM = Day Shift (A-Shift)
-            // 9:01 PM to 8:59 AM = Night Shift (B-Shift)
             if (hours >= 9 && hours < 21) {
                 document.getElementById('shiftType').value = 'A-Shift';
             } else {
@@ -1457,7 +1738,7 @@
             if (event && event.target) {
                 event.target.closest('.menu-item').classList.add('active');
             }
-            ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday'].forEach(id => {
+            ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday','section-ripprinting'].forEach(id => {
                 document.getElementById(id).style.display = 'none';
             });
             const title = document.getElementById('pageTitle');
@@ -1484,6 +1765,11 @@
                 title.innerHTML = 'Last Day Prod <small>সর্বশেষ শিফট ডেটা</small>';
                 populateLastdayFilter();
                 renderLastDay();
+            } else if (section === 'ripprinting') {
+                document.getElementById('section-ripprinting').style.display = 'block';
+                title.innerHTML = 'RIP Printing Update <small>সিস্টেম এন্ট্রি ও রিপোর্ট</small>';
+                populateRipFilters();
+                renderRipReport();
             }
             if (window.innerWidth <= 992) {
                 document.getElementById('sidebar').classList.remove('open');
@@ -1496,7 +1782,7 @@
         }
 
         // ============================================================
-        //  UPDATE ORDER DETAILS (Item Name, Color, Logo Auto Fill)
+        //  UPDATE ORDER DETAILS
         // ============================================================
         function updateOrderDetails() {
             const orderId = document.getElementById('shiftOrderSelect').value;
@@ -1520,6 +1806,17 @@
             calculateShift();
         }
 
+        function updateRipOrderDetails() {
+            const orderId = document.getElementById('ripOrderSelect').value;
+            if (!orderId) {
+                document.getElementById('ripItemName').value = '';
+                return;
+            }
+            const order = getOrderById(orderId);
+            if (!order) return;
+            document.getElementById('ripItemName').value = order.itemName || '';
+        }
+
         // ============================================================
         //  UPDATE ORDER DROPDOWN
         // ============================================================
@@ -1536,8 +1833,23 @@
             if (currentOrder && orders.some(o => o.id === currentOrder)) {
                 orderSelect.value = currentOrder;
             }
-            // Auto fill details when MC changes
             updateOrderDetails();
+        }
+
+        function updateRipOrderDropdown() {
+            const mc = document.getElementById('ripMcSelect').value;
+            const orderSelect = document.getElementById('ripOrderSelect');
+            const currentOrder = orderSelect.value;
+            let orders = getOrders();
+            if (mc) orders = orders.filter(o => o.mcSl === mc);
+            orderSelect.innerHTML = '<option value="">-- অর্ডার --</option>';
+            orders.forEach(o => { 
+                orderSelect.innerHTML += `<option value="${o.id}">${o.orderName}</option>`; 
+            });
+            if (currentOrder && orders.some(o => o.id === currentOrder)) {
+                orderSelect.value = currentOrder;
+            }
+            updateRipOrderDetails();
         }
 
         // ============================================================
@@ -1637,7 +1949,7 @@
         }
 
         // ============================================================
-        //  MC STATUS RENDER (UPDATED - REMOVED REMARK)
+        //  MC STATUS RENDER
         // ============================================================
         function renderMcStatus() {
             const orders = getOrders();
@@ -1737,6 +2049,213 @@
         }
 
         // ============================================================
+        //  RIP PRINTING FUNCTIONS
+        // ============================================================
+        function toggleRipSystem() {
+            const isChecked = document.getElementById('ripToggle').checked;
+            const statusEl = document.getElementById('ripToggleStatus');
+            const formEl = document.getElementById('ripEntryForm');
+            
+            if (isChecked) {
+                statusEl.className = 'toggle-status active';
+                statusEl.innerHTML = '▶️ চলছে';
+                formEl.style.display = 'block';
+                document.getElementById('ripLiveStatus').innerHTML = '🟢 লাইভ';
+                showToast('🔄 RIP সিস্টেম চালু হয়েছে!', 'success', 3000);
+                populateRipFilters();
+                renderRipReport();
+            } else {
+                statusEl.className = 'toggle-status inactive';
+                statusEl.innerHTML = '⏹ বন্ধ';
+                formEl.style.display = 'none';
+                document.getElementById('ripLiveStatus').innerHTML = '🔴 বন্ধ';
+                showToast('⏹ RIP সিস্টেম বন্ধ করা হয়েছে।', 'info', 3000);
+                document.getElementById('ripReportPreview').innerHTML = '<p class="text-muted text-center py-3">RIP সিস্টেম বন্ধ আছে। চালু করতে টগল করুন।</p>';
+            }
+        }
+
+        function populateRipFilters() {
+            const orders = getOrders();
+            const mcSelect = document.getElementById('ripMcSelect');
+            const currentMc = mcSelect.value;
+            const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
+            mcSelect.innerHTML = '<option value="">-- MC --</option>';
+            uniqueMCs.forEach(mc => { mcSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (currentMc && uniqueMCs.includes(currentMc)) mcSelect.value = currentMc;
+            updateRipOrderDropdown();
+
+            // Report filter
+            const reportMc = document.getElementById('ripReportMcFilter');
+            const currentReportMc = reportMc.value;
+            reportMc.innerHTML = '<option value="">-- সব MC --</option>';
+            uniqueMCs.forEach(mc => { reportMc.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (currentReportMc && uniqueMCs.includes(currentReportMc)) reportMc.value = currentReportMc;
+        }
+
+        function refreshRipData() {
+            fetchRipEntries().then(() => {
+                const count = getRipEntries().length;
+                document.getElementById('ripEntryCount').innerText = count;
+                if (count > 0) {
+                    const last = getRipEntries().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)).pop();
+                    document.getElementById('ripLastUpdate').innerText = last.date || '-';
+                }
+                renderRipReport();
+                showToast('🔄 RIP ডেটা রিফ্রেশ করা হয়েছে!', 'info', 2000);
+            });
+        }
+
+        // RIP Entry Form Submit
+        document.getElementById('ripEntryFormSubmit').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!document.getElementById('ripToggle').checked) {
+                showToast('⚠️ দয়া করে RIP সিস্টেম ON করুন!', 'warning', 3000);
+                return;
+            }
+
+            const orderId = document.getElementById('ripOrderSelect').value;
+            if (!orderId) { alert('অর্ডার সিলেক্ট করুন!'); return; }
+
+            const counter = parseInt(document.getElementById('ripCounter').value) || 0;
+            const good = parseInt(document.getElementById('ripGood').value) || 0;
+            const reject = parseInt(document.getElementById('ripReject').value) || 0;
+
+            if (counter === 0) { alert('RIP Counter দিন!'); return; }
+            if (good + reject !== counter) {
+                alert('⚠️ Good + Reject অবশ্যই Counter এর সমান হতে হবে!');
+                return;
+            }
+
+            const order = getOrderById(orderId);
+            const entry = {
+                id: genId(),
+                orderId: orderId,
+                mcSl: order ? order.mcSl : '',
+                orderName: order ? order.orderName : '',
+                itemName: order ? order.itemName : '',
+                counter: counter,
+                good: good,
+                reject: reject,
+                remark: document.getElementById('ripRemark').value.trim(),
+                date: new Date().toISOString().split('T')[0],
+                timestamp: Date.now()
+            };
+
+            saveRipEntryToFirebase(entry).then(() => {
+                document.getElementById('ripCounter').value = '';
+                document.getElementById('ripGood').value = '';
+                document.getElementById('ripReject').value = '';
+                document.getElementById('ripRemark').value = '';
+                refreshRipData();
+                showToast('✅ RIP এন্ট্রি সেভ হয়েছে!', 'success', 3000);
+            });
+        });
+
+        function renderRipReport() {
+            if (!document.getElementById('ripToggle').checked) {
+                document.getElementById('ripReportPreview').innerHTML = '<p class="text-muted text-center py-3">RIP সিস্টেম বন্ধ আছে। চালু করতে টগল করুন।</p>';
+                return;
+            }
+
+            const entries = getRipEntries();
+            const mcFilter = document.getElementById('ripReportMcFilter').value;
+            const dateFrom = document.getElementById('ripReportDateFrom').value;
+            const dateTo = document.getElementById('ripReportDateTo').value;
+
+            let filtered = entries;
+            if (mcFilter) filtered = filtered.filter(e => e.mcSl === mcFilter);
+            if (dateFrom) filtered = filtered.filter(e => e.date >= dateFrom);
+            if (dateTo) filtered = filtered.filter(e => e.date <= dateTo);
+            filtered.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+            const preview = document.getElementById('ripReportPreview');
+            if (filtered.length === 0) {
+                preview.innerHTML = `<p class="text-muted text-center py-3">কোনো RIP এন্ট্রি নেই।</p>`;
+                return;
+            }
+
+            let totalCounter = 0, totalGood = 0, totalReject = 0;
+            filtered.forEach(e => {
+                totalCounter += e.counter || 0;
+                totalGood += e.good || 0;
+                totalReject += e.reject || 0;
+            });
+
+            let html = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>সামারি:</strong>
+                    <span>মোট: ${totalCounter} | Good: ${totalGood} | Reject: ${totalReject} | ${totalCounter > 0 ? Math.round((totalGood/totalCounter)*100) : 0}% Efficiency</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>তারিখ</th><th>MC SL</th><th>Order</th><th>Item</th>
+                                <th>Counter</th><th>Good</th><th>Reject</th><th>রিমার্ক</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            filtered.forEach(e => {
+                html += `<tr>
+                            <td>${e.date || '-'}</td>
+                            <td>${e.mcSl || ''}</td>
+                            <td>${e.orderName || ''}</td>
+                            <td>${e.itemName || ''}</td>
+                            <td>${e.counter || 0}</td>
+                            <td>${e.good || 0}</td>
+                            <td>${e.reject || 0}</td>
+                            <td>${e.remark || '-'}</td>
+                            <td>
+                                <i class="bi bi-trash3 delete-btn" onclick="deleteRipEntry('${e.id}')" title="ডিলিট"></i>
+                            </td>
+                        </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            preview.innerHTML = html;
+        }
+
+        function deleteRipEntry(id) {
+            if (!confirm('এই RIP এন্ট্রি মুছে ফেলবেন?')) return;
+            deleteRipEntryFromFirebase(id).then(() => {
+                refreshRipData();
+                showToast('✅ RIP এন্ট্রি মুছে ফেলা হয়েছে।', 'success', 3000);
+            });
+        }
+
+        function printRipReport() {
+            const content = document.getElementById('ripReportPreview').innerHTML;
+            if (!content || content.includes('কোনো RIP এন্ট্রি নেই')) {
+                alert('প্রিন্ট করার মতো কোনো ডেটা নেই!');
+                return;
+            }
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html><head><title>RIP Printing Report</title>
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+                <style>body{padding:20px;} .table{font-size:12px;} .table th{background:#f8f9fa;}</style>
+                </head><body>
+                <h4>RIP Printing Report</h4>
+                <p>প্রিন্টের তারিখ: ${new Date().toLocaleString()}</p>
+                ${content}
+                <script>
+                    window.onload = function() { window.print(); window.close(); }
+                <\/script>
+                </body></html>
+            `);
+            win.document.close();
+        }
+
+        function resetRipReportFilters() {
+            document.getElementById('ripReportMcFilter').value = '';
+            document.getElementById('ripReportDateFrom').value = '';
+            document.getElementById('ripReportDateTo').value = '';
+            renderRipReport();
+        }
+
+        // ============================================================
         //  SHIFT DETAILS MODAL
         // ============================================================
         function showShiftDetails(orderId) {
@@ -1823,22 +2342,7 @@
             updateOrderDropdown();
             populateStatusFilter();
             populateLastdayFilter();
-        }
-
-        function updateOrderDropdown() {
-            const mc = document.getElementById('mcSlSelect').value;
-            const orderSelect = document.getElementById('shiftOrderSelect');
-            const currentOrder = orderSelect.value;
-            let orders = getOrders();
-            if (mc) orders = orders.filter(o => o.mcSl === mc);
-            orderSelect.innerHTML = '<option value="">-- অর্ডার --</option>';
-            orders.forEach(o => { 
-                orderSelect.innerHTML += `<option value="${o.id}">${o.orderName}</option>`; 
-            });
-            if (currentOrder && orders.some(o => o.id === currentOrder)) {
-                orderSelect.value = currentOrder;
-            }
-            updateOrderDetails();
+            populateRipFilters();
         }
 
         function populateStatusFilter() {
@@ -1862,7 +2366,7 @@
         }
 
         // ============================================================
-        //  CALCULATIONS (UPDATED - Good ↔ Reject Auto)
+        //  CALCULATIONS
         // ============================================================
         function calcCap() {
             const cav = parseInt(document.getElementById('cavity').value) || 1;
@@ -1882,38 +2386,30 @@
             const good = parseInt(document.getElementById('counterGood').value) || 0;
             const reject = parseInt(document.getElementById('counterReject').value) || 0;
 
-            // Auto calculate Good ↔ Reject
             const activeElement = document.activeElement;
             if (activeElement && activeElement.id === 'counterReject') {
-                // User entered Reject → calculate Good
                 const newGood = Math.max(0, totalCounter - reject);
                 document.getElementById('counterGood').value = newGood;
             } else if (activeElement && activeElement.id === 'counterGood') {
-                // User entered Good → calculate Reject
                 const newReject = Math.max(0, totalCounter - good);
                 document.getElementById('counterReject').value = newReject;
             } else {
-                // Default: calculate Reject from Good
                 const newReject = Math.max(0, totalCounter - good);
                 document.getElementById('counterReject').value = newReject;
             }
 
-            // Recalculate final values
             const finalGood = parseInt(document.getElementById('counterGood').value) || 0;
             const finalReject = parseInt(document.getElementById('counterReject').value) || 0;
 
-            // Capacity
             const capacityShift = (3600 / ct) * cav * 12;
             document.getElementById('capacityShift').value = Math.round(capacityShift);
 
-            // Utilization
             let utilPercent = 0;
             if (capacityShift > 0 && finalGood > 0) {
                 utilPercent = (finalGood / capacityShift) * 100;
             }
             document.getElementById('utilizationPercent').value = utilPercent.toFixed(2);
 
-            // Prod Time
             const perHour = (3600 / ct) * cav;
             let prodMinutes = 0;
             if (perHour > 0 && totalCounter > 0) {
@@ -1921,13 +2417,11 @@
             }
             document.getElementById('prodMinutes').value = prodMinutes.toFixed(1);
 
-            // DT
             const prodHours = prodMinutes / 60;
             let dt = 0;
             if (prodHours < 12) dt = (12 - prodHours) * 60;
             document.getElementById('downtime').value = Math.round(dt);
 
-            // Validation
             const msgDiv = document.getElementById('validationMsg');
             if (finalGood + finalReject !== totalCounter) {
                 msgDiv.style.display = 'block';
@@ -2048,6 +2542,7 @@
             const data = {
                 orders: getOrders(),
                 shifts: getShifts(),
+                ripEntries: getRipEntries(),
                 exportedAt: new Date().toISOString()
             };
             
@@ -2078,7 +2573,8 @@
                     
                     Promise.all([
                         deleteAllOrdersFromFirebase(),
-                        deleteAllShiftsFromFirebase()
+                        deleteAllShiftsFromFirebase(),
+                        database.ref('ripEntries').remove()
                     ]).then(() => {
                         const promises = [];
                         data.orders.forEach(order => {
@@ -2087,6 +2583,11 @@
                         data.shifts.forEach(shift => {
                             promises.push(saveShiftToFirebase(shift));
                         });
+                        if (data.ripEntries) {
+                            data.ripEntries.forEach(entry => {
+                                promises.push(saveRipEntryToFirebase(entry));
+                            });
+                        }
                         return Promise.all(promises);
                     }).then(() => {
                         refreshAll();
@@ -2181,7 +2682,7 @@
         }
 
         // ============================================================
-        //  EXCEL IMPORT (FIXED)
+        //  EXCEL IMPORT
         // ============================================================
         let importedData = [];
         const dropZone = document.getElementById('dropZone');
@@ -2418,7 +2919,7 @@
         });
 
         // ============================================================
-        //  SAVE SHIFT (UPDATED - with IC Name)
+        //  SAVE SHIFT
         // ============================================================
         document.getElementById('shiftForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -2522,13 +3023,23 @@
         //  REFRESH ALL
         // ============================================================
         function refreshAll() {
-            return Promise.all([fetchOrders(), fetchShifts()]).then(() => {
+            return Promise.all([fetchOrders(), fetchShifts(), fetchRipEntries()]).then(() => {
                 populateFilters();
                 renderExcelTable();
                 renderMcStatus();
                 renderLastDay();
                 if (!document.getElementById('shiftDate').value) {
                     setDefaultDateAndShift();
+                }
+                // Update RIP data
+                const count = getRipEntries().length;
+                document.getElementById('ripEntryCount').innerText = count;
+                if (count > 0) {
+                    const last = getRipEntries().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)).pop();
+                    document.getElementById('ripLastUpdate').innerText = last.date || '-';
+                }
+                if (document.getElementById('ripToggle').checked) {
+                    renderRipReport();
                 }
                 checkAndNotify();
             });
@@ -2550,6 +3061,10 @@
             
             document.getElementById('counterGood').addEventListener('input', calculateShift);
             document.getElementById('counterReject').addEventListener('input', calculateShift);
+
+            // RIP event listeners
+            document.getElementById('ripMcSelect').addEventListener('change', updateRipOrderDropdown);
+            document.getElementById('ripOrderSelect').addEventListener('change', updateRipOrderDetails);
             
             setInterval(refreshAll, 30000);
             document.getElementById('section-dashboard').style.display = 'block';
