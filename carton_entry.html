@@ -727,7 +727,7 @@
                 <div class="item"><span class="label">🧑‍💼 IC Name</span><span class="value">${entry.icName}</span></div>
                 <div class="item"><span class="label">⏳ Day HR</span><span class="value">${entry.dayHr}</span></div>
                 <div class="item"><span class="label">🎯 Target (CTN)</span><span class="value">${entry.target}</span></div>
-                <div class="item"><span class="label">📦 CTN Output</span><span class="value">${entry.output}</span></div>
+                <div class="item"><span class="label">📦 CTN Output</span><span class="value">${entry.output || 0}</span></div>
                 <div class="item"><span class="label">📊 Per HR CTN</span><span class="value">${entry.perHr ? entry.perHr.toFixed(2) : '0.00'}</span></div>
                 <div class="item"><span class="label">📈 Utilisation</span><span class="value">${entry.utilPct ? entry.utilPct.toFixed(1) : '0.0'}%</span></div>
             </div>
@@ -808,8 +808,18 @@
             }
         }
 
+        // ✅ সঠিকভাবে output সহ সব ডেটা পাঠানো হচ্ছে
         const newEntry = {
-            dept, prodIC, shift, icName, dayHr, target, output, perHr, utilPct, entryDate,
+            dept: dept,
+            prodIC: prodIC,
+            shift: shift,
+            icName: icName,
+            dayHr: dayHr,
+            target: target,
+            output: output,  // ← এখানে output সঠিকভাবে পাঠানো হচ্ছে
+            perHr: perHr,
+            utilPct: utilPct,
+            entryDate: entryDate,
             timestamp: new Date().toLocaleString('bn-BD'),
             createdAt: Date.now()
         };
@@ -817,6 +827,7 @@
         try {
             await push(cartonRef, newEntry);
             
+            // ফর্ম রিসেট
             document.getElementById('deptSelect').value = '';
             document.getElementById('prodIC').value = '';
             document.getElementById('icName').value = '';
@@ -831,7 +842,7 @@
             updateProdIC();
             updateHeadPhoto('');
 
-            showAlert(`✅ ${shift} Shift-এর এন্ট্রি সফলভাবে যোগ হয়েছে!`, 'success');
+            showAlert(`✅ ${shift} Shift-এর এন্ট্রি সফলভাবে যোগ হয়েছে! Output: ${output}`, 'success');
             speakSuccess();
             showSummary(newEntry);
 
@@ -982,7 +993,7 @@
         allEntries.forEach(e => {
             const row = [
                 `"${e.dept}"`, `"${e.prodIC}"`, `"${e.shift}"`, `"${e.icName}"`,
-                e.dayHr, e.target, e.output, e.perHr, e.utilPct ? e.utilPct.toFixed(1) : '0',
+                e.dayHr, e.target, e.output || 0, e.perHr, e.utilPct ? e.utilPct.toFixed(1) : '0',
                 `"${e.entryDate}"`, `"${e.timestamp}"`
             ];
             csv += row.join(',') + '\n';
@@ -1025,7 +1036,6 @@
             return match;
         });
 
-        // সাজানো: নতুন এন্ট্রি প্রথমে (createdAt অনুযায়ী)
         filteredEntries.sort((a, b) => {
             const dateA = a.createdAt || 0;
             const dateB = b.createdAt || 0;
@@ -1057,7 +1067,6 @@
         const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
         const pageItems = filteredEntries.slice(startIndex, endIndex);
 
-        // রেন্ডার টেবিল
         if (totalItems === 0) {
             entryLogContainer.innerHTML = `<div class="empty-msg">📭 কোনো এন্ট্রি নেই</div>`;
         } else {
@@ -1082,7 +1091,7 @@
                     <td>${e.icName}</td>
                     <td>${e.dayHr}</td>
                     <td>${e.target}</td>
-                    <td>${e.output}</td>
+                    <td><strong style="color:#0d47a1;">${e.output || 0}</strong></td>
                     <td>${e.perHr}</td>
                     <td>${e.utilPct ? e.utilPct.toFixed(1) + '%' : '0%'}</td>
                     <td>${e.entryDate}</td>
@@ -1102,7 +1111,7 @@
                             </div>
                             <div class="form-group">
                                 <label>📦 নতুন CTN Output</label>
-                                <input type="number" id="edit-output-${e.key}" value="${e.output}" step="1" min="0" placeholder="Output দিন">
+                                <input type="number" id="edit-output-${e.key}" value="${e.output || 0}" step="1" min="0" placeholder="Output দিন">
                             </div>
                             <button class="btn btn-success" onclick="updateOutput('${e.key}')">✅ আপডেট করুন</button>
                             <button class="btn btn-danger" onclick="document.getElementById('edit-form-${e.key}').classList.remove('show')">বাতিল</button>
@@ -1115,7 +1124,6 @@
             entryLogContainer.innerHTML = html;
         }
 
-        // পেজিনেশন আপডেট
         updatePaginationUI(totalItems, totalPages);
     }
 
@@ -1129,7 +1137,6 @@
         prevBtn.disabled = (currentPage <= 1);
         nextBtn.disabled = (currentPage >= totalPages);
 
-        // পৃষ্ঠা নম্বর বাটন
         let html = '';
         const maxVisible = 5;
         let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
@@ -1155,7 +1162,6 @@
 
         pageNumbers.innerHTML = html;
 
-        // মোট এন্ট্রি কাউন্ট
         const start = (currentPage - 1) * ITEMS_PER_PAGE + 1;
         const end = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
         document.getElementById('totalEntryCount').textContent = `মোট: ${totalItems}টি`;
@@ -1170,7 +1176,6 @@
         if (page > totalPages) page = totalPages;
         currentPage = page;
         renderPaginatedTable();
-        // স্ক্রোল টপ
         document.querySelector('.card:last-child').scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
