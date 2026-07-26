@@ -1233,6 +1233,48 @@
             margin-top: 8px;
         }
 
+        /* JO Rename Section Styles */
+        .rename-section {
+            border: 2px solid #ff6f00;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+            background: #fff8e1;
+            transition: background 0.5s, border-color 0.5s;
+        }
+        .rename-section h4 {
+            color: #ff6f00;
+            margin-bottom: 8px;
+        }
+        .rename-section .rename-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .rename-section .rename-toolbar select,
+        .rename-section .rename-toolbar input {
+            padding: 8px 12px;
+            border: 2px solid #e8ecf0;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: 0.3s, background 0.5s, border-color 0.5s, color 0.5s;
+        }
+        .rename-section .rename-toolbar select:focus,
+        .rename-section .rename-toolbar input:focus {
+            outline: none;
+            border-color: #ff6f00;
+        }
+        .rename-section .rename-info {
+            font-size: 13px;
+            color: #666;
+            margin-top: 6px;
+        }
+        .rename-section .rename-info .highlight {
+            color: #ff6f00;
+            font-weight: 700;
+        }
+
         @media (max-width: 768px) {
             .header-brand h1 { font-size: 16px; }
             .header-brand .dept-tag { font-size: 10px; padding: 2px 10px; }
@@ -1269,6 +1311,9 @@
             .edit-demand-section .edit-toolbar select,
             .edit-demand-section .edit-toolbar input { width: 100%; }
             .edit-table-wrap table td input[type="number"] { width: 60px; }
+            .rename-section .rename-toolbar { flex-direction: column; }
+            .rename-section .rename-toolbar select,
+            .rename-section .rename-toolbar input { width: 100%; }
         }
         @media (max-width: 480px) {
             .summary-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1515,6 +1560,39 @@
             <div class="form-row mt-8">
                 <div class="form-group"><button class="btn btn-outline" onclick="viewDeletedItems()" style="width:100%;"><i class="fas fa-recycle"></i> ডিলিটেড আইটেম দেখুন</button></div>
                 <div class="form-group"><button class="btn btn-success" onclick="toggleManualMaster()" style="width:100%;"><i class="fas fa-plus-circle"></i> ম্যানুয়াল অ্যাড</button></div>
+            </div>
+        </div>
+
+        <!-- ===== JO Rename সেকশন (পাসওয়ার্ড ছাড়া) ===== -->
+        <div class="rename-section" id="renameSection">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <h4 style="margin:0;"><i class="fas fa-pen-fancy"></i> JO নাম পরিবর্তন (পাসওয়ার্ড ছাড়া)</h4>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                    <span style="font-size:12px;color:#666;" id="renameSectionStatus">🟢 দৃশ্যমান</span>
+                    <button class="section-toggle-btn" onclick="toggleRenameSection()" style="background:#ff6f00;">
+                        <i class="fas fa-eye-slash"></i> <span id="renameToggleText">লুকান</span>
+                    </button>
+                </div>
+            </div>
+            <p style="font-size:13px;color:#666;margin:8px 0;">যে JO নাম পরিবর্তন করতে চান সিলেক্ট করুন এবং নতুন নাম দিন</p>
+            
+            <div class="rename-toolbar">
+                <div class="searchable-select" id="renameSelectContainer" style="flex:2;min-width:200px;">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="renameSearchInput" placeholder="টাইপ করে জব অর্ডার খুঁজুন..." oninput="filterRenameSearchable()" onfocus="showRenameDropdown()">
+                    <button type="button" class="clear-btn" id="renameClearBtn" onclick="clearRenameSearch()"><i class="fas fa-times-circle"></i></button>
+                    <div class="select-options" id="renameOptions"></div>
+                </div>
+                <input type="hidden" id="renameJoSelect" value="">
+                <input type="text" id="newJoNameInput" placeholder="নতুন JO নাম দিন..." style="flex:1;min-width:150px;">
+                <button class="btn btn-warning btn-sm" onclick="applyRenameJO()" style="white-space:nowrap;">
+                    <i class="fas fa-save"></i> নাম আপডেট করুন
+                </button>
+            </div>
+            
+            <div class="rename-info">
+                <span>সিলেক্টেড JO: <span id="selectedJoDisplay" class="highlight">কোনটি সিলেক্ট করা হয়নি</span></span>
+                <span style="margin-left:15px;">📦 মোট আইটেম: <span id="renameItemCount" class="highlight">০</span></span>
             </div>
         </div>
 
@@ -1968,6 +2046,11 @@
     let isEditSectionVisible = true;
     let allEditJOList = [];
 
+    // Rename Section
+    let renameJOList = [];
+    let isRenameSectionVisible = true;
+    let selectedRenameJO = '';
+
     // Dark Mode
     let isDarkMode = false;
 
@@ -2203,6 +2286,33 @@
     }
 
     // =========================================================
+    // Rename Section Toggle
+    // =========================================================
+    function toggleRenameSection() {
+        const wrap = document.getElementById('renameSelectContainer');
+        const status = document.getElementById('renameSectionStatus');
+        const text = document.getElementById('renameToggleText');
+        
+        if (isRenameSectionVisible) {
+            wrap.style.display = 'none';
+            document.getElementById('newJoNameInput').style.display = 'none';
+            document.querySelector('.rename-section .btn-warning').style.display = 'none';
+            document.querySelector('.rename-section .rename-info').style.display = 'none';
+            status.textContent = '🔴 লুকানো';
+            text.textContent = 'দেখান';
+            isRenameSectionVisible = false;
+        } else {
+            wrap.style.display = 'block';
+            document.getElementById('newJoNameInput').style.display = 'block';
+            document.querySelector('.rename-section .btn-warning').style.display = 'inline-flex';
+            document.querySelector('.rename-section .rename-info').style.display = 'block';
+            status.textContent = '🟢 দৃশ্যমান';
+            text.textContent = 'লুকান';
+            isRenameSectionVisible = true;
+        }
+    }
+
+    // =========================================================
     // Dark Mode
     // =========================================================
     function toggleDarkMode() {
@@ -2251,6 +2361,7 @@
                 updateSummary();
                 loadItemsForDelete();
                 loadEditJOList();
+                loadRenameJOList();
                 updateCharts();
             });
 
@@ -2784,6 +2895,7 @@
             updateSummary();
             loadItemsForDelete();
             loadEditJOList();
+            loadRenameJOList();
             updateCharts();
         }, err => alert('❌ মাস্টার ডেটা লোড এরর: ' + err.message));
 
@@ -3235,9 +3347,140 @@
             updateSummary();
             loadItemsForDelete();
             loadEditJOList();
+            loadRenameJOList();
             updateCharts();
             alert(`✅ ${selectedItems.length} টি আইটেম ডিলিটেডে সরানো হয়েছে।`);
         }).catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message))
+          .finally(() => {
+              btn.innerHTML = originalText;
+              btn.disabled = false;
+          });
+    }
+
+    // =========================================================
+    // JO Rename ফাংশন (পাসওয়ার্ড ছাড়া)
+    // =========================================================
+    function loadRenameJOList() {
+        renameJOList = [...new Set(masterItems.map(i => i.jobOrder))].sort();
+        renderRenameDropdown(renameJOList);
+    }
+
+    function renderRenameDropdown(list) {
+        const container = document.getElementById('renameOptions');
+        const selected = document.getElementById('renameJoSelect').value;
+        if (!container) return;
+        if (list.length === 0) {
+            container.innerHTML = '<div class="no-result">কোন জব অর্ডার নেই</div>';
+            return;
+        }
+        let html = '';
+        list.forEach(jo => {
+            const isSelected = (jo === selected);
+            const itemCount = masterItems.filter(i => i.jobOrder === jo).length;
+            html += `<div class="option ${isSelected ? 'selected' : ''}" onclick="selectRenameJO('${jo}')">${jo} (${itemCount} আইটেম)</div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function filterRenameSearchable() {
+        const searchText = document.getElementById('renameSearchInput').value.toLowerCase().trim();
+        const clearBtn = document.getElementById('renameClearBtn');
+        const container = document.getElementById('renameOptions');
+        if (searchText.length > 0) { clearBtn.classList.add('show'); } else { clearBtn.classList.remove('show'); }
+        const filtered = renameJOList.filter(jo => jo.toLowerCase().includes(searchText));
+        renderRenameDropdown(filtered);
+        container.style.display = 'block';
+    }
+
+    function showRenameDropdown() { document.getElementById('renameOptions').style.display = 'block'; }
+
+    function selectRenameJO(jo) {
+        document.getElementById('renameJoSelect').value = jo;
+        document.getElementById('renameSearchInput').value = jo;
+        document.getElementById('renameOptions').style.display = 'none';
+        document.getElementById('renameClearBtn').classList.add('show');
+        selectedRenameJO = jo;
+        
+        // ডিসপ্লে আপডেট
+        const itemCount = masterItems.filter(i => i.jobOrder === jo).length;
+        document.getElementById('selectedJoDisplay').textContent = jo;
+        document.getElementById('renameItemCount').textContent = itemCount;
+        
+        // নতুন নাম ইনপুটে পুরাতন নাম দেখান
+        document.getElementById('newJoNameInput').value = jo;
+    }
+
+    function clearRenameSearch() {
+        document.getElementById('renameSearchInput').value = '';
+        document.getElementById('renameClearBtn').classList.remove('show');
+        document.getElementById('renameOptions').style.display = 'none';
+        renderRenameDropdown(renameJOList);
+        document.getElementById('renameSearchInput').focus();
+    }
+
+    function applyRenameJO() {
+        const oldJo = document.getElementById('renameJoSelect').value;
+        const newJo = document.getElementById('newJoNameInput').value.trim();
+        
+        if (!oldJo) {
+            alert('⚠️ প্রথমে একটি জব অর্ডার সিলেক্ট করুন!');
+            return;
+        }
+        
+        if (!newJo) {
+            alert('⚠️ নতুন JO নাম দিন!');
+            return;
+        }
+        
+        if (oldJo === newJo) {
+            alert('⚠️ পুরাতন এবং নতুন নাম একই! পরিবর্তন করার প্রয়োজন নেই।');
+            return;
+        }
+        
+        // চেক করা নতুন নাম ইতিমধ্যে আছে কিনা
+        const exists = masterItems.some(i => i.jobOrder === newJo);
+        if (exists) {
+            alert(`⚠️ "${newJo}" নামে আরেকটি জব অর্ডার ইতিমধ্যে আছে!`);
+            return;
+        }
+        
+        const itemCount = masterItems.filter(i => i.jobOrder === oldJo).length;
+        if (!confirm(`📌 "${oldJo}" কে "${newJo}" তে পরিবর্তন করবেন?\n\nমোট ${itemCount} টি আইটেম আপডেট হবে।\n\nআপনি কি নিশ্চিত?`)) return;
+        
+        const btn = document.querySelector('.rename-section .btn-warning');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> আপডেট হচ্ছে...';
+        btn.disabled = true;
+        
+        // সব আইটেমের JO নাম আপডেট করি
+        const itemsToUpdate = masterItems.filter(i => i.jobOrder === oldJo);
+        itemsToUpdate.forEach(item => {
+            item.jobOrder = newJo;
+        });
+        
+        // হ্যান্ডওভার ডেটাও আপডেট করি (যদি থাকে)
+        const handoverToUpdate = handoverData.filter(h => h.jobOrder === oldJo);
+        handoverToUpdate.forEach(item => {
+            item.jobOrder = newJo;
+        });
+        
+        // উভয় ডেটাবেস আপডেট
+        Promise.all([saveMaster(), saveHandover()]).then(() => {
+            populateSearchableSelects();
+            updateSummary();
+            loadRenameJOList();
+            loadEditJOList();
+            updateCharts();
+            applyHandoverFilter();
+            renderTablePage();
+            
+            document.getElementById('selectedJoDisplay').textContent = newJo;
+            document.getElementById('renameSearchInput').value = newJo;
+            document.getElementById('renameJoSelect').value = newJo;
+            document.getElementById('newJoNameInput').value = newJo;
+            
+            alert(`✅ "${oldJo}" সফলভাবে "${newJo}" তে পরিবর্তন হয়েছে!\n\n${itemCount} টি আইটেম আপডেট করা হয়েছে।`);
+        }).catch(err => alert('❌ আপডেট ব্যর্থ! ' + err.message))
           .finally(() => {
               btn.innerHTML = originalText;
               btn.disabled = false;
@@ -3454,7 +3697,6 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> আপডেট হচ্ছে...';
         btn.disabled = true;
 
-        // আপডেট করা আইটেমগুলো masterItems এ আপডেট করি
         changes.forEach(c => {
             const masterItem = masterItems.find(i => 
                 i.jobOrder === c.item.jobOrder && 
@@ -3463,7 +3705,6 @@
             if (masterItem) {
                 masterItem.demandQty = c.newDemand;
             }
-            // editFilteredItems-ও আপডেট করি
             c.item.demandQty = c.newDemand;
             c.item._newDemand = c.newDemand;
         });
@@ -3510,6 +3751,7 @@
             updateSummary();
             loadItemsForDelete();
             loadEditJOList();
+            loadRenameJOList();
             updateCharts();
             alert('🗑️ সব মাস্টার আইটেম ডিলিটেডে সরানো হয়েছে।');
         }).catch(err => alert('❌ ডিলিট ব্যর্থ! ' + err.message));
@@ -3837,6 +4079,7 @@
                     updateSummary();
                     updateCharts();
                     loadEditJOList();
+                    loadRenameJOList();
                     alert(`✅ ${added} টি নতুন আইটেম যোগ হয়েছে এবং ${updated} টি আপডেট হয়েছে!`);
                     btn.value = '';
                 }).catch(() => btn.value = '')
@@ -4012,10 +4255,12 @@
         const codeContainer = document.getElementById('codeSelectContainer');
         const reportContainer = document.getElementById('reportSelectContainer');
         const editContainer = document.getElementById('editSelectContainer');
+        const renameContainer = document.getElementById('renameSelectContainer');
         if (joContainer && !joContainer.contains(e.target)) { document.getElementById('joOptions').style.display = 'none'; }
         if (codeContainer && !codeContainer.contains(e.target)) { document.getElementById('codeOptions').style.display = 'none'; }
         if (reportContainer && !reportContainer.contains(e.target)) { document.getElementById('reportOptions').style.display = 'none'; }
         if (editContainer && !editContainer.contains(e.target)) { document.getElementById('editOptions').style.display = 'none'; }
+        if (renameContainer && !renameContainer.contains(e.target)) { document.getElementById('renameOptions').style.display = 'none'; }
     });
 
     // =========================================================
