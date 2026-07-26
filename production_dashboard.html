@@ -998,6 +998,7 @@
         // ============================================================
         let printMastersCache = [];
         let printEntriesCache = [];
+        let isDataLoaded = false;
 
         // ============================================================
         //  FIREBASE DATA OPERATIONS
@@ -1173,7 +1174,6 @@
             if (tab === 'daily') {
                 document.getElementById('printTabDaily').classList.add('active');
                 document.querySelector('.printing-tab-btn:nth-child(1)').classList.add('active');
-                // 🔥 ডেটা লোড হলে ড্রপডাউন পপুলেট হবে
                 populatePrintOrderDropdown();
                 renderPrintLog();
             } else if (tab === 'master') {
@@ -1330,7 +1330,7 @@
         }
 
         // ============================================================
-        //  IMPORT FUNCTION - COMPLETE FIXED
+        //  IMPORT FUNCTION
         // ============================================================
         function importPrintMaster(event) {
             const file = event.target.files[0];
@@ -1446,7 +1446,6 @@
                         console.log("✅ All data imported successfully!");
                         event.target.value = '';
                         
-                        // 🔥 ফোর্সড রিফ্রেশ - ড্রপডাউন আপডেট করতে
                         setTimeout(function() {
                             console.log("🔄 Force refreshing dropdown...");
                             populatePrintOrderDropdown();
@@ -1476,9 +1475,11 @@
         }
 
         // ============================================================
-        //  DEMO DATA ADD
+        //  DEMO DATA ADD - FIXED
         // ============================================================
         function addDemoData() {
+            console.log("🔄 Adding demo data...");
+            
             const demoData = [
                 { printOrder: 'PRINT-001', itemCode: '962452', itemName: 'PET Bottle Cap', color: 'Blue', foilName: 'Silver Foil', demand: 10000, cycleTime: 30, cavity: 1 },
                 { printOrder: 'PRINT-002', itemCode: '962453', itemName: 'HDPE Container', color: 'Red', foilName: 'Gold Foil', demand: 5000, cycleTime: 35, cavity: 2 },
@@ -1497,6 +1498,7 @@
                 );
                 
                 if (exists) {
+                    console.log(`⏭️ Skipped (already exists): ${d.printOrder}`);
                     skipped++;
                     return;
                 }
@@ -1513,6 +1515,7 @@
                     cavity: d.cavity || 1
                 };
                 
+                console.log(`📝 Adding: ${d.printOrder}`);
                 promises.push(savePrintMaster(data));
                 added++;
             });
@@ -1525,10 +1528,16 @@
             showToast(`⏳ ${added} টি ডেমো ডেটা যোগ হচ্ছে...`, 'info', 3000);
 
             Promise.all(promises).then(() => {
+                console.log("✅ All demo data saved!");
                 return refreshPrintData();
             }).then(() => {
                 showToast(`✅ ${added} টি ডেমো ডেটা যোগ হয়েছে!${skipped > 0 ? ` (${skipped} টি স্কিপ)` : ''}`, 'success', 5000);
+                // ফোর্সড রিফ্রেশ
+                setTimeout(() => {
+                    populatePrintOrderDropdown();
+                }, 500);
             }).catch(err => {
+                console.error("❌ Error:", err);
                 showToast('❌ ডেমো ডেটা যোগ করতে সমস্যা: ' + err.message, 'danger', 5000);
             });
         }
@@ -1570,7 +1579,16 @@
 
         function loadPrintOrderDetails() {
             const orderId = document.getElementById('printOrderSelect').value;
+            console.log("🔍 Selected order ID:", orderId);
+            
+            if (!orderId) {
+                clearPrintFields();
+                return;
+            }
+            
             const master = printMastersCache.find(m => m.id === orderId);
+            console.log("📦 Found master:", master);
+            
             if (master) {
                 document.getElementById('printItemName').value = master.itemName || '';
                 document.getElementById('printColor').value = master.color || '';
@@ -1586,17 +1604,17 @@
                 
                 calculateCapacity();
             } else {
-                document.getElementById('printItemName').value = '';
-                document.getElementById('printColor').value = '';
-                document.getElementById('printFoilName').value = '';
-                document.getElementById('printCycleTime').value = '';
-                document.getElementById('printCavity').value = '';
-                document.getElementById('printDemand').value = '';
-                document.getElementById('printAsOf').value = '';
-                document.getElementById('printDue').value = '';
-                document.getElementById('printCapacity').value = '';
-                document.getElementById('printUtilization').value = '';
+                console.warn("⚠️ Master not found for ID:", orderId);
+                clearPrintFields();
             }
+        }
+
+        function clearPrintFields() {
+            ['printItemName','printColor','printFoilName','printCycleTime','printCavity',
+             'printDemand','printAsOf','printDue','printCapacity','printUtilization'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
         }
 
         function getTotalPrintGood(orderId) {
@@ -1896,12 +1914,12 @@
                 console.log("📋 Masters found:", printMastersCache.length);
                 console.log("📋 Entries found:", printEntriesCache.length);
                 
-                // সব UI আপডেট - এই ক্রমে করতে হবে
                 renderPrintMasterList();
                 renderPrintLog();
-                populatePrintOrderDropdown();  // 🔥 এইটা সব শেষে করতে হবে
+                populatePrintOrderDropdown();
                 generatePrintReport();
                 
+                isDataLoaded = true;
                 return true;
             });
         }
@@ -2003,12 +2021,20 @@
         //  INIT
         // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("🚀 App initializing...");
+            
             // প্রথমে ডেটা লোড করুন
             refreshPrintData().then(() => {
                 console.log("✅ Initial data loaded successfully!");
                 setDefaultDateAndShift();
                 document.getElementById('reportDateFilter').value = new Date().toISOString().split('T')[0];
                 document.getElementById('section-dashboard').style.display = 'block';
+                
+                // যদি ডেটা না থাকে, তাহলে ডেমো ডেটা অটো যোগ করুন
+                if (printMastersCache.length === 0) {
+                    console.log("⚠️ No data found, adding demo data...");
+                    setTimeout(addDemoData, 1000);
+                }
             });
         });
     </script>
