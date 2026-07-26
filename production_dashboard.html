@@ -1362,7 +1362,7 @@
         }
 
         // ============================================================
-        //  IMPORT FUNCTION
+        //  IMPORT FUNCTION - FIXED (Drop Down Update)
         // ============================================================
         function importPrintMaster(event) {
             const file = event.target.files[0];
@@ -1385,6 +1385,8 @@
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
                     
+                    console.log("📊 Excel থেকে ডেটা:", jsonData.length, "টি রো");
+                    
                     if (jsonData.length === 0) {
                         showToast('⚠️ ফাইল খালি!', 'warning', 3000);
                         event.target.value = '';
@@ -1393,6 +1395,7 @@
 
                     const firstRow = jsonData[0];
                     const headers = Object.keys(firstRow);
+                    console.log("📋 হেডারসমূহ:", headers);
                     
                     const headerMap = {};
                     headers.forEach(h => {
@@ -1470,6 +1473,16 @@
                     }).then(() => {
                         showToast(`✅ ${added} টি ডেটা সফলভাবে ইমপোর্ট হয়েছে!${skipped > 0 ? ` (${skipped} টি স্কিপ)` : ''}`, 'success', 5000);
                         event.target.value = '';
+                        
+                        // 🔥 ফোর্সড রিফ্রেশ - ড্রপডাউন আপডেট করতে
+                        setTimeout(function() {
+                            console.log("🔄 Force refreshing dropdown...");
+                            populatePrintOrderDropdown();
+                            renderPrintMasterList();
+                            renderPrintLog();
+                            console.log("✅ ড্রপডাউন আপডেট হয়েছে!");
+                        }, 500);
+                        
                     }).catch(err => {
                         showToast('❌ ইমপোর্ট করতে সমস্যা: ' + err.message, 'danger', 5000);
                         event.target.value = '';
@@ -1552,6 +1565,8 @@
             const currentVal = select.value;
             select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
             
+            console.log("🔄 Populating dropdown with", printMastersCache.length, "items");
+            
             if (printMastersCache.length === 0) {
                 console.warn("⚠️ No masters found!");
                 return;
@@ -1568,6 +1583,7 @@
                 select.value = currentVal;
             }
             
+            console.log("✅ Dropdown populated with", select.options.length - 1, "items");
             // 🔥 Print Order সিলেক্ট করলেই অটো ফিল
             loadPrintOrderDetails();
         }
@@ -1902,7 +1918,6 @@
                 'IC Name': e.icName || '',
                 'Operator': e.operator || ''
             }));
-            
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(data);
             XLSX.utils.book_append_sheet(wb, ws, 'PrintReport');
@@ -1911,7 +1926,7 @@
         }
 
         // ============================================================
-        //  REFRESH PRINT DATA
+        //  REFRESH PRINT DATA - FIXED
         // ============================================================
         function refreshPrintData() {
             return Promise.all([fetchPrintMasters(), fetchPrintEntries()]).then(() => {
