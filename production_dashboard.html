@@ -743,6 +743,59 @@
             font-size: 11px;
         }
 
+        /* RIP Import Styles */
+        .rip-import-area {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 12px;
+            border: 1px solid #e9ecef;
+        }
+        .rip-import-area .rip-import-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1a2332;
+            margin-bottom: 10px;
+        }
+
+        /* Printing Form Specific Styles */
+        .printing-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 24px;
+        }
+        .printing-form-grid .field-group { margin-bottom: 4px; }
+        .printing-form-grid .field-group .form-label { font-size: 12px; font-weight: 600; color: #1a2332; }
+        .printing-form-grid .field-group .form-control { font-size: 14px; padding: 6px 12px; }
+        .printing-form-grid .field-group .form-control[readonly] { background: #f8f9fa; }
+        .printing-summary-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px 16px;
+            border-left: 4px solid #e74c3c;
+        }
+        .printing-summary-box .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        .printing-summary-box .summary-row:last-child { border-bottom: none; }
+        .printing-summary-box .summary-label { font-weight: 600; color: #495057; font-size: 12px; }
+        .printing-summary-box .summary-value { font-weight: 700; color: #1a2332; font-size: 13px; }
+
+        .print-table-wrapper {
+            margin-top: 16px;
+        }
+        .print-table-wrapper .table thead th {
+            font-size: 9px;
+            padding: 4px 3px;
+        }
+        .print-table-wrapper .table tbody td {
+            font-size: 10px;
+            padding: 4px 3px;
+        }
+
         @media (max-width: 992px) {
             .sidebar { transform: translateX(-100%); width: 280px; }
             .sidebar.open { transform: translateX(0); }
@@ -754,6 +807,7 @@
             .content-body { padding: 14px 16px; }
             .stats-row { grid-template-columns: repeat(2, 1fr); }
             .form-row { grid-template-columns: 1fr 1fr; }
+            .printing-form-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 576px) {
             .stats-row { grid-template-columns: 1fr; }
@@ -763,6 +817,7 @@
             .header-right .user-profile .user-role { display: none; }
             .filter-bar .search-box input { width: 100px; }
             .rip-status-bar { flex-direction: column; align-items: stretch; }
+            .printing-form-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -796,9 +851,9 @@
             <a class="menu-item" onclick="showSection('lastday')">
                 <i class="bi bi-calendar-day"></i> Last Day Prod
             </a>
-            <!-- NEW RIP PRINTING SECTION -->
-            <a class="menu-item" onclick="showSection('ripprinting')">
-                <i class="bi bi-printer"></i> RIP Printing Update
+            <!-- NEW PRINTING SECTION -->
+            <a class="menu-item" onclick="showSection('printing')">
+                <i class="bi bi-printer"></i> Printing Entry
             </a>
             <div class="menu-label">Tools</div>
             <a class="menu-item" onclick="backupData()">
@@ -1254,104 +1309,181 @@
                 </div>
             </div>
 
-            <!-- NEW: RIP PRINTING UPDATE SECTION -->
-            <div id="section-ripprinting" style="display:none;">
+            <!-- NEW: PRINTING ENTRY SECTION -->
+            <div id="section-printing" style="display:none;">
                 <div class="form-card">
                     <div class="form-title d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-printer section-title-icon"></i>RIP Printing Update – সিস্টেম এন্ট্রি ও রিপোর্ট</span>
-                        <span class="badge bg-success" id="ripLiveStatus">🟢 লাইভ</span>
+                        <span><i class="bi bi-printer section-title-icon"></i>Printing Entry – দৈনিক লিঙ্গ অখ্তি</span>
+                        <span class="badge bg-success" id="printingLiveStatus">🟢 লাইভ</span>
                     </div>
 
                     <!-- Toggle Switch -->
                     <div class="rip-status-bar">
                         <div class="toggle-container">
-                            <span class="toggle-label"><i class="bi bi-power"></i> RIP System</span>
+                            <span class="toggle-label"><i class="bi bi-power"></i> Printing System</span>
                             <label class="switch">
-                                <input type="checkbox" id="ripToggle" onchange="toggleRipSystem()">
+                                <input type="checkbox" id="printingToggle" onchange="togglePrintingSystem()">
                                 <span class="slider"></span>
                             </label>
-                            <span class="toggle-status inactive" id="ripToggleStatus">⏹ বন্ধ</span>
+                            <span class="toggle-status inactive" id="printingToggleStatus">⏹ বন্ধ</span>
                         </div>
                         <div class="rip-stat">
-                            <strong id="ripEntryCount">0</strong> টি এন্ট্রি
+                            <strong id="printingEntryCount">0</strong> টি এন্ট্রি
                         </div>
                         <div class="rip-stat">
-                            শেষ আপডেট: <strong id="ripLastUpdate">-</strong>
+                            শেষ আপডেট: <strong id="printingLastUpdate">-</strong>
                         </div>
-                        <button class="btn btn-sm btn-outline-primary" onclick="refreshRipData()">
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshPrintingData()">
                             <i class="bi bi-arrow-clockwise"></i> রিফ্রেশ
                         </button>
                     </div>
 
                     <!-- Entry Form -->
-                    <div id="ripEntryForm" style="display:none;">
-                        <h6 class="mt-3"><i class="bi bi-pencil-square"></i> নতুন RIP এন্ট্রি</h6>
-                        <form id="ripEntryFormSubmit">
-                            <div class="form-row">
-                                <div class="field-group">
-                                    <label class="form-label">MC SL *</label>
-                                    <select class="form-select" id="ripMcSelect" required>
-                                        <option value="">-- সিলেক্ট --</option>
-                                    </select>
+                    <div id="printingEntryForm" style="display:none;">
+                        <h6 class="mt-3"><i class="bi bi-pencil-square"></i> নতুন Printing এন্ট্রি</h6>
+                        
+                        <form id="printingFormSubmit">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="printing-form-grid">
+                                        <!-- Left Column -->
+                                        <div class="field-group">
+                                            <label class="form-label">তারিখ *</label>
+                                            <input type="date" class="form-control" id="printingDate" required>
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Print MC No. *</label>
+                                            <select class="form-select" id="printingMcSelect" required onchange="updatePrintingOrderDropdown()">
+                                                <option value="">-- সিলেক্ট --</option>
+                                            </select>
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Print Order *</label>
+                                            <select class="form-select" id="printingOrderSelect" required onchange="updatePrintingOrderDetails()">
+                                                <option value="">-- সিলেক্ট --</option>
+                                            </select>
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Item Name</label>
+                                            <input type="text" class="form-control" id="printingItemName" readonly placeholder="অটো ফিল">
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Foil Name</label>
+                                            <input type="text" class="form-control" id="printingFoilName" placeholder="Foil নাম">
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Cavity</label>
+                                            <input type="number" class="form-control" id="printingCavity" readonly placeholder="অটো ফিল">
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="field-group">
-                                    <label class="form-label">JOB Order *</label>
-                                    <select class="form-select" id="ripOrderSelect" required>
-                                        <option value="">-- সিলেক্ট --</option>
-                                    </select>
-                                </div>
-                                <div class="field-group">
-                                    <label class="form-label">Item Name</label>
-                                    <input type="text" class="form-control" id="ripItemName" readonly placeholder="অটো ফিল">
+                                <div class="col-md-6">
+                                    <div class="printing-form-grid">
+                                        <!-- Right Column -->
+                                        <div class="field-group">
+                                            <label class="form-label">Demand QTY *</label>
+                                            <input type="number" class="form-control" id="printingDemand" placeholder="যেমন: 10000" required>
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Cycle Time (sec)</label>
+                                            <input type="number" class="form-control" id="printingCycleTime" placeholder="যেমন: 30">
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Capacity/Shift</label>
+                                            <input type="number" class="form-control" id="printingCapacity" readonly placeholder="অটো ক্যালকুলেট">
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Print QTY (Good) *</label>
+                                            <input type="number" class="form-control" id="printingGood" placeholder="যেমন: 9500" required oninput="calculatePrinting()">
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Print QTY (Reject)</label>
+                                            <input type="number" class="form-control" id="printingReject" placeholder="যেমন: 500" oninput="calculatePrinting()">
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Causes of Rejection</label>
+                                            <input type="text" class="form-control" id="printingRejectReason" placeholder="রিজেক্টের কারণ">
+                                        </div>
+                                        <div class="field-group">
+                                            <label class="form-label">Utilization %</label>
+                                            <input type="number" step="0.01" class="form-control" id="printingUtilization" readonly placeholder="অটো ক্যালকুলেট">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="form-row">
-                                <div class="field-group">
-                                    <label class="form-label">RIP Counter</label>
-                                    <input type="number" class="form-control" id="ripCounter" placeholder="যেমন: 500" required>
-                                </div>
-                                <div class="field-group">
-                                    <label class="form-label">RIP Good</label>
-                                    <input type="number" class="form-control" id="ripGood" placeholder="যেমন: 480" required>
-                                </div>
-                                <div class="field-group">
-                                    <label class="form-label">RIP Reject</label>
-                                    <input type="number" class="form-control" id="ripReject" placeholder="যেমন: 20" required>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <div class="printing-summary-box">
+                                        <div class="summary-row">
+                                            <span class="summary-label">📊 Production Summary</span>
+                                            <span class="summary-value" id="printingSummaryText">Good: 0 | Reject: 0 | Total: 0 | Util: 0%</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="form-row">
-                                <div class="field-group">
-                                    <label class="form-label">রিমার্ক</label>
-                                    <input type="text" class="form-control" id="ripRemark" placeholder="যদি থাকে">
-                                </div>
-                                <div class="field-group d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> RIP সেভ</button>
+
+                            <div class="row mt-3">
+                                <div class="col-md-12 text-end">
+                                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Printing সেভ</button>
+                                    <button type="button" class="btn btn-secondary" onclick="resetPrintingForm()"><i class="bi bi-arrow-counterclockwise"></i> রিসেট</button>
                                 </div>
                             </div>
                         </form>
-                        <div id="ripValidationMsg" class="mt-2 text-danger small" style="display:none;"></div>
+                        <div id="printingValidationMsg" class="mt-2 text-danger small" style="display:none;"></div>
                         <hr>
+
+                        <!-- Printing Import from Excel -->
+                        <div class="rip-import-area">
+                            <div class="rip-import-title">
+                                <i class="bi bi-file-earmark-excel"></i> Excel ফাইল থেকে Printing ডেটা ইমপোর্ট করুন
+                                <span class="badge bg-info ms-2">Print Order | Item Code | Item Name | Color | Foil Name | Demand QTY | Cycle Time | Cavity</span>
+                            </div>
+                            <div class="drop-zone" id="printingDropZone">
+                                <i class="bi bi-cloud-upload" style="font-size:24px;"></i>
+                                <p class="mb-0">Excel ফাইল ড্রপ করুন অথবা ক্লিক করুন</p>
+                                <input type="file" id="printingFileInput" accept=".xlsx,.xls" style="display:none;">
+                            </div>
+                            <div id="printingImportPreview" class="mt-2" style="display:none;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong>প্রিভিউ:</strong>
+                                    <div>
+                                        <button class="btn btn-success btn-sm me-1" onclick="confirmPrintingImport()"><i class="bi bi-check"></i> ইমপোর্ট</button>
+                                        <button class="btn btn-secondary btn-sm" onclick="clearPrintingImport()"><i class="bi bi-x"></i></button>
+                                    </div>
+                                </div>
+                                <div class="import-preview">
+                                    <table class="table table-bordered table-sm table-striped mt-1">
+                                        <thead><tr><th>Print Order</th><th>Item Code</th><th>Item Name</th><th>Color</th><th>Foil Name</th><th>Demand QTY</th><th>Cycle Time</th><th>Cavity</th></tr></thead>
+                                        <tbody id="printingImportPreviewBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Print Report -->
                     <div class="print-report-area">
                         <div class="print-title">
-                            <i class="bi bi-file-earmark-text"></i> RIP Printing Report
-                            <button class="btn btn-sm btn-outline-success float-end" onclick="printRipReport()">
+                            <i class="bi bi-file-earmark-text"></i> Printing Report
+                            <button class="btn btn-sm btn-outline-success float-end" onclick="printPrintingReport()">
                                 <i class="bi bi-printer"></i> প্রিন্ট রিপোর্ট
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary float-end me-2" onclick="exportPrintingExcel()">
+                                <i class="bi bi-file-earmark-excel"></i> Excel
                             </button>
                         </div>
                         <div class="print-controls">
-                            <select id="ripReportMcFilter" onchange="renderRipReport()">
+                            <select id="printingReportMcFilter" onchange="renderPrintingReport()">
                                 <option value="">-- সব MC --</option>
                             </select>
-                            <input type="date" id="ripReportDateFrom" onchange="renderRipReport()">
-                            <input type="date" id="ripReportDateTo" onchange="renderRipReport()">
-                            <button class="btn-print" onclick="renderRipReport()"><i class="bi bi-search"></i> দেখুন</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="resetRipReportFilters()">রিসেট</button>
+                            <input type="date" id="printingReportDateFrom" onchange="renderPrintingReport()">
+                            <input type="date" id="printingReportDateTo" onchange="renderPrintingReport()">
+                            <button class="btn-print" onclick="renderPrintingReport()"><i class="bi bi-search"></i> দেখুন</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="resetPrintingReportFilters()">রিসেট</button>
                         </div>
-                        <div class="print-preview" id="ripReportPreview">
-                            <p class="text-muted text-center py-3">RIP সিস্টেম ON করলে রিপোর্ট দেখাবে।</p>
+                        <div class="print-preview" id="printingReportPreview">
+                            <p class="text-muted text-center py-3">Printing সিস্টেম ON করলে রিপোর্ট দেখাবে।</p>
                         </div>
                     </div>
                 </div>
@@ -1434,7 +1566,8 @@
         // ============================================================
         let ordersCache = [];
         let shiftsCache = [];
-        let ripEntriesCache = [];
+        let printingEntriesCache = [];
+        let printingImportData = [];
         let notifiedOrders = new Set();
 
         // ============================================================
@@ -1462,12 +1595,12 @@
             });
         }
 
-        function fetchRipEntries() {
+        function fetchPrintingEntries() {
             return new Promise((resolve, reject) => {
-                database.ref('ripEntries').once('value', snapshot => {
+                database.ref('printingEntries').once('value', snapshot => {
                     const data = snapshot.val();
-                    ripEntriesCache = data ? Object.values(data) : [];
-                    resolve(ripEntriesCache);
+                    printingEntriesCache = data ? Object.values(data) : [];
+                    resolve(printingEntriesCache);
                 }, reject);
             });
         }
@@ -1496,20 +1629,20 @@
                 });
         }
 
-        function saveRipEntryToFirebase(entry) {
-            console.log("💾 Saving RIP entry:", entry.id);
-            return database.ref('ripEntries/' + entry.id).set(entry)
+        function savePrintingEntryToFirebase(entry) {
+            console.log("💾 Saving Printing entry:", entry.id);
+            return database.ref('printingEntries/' + entry.id).set(entry)
                 .then(() => {
-                    console.log("✅ RIP entry saved successfully");
+                    console.log("✅ Printing entry saved successfully");
                 })
                 .catch((err) => {
-                    console.error("❌ RIP entry save failed:", err);
+                    console.error("❌ Printing entry save failed:", err);
                     throw err;
                 });
         }
 
-        function deleteRipEntryFromFirebase(id) {
-            return database.ref('ripEntries/' + id).remove();
+        function deletePrintingEntryFromFirebase(id) {
+            return database.ref('printingEntries/' + id).remove();
         }
 
         function deleteOrderFromFirebase(orderId) {
@@ -1537,7 +1670,7 @@
         // ============================================================
         function getOrders() { return ordersCache; }
         function getShifts() { return shiftsCache; }
-        function getRipEntries() { return ripEntriesCache; }
+        function getPrintingEntries() { return printingEntriesCache; }
 
         function getOrderById(id) {
             return ordersCache.find(o => o.id === id);
@@ -1547,8 +1680,8 @@
             return shiftsCache.filter(s => s.orderId === orderId);
         }
 
-        function getRipEntriesForOrder(orderId) {
-            return ripEntriesCache.filter(r => r.orderId === orderId);
+        function getPrintingEntriesForOrder(orderId) {
+            return printingEntriesCache.filter(r => r.orderId === orderId);
         }
 
         function genId() {
@@ -1738,7 +1871,7 @@
             if (event && event.target) {
                 event.target.closest('.menu-item').classList.add('active');
             }
-            ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday','section-ripprinting'].forEach(id => {
+            ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday','section-printing'].forEach(id => {
                 document.getElementById(id).style.display = 'none';
             });
             const title = document.getElementById('pageTitle');
@@ -1765,11 +1898,11 @@
                 title.innerHTML = 'Last Day Prod <small>সর্বশেষ শিফট ডেটা</small>';
                 populateLastdayFilter();
                 renderLastDay();
-            } else if (section === 'ripprinting') {
-                document.getElementById('section-ripprinting').style.display = 'block';
-                title.innerHTML = 'RIP Printing Update <small>সিস্টেম এন্ট্রি ও রিপোর্ট</small>';
-                populateRipFilters();
-                renderRipReport();
+            } else if (section === 'printing') {
+                document.getElementById('section-printing').style.display = 'block';
+                title.innerHTML = 'Printing Entry <small>দৈনিক লিঙ্গ অখ্তি</small>';
+                populatePrintingFilters();
+                renderPrintingReport();
             }
             if (window.innerWidth <= 992) {
                 document.getElementById('sidebar').classList.remove('open');
@@ -1806,15 +1939,50 @@
             calculateShift();
         }
 
-        function updateRipOrderDetails() {
-            const orderId = document.getElementById('ripOrderSelect').value;
+        function updatePrintingOrderDetails() {
+            const orderId = document.getElementById('printingOrderSelect').value;
             if (!orderId) {
-                document.getElementById('ripItemName').value = '';
+                document.getElementById('printingItemName').value = '';
+                document.getElementById('printingCavity').value = '';
+                document.getElementById('printingCycleTime').value = '';
+                document.getElementById('printingDemand').value = '';
                 return;
             }
             const order = getOrderById(orderId);
             if (!order) return;
-            document.getElementById('ripItemName').value = order.itemName || '';
+            document.getElementById('printingItemName').value = order.itemName || '';
+            document.getElementById('printingCavity').value = order.cavity || 1;
+            document.getElementById('printingCycleTime').value = order.ct || 30;
+            document.getElementById('printingDemand').value = order.demand || 0;
+            calculatePrintingCapacity();
+        }
+
+        function calculatePrintingCapacity() {
+            const cavity = parseInt(document.getElementById('printingCavity').value) || 1;
+            const cycleTime = parseInt(document.getElementById('printingCycleTime').value) || 30;
+            if (cycleTime > 0) {
+                const capacity = Math.round((3600 / cycleTime) * cavity * 12);
+                document.getElementById('printingCapacity').value = capacity;
+            } else {
+                document.getElementById('printingCapacity').value = 0;
+            }
+            calculatePrinting();
+        }
+
+        function calculatePrinting() {
+            const good = parseInt(document.getElementById('printingGood').value) || 0;
+            const reject = parseInt(document.getElementById('printingReject').value) || 0;
+            const total = good + reject;
+            const capacity = parseInt(document.getElementById('printingCapacity').value) || 1;
+            
+            let util = 0;
+            if (capacity > 0 && total > 0) {
+                util = (total / capacity) * 100;
+            }
+            document.getElementById('printingUtilization').value = util.toFixed(2);
+            
+            document.getElementById('printingSummaryText').innerHTML = 
+                `Good: ${good} | Reject: ${reject} | Total: ${total} | Util: ${util.toFixed(2)}%`;
         }
 
         // ============================================================
@@ -1836,9 +2004,9 @@
             updateOrderDetails();
         }
 
-        function updateRipOrderDropdown() {
-            const mc = document.getElementById('ripMcSelect').value;
-            const orderSelect = document.getElementById('ripOrderSelect');
+        function updatePrintingOrderDropdown() {
+            const mc = document.getElementById('printingMcSelect').value;
+            const orderSelect = document.getElementById('printingOrderSelect');
             const currentOrder = orderSelect.value;
             let orders = getOrders();
             if (mc) orders = orders.filter(o => o.mcSl === mc);
@@ -1849,7 +2017,7 @@
             if (currentOrder && orders.some(o => o.id === currentOrder)) {
                 orderSelect.value = currentOrder;
             }
-            updateRipOrderDetails();
+            updatePrintingOrderDetails();
         }
 
         // ============================================================
@@ -2049,81 +2217,84 @@
         }
 
         // ============================================================
-        //  RIP PRINTING FUNCTIONS
+        //  PRINTING FUNCTIONS
         // ============================================================
-        function toggleRipSystem() {
-            const isChecked = document.getElementById('ripToggle').checked;
-            const statusEl = document.getElementById('ripToggleStatus');
-            const formEl = document.getElementById('ripEntryForm');
+        function togglePrintingSystem() {
+            const isChecked = document.getElementById('printingToggle').checked;
+            const statusEl = document.getElementById('printingToggleStatus');
+            const formEl = document.getElementById('printingEntryForm');
             
             if (isChecked) {
                 statusEl.className = 'toggle-status active';
                 statusEl.innerHTML = '▶️ চলছে';
                 formEl.style.display = 'block';
-                document.getElementById('ripLiveStatus').innerHTML = '🟢 লাইভ';
-                showToast('🔄 RIP সিস্টেম চালু হয়েছে!', 'success', 3000);
-                populateRipFilters();
-                renderRipReport();
+                document.getElementById('printingLiveStatus').innerHTML = '🟢 লাইভ';
+                showToast('🔄 Printing সিস্টেম চালু হয়েছে!', 'success', 3000);
+                populatePrintingFilters();
+                renderPrintingReport();
             } else {
                 statusEl.className = 'toggle-status inactive';
                 statusEl.innerHTML = '⏹ বন্ধ';
                 formEl.style.display = 'none';
-                document.getElementById('ripLiveStatus').innerHTML = '🔴 বন্ধ';
-                showToast('⏹ RIP সিস্টেম বন্ধ করা হয়েছে।', 'info', 3000);
-                document.getElementById('ripReportPreview').innerHTML = '<p class="text-muted text-center py-3">RIP সিস্টেম বন্ধ আছে। চালু করতে টগল করুন।</p>';
+                document.getElementById('printingLiveStatus').innerHTML = '🔴 বন্ধ';
+                showToast('⏹ Printing সিস্টেম বন্ধ করা হয়েছে।', 'info', 3000);
+                document.getElementById('printingReportPreview').innerHTML = '<p class="text-muted text-center py-3">Printing সিস্টেম বন্ধ আছে। চালু করতে টগল করুন।</p>';
             }
         }
 
-        function populateRipFilters() {
+        function populatePrintingFilters() {
             const orders = getOrders();
-            const mcSelect = document.getElementById('ripMcSelect');
+            const mcSelect = document.getElementById('printingMcSelect');
             const currentMc = mcSelect.value;
             const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
             mcSelect.innerHTML = '<option value="">-- MC --</option>';
             uniqueMCs.forEach(mc => { mcSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
             if (currentMc && uniqueMCs.includes(currentMc)) mcSelect.value = currentMc;
-            updateRipOrderDropdown();
+            updatePrintingOrderDropdown();
 
-            // Report filter
-            const reportMc = document.getElementById('ripReportMcFilter');
+            const reportMc = document.getElementById('printingReportMcFilter');
             const currentReportMc = reportMc.value;
             reportMc.innerHTML = '<option value="">-- সব MC --</option>';
             uniqueMCs.forEach(mc => { reportMc.innerHTML += `<option value="${mc}">${mc}</option>`; });
             if (currentReportMc && uniqueMCs.includes(currentReportMc)) reportMc.value = currentReportMc;
+
+            // Set default date
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            document.getElementById('printingDate').value = dateStr;
         }
 
-        function refreshRipData() {
-            fetchRipEntries().then(() => {
-                const count = getRipEntries().length;
-                document.getElementById('ripEntryCount').innerText = count;
+        function refreshPrintingData() {
+            fetchPrintingEntries().then(() => {
+                const count = getPrintingEntries().length;
+                document.getElementById('printingEntryCount').innerText = count;
                 if (count > 0) {
-                    const last = getRipEntries().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)).pop();
-                    document.getElementById('ripLastUpdate').innerText = last.date || '-';
+                    const last = getPrintingEntries().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)).pop();
+                    document.getElementById('printingLastUpdate').innerText = last.date || '-';
                 }
-                renderRipReport();
-                showToast('🔄 RIP ডেটা রিফ্রেশ করা হয়েছে!', 'info', 2000);
+                renderPrintingReport();
+                showToast('🔄 Printing ডেটা রিফ্রেশ করা হয়েছে!', 'info', 2000);
             });
         }
 
-        // RIP Entry Form Submit
-        document.getElementById('ripEntryFormSubmit').addEventListener('submit', function(e) {
+        // Printing Entry Form Submit
+        document.getElementById('printingFormSubmit').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            if (!document.getElementById('ripToggle').checked) {
-                showToast('⚠️ দয়া করে RIP সিস্টেম ON করুন!', 'warning', 3000);
+            if (!document.getElementById('printingToggle').checked) {
+                showToast('⚠️ দয়া করে Printing সিস্টেম ON করুন!', 'warning', 3000);
                 return;
             }
 
-            const orderId = document.getElementById('ripOrderSelect').value;
-            if (!orderId) { alert('অর্ডার সিলেক্ট করুন!'); return; }
+            const orderId = document.getElementById('printingOrderSelect').value;
+            if (!orderId) { alert('Print Order সিলেক্ট করুন!'); return; }
 
-            const counter = parseInt(document.getElementById('ripCounter').value) || 0;
-            const good = parseInt(document.getElementById('ripGood').value) || 0;
-            const reject = parseInt(document.getElementById('ripReject').value) || 0;
+            const good = parseInt(document.getElementById('printingGood').value) || 0;
+            const reject = parseInt(document.getElementById('printingReject').value) || 0;
+            const total = good + reject;
 
-            if (counter === 0) { alert('RIP Counter দিন!'); return; }
-            if (good + reject !== counter) {
-                alert('⚠️ Good + Reject অবশ্যই Counter এর সমান হতে হবে!');
+            if (good === 0 && reject === 0) {
+                alert('Print QTY দিন!');
                 return;
             }
 
@@ -2134,34 +2305,48 @@
                 mcSl: order ? order.mcSl : '',
                 orderName: order ? order.orderName : '',
                 itemName: order ? order.itemName : '',
-                counter: counter,
+                foilName: document.getElementById('printingFoilName').value.trim(),
+                cavity: parseInt(document.getElementById('printingCavity').value) || 1,
+                cycleTime: parseInt(document.getElementById('printingCycleTime').value) || 30,
+                demand: parseInt(document.getElementById('printingDemand').value) || 0,
+                capacity: parseInt(document.getElementById('printingCapacity').value) || 0,
                 good: good,
                 reject: reject,
-                remark: document.getElementById('ripRemark').value.trim(),
-                date: new Date().toISOString().split('T')[0],
+                total: total,
+                utilization: parseFloat(document.getElementById('printingUtilization').value) || 0,
+                rejectReason: document.getElementById('printingRejectReason').value.trim(),
+                date: document.getElementById('printingDate').value,
                 timestamp: Date.now()
             };
 
-            saveRipEntryToFirebase(entry).then(() => {
-                document.getElementById('ripCounter').value = '';
-                document.getElementById('ripGood').value = '';
-                document.getElementById('ripReject').value = '';
-                document.getElementById('ripRemark').value = '';
-                refreshRipData();
-                showToast('✅ RIP এন্ট্রি সেভ হয়েছে!', 'success', 3000);
+            savePrintingEntryToFirebase(entry).then(() => {
+                resetPrintingForm();
+                refreshPrintingData();
+                showToast('✅ Printing এন্ট্রি সেভ হয়েছে!', 'success', 3000);
             });
         });
 
-        function renderRipReport() {
-            if (!document.getElementById('ripToggle').checked) {
-                document.getElementById('ripReportPreview').innerHTML = '<p class="text-muted text-center py-3">RIP সিস্টেম বন্ধ আছে। চালু করতে টগল করুন।</p>';
+        function resetPrintingForm() {
+            document.getElementById('printingGood').value = '';
+            document.getElementById('printingReject').value = '';
+            document.getElementById('printingRejectReason').value = '';
+            document.getElementById('printingFoilName').value = '';
+            document.getElementById('printingUtilization').value = '';
+            document.getElementById('printingSummaryText').innerHTML = 'Good: 0 | Reject: 0 | Total: 0 | Util: 0%';
+            const now = new Date();
+            document.getElementById('printingDate').value = now.toISOString().split('T')[0];
+        }
+
+        function renderPrintingReport() {
+            if (!document.getElementById('printingToggle').checked) {
+                document.getElementById('printingReportPreview').innerHTML = '<p class="text-muted text-center py-3">Printing সিস্টেম বন্ধ আছে। চালু করতে টগল করুন।</p>';
                 return;
             }
 
-            const entries = getRipEntries();
-            const mcFilter = document.getElementById('ripReportMcFilter').value;
-            const dateFrom = document.getElementById('ripReportDateFrom').value;
-            const dateTo = document.getElementById('ripReportDateTo').value;
+            const entries = getPrintingEntries();
+            const mcFilter = document.getElementById('printingReportMcFilter').value;
+            const dateFrom = document.getElementById('printingReportDateFrom').value;
+            const dateTo = document.getElementById('printingReportDateTo').value;
 
             let filtered = entries;
             if (mcFilter) filtered = filtered.filter(e => e.mcSl === mcFilter);
@@ -2169,30 +2354,32 @@
             if (dateTo) filtered = filtered.filter(e => e.date <= dateTo);
             filtered.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
-            const preview = document.getElementById('ripReportPreview');
+            const preview = document.getElementById('printingReportPreview');
             if (filtered.length === 0) {
-                preview.innerHTML = `<p class="text-muted text-center py-3">কোনো RIP এন্ট্রি নেই।</p>`;
+                preview.innerHTML = `<p class="text-muted text-center py-3">কোনো Printing এন্ট্রি নেই।</p>`;
                 return;
             }
 
-            let totalCounter = 0, totalGood = 0, totalReject = 0;
+            let totalGood = 0, totalReject = 0, totalDemand = 0;
             filtered.forEach(e => {
-                totalCounter += e.counter || 0;
                 totalGood += e.good || 0;
                 totalReject += e.reject || 0;
+                totalDemand += e.demand || 0;
             });
+            const totalPrint = totalGood + totalReject;
 
             let html = `
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <strong>সামারি:</strong>
-                    <span>মোট: ${totalCounter} | Good: ${totalGood} | Reject: ${totalReject} | ${totalCounter > 0 ? Math.round((totalGood/totalCounter)*100) : 0}% Efficiency</span>
+                    <span>মোট Print: ${totalPrint} | Good: ${totalGood} | Reject: ${totalReject} | Demand: ${totalDemand} | ${totalPrint > 0 ? Math.round((totalGood/totalPrint)*100) : 0}% Efficiency</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped">
                         <thead>
                             <tr>
-                                <th>তারিখ</th><th>MC SL</th><th>Order</th><th>Item</th>
-                                <th>Counter</th><th>Good</th><th>Reject</th><th>রিমার্ক</th>
+                                <th>তারিখ</th><th>MC No</th><th>Print Order</th><th>Item</th>
+                                <th>Foil</th><th>Demand</th><th>Capacity</th><th>Good</th>
+                                <th>Reject</th><th>Util%</th><th>কারণ</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -2204,12 +2391,15 @@
                             <td>${e.mcSl || ''}</td>
                             <td>${e.orderName || ''}</td>
                             <td>${e.itemName || ''}</td>
-                            <td>${e.counter || 0}</td>
-                            <td>${e.good || 0}</td>
+                            <td>${e.foilName || '-'}</td>
+                            <td>${e.demand || 0}</td>
+                            <td>${e.capacity || 0}</td>
+                            <td><strong>${e.good || 0}</strong></td>
                             <td>${e.reject || 0}</td>
-                            <td>${e.remark || '-'}</td>
+                            <td>${e.utilization ? e.utilization.toFixed(1) : 0}%</td>
+                            <td style="font-size:10px;">${e.rejectReason || '-'}</td>
                             <td>
-                                <i class="bi bi-trash3 delete-btn" onclick="deleteRipEntry('${e.id}')" title="ডিলিট"></i>
+                                <i class="bi bi-trash3 delete-btn" onclick="deletePrintingEntry('${e.id}')" title="ডিলিট"></i>
                             </td>
                         </tr>`;
             });
@@ -2217,27 +2407,27 @@
             preview.innerHTML = html;
         }
 
-        function deleteRipEntry(id) {
-            if (!confirm('এই RIP এন্ট্রি মুছে ফেলবেন?')) return;
-            deleteRipEntryFromFirebase(id).then(() => {
-                refreshRipData();
-                showToast('✅ RIP এন্ট্রি মুছে ফেলা হয়েছে।', 'success', 3000);
+        function deletePrintingEntry(id) {
+            if (!confirm('এই Printing এন্ট্রি মুছে ফেলবেন?')) return;
+            deletePrintingEntryFromFirebase(id).then(() => {
+                refreshPrintingData();
+                showToast('✅ Printing এন্ট্রি মুছে ফেলা হয়েছে।', 'success', 3000);
             });
         }
 
-        function printRipReport() {
-            const content = document.getElementById('ripReportPreview').innerHTML;
-            if (!content || content.includes('কোনো RIP এন্ট্রি নেই')) {
+        function printPrintingReport() {
+            const content = document.getElementById('printingReportPreview').innerHTML;
+            if (!content || content.includes('কোনো Printing এন্ট্রি নেই')) {
                 alert('প্রিন্ট করার মতো কোনো ডেটা নেই!');
                 return;
             }
             const win = window.open('', '_blank');
             win.document.write(`
-                <html><head><title>RIP Printing Report</title>
+                <html><head><title>Printing Report</title>
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
                 <style>body{padding:20px;} .table{font-size:12px;} .table th{background:#f8f9fa;}</style>
                 </head><body>
-                <h4>RIP Printing Report</h4>
+                <h4>Printing Report - দৈনিক লিঙ্গ অখ্তি</h4>
                 <p>প্রিন্টের তারিখ: ${new Date().toLocaleString()}</p>
                 ${content}
                 <script>
@@ -2248,11 +2438,256 @@
             win.document.close();
         }
 
-        function resetRipReportFilters() {
-            document.getElementById('ripReportMcFilter').value = '';
-            document.getElementById('ripReportDateFrom').value = '';
-            document.getElementById('ripReportDateTo').value = '';
-            renderRipReport();
+        function exportPrintingExcel() {
+            const entries = getPrintingEntries();
+            if (entries.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+            
+            const data = entries.map(e => ({
+                'তারিখ': e.date || '',
+                'MC No': e.mcSl || '',
+                'Print Order': e.orderName || '',
+                'Item Name': e.itemName || '',
+                'Foil Name': e.foilName || '',
+                'Demand QTY': e.demand || 0,
+                'Capacity/Shift': e.capacity || 0,
+                'Print QTY (Good)': e.good || 0,
+                'Print QTY (Reject)': e.reject || 0,
+                'Utilization %': e.utilization ? e.utilization.toFixed(2) : 0,
+                'Causes of Rejection': e.rejectReason || ''
+            }));
+            
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'Printing');
+            XLSX.writeFile(wb, 'Printing_Report.xlsx');
+            showToast('✅ Printing Report Excel ডাউনলোড হয়েছে!', 'success', 3000);
+        }
+
+        function resetPrintingReportFilters() {
+            document.getElementById('printingReportMcFilter').value = '';
+            document.getElementById('printingReportDateFrom').value = '';
+            document.getElementById('printingReportDateTo').value = '';
+            renderPrintingReport();
+        }
+
+        // ============================================================
+        //  PRINTING EXCEL IMPORT
+        // ============================================================
+        const printingDropZone = document.getElementById('printingDropZone');
+        const printingFileInput = document.getElementById('printingFileInput');
+
+        printingDropZone.addEventListener('click', () => printingFileInput.click());
+
+        printingDropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            printingDropZone.classList.add('dragover');
+        });
+
+        printingDropZone.addEventListener('dragleave', () => {
+            printingDropZone.classList.remove('dragover');
+        });
+
+        printingDropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            printingDropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                printingFileInput.files = e.dataTransfer.files;
+                handlePrintingFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        printingFileInput.addEventListener('change', e => {
+            if (e.target.files.length) {
+                handlePrintingFile(e.target.files[0]);
+            }
+        });
+
+        function handlePrintingFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    console.log("📊 Printing Excel Data:", jsonData);
+                    
+                    if (jsonData.length === 0) {
+                        alert('⚠️ ফাইল খালি!');
+                        return;
+                    }
+
+                    const firstRow = jsonData[0];
+                    console.log("📋 Printing Columns:", Object.keys(firstRow));
+
+                    const expectedColumns = ['Print Order', 'Item Code', 'Item Name', 'Color', 'Foil Name', 'Demand QTY', 'Cycle Time', 'Cavity'];
+                    
+                    const actualColumns = Object.keys(firstRow);
+                    const missingColumns = expectedColumns.filter(col => 
+                        !actualColumns.some(actual => actual.trim().toLowerCase() === col.toLowerCase())
+                    );
+                    
+                    if (missingColumns.length > 0) {
+                        alert(`⚠️ এই কলামগুলো খুঁজে পাওয়া যায়নি:\n${missingColumns.join('\n')}\n\nআপনার Excel এর কলাম নাম চেক করুন।`);
+                        return;
+                    }
+                    
+                    const getVal = (row, key) => {
+                        for (let k in row) {
+                            if (k.trim().toLowerCase() === key.toLowerCase()) {
+                                return row[k];
+                            }
+                        }
+                        return undefined;
+                    };
+                    
+                    printingImportData = jsonData.map((row, index) => {
+                        const printOrder = (getVal(row, 'Print Order') || '').toString().trim();
+                        const itemCode = (getVal(row, 'Item Code') || '').toString().trim();
+                        const itemName = (getVal(row, 'Item Name') || '').toString().trim();
+                        const color = (getVal(row, 'Color') || '').toString().trim();
+                        const foilName = (getVal(row, 'Foil Name') || '').toString().trim();
+                        const demandQty = parseInt(getVal(row, 'Demand QTY')) || 0;
+                        const cycleTime = parseInt(getVal(row, 'Cycle Time')) || 0;
+                        const cavity = parseInt(getVal(row, 'Cavity')) || 1;
+                        
+                        if (!printOrder || demandQty === 0) {
+                            console.warn(`⚠️ Row ${index + 1} skipped:`, row);
+                            return null;
+                        }
+                        
+                        return {
+                            printOrder: printOrder,
+                            itemCode: itemCode,
+                            itemName: itemName,
+                            color: color,
+                            foilName: foilName,
+                            demandQty: demandQty,
+                            cycleTime: cycleTime,
+                            cavity: cavity
+                        };
+                    }).filter(d => d !== null);
+                    
+                    console.log("✅ Printing Import Data:", printingImportData);
+                    
+                    if (printingImportData.length === 0) {
+                        alert('⚠️ কোনো বৈধ ডেটা পাওয়া যায়নি! Excel ফাইল চেক করুন।');
+                        return;
+                    }
+                    
+                    const preview = document.getElementById('printingImportPreview');
+                    preview.style.display = 'block';
+                    document.getElementById('printingImportPreviewBody').innerHTML = printingImportData.map(d =>
+                        `<tr><td>${d.printOrder}</td><td>${d.itemCode}</td><td>${d.itemName}</td><td>${d.color}</td><td>${d.foilName}</td><td>${d.demandQty}</td><td>${d.cycleTime}</td><td>${d.cavity}</td></tr>`
+                    ).join('');
+                    
+                    showToast(`✅ ${printingImportData.length} টি ডেটা পাওয়া গেছে!`, 'success', 3000);
+                    
+                } catch (err) {
+                    alert('❌ ত্রুটি: ' + err.message);
+                    console.error('Error:', err);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function clearPrintingImport() {
+            document.getElementById('printingImportPreview').style.display = 'none';
+            document.getElementById('printingImportPreviewBody').innerHTML = '';
+            printingImportData = [];
+            printingFileInput.value = '';
+        }
+
+        function confirmPrintingImport() {
+            if (printingImportData.length === 0) {
+                alert('⚠️ ডেটা নেই! আগে Excel ফাইল সিলেক্ট করুন।');
+                return;
+            }
+
+            if (!document.getElementById('printingToggle').checked) {
+                showToast('⚠️ দয়া করে Printing সিস্টেম ON করুন!', 'warning', 3000);
+                return;
+            }
+
+            let added = 0;
+            let skipped = 0;
+            const promises = [];
+            const today = new Date().toISOString().split('T')[0];
+
+            printingImportData.forEach((d, index) => {
+                const exists = printingEntriesCache.some(e => 
+                    e.printOrder === d.printOrder && e.itemCode === d.itemCode
+                );
+
+                if (!exists) {
+                    let orderId = null;
+                    let mcSl = '';
+                    
+                    const matchingOrder = ordersCache.find(o => 
+                        o.itemName && d.itemName && o.itemName.toLowerCase().includes(d.itemName.toLowerCase()) ||
+                        o.orderName && d.printOrder && o.orderName.toLowerCase().includes(d.printOrder.toLowerCase())
+                    );
+                    
+                    if (matchingOrder) {
+                        orderId = matchingOrder.id;
+                        mcSl = matchingOrder.mcSl || '';
+                    }
+
+                    const capacity = Math.round((3600 / (d.cycleTime || 30)) * (d.cavity || 1) * 12);
+
+                    const entry = {
+                        id: genId(),
+                        orderId: orderId || '',
+                        mcSl: mcSl || d.printOrder.split('-')[0] || '',
+                        orderName: d.printOrder || '',
+                        itemName: d.itemName || '',
+                        itemCode: d.itemCode || '',
+                        color: d.color || '',
+                        foilName: d.foilName || '',
+                        printOrder: d.printOrder || '',
+                        demand: d.demandQty || 0,
+                        cycleTime: d.cycleTime || 30,
+                        cavity: d.cavity || 1,
+                        capacity: capacity,
+                        good: 0,
+                        reject: 0,
+                        total: 0,
+                        utilization: 0,
+                        rejectReason: '',
+                        date: today,
+                        timestamp: Date.now(),
+                        imported: true
+                    };
+
+                    console.log(`📝 Saving Printing entry #${index + 1}:`, entry.printOrder);
+                    promises.push(savePrintingEntryToFirebase(entry));
+                    added++;
+                } else {
+                    skipped++;
+                    console.log(`⏭️ Skipped (already exists): ${d.printOrder} - ${d.itemCode}`);
+                }
+            });
+
+            if (added === 0) {
+                alert(`✅ সব ${skipped} টি এন্ট্রি ইতিমধ্যে আছে! নতুন কিছু যোগ হয়নি।`);
+                clearPrintingImport();
+                return;
+            }
+
+            showToast(`⏳ ${added} টি Printing এন্ট্রি ইমপোর্ট হচ্ছে...`, 'info', 4000);
+
+            Promise.all(promises)
+                .then(() => {
+                    clearPrintingImport();
+                    refreshPrintingData();
+                    showToast(`✅ ${added} টি Printing এন্ট্রি সফলভাবে ইমপোর্ট হয়েছে! (${skipped} টি স্কিপ করা হয়েছে)`, 'success', 5000);
+                    console.log("✅ All Printing entries imported successfully!");
+                })
+                .catch(err => {
+                    alert('❌ ইমপোর্ট করতে সমস্যা: ' + err.message);
+                    console.error('❌ Error:', err);
+                });
         }
 
         // ============================================================
@@ -2342,7 +2777,7 @@
             updateOrderDropdown();
             populateStatusFilter();
             populateLastdayFilter();
-            populateRipFilters();
+            populatePrintingFilters();
         }
 
         function populateStatusFilter() {
@@ -2542,7 +2977,7 @@
             const data = {
                 orders: getOrders(),
                 shifts: getShifts(),
-                ripEntries: getRipEntries(),
+                printingEntries: getPrintingEntries(),
                 exportedAt: new Date().toISOString()
             };
             
@@ -2574,7 +3009,7 @@
                     Promise.all([
                         deleteAllOrdersFromFirebase(),
                         deleteAllShiftsFromFirebase(),
-                        database.ref('ripEntries').remove()
+                        database.ref('printingEntries').remove()
                     ]).then(() => {
                         const promises = [];
                         data.orders.forEach(order => {
@@ -2583,9 +3018,9 @@
                         data.shifts.forEach(shift => {
                             promises.push(saveShiftToFirebase(shift));
                         });
-                        if (data.ripEntries) {
-                            data.ripEntries.forEach(entry => {
-                                promises.push(saveRipEntryToFirebase(entry));
+                        if (data.printingEntries) {
+                            data.printingEntries.forEach(entry => {
+                                promises.push(savePrintingEntryToFirebase(entry));
                             });
                         }
                         return Promise.all(promises);
@@ -2682,7 +3117,7 @@
         }
 
         // ============================================================
-        //  EXCEL IMPORT
+        //  EXCEL IMPORT (Orders)
         // ============================================================
         let importedData = [];
         const dropZone = document.getElementById('dropZone');
@@ -3023,7 +3458,7 @@
         //  REFRESH ALL
         // ============================================================
         function refreshAll() {
-            return Promise.all([fetchOrders(), fetchShifts(), fetchRipEntries()]).then(() => {
+            return Promise.all([fetchOrders(), fetchShifts(), fetchPrintingEntries()]).then(() => {
                 populateFilters();
                 renderExcelTable();
                 renderMcStatus();
@@ -3031,15 +3466,14 @@
                 if (!document.getElementById('shiftDate').value) {
                     setDefaultDateAndShift();
                 }
-                // Update RIP data
-                const count = getRipEntries().length;
-                document.getElementById('ripEntryCount').innerText = count;
+                const count = getPrintingEntries().length;
+                document.getElementById('printingEntryCount').innerText = count;
                 if (count > 0) {
-                    const last = getRipEntries().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)).pop();
-                    document.getElementById('ripLastUpdate').innerText = last.date || '-';
+                    const last = getPrintingEntries().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)).pop();
+                    document.getElementById('printingLastUpdate').innerText = last.date || '-';
                 }
-                if (document.getElementById('ripToggle').checked) {
-                    renderRipReport();
+                if (document.getElementById('printingToggle').checked) {
+                    renderPrintingReport();
                 }
                 checkAndNotify();
             });
@@ -3062,9 +3496,11 @@
             document.getElementById('counterGood').addEventListener('input', calculateShift);
             document.getElementById('counterReject').addEventListener('input', calculateShift);
 
-            // RIP event listeners
-            document.getElementById('ripMcSelect').addEventListener('change', updateRipOrderDropdown);
-            document.getElementById('ripOrderSelect').addEventListener('change', updateRipOrderDetails);
+            document.getElementById('printingMcSelect').addEventListener('change', updatePrintingOrderDropdown);
+            document.getElementById('printingOrderSelect').addEventListener('change', updatePrintingOrderDetails);
+            document.getElementById('printingGood').addEventListener('input', calculatePrinting);
+            document.getElementById('printingReject').addEventListener('input', calculatePrinting);
+            document.getElementById('printingCycleTime').addEventListener('input', calculatePrintingCapacity);
             
             setInterval(refreshAll, 30000);
             document.getElementById('section-dashboard').style.display = 'block';
