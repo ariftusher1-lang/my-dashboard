@@ -58,19 +58,15 @@
         .content-body::-webkit-scrollbar { width: 6px; }
         .content-body::-webkit-scrollbar-thumb { background: #c1c9d6; border-radius: 4px; }
         
-        /* ===== STATS CARDS ===== */
-        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 16px; }
-        .stat-card { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid #0d6efd; transition: 0.3s; }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        /* ===== STATS ROW ===== */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
+        .stat-card { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid #0d6efd; }
         .stat-card .stat-label { font-size: 12px; color: #6c7a8d; text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-card .stat-value { font-size: 28px; font-weight: 700; color: #1a2332; margin-top: 4px; }
+        .stat-card .stat-value { font-size: 24px; font-weight: 700; color: #1a2332; margin-top: 4px; }
         .stat-card .stat-change { font-size: 12px; color: #28a745; }
-        
-        .stat-card.pending { border-left-color: #e74c3c; }
-        .stat-card.ontime { border-left-color: #28a745; }
-        .stat-card.delay { border-left-color: #ffc107; }
-        .stat-card.critical { border-left-color: #dc3545; }
-        .stat-card.fail { border-left-color: #6c757d; }
+        .stat-card:nth-child(2) { border-left-color: #28a745; }
+        .stat-card:nth-child(3) { border-left-color: #ffc107; }
+        .stat-card:nth-child(4) { border-left-color: #e74c3c; }
         
         /* ===== FILTER BAR ===== */
         .filter-bar { background: #fff; border-radius: 10px; padding: 10px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
@@ -119,14 +115,6 @@
         .edit-btn:hover { color: #e0a800; }
         .clickable-good { color: #0d6efd; cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
         .clickable-good:hover { color: #0a58ca; }
-        
-        /* ===== PROGRESS BAR ===== */
-        .progress { background: #e9ecef; border-radius: 4px; overflow: hidden; height: 8px; }
-        .progress-bar { transition: width 0.6s ease; }
-        
-        /* ===== CHART BARS ===== */
-        .chart-bar { transition: 0.3s; }
-        .chart-bar:hover { opacity: 0.8; transform: scaleY(1.05); }
         
         /* ===== FORM ===== */
         .form-card { background: #fff; border-radius: 10px; padding: 20px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 16px; }
@@ -278,6 +266,7 @@
             <a class="menu-item" onclick="showSection('lastday')">
                 <i class="bi bi-calendar-day"></i> Last Day Prod
             </a>
+            <!-- NEW: Printing Details - Main Section -->
             <a class="menu-item" onclick="showSection('printingDetails')">
                 <i class="bi bi-printer"></i> Printing Details
             </a>
@@ -339,269 +328,91 @@
         <div class="content-body">
 
             <!-- ============================================================ -->
-            <!-- DASHBOARD - NEW TASK MANAGEMENT STYLE -->
+            <!-- DASHBOARD -->
             <!-- ============================================================ -->
             <div id="section-dashboard">
-                
-                <!-- Stats Cards -->
                 <div class="stats-row">
-                    <div class="stat-card pending">
-                        <div class="stat-label">📋 Pending Task</div>
-                        <div class="stat-value" id="pendingTaskStat">1,922</div>
-                        <div class="stat-change"><i class="bi bi-clock"></i> বাকি কাজ</div>
+                    <div class="stat-card">
+                        <div class="stat-label">মোট অর্ডার</div>
+                        <div class="stat-value" id="totalOrdersStat">0</div>
+                        <div class="stat-change"><i class="bi bi-arrow-up"></i> সক্রিয়</div>
                     </div>
-                    <div class="stat-card ontime">
-                        <div class="stat-label">✅ On Time</div>
-                        <div class="stat-value" id="onTimeStat">2,957</div>
-                        <div class="stat-change"><i class="bi bi-check-circle"></i> সময়মতো সম্পন্ন</div>
+                    <div class="stat-card">
+                        <div class="stat-label">সম্পন্ন অর্ডার</div>
+                        <div class="stat-value" id="completedOrdersStat">0</div>
+                        <div class="stat-change"><i class="bi bi-check-circle"></i> ডেলিভারি রেডি</div>
                     </div>
-                    <div class="stat-card delay">
-                        <div class="stat-label">⏳ Will be Delay</div>
-                        <div class="stat-value" id="willDelayStat">2,806</div>
-                        <div class="stat-change"><i class="bi bi-exclamation-triangle"></i> বিলম্ব হবে</div>
+                    <div class="stat-card">
+                        <div class="stat-label">বাকি অর্ডার</div>
+                        <div class="stat-value" id="pendingOrdersStat">0</div>
+                        <div class="stat-change"><i class="bi bi-clock"></i> প্রোডাকশনে</div>
                     </div>
-                    <div class="stat-card critical">
-                        <div class="stat-label">🔥 Critical</div>
-                        <div class="stat-value" id="criticalStat">645</div>
-                        <div class="stat-change"><i class="bi bi-fire"></i> জরুরি কাজ</div>
-                    </div>
-                    <div class="stat-card fail">
-                        <div class="stat-label">❌ Fail</div>
-                        <div class="stat-value" id="failStat">226</div>
-                        <div class="stat-change"><i class="bi bi-x-circle"></i> ব্যর্থ কাজ</div>
+                    <div class="stat-card">
+                        <div class="stat-label">মোট প্রোডাকশন (টন)</div>
+                        <div class="stat-value" id="totalTonStat">0.000</div>
+                        <div class="stat-change"><i class="bi bi-box"></i> আজ পর্যন্ত</div>
                     </div>
                 </div>
 
-                <!-- Efficiency Table -->
+                <div class="filter-bar">
+                    <span class="filter-label"><i class="bi bi-funnel"></i> ফিল্টার:</span>
+                    <select id="excelMcFilter" onchange="renderExcelTable()">
+                        <option value="">-- সব MC --</option>
+                    </select>
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="tableSearchInput" placeholder="অর্ডার বা Item খুঁজুন..." oninput="renderExcelTable()">
+                    </div>
+                    <button class="btn-reset" onclick="document.getElementById('excelMcFilter').value='';document.getElementById('tableSearchInput').value='';renderExcelTable();">
+                        <i class="bi bi-arrow-counterclockwise"></i> রিসেট
+                    </button>
+                    <div class="filter-stats">
+                        <span class="badge-total">📦 মোট: <span id="filterTotalOrders">0</span></span>
+                        <span class="badge-completed">✅ সম্পন্ন: <span id="filterCompleted">0</span></span>
+                        <span class="badge-pending">⏳ বাকি: <span id="filterPending">0</span></span>
+                    </div>
+                </div>
+
                 <div class="table-wrapper">
                     <div class="table-header">
-                        <h6><i class="bi bi-table me-2"></i>Efficiency - ডিপার্টমেন্ট ভিত্তিক টাস্ক স্ট্যাটাস</h6>
-                        <button class="export-btn" onclick="exportEfficiencyExcel()"><i class="bi bi-file-earmark-excel"></i> Excel ডাউনলোড</button>
+                        <h6><i class="bi bi-table me-2"></i>অর্ডারওয়াইজ সামারি</h6>
+                        <button class="export-btn" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel"></i> Excel ডাউনলোড</button>
                     </div>
-                    <div class="table-responsive-custom" style="max-height:250px;">
-                        <table class="table table-bordered table-hover">
+                    <div class="table-responsive-custom">
+                        <table class="table table-bordered table-hover" id="excelTable">
                             <thead>
                                 <tr>
-                                    <th>Department</th>
-                                    <th>Total Task</th>
-                                    <th>Pending</th>
-                                    <th>Running</th>
-                                    <th>Complete</th>
-                                    <th>Progress</th>
+                                    <th rowspan="2">তারিখ</th>
+                                    <th rowspan="2">MC</th>
+                                    <th rowspan="2">অর্ডার</th>
+                                    <th rowspan="2">Acc</th>
+                                    <th rowspan="2">Item</th>
+                                    <th rowspan="2">Unit Wt</th>
+                                    <th rowspan="2">Color</th>
+                                    <th rowspan="2">Cav</th>
+                                    <th rowspan="2">CT</th>
+                                    <th rowspan="2">Capacity<br>(22h)</th>
+                                    <th rowspan="2">Demand</th>
+                                    <th rowspan="2">Due</th>
+                                    <th rowspan="2">As of Prod</th>
+                                    <th rowspan="2">Util%</th>
+                                    <th rowspan="2">LD T.Good</th>
+                                    <th colspan="6" class="sub-header">A-Shift (Day)</th>
+                                    <th colspan="6" class="sub-header">B-Shift (Night)</th>
+                                    <th rowspan="2">Prod Ton</th>
+                                    <th rowspan="2">Action</th>
+                                </tr>
+                                <tr>
+                                    <th class="sub-header">Cnt</th><th class="sub-header">Good</th><th class="sub-header">Util%</th>
+                                    <th class="sub-header">Rej</th><th class="sub-header">কারণ</th><th class="sub-header">DT</th>
+                                    <th class="sub-header">Cnt</th><th class="sub-header">Good</th><th class="sub-header">Util%</th>
+                                    <th class="sub-header">Rej</th><th class="sub-header">কারণ</th><th class="sub-header">DT</th>
                                 </tr>
                             </thead>
-                            <tbody id="efficiencyBody">
-                                <tr>
-                                    <td><strong>Commercial</strong></td>
-                                    <td>452</td>
-                                    <td class="text-danger">452</td>
-                                    <td>0</td>
-                                    <td class="text-success">0</td>
-                                    <td>
-                                        <div class="progress" style="height:8px;">
-                                            <div class="progress-bar bg-danger" style="width:0%;"></div>
-                                        </div>
-                                        <span class="badge bg-danger">0%</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Design</strong></td>
-                                    <td>2</td>
-                                    <td class="text-danger">2</td>
-                                    <td>0</td>
-                                    <td class="text-success">0</td>
-                                    <td>
-                                        <div class="progress" style="height:8px;">
-                                            <div class="progress-bar bg-danger" style="width:0%;"></div>
-                                        </div>
-                                        <span class="badge bg-danger">0%</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Desk</strong></td>
-                                    <td>720</td>
-                                    <td class="text-danger">695</td>
-                                    <td class="text-warning">1</td>
-                                    <td class="text-success">24</td>
-                                    <td>
-                                        <div class="progress" style="height:8px;">
-                                            <div class="progress-bar bg-warning" style="width:3%;"></div>
-                                        </div>
-                                        <span class="badge bg-warning">3%</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>OP</strong></td>
-                                    <td>909</td>
-                                    <td class="text-danger">763</td>
-                                    <td class="text-warning">22</td>
-                                    <td class="text-success">124</td>
-                                    <td>
-                                        <div class="progress" style="height:8px;">
-                                            <div class="progress-bar bg-success" style="width:14%;"></div>
-                                        </div>
-                                        <span class="badge bg-success">14%</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Store</strong></td>
-                                    <td>28</td>
-                                    <td class="text-danger">10</td>
-                                    <td class="text-warning">1</td>
-                                    <td class="text-success">17</td>
-                                    <td>
-                                        <div class="progress" style="height:8px;">
-                                            <div class="progress-bar bg-success" style="width:61%;"></div>
-                                        </div>
-                                        <span class="badge bg-success">61%</span>
-                                    </td>
-                                </tr>
+                            <tbody id="excelBody">
+                                <tr><td colspan="30" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                <!-- Charts Row -->
-                <div class="row g-3 mt-2">
-                    <!-- On Time Chart -->
-                    <div class="col-md-4">
-                        <div class="table-wrapper">
-                            <div class="table-header">
-                                <h6><i class="bi bi-graph-up me-2" style="color:#28a745;"></i>On Time</h6>
-                            </div>
-                            <div class="p-3 text-center" style="min-height:160px;">
-                                <div class="d-flex justify-content-center align-items-end" style="height:120px; gap:10px;">
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:35px; background:#28a745; height:90px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">3,000</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:35px; background:#28a745; height:75px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">2,500</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:35px; background:#28a745; height:60px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">2,000</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:35px; background:#28a745; height:45px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">1,500</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:35px; background:#28a745; height:30px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">1,000</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:35px; background:#28a745; height:15px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">500</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:35px; background:#6c757d; height:5px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">0</span>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <span class="badge bg-success">✅ On Time: 2,957</span>
-                                    <span class="badge bg-warning ms-2">⏳ Will be Delay: 2,806</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Critical Chart -->
-                    <div class="col-md-4">
-                        <div class="table-wrapper">
-                            <div class="table-header">
-                                <h6><i class="bi bi-exclamation-triangle-fill me-2" style="color:#dc3545;"></i>Critical</h6>
-                            </div>
-                            <div class="p-3 text-center" style="min-height:160px;">
-                                <div class="d-flex justify-content-center align-items-end" style="height:120px; gap:6px;">
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:100px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">700</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:85px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">600</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:70px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">500</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:55px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">400</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:40px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">300</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:25px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">200</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:10px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">100</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:30px; background:#6c757d; height:5px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">0</span>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <span class="badge bg-danger">🔥 Critical: 645</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fail Chart -->
-                    <div class="col-md-4">
-                        <div class="table-wrapper">
-                            <div class="table-header">
-                                <h6><i class="bi bi-x-circle-fill me-2" style="color:#6c757d;"></i>Fail</h6>
-                            </div>
-                            <div class="p-3 text-center" style="min-height:160px;">
-                                <div class="d-flex justify-content-center align-items-end" style="height:120px; gap:4px; flex-wrap:wrap;">
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:80px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">226</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:70px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">112</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:60px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">78</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:50px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">66</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:40px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">55</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:30px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">31</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:20px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">6</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:10px; border-radius:4px 4px 0 0;"></div>
-                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">1</span>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <span class="badge bg-secondary">❌ Fail: 645</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -924,7 +735,7 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- PRINTING DETAILS - MAIN SECTION -->
+            <!-- PRINTING DETAILS - MAIN SECTION (NEW) -->
             <!-- ============================================================ -->
             <div id="section-printingDetails" style="display:none;">
                 
@@ -941,7 +752,9 @@
                     </button>
                 </div>
 
+                <!-- ============================================================ -->
                 <!-- TAB 1: PRINTING DEMAND -->
+                <!-- ============================================================ -->
                 <div id="printingDemandTab" class="sub-section-content active">
                     <div class="form-card">
                         <div class="form-title d-flex justify-content-between align-items-center">
@@ -1022,7 +835,9 @@
                     </div>
                 </div>
 
+                <!-- ============================================================ -->
                 <!-- TAB 2: PRINTING ENTRY -->
+                <!-- ============================================================ -->
                 <div id="printingEntryTab" class="sub-section-content">
                     <div class="form-card">
                         <div class="form-title d-flex justify-content-between align-items-center">
@@ -1137,7 +952,9 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: PRINTING REPORT -->
+                <!-- ============================================================ -->
+                <!-- TAB 3: PRINTING REPORT (WITH JOB ORDER SEARCH) -->
+                <!-- ============================================================ -->
                 <div id="printingReportTab" class="sub-section-content">
                     <div class="form-card">
                         <div class="form-title d-flex justify-content-between align-items-center">
@@ -1153,6 +970,7 @@
                                 <option value="">-- সব MC --</option>
                             </select>
                             
+                            <!-- JOB Order Search -->
                             <div class="search-box">
                                 <i class="bi bi-search"></i>
                                 <input type="text" id="printingReportSearch" placeholder="🔍 JOB Order / Item Code / Item Name..." oninput="renderPrintingReportTable()" style="width:250px;">
@@ -1651,6 +1469,7 @@
                 event.target.closest('.menu-item').classList.add('active');
             }
             
+            // Hide all main sections
             ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday','section-printingDetails'].forEach(id => {
                 document.getElementById(id).style.display = 'none';
             });
@@ -1687,6 +1506,7 @@
                 populatePrintProdFilters();
                 populatePrintingReportFilters();
                 renderPrintingReportTable();
+                // Show first tab by default
                 showPrintingTab('printingDemandTab');
             }
             
@@ -1700,14 +1520,18 @@
         //  SHOW PRINTING TAB (SUB-NAVIGATION)
         // ============================================================
         function showPrintingTab(tabId) {
+            // Hide all sub-section contents
             document.querySelectorAll('.sub-section-content').forEach(el => {
                 el.classList.remove('active');
             });
+            // Show selected tab
             document.getElementById(tabId).classList.add('active');
             
+            // Update tab buttons
             document.querySelectorAll('.sub-section-tabs .tab-btn').forEach(el => {
                 el.classList.remove('active');
             });
+            // Find and activate the clicked tab button
             document.querySelectorAll('.sub-section-tabs .tab-btn').forEach(el => {
                 if (el.getAttribute('onclick') && el.getAttribute('onclick').includes(tabId)) {
                     el.classList.add('active');
@@ -2118,10 +1942,12 @@
 
             let filteredOrders = orders;
             
+            // MC Filter
             if (mcFilter) {
                 filteredOrders = filteredOrders.filter(o => o.mcSl === mcFilter);
             }
             
+            // Search Filter - JOB Order, Item Code, Item Name
             if (searchTerm) {
                 filteredOrders = filteredOrders.filter(o =>
                     (o.printOrder || '').toLowerCase().includes(searchTerm) ||
@@ -2130,6 +1956,7 @@
                 );
             }
             
+            // Date Filter - only show orders that have entries within date range
             if (dateFrom || dateTo) {
                 filteredOrders = filteredOrders.filter(o => {
                     const entries = getPrintingProdForOrder(o.id);
@@ -2145,6 +1972,7 @@
                 });
             }
 
+            // Calculate stats
             let totalOrders = filteredOrders.length;
             let completed = 0, pending = 0, partial = 0;
             
@@ -2186,6 +2014,7 @@
                     statusText = '🔄 পার্শিয়াল';
                 }
                 
+                // Get last update date
                 const entries = getPrintingProdForOrder(order.id);
                 let lastUpdate = '-';
                 if (entries.length > 0) {
@@ -2211,25 +2040,6 @@
         }
 
         // ============================================================
-        //  EXPORT EFFICIENCY EXCEL
-        // ============================================================
-        function exportEfficiencyExcel() {
-            const data = [
-                { Department: 'Commercial', 'Total Task': 452, Pending: 452, Running: 0, Complete: 0 },
-                { Department: 'Design', 'Total Task': 2, Pending: 2, Running: 0, Complete: 0 },
-                { Department: 'Desk', 'Total Task': 720, Pending: 695, Running: 1, Complete: 24 },
-                { Department: 'OP', 'Total Task': 909, Pending: 763, Running: 22, Complete: 124 },
-                { Department: 'Store', 'Total Task': 28, Pending: 10, Running: 1, Complete: 17 }
-            ];
-            
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(data);
-            XLSX.utils.book_append_sheet(wb, ws, 'Efficiency');
-            XLSX.writeFile(wb, 'Efficiency_Report.xlsx');
-            showToast('✅ Efficiency Report Excel ডাউনলোড হয়েছে!', 'success', 3000);
-        }
-
-        // ============================================================
         //  PRINTING REPORT FILTERS
         // ============================================================
         function populatePrintingReportFilters() {
@@ -2246,6 +2056,7 @@
                 mcSelect.value = currentVal;
             }
             
+            // Set default dates (last 30 days)
             const now = new Date();
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(now.getDate() - 30);
@@ -3575,6 +3386,7 @@
             document.getElementById('printProdGood').addEventListener('input', calcPrintProdUtil);
             document.getElementById('printProdReject').addEventListener('input', calcPrintProdUtil);
             
+            // Printing Report filter listeners
             document.getElementById('printingReportMcFilter').addEventListener('change', renderPrintingReportTable);
             document.getElementById('printingReportSearch').addEventListener('input', renderPrintingReportTable);
             document.getElementById('printingReportDateFrom').addEventListener('change', renderPrintingReportTable);
