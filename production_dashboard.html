@@ -14,7 +14,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <style>
-        /* আপনার আগের সব CSS এখানে রাখুন - সংক্ষিপ্ততার জন্য বাদ দিচ্ছি */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; height: 100vh; overflow: hidden; }
         .sidebar { position: fixed; top: 0; left: 0; width: 250px; height: 100vh; background: #1a2332; color: #fff; z-index: 1000; transition: all 0.3s; overflow-y: auto; overflow-x: hidden; }
@@ -130,7 +129,6 @@
         .status-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
         .status-completed { background: #d4edda; color: #155724; }
         .status-pending { background: #f8d7da; color: #721c24; }
-        .remark-badge { font-size: 10px; padding: 2px 10px; border-radius: 12px; background: #dc3545; color: #fff; display: inline-block; white-space: nowrap; }
         .toast-container-custom { position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 380px; }
         .toast-custom { background: #1a2332; color: #fff; padding: 12px 18px; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); animation: slideInRight 0.4s ease; display: flex; align-items: center; gap: 12px; border-left: 4px solid #28a745; }
         .toast-custom.toast-warning { border-left-color: #ffc107; }
@@ -213,7 +211,6 @@
             <a class="menu-item" onclick="showSection('lastday')">
                 <i class="bi bi-calendar-day"></i> Last Day Prod
             </a>
-            <!-- Printing Sections -->
             <a class="menu-item" onclick="showSection('printingDemand')">
                 <i class="bi bi-printer"></i> Printing ডিমান্ড
             </a>
@@ -675,7 +672,7 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- PRINTING DEMAND SECTION (ইনজেকশন ডিমান্ডের মতো) -->
+            <!-- PRINTING DEMAND SECTION -->
             <!-- ============================================================ -->
             <div id="section-printingDemand" style="display:none;">
                 <div class="form-card">
@@ -758,7 +755,7 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- PRINTING PRODUCTION ENTRY SECTION (প্রোডাকশন এন্ট্রির মতো) -->
+            <!-- PRINTING PRODUCTION ENTRY SECTION (NEW WITH AS OF & DUE) -->
             <!-- ============================================================ -->
             <div id="section-printingProduction" style="display:none;">
                 <div class="form-card">
@@ -849,6 +846,17 @@
                             <div class="field-group">
                                 <label class="form-label">১৬. Causes of Rejection</label>
                                 <input type="text" class="form-control" id="printProdRejectReason" placeholder="রিজেক্টের কারণ">
+                            </div>
+                        </div>
+                        <!-- NEW: As of Print & Due Print -->
+                        <div class="form-row" style="background:#f8f9fa; padding:10px; border-radius:8px; margin-top:4px;">
+                            <div class="field-group">
+                                <label class="form-label" style="color:#0d6efd; font-weight:700;">📊 As of Print QTY</label>
+                                <input type="number" class="form-control" id="printProdAsOf" readonly style="background:#e7f3ff; font-weight:700; color:#0d6efd;">
+                            </div>
+                            <div class="field-group">
+                                <label class="form-label" style="color:#dc3545; font-weight:700;">📊 Due Print QTY</label>
+                                <input type="number" class="form-control" id="printProdDue" readonly style="background:#f8d7da; font-weight:700; color:#dc3545;">
                             </div>
                         </div>
                         <div class="form-row">
@@ -971,7 +979,7 @@
         let notifiedOrders = new Set();
 
         // ============================================================
-        //  FIREBASE DATA OPERATIONS - FIXED
+        //  FIREBASE DATA OPERATIONS
         // ============================================================
         function fetchOrders() {
             return new Promise((resolve, reject) => {
@@ -993,7 +1001,6 @@
             });
         }
 
-        // ===== NEW: Printing Orders Fetch =====
         function fetchPrintingOrders() {
             return new Promise((resolve, reject) => {
                 database.ref('printingOrders').once('value', snapshot => {
@@ -1004,7 +1011,6 @@
             });
         }
 
-        // ===== NEW: Printing Production Fetch =====
         function fetchPrintingProd() {
             return new Promise((resolve, reject) => {
                 database.ref('printingProd').once('value', snapshot => {
@@ -1015,42 +1021,20 @@
             });
         }
 
-        // ===== NEW: Save Printing Order =====
-        function savePrintingOrderToFirebase(order) {
-            return database.ref('printingOrders/' + order.id).set(order);
-        }
-
-        // ===== NEW: Save Printing Production =====
-        function savePrintingProdToFirebase(entry) {
-            return database.ref('printingProd/' + entry.id).set(entry);
-        }
-
-        // ===== NEW: Delete Printing Order =====
-        function deletePrintingOrderFromFirebase(id) {
-            return database.ref('printingOrders/' + id).remove();
-        }
-
-        // ===== NEW: Delete Printing Production =====
-        function deletePrintingProdFromFirebase(id) {
-            return database.ref('printingProd/' + id).remove();
-        }
-
-        // ===== NEW: Delete All Printing Orders =====
-        function deleteAllPrintingOrdersFromFirebase() {
-            return database.ref('printingOrders').remove();
-        }
-
-        // ===== NEW: Delete All Printing Production =====
-        function deleteAllPrintingProdFromFirebase() {
-            return database.ref('printingProd').remove();
-        }
-
         function saveOrderToFirebase(order) {
             return database.ref('orders/' + order.id).set(order);
         }
 
         function saveShiftToFirebase(shift) {
             return database.ref('shifts/' + shift.id).set(shift);
+        }
+
+        function savePrintingOrderToFirebase(order) {
+            return database.ref('printingOrders/' + order.id).set(order);
+        }
+
+        function savePrintingProdToFirebase(entry) {
+            return database.ref('printingProd/' + entry.id).set(entry);
         }
 
         function deleteOrderFromFirebase(orderId) {
@@ -1061,12 +1045,28 @@
             return database.ref('shifts/' + shiftId).remove();
         }
 
+        function deletePrintingOrderFromFirebase(id) {
+            return database.ref('printingOrders/' + id).remove();
+        }
+
+        function deletePrintingProdFromFirebase(id) {
+            return database.ref('printingProd/' + id).remove();
+        }
+
         function deleteAllOrdersFromFirebase() {
             return database.ref('orders').remove();
         }
 
         function deleteAllShiftsFromFirebase() {
             return database.ref('shifts').remove();
+        }
+
+        function deleteAllPrintingOrdersFromFirebase() {
+            return database.ref('printingOrders').remove();
+        }
+
+        function deleteAllPrintingProdFromFirebase() {
+            return database.ref('printingProd').remove();
         }
 
         function backupDataToFirebase(data) {
@@ -1089,12 +1089,12 @@
             return printingOrdersCache.find(o => o.id === id);
         }
 
-        function getPrintingProdForOrder(orderId) {
-            return printingProdCache.filter(p => p.printOrderId === orderId);
-        }
-
         function getShiftsForOrder(orderId) {
             return shiftsCache.filter(s => s.orderId === orderId);
+        }
+
+        function getPrintingProdForOrder(orderId) {
+            return printingProdCache.filter(p => p.printOrderId === orderId);
         }
 
         function genId() {
@@ -1196,6 +1196,26 @@
 
         function isDuplicatePrintProd(orderId, date, shift, excludeId) {
             return printingProdCache.some(p => p.printOrderId === orderId && p.date === date && p.shift === shift && p.id !== excludeId);
+        }
+
+        // ============================================================
+        //  GET PRINTING AS OF & DUE
+        // ============================================================
+        function getPrintingAsOf(orderId) {
+            const entries = getPrintingProdForOrder(orderId);
+            let totalGood = 0;
+            entries.forEach(e => {
+                totalGood += parseInt(e.good) || 0;
+            });
+            return totalGood;
+        }
+
+        function getPrintingDue(orderId) {
+            const order = getPrintingOrderById(orderId);
+            if (!order) return 0;
+            const demand = parseInt(order.demand) || 0;
+            const asOf = getPrintingAsOf(orderId);
+            return Math.max(0, demand - asOf);
         }
 
         // ============================================================
@@ -1377,6 +1397,7 @@
                 document.getElementById('printProdCycleTime').value = '';
                 document.getElementById('printProdDemand').value = '';
                 document.getElementById('printProdCapacity').value = '';
+                updatePrintAsOfDue();
                 return;
             }
             const order = getPrintingOrderById(orderId);
@@ -1391,6 +1412,20 @@
             document.getElementById('printProdDemand').value = order.demand || 0;
             
             calcPrintProdCap();
+            updatePrintAsOfDue();
+        }
+
+        function updatePrintAsOfDue() {
+            const orderId = document.getElementById('printProdOrderSelect').value;
+            if (!orderId) {
+                document.getElementById('printProdAsOf').value = 0;
+                document.getElementById('printProdDue').value = 0;
+                return;
+            }
+            const asOf = getPrintingAsOf(orderId);
+            const due = getPrintingDue(orderId);
+            document.getElementById('printProdAsOf').value = asOf;
+            document.getElementById('printProdDue').value = due;
         }
 
         function calcPrintProdCap() {
@@ -1656,7 +1691,7 @@
         }
 
         // ============================================================
-        //  PRINT PRODUCTION REPORT
+        //  PRINT PRODUCTION REPORT (WITH AS OF & DUE)
         // ============================================================
         function renderPrintProdReport() {
             const entries = getPrintingProd();
@@ -1695,14 +1730,32 @@
                             <tr>
                                 <th>তারিখ</th><th>শিফট</th><th>MC No</th><th>Print Order</th>
                                 <th>Item Code</th><th>Item Name</th><th>Color</th><th>Foil</th>
-                                <th>Demand</th><th>Capacity</th><th>Good</th>
-                                <th>Reject</th><th>Util%</th><th>কারণ</th>
-                                <th>Action</th>
+                                <th>Demand</th><th>As of Print</th><th>Due Print</th>
+                                <th>Capacity</th><th>Good</th><th>Reject</th><th>Util%</th>
+                                <th>কারণ</th><th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
             `;
+
+            // Group by orderId to show As of & Due per order
+            const orderMap = {};
             filtered.forEach(e => {
+                if (!orderMap[e.printOrderId]) {
+                    orderMap[e.printOrderId] = {
+                        orderId: e.printOrderId,
+                        demand: e.demand || 0,
+                        totalGood: 0
+                    };
+                }
+                orderMap[e.printOrderId].totalGood += e.good || 0;
+            });
+
+            filtered.forEach(e => {
+                const orderInfo = orderMap[e.printOrderId];
+                const asOf = orderInfo ? orderInfo.totalGood : 0;
+                const due = orderInfo ? Math.max(0, orderInfo.demand - asOf) : 0;
+                
                 html += `<tr>
                             <td>${e.date || '-'}</td>
                             <td><span class="badge bg-${e.shift === 'Day' ? 'primary' : 'secondary'}">${e.shift}</span></td>
@@ -1713,6 +1766,8 @@
                             <td>${e.color || ''}</td>
                             <td>${e.foilName || '-'}</td>
                             <td>${e.demand || 0}</td>
+                            <td><strong style="color:#0d6efd;">${asOf}</strong></td>
+                            <td><strong style="color:#dc3545;">${due}</strong></td>
                             <td>${e.capacity || 0}</td>
                             <td><strong>${e.good || 0}</strong></td>
                             <td>${e.reject || 0}</td>
@@ -1766,22 +1821,42 @@
             const entries = getPrintingProd();
             if (entries.length === 0) { alert('কোনো ডেটা নেই!'); return; }
             
-            const data = entries.map(e => ({
-                'তারিখ': e.date || '',
-                'শিফট': e.shift || '',
-                'MC No': e.mcSl || '',
-                'Print Order': e.printOrder || '',
-                'Item Code': e.itemCode || '',
-                'Item Name': e.itemName || '',
-                'Color': e.color || '',
-                'Foil Name': e.foilName || '',
-                'Demand QTY': e.demand || 0,
-                'Capacity/Shift': e.capacity || 0,
-                'Print QTY (Good)': e.good || 0,
-                'Print QTY (Reject)': e.reject || 0,
-                'Utilization %': e.utilization ? e.utilization.toFixed(2) : 0,
-                'Causes of Rejection': e.rejectReason || ''
-            }));
+            // Group by orderId for As of & Due
+            const orderMap = {};
+            entries.forEach(e => {
+                if (!orderMap[e.printOrderId]) {
+                    orderMap[e.printOrderId] = {
+                        orderId: e.printOrderId,
+                        demand: e.demand || 0,
+                        totalGood: 0
+                    };
+                }
+                orderMap[e.printOrderId].totalGood += e.good || 0;
+            });
+
+            const data = entries.map(e => {
+                const orderInfo = orderMap[e.printOrderId];
+                const asOf = orderInfo ? orderInfo.totalGood : 0;
+                const due = orderInfo ? Math.max(0, orderInfo.demand - asOf) : 0;
+                return {
+                    'তারিখ': e.date || '',
+                    'শিফট': e.shift || '',
+                    'MC No': e.mcSl || '',
+                    'Print Order': e.printOrder || '',
+                    'Item Code': e.itemCode || '',
+                    'Item Name': e.itemName || '',
+                    'Color': e.color || '',
+                    'Foil Name': e.foilName || '',
+                    'Demand QTY': e.demand || 0,
+                    'As of Print': asOf,
+                    'Due Print': due,
+                    'Capacity/Shift': e.capacity || 0,
+                    'Print QTY (Good)': e.good || 0,
+                    'Print QTY (Reject)': e.reject || 0,
+                    'Utilization %': e.utilization ? e.utilization.toFixed(2) : 0,
+                    'Causes of Rejection': e.rejectReason || ''
+                };
+            });
             
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(data);
@@ -2045,6 +2120,7 @@
             document.getElementById('printProdRejectReason').value = entry.rejectReason || '';
 
             calcPrintProdCap();
+            updatePrintAsOfDue();
             document.getElementById('printEditModeBadge').style.display = 'inline-block';
             document.getElementById('cancelPrintEditBtn').style.display = 'inline-block';
             document.getElementById('printProdSubmitBtn').innerHTML = '<i class="bi bi-pencil"></i> আপডেট করুন';
@@ -2066,6 +2142,8 @@
             document.getElementById('printProdGood').value = '';
             document.getElementById('printProdReject').value = '';
             document.getElementById('printProdRejectReason').value = '';
+            document.getElementById('printProdAsOf').value = 0;
+            document.getElementById('printProdDue').value = 0;
             setDefaultDateAndShift();
             showToast('এডিট মোড বাতিল করা হয়েছে।', 'info', 2000);
         }
@@ -2108,7 +2186,6 @@
             });
         }
 
-        // ===== NEW: Delete All Printing Orders =====
         function deleteAllPrintingOrders() {
             if (!confirm('সতর্কতা: সমস্ত Printing অর্ডার ও Production ডেটা মুছে ফেলা হবে। আপনি কি নিশ্চিত?')) return;
             
@@ -2799,7 +2876,7 @@
         });
 
         // ============================================================
-        //  SAVE PRINT PRODUCTION
+        //  SAVE PRINT PRODUCTION (WITH AS OF & DUE UPDATE)
         // ============================================================
         document.getElementById('printProductionForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -2871,6 +2948,9 @@
                 document.getElementById('printProdReject').value = '';
                 document.getElementById('printProdRejectReason').value = '';
                 document.getElementById('printProdUtilization').value = '';
+                
+                // Update As of & Due
+                updatePrintAsOfDue();
                 setDefaultDateAndShift();
                 refreshAll();
             });
@@ -2976,6 +3056,11 @@
                 renderPrintProdReport();
                 if (!document.getElementById('shiftDate').value) {
                     setDefaultDateAndShift();
+                }
+                // Update As of & Due if any order is selected
+                const orderId = document.getElementById('printProdOrderSelect').value;
+                if (orderId) {
+                    updatePrintAsOfDue();
                 }
                 checkAndNotify();
             });
