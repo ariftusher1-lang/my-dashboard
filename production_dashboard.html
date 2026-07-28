@@ -755,7 +755,7 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- PRINTING PRODUCTION ENTRY SECTION (NEW WITH AS OF & DUE) -->
+            <!-- PRINTING PRODUCTION ENTRY SECTION (WITH ITEM CODE DROPDOWN) -->
             <!-- ============================================================ -->
             <div id="section-printingProduction" style="display:none;">
                 <div class="form-card">
@@ -787,15 +787,17 @@
                             </div>
                             <div class="field-group">
                                 <label class="form-label">৪. Print Order *</label>
-                                <select class="form-select" id="printProdOrderSelect" required onchange="updatePrintProdOrderDetails()">
+                                <select class="form-select" id="printProdOrderSelect" required onchange="updatePrintProdItemCodeDropdown()">
                                     <option value="">-- সিলেক্ট --</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="field-group">
-                                <label class="form-label">৫. Item Code</label>
-                                <input type="text" class="form-control" id="printProdItemCode" readonly placeholder="অটো ফিল">
+                                <label class="form-label">৫. Item Code *</label>
+                                <select class="form-select" id="printProdItemCodeSelect" required onchange="updatePrintProdItemDetails()">
+                                    <option value="">-- সিলেক্ট --</option>
+                                </select>
                             </div>
                             <div class="field-group">
                                 <label class="form-label">৬. Item Name</label>
@@ -1087,6 +1089,10 @@
 
         function getPrintingOrderById(id) {
             return printingOrdersCache.find(o => o.id === id);
+        }
+
+        function getPrintingOrdersByMc(mc) {
+            return printingOrdersCache.filter(o => o.mcSl === mc);
         }
 
         function getShiftsForOrder(orderId) {
@@ -1384,12 +1390,63 @@
         }
 
         // ============================================================
-        //  UPDATE PRINT PRODUCTION ORDER DETAILS
+        //  UPDATE PRINT PRODUCTION - ITEM CODE DROPDOWN
         // ============================================================
-        function updatePrintProdOrderDetails() {
+        function updatePrintProdItemCodeDropdown() {
             const orderId = document.getElementById('printProdOrderSelect').value;
+            const itemCodeSelect = document.getElementById('printProdItemCodeSelect');
+            
+            // Clear existing options
+            itemCodeSelect.innerHTML = '<option value="">-- সিলেক্ট --</option>';
+            
+            // Clear all other fields
+            document.getElementById('printProdItemName').value = '';
+            document.getElementById('printProdColor').value = '';
+            document.getElementById('printProdFoilName').value = '';
+            document.getElementById('printProdCavity').value = '';
+            document.getElementById('printProdCycleTime').value = '';
+            document.getElementById('printProdDemand').value = '';
+            document.getElementById('printProdCapacity').value = '';
+            document.getElementById('printProdAsOf').value = 0;
+            document.getElementById('printProdDue').value = 0;
+            
             if (!orderId) {
-                document.getElementById('printProdItemCode').value = '';
+                return;
+            }
+            
+            const order = getPrintingOrderById(orderId);
+            if (!order) return;
+            
+            // Get all printing orders with same Print Order name
+            const allOrders = getPrintingOrders();
+            const matchingOrders = allOrders.filter(o => o.printOrder === order.printOrder);
+            
+            if (matchingOrders.length === 0) {
+                return;
+            }
+            
+            // Populate Item Code dropdown
+            matchingOrders.forEach(o => {
+                const option = document.createElement('option');
+                option.value = o.id;
+                option.textContent = o.itemCode || o.id;
+                itemCodeSelect.appendChild(option);
+            });
+            
+            // Auto-select first item
+            if (matchingOrders.length > 0) {
+                itemCodeSelect.value = matchingOrders[0].id;
+                updatePrintProdItemDetails();
+            }
+        }
+
+        // ============================================================
+        //  UPDATE PRINT PRODUCTION - ITEM DETAILS
+        // ============================================================
+        function updatePrintProdItemDetails() {
+            const itemId = document.getElementById('printProdItemCodeSelect').value;
+            
+            if (!itemId) {
                 document.getElementById('printProdItemName').value = '';
                 document.getElementById('printProdColor').value = '';
                 document.getElementById('printProdFoilName').value = '';
@@ -1397,13 +1454,14 @@
                 document.getElementById('printProdCycleTime').value = '';
                 document.getElementById('printProdDemand').value = '';
                 document.getElementById('printProdCapacity').value = '';
-                updatePrintAsOfDue();
+                document.getElementById('printProdAsOf').value = 0;
+                document.getElementById('printProdDue').value = 0;
                 return;
             }
-            const order = getPrintingOrderById(orderId);
+            
+            const order = getPrintingOrderById(itemId);
             if (!order) return;
             
-            document.getElementById('printProdItemCode').value = order.itemCode || '';
             document.getElementById('printProdItemName').value = order.itemName || '';
             document.getElementById('printProdColor').value = order.color || '';
             document.getElementById('printProdFoilName').value = order.foilName || '';
@@ -1416,14 +1474,14 @@
         }
 
         function updatePrintAsOfDue() {
-            const orderId = document.getElementById('printProdOrderSelect').value;
-            if (!orderId) {
+            const itemId = document.getElementById('printProdItemCodeSelect').value;
+            if (!itemId) {
                 document.getElementById('printProdAsOf').value = 0;
                 document.getElementById('printProdDue').value = 0;
                 return;
             }
-            const asOf = getPrintingAsOf(orderId);
-            const due = getPrintingDue(orderId);
+            const asOf = getPrintingAsOf(itemId);
+            const due = getPrintingDue(itemId);
             document.getElementById('printProdAsOf').value = asOf;
             document.getElementById('printProdDue').value = due;
         }
@@ -1481,14 +1539,26 @@
             const currentOrder = orderSelect.value;
             let orders = getPrintingOrders();
             if (mc) orders = orders.filter(o => o.mcSl === mc);
-            orderSelect.innerHTML = '<option value="">-- অর্ডার --</option>';
-            orders.forEach(o => { 
+            
+            // Get unique print orders
+            const uniqueOrders = [];
+            const orderNames = new Set();
+            orders.forEach(o => {
+                if (!orderNames.has(o.printOrder)) {
+                    orderNames.add(o.printOrder);
+                    uniqueOrders.push(o);
+                }
+            });
+            
+            orderSelect.innerHTML = '<option value="">-- সিলেক্ট --</option>';
+            uniqueOrders.forEach(o => { 
                 orderSelect.innerHTML += `<option value="${o.id}">${o.printOrder}</option>`; 
             });
+            
             if (currentOrder && orders.some(o => o.id === currentOrder)) {
                 orderSelect.value = currentOrder;
             }
-            updatePrintProdOrderDetails();
+            updatePrintProdItemCodeDropdown();
         }
 
         // ============================================================
@@ -2102,13 +2172,33 @@
             uniqueMCs.forEach(mc => { mcSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
             mcSelect.value = order.mcSl;
 
+            // Populate Print Order dropdown
             const orderSelect = document.getElementById('printProdOrderSelect');
             const ordersForMc = getPrintingOrders().filter(o => o.mcSl === order.mcSl);
-            orderSelect.innerHTML = '<option value="">-- অর্ডার --</option>';
-            ordersForMc.forEach(o => { orderSelect.innerHTML += `<option value="${o.id}">${o.printOrder}</option>`; });
+            const uniqueOrders = [];
+            const orderNames = new Set();
+            ordersForMc.forEach(o => {
+                if (!orderNames.has(o.printOrder)) {
+                    orderNames.add(o.printOrder);
+                    uniqueOrders.push(o);
+                }
+            });
+            orderSelect.innerHTML = '<option value="">-- সিলেক্ট --</option>';
+            uniqueOrders.forEach(o => { 
+                orderSelect.innerHTML += `<option value="${o.id}">${o.printOrder}</option>`; 
+            });
             orderSelect.value = entry.printOrderId;
 
-            document.getElementById('printProdItemCode').value = order.itemCode || '';
+            // Populate Item Code dropdown
+            const itemSelect = document.getElementById('printProdItemCodeSelect');
+            const matchingOrders = getPrintingOrders().filter(o => o.printOrder === order.printOrder);
+            itemSelect.innerHTML = '<option value="">-- সিলেক্ট --</option>';
+            matchingOrders.forEach(o => {
+                itemSelect.innerHTML += `<option value="${o.id}">${o.itemCode || o.id}</option>`;
+            });
+            itemSelect.value = entry.printOrderId;
+
+            // Fill all fields
             document.getElementById('printProdItemName').value = order.itemName || '';
             document.getElementById('printProdColor').value = order.color || '';
             document.getElementById('printProdFoilName').value = order.foilName || '';
@@ -2144,6 +2234,7 @@
             document.getElementById('printProdRejectReason').value = '';
             document.getElementById('printProdAsOf').value = 0;
             document.getElementById('printProdDue').value = 0;
+            document.getElementById('printProdItemCodeSelect').innerHTML = '<option value="">-- সিলেক্ট --</option>';
             setDefaultDateAndShift();
             showToast('এডিট মোড বাতিল করা হয়েছে।', 'info', 2000);
         }
@@ -2881,14 +2972,14 @@
         document.getElementById('printProductionForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const orderId = document.getElementById('printProdOrderSelect').value;
-            if (!orderId) { alert('Print Order সিলেক্ট করুন!'); return; }
+            const itemId = document.getElementById('printProdItemCodeSelect').value;
+            if (!itemId) { alert('Item Code সিলেক্ট করুন!'); return; }
 
             const date = document.getElementById('printProdDate').value;
             const shift = document.getElementById('printProdShift').value;
             const editId = document.getElementById('editPrintProdId').value;
 
-            if (!editId && isDuplicatePrintProd(orderId, date, shift, null)) {
+            if (!editId && isDuplicatePrintProd(itemId, date, shift, null)) {
                 if (!confirm('⚠️ এই তারিখ ও শিফটে ইতিমধ্যে এন্ট্রি করা হয়েছে! তবুও কি সেভ করবেন?')) return;
             }
 
@@ -2901,7 +2992,7 @@
                 return;
             }
 
-            const order = getPrintingOrderById(orderId);
+            const order = getPrintingOrderById(itemId);
             const capacity = parseInt(document.getElementById('printProdCapacity').value) || 0;
             let util = 0;
             if (capacity > 0 && total > 0) {
@@ -2910,16 +3001,16 @@
 
             const entry = {
                 id: editId || genId(),
-                printOrderId: orderId,
+                printOrderId: itemId,
                 mcSl: order ? order.mcSl : '',
                 printOrder: order ? order.printOrder : '',
-                itemCode: document.getElementById('printProdItemCode').value || '',
-                itemName: document.getElementById('printProdItemName').value || '',
-                color: document.getElementById('printProdColor').value || '',
-                foilName: document.getElementById('printProdFoilName').value || '',
-                cavity: parseInt(document.getElementById('printProdCavity').value) || 1,
-                cycleTime: parseInt(document.getElementById('printProdCycleTime').value) || 30,
-                demand: parseInt(document.getElementById('printProdDemand').value) || 0,
+                itemCode: order ? order.itemCode : '',
+                itemName: order ? order.itemName : '',
+                color: order ? order.color : '',
+                foilName: order ? order.foilName : '',
+                cavity: order ? order.cavity : 1,
+                cycleTime: order ? order.cycleTime : 30,
+                demand: order ? order.demand : 0,
                 capacity: capacity,
                 good: good,
                 reject: reject,
@@ -3058,8 +3149,8 @@
                     setDefaultDateAndShift();
                 }
                 // Update As of & Due if any order is selected
-                const orderId = document.getElementById('printProdOrderSelect').value;
-                if (orderId) {
+                const itemId = document.getElementById('printProdItemCodeSelect').value;
+                if (itemId) {
                     updatePrintAsOfDue();
                 }
                 checkAndNotify();
@@ -3085,7 +3176,8 @@
             document.getElementById('counterReject').addEventListener('input', calculateShift);
 
             document.getElementById('printProdMcSelect').addEventListener('change', updatePrintProdOrderDropdown);
-            document.getElementById('printProdOrderSelect').addEventListener('change', updatePrintProdOrderDetails);
+            document.getElementById('printProdOrderSelect').addEventListener('change', updatePrintProdItemCodeDropdown);
+            document.getElementById('printProdItemCodeSelect').addEventListener('change', updatePrintProdItemDetails);
             document.getElementById('printProdGood').addEventListener('input', calcPrintProdUtil);
             document.getElementById('printProdReject').addEventListener('input', calcPrintProdUtil);
             
