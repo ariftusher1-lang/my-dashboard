@@ -14,9 +14,11 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <style>
-        /* আপনার আগের সব CSS এখানে রাখুন - সংক্ষিপ্ততার জন্য বাদ দিচ্ছি */
+        /* ===== BASE STYLES ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; height: 100vh; overflow: hidden; }
+        
+        /* ===== SIDEBAR ===== */
         .sidebar { position: fixed; top: 0; left: 0; width: 250px; height: 100vh; background: #1a2332; color: #fff; z-index: 1000; transition: all 0.3s; overflow-y: auto; overflow-x: hidden; }
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-thumb { background: #2d3a4b; border-radius: 4px; }
@@ -31,6 +33,8 @@
         .sidebar-menu .menu-item.active { background: #253040; color: #fff; border-left-color: #e74c3c; }
         .sidebar-menu .menu-item i { width: 20px; font-size: 16px; text-align: center; }
         .sidebar-menu .menu-item .badge-menu { margin-left: auto; background: #e74c3c; color: #fff; font-size: 9px; padding: 2px 8px; border-radius: 12px; }
+        
+        /* ===== MAIN CONTENT ===== */
         .main-content { margin-left: 250px; height: 100vh; display: flex; flex-direction: column; }
         .header { background: #fff; padding: 8px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecef; flex-shrink: 0; min-height: 60px; }
         .header-left { display: flex; align-items: center; gap: 16px; }
@@ -49,19 +53,26 @@
         .header-right .user-profile .user-name { font-size: 14px; font-weight: 500; color: #1a2332; }
         .header-right .user-profile .user-role { font-size: 11px; color: #6c7a8d; }
         .header-right .user-profile .chevron { color: #6c7a8d; font-size: 12px; }
+        
         .content-body { flex: 1; padding: 20px 30px; overflow-y: auto; background: #f0f2f5; }
         .content-body::-webkit-scrollbar { width: 6px; }
         .content-body::-webkit-scrollbar-thumb { background: #c1c9d6; border-radius: 4px; }
         
+        /* ===== STATS CARDS ===== */
         .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
-        .stat-card { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid #0d6efd; }
+        .stat-card { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid #0d6efd; transition: 0.3s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .stat-card .stat-label { font-size: 12px; color: #6c7a8d; text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-card .stat-value { font-size: 24px; font-weight: 700; color: #1a2332; margin-top: 4px; }
+        .stat-card .stat-value { font-size: 28px; font-weight: 700; color: #1a2332; margin-top: 4px; }
         .stat-card .stat-change { font-size: 12px; color: #28a745; }
-        .stat-card:nth-child(2) { border-left-color: #28a745; }
-        .stat-card:nth-child(3) { border-left-color: #ffc107; }
-        .stat-card:nth-child(4) { border-left-color: #e74c3c; }
         
+        .stat-card.pending { border-left-color: #e74c3c; }
+        .stat-card.ontime { border-left-color: #28a745; }
+        .stat-card.delay { border-left-color: #ffc107; }
+        .stat-card.critical { border-left-color: #dc3545; }
+        .stat-card.fail { border-left-color: #6c757d; }
+        
+        /* ===== FILTER BAR ===== */
         .filter-bar { background: #fff; border-radius: 10px; padding: 10px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
         .filter-bar .filter-label { font-size: 12px; font-weight: 600; color: #1a2332; }
         .filter-bar select, .filter-bar input { padding: 5px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; outline: none; }
@@ -70,20 +81,22 @@
         .filter-bar .btn-reset:hover { background: #dde1e6; }
         .filter-bar .search-box { display: flex; align-items: center; gap: 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; padding: 3px 10px; }
         .filter-bar .search-box i { color: #6c7a8d; font-size: 14px; }
-        .filter-bar .search-box input { border: none; background: transparent; padding: 4px 0; font-size: 13px; width: 160px; }
+        .filter-bar .search-box input { border: none; background: transparent; padding: 4px 0; font-size: 13px; width: 200px; }
         .filter-bar .search-box input:focus { outline: none; }
         .filter-stats { margin-left: auto; display: flex; gap: 10px; font-size: 12px; flex-wrap: wrap; }
         .filter-stats span { padding: 4px 14px; border-radius: 20px; background: #f0f2f5; }
         .filter-stats .badge-completed { background: #d4edda; color: #155724; }
         .filter-stats .badge-pending { background: #f8d7da; color: #721c24; }
         .filter-stats .badge-total { background: #cce5ff; color: #004085; }
+        .filter-stats .badge-partial { background: #fff3cd; color: #856404; }
         
-        .table-wrapper { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; }
+        /* ===== TABLE ===== */
+        .table-wrapper { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 16px; }
         .table-wrapper .table-header { padding: 10px 16px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         .table-wrapper .table-header h6 { font-weight: 600; color: #1a2332; margin: 0; font-size: 14px; }
         .table-wrapper .table-header .export-btn { padding: 4px 14px; border: none; background: #28a745; color: #fff; border-radius: 6px; font-size: 12px; cursor: pointer; }
         .table-wrapper .table-header .export-btn:hover { background: #218838; }
-        .table-responsive-custom { max-height: 440px; overflow-y: auto; }
+        .table-responsive-custom { max-height: 350px; overflow-y: auto; }
         .table-responsive-custom::-webkit-scrollbar { width: 6px; }
         .table-responsive-custom::-webkit-scrollbar-thumb { background: #c1c9d6; border-radius: 4px; }
         
@@ -96,8 +109,8 @@
         .table tbody tr.bg-completed:hover { background: #c3e6cb; }
         .table tbody tr.table-danger { background-color: #f8d7da !important; border-left: 4px solid #dc3545; }
         .table tbody tr.table-danger:hover { background-color: #f5c6cb !important; }
-        .badge-util { font-size: 9px; padding: 2px 8px; border-radius: 12px; }
         
+        .badge-util { font-size: 9px; padding: 2px 8px; border-radius: 12px; }
         .delete-btn { color: #dc3545; cursor: pointer; font-size: 14px; margin: 0 3px; }
         .delete-btn:hover { color: #a71d2a; }
         .transfer-btn { color: #0d6efd; cursor: pointer; font-size: 14px; margin: 0 3px; }
@@ -107,7 +120,16 @@
         .clickable-good { color: #0d6efd; cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
         .clickable-good:hover { color: #0a58ca; }
         
-        .form-card { background: #fff; border-radius: 10px; padding: 20px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        /* ===== PROGRESS BAR ===== */
+        .progress { background: #e9ecef; border-radius: 4px; overflow: hidden; height: 8px; }
+        .progress-bar { transition: width 0.6s ease; }
+        
+        /* ===== CHART BARS ===== */
+        .chart-bar { transition: 0.3s; }
+        .chart-bar:hover { opacity: 0.8; transform: scaleY(1.05); }
+        
+        /* ===== FORM ===== */
+        .form-card { background: #fff; border-radius: 10px; padding: 20px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 16px; }
         .form-card .form-title { font-weight: 600; color: #1a2332; border-bottom: 2px solid #e74c3c; padding-bottom: 8px; margin-bottom: 16px; font-size: 15px; }
         .form-label { font-weight: 500; font-size: 12px; color: #1a2332; margin-bottom: 2px; display: inline-flex; align-items: center; gap: 4px; }
         .form-control, .form-select { font-size: 13px; padding: 5px 10px; border-radius: 6px; border: 1px solid #ddd; }
@@ -141,6 +163,7 @@
         .status-completed { background: #d4edda; color: #155724; }
         .status-pending { background: #f8d7da; color: #721c24; }
         
+        /* ===== TOAST ===== */
         .toast-container-custom { position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 380px; }
         .toast-custom { background: #1a2332; color: #fff; padding: 12px 18px; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); animation: slideInRight 0.4s ease; display: flex; align-items: center; gap: 12px; border-left: 4px solid #28a745; }
         .toast-custom.toast-warning { border-left-color: #ffc107; }
@@ -153,6 +176,7 @@
         @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
         .toast-custom.hiding { animation: slideOutRight 0.3s ease forwards; }
         
+        /* ===== MODAL ===== */
         .modal-content { border-radius: 12px; }
         .modal-header { background: #1a2332; color: #fff; border-radius: 12px 12px 0 0; }
         .modal-header .btn-close { filter: invert(1); }
@@ -167,6 +191,7 @@
         .transfer-detail-card .label { font-weight: 600; color: #495057; font-size: 12px; }
         .transfer-detail-card .value { font-weight: 500; color: #1a2332; font-size: 12px; }
         
+        /* ===== PRINTING FORM ===== */
         .printing-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
         .printing-form-grid .field-group { margin-bottom: 4px; }
         .printing-form-grid .field-group .form-label { font-size: 12px; font-weight: 600; color: #1a2332; }
@@ -179,31 +204,75 @@
         .printing-summary-box .summary-label { font-weight: 600; color: #495057; font-size: 12px; }
         .printing-summary-box .summary-value { font-weight: 700; color: #1a2332; font-size: 13px; }
         
-        .print-report-area { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-top: 12px; }
-        .print-report-area .print-title { font-weight: 600; color: #1a2332; border-bottom: 2px solid #e74c3c; padding-bottom: 8px; margin-bottom: 12px; font-size: 15px; }
-        .print-report-area .print-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-        .print-report-area .print-controls select, .print-report-area .print-controls input { padding: 5px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; }
-        .print-report-area .print-controls .btn-print { padding: 5px 20px; background: #0d6efd; color: #fff; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; }
-        .print-report-area .print-controls .btn-print:hover { background: #0a58ca; }
-        .print-report-area .print-preview { max-height: 400px; overflow-y: auto; font-size: 12px; }
-        .print-report-area .print-preview table { font-size: 11px; }
-        .print-report-area .print-preview table th { background: #f8f9fa; font-size: 10px; padding: 4px 6px; text-align: center; position: sticky; top: 0; z-index: 5; }
-        .print-report-area .print-preview table td { padding: 4px 6px; text-align: center; font-size: 11px; }
-        
-        .rip-import-area { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-top: 12px; border: 1px solid #e9ecef; }
-        .rip-import-area .rip-import-title { font-weight: 600; font-size: 14px; color: #1a2332; margin-bottom: 10px; }
-        
-        .print-table-wrapper { margin-top: 16px; }
-        .print-table-wrapper .table thead th { font-size: 9px; padding: 4px 3px; }
-        .print-table-wrapper .table tbody td { font-size: 10px; padding: 4px 3px; }
-        
-        /* Printing Report Status Colors */
+        /* ===== PRINTING REPORT STATUS ===== */
         .status-completed-print { background: #d4edda; color: #155724; padding: 2px 10px; border-radius: 12px; font-weight: 600; font-size: 11px; }
         .status-pending-print { background: #f8d7da; color: #721c24; padding: 2px 10px; border-radius: 12px; font-weight: 600; font-size: 11px; }
         .status-partial-print { background: #fff3cd; color: #856404; padding: 2px 10px; border-radius: 12px; font-weight: 600; font-size: 11px; }
         
-        @media (max-width: 992px) { .sidebar { transform: translateX(-100%); width: 280px; } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0; } .sidebar-toggle { display: block; } .filter-stats { margin-left: 0; width: 100%; justify-content: flex-start; flex-wrap: wrap; } .header { padding: 8px 16px; flex-wrap: wrap; gap: 8px; } .header-right .clock-section { font-size: 12px; padding: 2px 10px; } .content-body { padding: 14px 16px; } .stats-row { grid-template-columns: repeat(2, 1fr); } .form-row { grid-template-columns: 1fr 1fr; } .printing-form-grid { grid-template-columns: 1fr; } }
-        @media (max-width: 576px) { .stats-row { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } .header-left .page-title { font-size: 15px; } .header-right .user-profile .user-name { display: none; } .header-right .user-profile .user-role { display: none; } .filter-bar .search-box input { width: 100px; } .printing-form-grid { grid-template-columns: 1fr; } }
+        /* ===== SUB SECTION TABS ===== */
+        .sub-section-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; background: #fff; border-radius: 10px; padding: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .sub-section-tabs .tab-btn { padding: 8px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; background: transparent; color: #6c7a8d; }
+        .sub-section-tabs .tab-btn:hover { background: #f0f2f5; color: #1a2332; }
+        .sub-section-tabs .tab-btn.active { background: #1a2332; color: #fff; }
+        .sub-section-tabs .tab-btn i { margin-right: 6px; }
+        
+        .sub-section-content { display: none; }
+        .sub-section-content.active { display: block; }
+        
+        .rip-import-area { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-top: 12px; border: 1px solid #e9ecef; }
+        .rip-import-area .rip-import-title { font-weight: 600; font-size: 14px; color: #1a2332; margin-bottom: 10px; }
+        
+        /* ===== QUICK LINKS SECTION ===== */
+        .quick-links-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
+        .quick-link-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: 0.3s; text-decoration: none; display: block; border-left: 5px solid #0d6efd; }
+        .quick-link-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
+        .quick-link-card .card-icon { font-size: 32px; margin-bottom: 8px; display: block; }
+        .quick-link-card .card-title { font-size: 16px; font-weight: 700; color: #1a2332; margin-bottom: 4px; }
+        .quick-link-card .card-desc { font-size: 12px; color: #6c7a8d; margin-bottom: 0; }
+        .quick-link-card .card-badge { font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: 600; display: inline-block; margin-top: 6px; }
+        
+        .quick-link-card.color-1 { border-left-color: #e74c3c; }
+        .quick-link-card.color-2 { border-left-color: #28a745; }
+        .quick-link-card.color-3 { border-left-color: #0d6efd; }
+        .quick-link-card.color-4 { border-left-color: #ffc107; }
+        .quick-link-card.color-5 { border-left-color: #6f42c1; }
+        .quick-link-card.color-6 { border-left-color: #fd7e14; }
+        .quick-link-card.color-7 { border-left-color: #20c997; }
+        .quick-link-card.color-8 { border-left-color: #dc3545; }
+        
+        .quick-link-card .card-icon { font-size: 28px; }
+        
+        /* ===== SECTION HEADER ===== */
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .section-header h5 { font-weight: 700; color: #1a2332; margin: 0; }
+        .section-header .badge-count { font-size: 12px; padding: 4px 14px; border-radius: 20px; }
+        
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) { 
+            .sidebar { transform: translateX(-100%); width: 280px; } 
+            .sidebar.open { transform: translateX(0); } 
+            .main-content { margin-left: 0; } 
+            .sidebar-toggle { display: block; } 
+            .filter-stats { margin-left: 0; width: 100%; justify-content: flex-start; flex-wrap: wrap; } 
+            .header { padding: 8px 16px; flex-wrap: wrap; gap: 8px; } 
+            .header-right .clock-section { font-size: 12px; padding: 2px 10px; } 
+            .content-body { padding: 14px 16px; } 
+            .stats-row { grid-template-columns: repeat(2, 1fr); } 
+            .form-row { grid-template-columns: 1fr 1fr; } 
+            .printing-form-grid { grid-template-columns: 1fr; } 
+            .quick-links-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 576px) { 
+            .stats-row { grid-template-columns: 1fr; } 
+            .form-row { grid-template-columns: 1fr; } 
+            .header-left .page-title { font-size: 15px; } 
+            .header-right .user-profile .user-name { display: none; } 
+            .header-right .user-profile .user-role { display: none; } 
+            .filter-bar .search-box input { width: 100px; } 
+            .printing-form-grid { grid-template-columns: 1fr; } 
+            .sub-section-tabs .tab-btn { padding: 6px 12px; font-size: 11px; }
+            .quick-links-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -242,9 +311,13 @@
             <a class="menu-item" onclick="showSection('printingProduction')">
                 <i class="bi bi-pencil"></i> Printing এন্ট্রি
             </a>
-            <!-- NEW: Printing Report -->
             <a class="menu-item" onclick="showSection('printingReport')">
                 <i class="bi bi-file-earmark-text"></i> Printing রিপোর্ট
+            </a>
+            <!-- NEW: Quick Links Section -->
+            <a class="menu-item" onclick="showSection('quickLinks')">
+                <i class="bi bi-link-45deg"></i> Quick Links
+                <span class="badge-menu">8</span>
             </a>
             <div class="menu-label">Tools</div>
             <a class="menu-item" onclick="backupData()">
@@ -303,97 +376,272 @@
         <!-- CONTENT BODY -->
         <div class="content-body">
 
+            <!-- ============================================================ -->
             <!-- DASHBOARD -->
+            <!-- ============================================================ -->
             <div id="section-dashboard">
                 <div class="stats-row">
-                    <div class="stat-card">
-                        <div class="stat-label">মোট অর্ডার</div>
-                        <div class="stat-value" id="totalOrdersStat">0</div>
-                        <div class="stat-change"><i class="bi bi-arrow-up"></i> সক্রিয়</div>
+                    <div class="stat-card pending">
+                        <div class="stat-label">📋 Pending Task</div>
+                        <div class="stat-value" id="pendingTaskStat">1,922</div>
+                        <div class="stat-change"><i class="bi bi-clock"></i> বাকি কাজ</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">সম্পন্ন অর্ডার</div>
-                        <div class="stat-value" id="completedOrdersStat">0</div>
-                        <div class="stat-change"><i class="bi bi-check-circle"></i> ডেলিভারি রেডি</div>
+                    <div class="stat-card ontime">
+                        <div class="stat-label">✅ On Time</div>
+                        <div class="stat-value" id="onTimeStat">2,957</div>
+                        <div class="stat-change"><i class="bi bi-check-circle"></i> সময়মতো সম্পন্ন</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">বাকি অর্ডার</div>
-                        <div class="stat-value" id="pendingOrdersStat">0</div>
-                        <div class="stat-change"><i class="bi bi-clock"></i> প্রোডাকশনে</div>
+                    <div class="stat-card delay">
+                        <div class="stat-label">⏳ Will be Delay</div>
+                        <div class="stat-value" id="willDelayStat">2,806</div>
+                        <div class="stat-change"><i class="bi bi-exclamation-triangle"></i> বিলম্ব হবে</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">মোট প্রোডাকশন (টন)</div>
-                        <div class="stat-value" id="totalTonStat">0.000</div>
-                        <div class="stat-change"><i class="bi bi-box"></i> আজ পর্যন্ত</div>
+                    <div class="stat-card critical">
+                        <div class="stat-label">🔥 Critical</div>
+                        <div class="stat-value" id="criticalStat">645</div>
+                        <div class="stat-change"><i class="bi bi-fire"></i> জরুরি কাজ</div>
                     </div>
-                </div>
-
-                <div class="filter-bar">
-                    <span class="filter-label"><i class="bi bi-funnel"></i> ফিল্টার:</span>
-                    <select id="excelMcFilter" onchange="renderExcelTable()">
-                        <option value="">-- সব MC --</option>
-                    </select>
-                    <div class="search-box">
-                        <i class="bi bi-search"></i>
-                        <input type="text" id="tableSearchInput" placeholder="অর্ডার বা Item খুঁজুন..." oninput="renderExcelTable()">
-                    </div>
-                    <button class="btn-reset" onclick="document.getElementById('excelMcFilter').value='';document.getElementById('tableSearchInput').value='';renderExcelTable();">
-                        <i class="bi bi-arrow-counterclockwise"></i> রিসেট
-                    </button>
-                    <div class="filter-stats">
-                        <span class="badge-total">📦 মোট: <span id="filterTotalOrders">0</span></span>
-                        <span class="badge-completed">✅ সম্পন্ন: <span id="filterCompleted">0</span></span>
-                        <span class="badge-pending">⏳ বাকি: <span id="filterPending">0</span></span>
+                    <div class="stat-card fail">
+                        <div class="stat-label">❌ Fail</div>
+                        <div class="stat-value" id="failStat">226</div>
+                        <div class="stat-change"><i class="bi bi-x-circle"></i> ব্যর্থ কাজ</div>
                     </div>
                 </div>
 
                 <div class="table-wrapper">
                     <div class="table-header">
-                        <h6><i class="bi bi-table me-2"></i>অর্ডারওয়াইজ সামারি</h6>
-                        <button class="export-btn" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel"></i> Excel ডাউনলোড</button>
+                        <h6><i class="bi bi-table me-2"></i>Efficiency - ডিপার্টমেন্ট ভিত্তিক টাস্ক স্ট্যাটাস</h6>
+                        <button class="export-btn" onclick="exportEfficiencyExcel()"><i class="bi bi-file-earmark-excel"></i> Excel ডাউনলোড</button>
                     </div>
-                    <div class="table-responsive-custom">
-                        <table class="table table-bordered table-hover" id="excelTable">
+                    <div class="table-responsive-custom" style="max-height:250px;">
+                        <table class="table table-bordered table-hover">
                             <thead>
                                 <tr>
-                                    <th rowspan="2">তারিখ</th>
-                                    <th rowspan="2">MC</th>
-                                    <th rowspan="2">অর্ডার</th>
-                                    <th rowspan="2">Acc</th>
-                                    <th rowspan="2">Item</th>
-                                    <th rowspan="2">Unit Wt</th>
-                                    <th rowspan="2">Color</th>
-                                    <th rowspan="2">Cav</th>
-                                    <th rowspan="2">CT</th>
-                                    <th rowspan="2">Capacity<br>(22h)</th>
-                                    <th rowspan="2">Demand</th>
-                                    <th rowspan="2">Due</th>
-                                    <th rowspan="2">As of Prod</th>
-                                    <th rowspan="2">Util%</th>
-                                    <th rowspan="2">LD T.Good</th>
-                                    <th colspan="6" class="sub-header">A-Shift (Day)</th>
-                                    <th colspan="6" class="sub-header">B-Shift (Night)</th>
-                                    <th rowspan="2">Prod Ton</th>
-                                    <th rowspan="2">Action</th>
-                                </tr>
-                                <tr>
-                                    <th class="sub-header">Cnt</th><th class="sub-header">Good</th><th class="sub-header">Util%</th>
-                                    <th class="sub-header">Rej</th><th class="sub-header">কারণ</th><th class="sub-header">DT</th>
-                                    <th class="sub-header">Cnt</th><th class="sub-header">Good</th><th class="sub-header">Util%</th>
-                                    <th class="sub-header">Rej</th><th class="sub-header">কারণ</th><th class="sub-header">DT</th>
+                                    <th>Department</th>
+                                    <th>Total Task</th>
+                                    <th>Pending</th>
+                                    <th>Running</th>
+                                    <th>Complete</th>
+                                    <th>Progress</th>
                                 </tr>
                             </thead>
-                            <tbody id="excelBody">
-                                <tr><td colspan="30" class="text-center text-muted py-4">লোড হচ্ছে...</td></tr>
+                            <tbody id="efficiencyBody">
+                                <tr>
+                                    <td><strong>Commercial</strong></td>
+                                    <td>452</td>
+                                    <td class="text-danger">452</td>
+                                    <td>0</td>
+                                    <td class="text-success">0</td>
+                                    <td>
+                                        <div class="progress" style="height:8px;">
+                                            <div class="progress-bar bg-danger" style="width:0%;"></div>
+                                        </div>
+                                        <span class="badge bg-danger">0%</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Design</strong></td>
+                                    <td>2</td>
+                                    <td class="text-danger">2</td>
+                                    <td>0</td>
+                                    <td class="text-success">0</td>
+                                    <td>
+                                        <div class="progress" style="height:8px;">
+                                            <div class="progress-bar bg-danger" style="width:0%;"></div>
+                                        </div>
+                                        <span class="badge bg-danger">0%</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Desk</strong></td>
+                                    <td>720</td>
+                                    <td class="text-danger">695</td>
+                                    <td class="text-warning">1</td>
+                                    <td class="text-success">24</td>
+                                    <td>
+                                        <div class="progress" style="height:8px;">
+                                            <div class="progress-bar bg-warning" style="width:3%;"></div>
+                                        </div>
+                                        <span class="badge bg-warning">3%</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>OP</strong></td>
+                                    <td>909</td>
+                                    <td class="text-danger">763</td>
+                                    <td class="text-warning">22</td>
+                                    <td class="text-success">124</td>
+                                    <td>
+                                        <div class="progress" style="height:8px;">
+                                            <div class="progress-bar bg-success" style="width:14%;"></div>
+                                        </div>
+                                        <span class="badge bg-success">14%</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Store</strong></td>
+                                    <td>28</td>
+                                    <td class="text-danger">10</td>
+                                    <td class="text-warning">1</td>
+                                    <td class="text-success">17</td>
+                                    <td>
+                                        <div class="progress" style="height:8px;">
+                                            <div class="progress-bar bg-success" style="width:61%;"></div>
+                                        </div>
+                                        <span class="badge bg-success">61%</span>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+
+                <!-- Charts Row -->
+                <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                        <div class="table-wrapper">
+                            <div class="table-header">
+                                <h6><i class="bi bi-graph-up me-2" style="color:#28a745;"></i>On Time</h6>
+                            </div>
+                            <div class="p-3 text-center" style="min-height:160px;">
+                                <div class="d-flex justify-content-center align-items-end" style="height:120px; gap:10px;">
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:35px; background:#28a745; height:90px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">3,000</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:35px; background:#28a745; height:75px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">2,500</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:35px; background:#28a745; height:60px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">2,000</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:35px; background:#28a745; height:45px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">1,500</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:35px; background:#28a745; height:30px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">1,000</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:35px; background:#28a745; height:15px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">500</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:35px; background:#6c757d; height:5px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">0</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="badge bg-success">✅ On Time: 2,957</span>
+                                    <span class="badge bg-warning ms-2">⏳ Will be Delay: 2,806</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="table-wrapper">
+                            <div class="table-header">
+                                <h6><i class="bi bi-exclamation-triangle-fill me-2" style="color:#dc3545;"></i>Critical</h6>
+                            </div>
+                            <div class="p-3 text-center" style="min-height:160px;">
+                                <div class="d-flex justify-content-center align-items-end" style="height:120px; gap:6px;">
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:100px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">700</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:85px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">600</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:70px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">500</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:55px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">400</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:40px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">300</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:25px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">200</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:30px; background:#dc3545; height:10px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">100</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:30px; background:#6c757d; height:5px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:9px; margin-top:4px; font-weight:600;">0</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="badge bg-danger">🔥 Critical: 645</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="table-wrapper">
+                            <div class="table-header">
+                                <h6><i class="bi bi-x-circle-fill me-2" style="color:#6c757d;"></i>Fail</h6>
+                            </div>
+                            <div class="p-3 text-center" style="min-height:160px;">
+                                <div class="d-flex justify-content-center align-items-end" style="height:120px; gap:4px; flex-wrap:wrap;">
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:80px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">226</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:70px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">112</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:60px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">78</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:50px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">66</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:40px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">55</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:30px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">31</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:20px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">6</span>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="chart-bar" style="width:25px; background:#6c757d; height:10px; border-radius:4px 4px 0 0;"></div>
+                                        <span style="font-size:8px; margin-top:4px; font-weight:600;">1</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="badge bg-secondary">❌ Fail: 645</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
+            <!-- ============================================================ -->
             <!-- INJECTION DEMAND -->
+            <!-- ============================================================ -->
             <div id="section-injection" style="display:none;">
-                <!-- Same as before - kept for reference -->
                 <div class="form-card">
                     <div class="form-title d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-boxes section-title-icon"></i>ইনজেকশন ডিমান্ড – নতুন অর্ডার যোগ করুন</span>
@@ -480,9 +728,10 @@
                 </div>
             </div>
 
+            <!-- ============================================================ -->
             <!-- PRODUCTION ENTRY -->
+            <!-- ============================================================ -->
             <div id="section-production" style="display:none;">
-                <!-- Same as before - kept for reference -->
                 <div class="form-card">
                     <div class="form-title d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-pencil-square section-title-icon"></i>প্রোডাকশন এন্ট্রি – শিফট ইনপুট</span>
@@ -607,9 +856,10 @@
                 </div>
             </div>
 
+            <!-- ============================================================ -->
             <!-- MC STATUS -->
+            <!-- ============================================================ -->
             <div id="section-mcstatus" style="display:none;">
-                <!-- Same as before - kept for reference -->
                 <div class="table-wrapper">
                     <div class="table-header">
                         <h6><i class="bi bi-clipboard-check me-2"></i>এমসি ভিত্তিক অর্ডার স্ট্যাটাস</h6>
@@ -658,9 +908,10 @@
                 </div>
             </div>
 
+            <!-- ============================================================ -->
             <!-- LAST DAY PROD -->
+            <!-- ============================================================ -->
             <div id="section-lastday" style="display:none;">
-                <!-- Same as before - kept for reference -->
                 <div class="table-wrapper">
                     <div class="table-header">
                         <h6><i class="bi bi-calendar-day me-2"></i>Last Day Prod Entry</h6>
@@ -704,9 +955,10 @@
                 </div>
             </div>
 
-            <!-- PRINTING DEMAND SECTION -->
+            <!-- ============================================================ -->
+            <!-- PRINTING DEMAND -->
+            <!-- ============================================================ -->
             <div id="section-printingDemand" style="display:none;">
-                <!-- Same as before - kept for reference -->
                 <div class="form-card">
                     <div class="form-title d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-printer section-title-icon"></i>Printing ডিমান্ড – নতুন Printing অর্ডার যোগ করুন</span>
@@ -786,9 +1038,10 @@
                 </div>
             </div>
 
-            <!-- PRINTING PRODUCTION ENTRY SECTION -->
+            <!-- ============================================================ -->
+            <!-- PRINTING PRODUCTION ENTRY -->
+            <!-- ============================================================ -->
             <div id="section-printingProduction" style="display:none;">
-                <!-- Same as before - kept for reference -->
                 <div class="form-card">
                     <div class="form-title d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-pencil-square section-title-icon"></i>Printing Production Entry – দৈনিক Printing ইনপুট</span>
@@ -903,7 +1156,7 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- NEW: PRINTING REPORT SECTION -->
+            <!-- PRINTING REPORT -->
             <!-- ============================================================ -->
             <div id="section-printingReport" style="display:none;">
                 <div class="form-card">
@@ -912,26 +1165,20 @@
                         <span class="badge bg-success" id="printingReportLiveStatus">🟢 লাইভ</span>
                     </div>
 
-                    <!-- Filter Bar -->
                     <div class="filter-bar" style="margin-bottom:12px;">
                         <span class="filter-label"><i class="bi bi-funnel"></i> ফিল্টার:</span>
-                        
                         <select id="printingReportMcFilter" onchange="renderPrintingReportTable()">
                             <option value="">-- সব MC --</option>
                         </select>
-                        
                         <div class="search-box">
                             <i class="bi bi-search"></i>
                             <input type="text" id="printingReportSearch" placeholder="Print Order, Item Code, Item Name..." oninput="renderPrintingReportTable()">
                         </div>
-                        
                         <input type="date" id="printingReportDateFrom" onchange="renderPrintingReportTable()" style="width:140px;">
                         <input type="date" id="printingReportDateTo" onchange="renderPrintingReportTable()" style="width:140px;">
-                        
                         <button class="btn-reset" onclick="resetPrintingReportFilters()">
                             <i class="bi bi-arrow-counterclockwise"></i> রিসেট
                         </button>
-                        
                         <div class="filter-stats">
                             <span class="badge-total">📊 মোট: <span id="printReportTotalOrders">0</span></span>
                             <span class="badge-completed">✅ সম্পন্ন: <span id="printReportCompleted">0</span></span>
@@ -940,7 +1187,6 @@
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
                     <div class="d-flex gap-2 mb-3 flex-wrap">
                         <button class="btn btn-sm btn-success" onclick="exportPrintingReportExcel()">
                             <i class="bi bi-file-earmark-excel"></i> Excel ডাউনলোড
@@ -950,7 +1196,6 @@
                         </button>
                     </div>
 
-                    <!-- Printing Report Table -->
                     <div class="table-wrapper">
                         <div class="table-header">
                             <h6><i class="bi bi-table me-2"></i>Printing Order Summary</h6>
@@ -982,9 +1227,141 @@
                 </div>
             </div>
 
+            <!-- ============================================================ -->
+            <!-- NEW: QUICK LINKS SECTION -->
+            <!-- ============================================================ -->
+            <div id="section-quickLinks" style="display:none;">
+                <div class="section-header">
+                    <h5><i class="bi bi-link-45deg me-2" style="color:#e74c3c;"></i>Quick Links - দ্রুত অ্যাক্সেস</h5>
+                    <span class="badge-count bg-primary text-white">8 টি লিংক</span>
+                </div>
+
+                <div class="quick-links-grid">
+                    <!-- 1. SFG Handover Management -->
+                    <a href="https://ariftusher1-lang.github.io/my-dashboard/handover-management.html" target="_blank" class="quick-link-card color-1">
+                        <span class="card-icon">📦</span>
+                        <div class="card-title">SFG Handover Management</div>
+                        <div class="card-desc">SFG হ্যান্ডওভার ম্যানেজমেন্ট সিস্টেম</div>
+                        <span class="card-badge bg-danger text-white">🔗 লাইভ</span>
+                    </a>
+
+                    <!-- 2. MC Running & Manpower Allocation Entry -->
+                    <a href="https://my-dashboard-a4y.pages.dev" target="_blank" class="quick-link-card color-2">
+                        <span class="card-icon">🏭</span>
+                        <div class="card-title">MC Running & Manpower</div>
+                        <div class="card-desc">MC রানিং ও ম্যানপাওয়ার অ্যালোকেশন</div>
+                        <span class="card-badge bg-success text-white">🔗 লাইভ</span>
+                    </a>
+
+                    <!-- 3. HR Entry Packaging -->
+                    <a href="https://my-dashboard-a4y.pages.dev/carton_entry" target="_blank" class="quick-link-card color-3">
+                        <span class="card-icon">📋</span>
+                        <div class="card-title">HR Entry Packaging</div>
+                        <div class="card-desc">প্যাকেজিং এইচআর এন্ট্রি</div>
+                        <span class="card-badge bg-primary text-white">🔗 লাইভ</span>
+                    </a>
+
+                    <!-- 4. Report for Packaging -->
+                    <a href="https://my-dashboard-a4y.pages.dev/carton_report" target="_blank" class="quick-link-card color-4">
+                        <span class="card-icon">📊</span>
+                        <div class="card-title">Report for Packaging</div>
+                        <div class="card-desc">প্যাকেজিং রিপোর্ট</div>
+                        <span class="card-badge bg-warning text-dark">🔗 লাইভ</span>
+                    </a>
+
+                    <!-- 5. Report For MC Running & Manpower -->
+                    <a href="https://my-dashboard-a4y.pages.dev/admin_report" target="_blank" class="quick-link-card color-5">
+                        <span class="card-icon">📈</span>
+                        <div class="card-title">MC Running & Manpower Report</div>
+                        <div class="card-desc">MC রানিং ও ম্যানপাওয়ার রিপোর্ট</div>
+                        <span class="card-badge bg-purple text-white">🔗 লাইভ</span>
+                    </a>
+
+                    <!-- 6. SFG Handover Report -->
+                    <a href="https://ariftusher1-lang.github.io/my-dashboard/handover-management.html" target="_blank" class="quick-link-card color-6">
+                        <span class="card-icon">📑</span>
+                        <div class="card-title">SFG Handover Report</div>
+                        <div class="card-desc">SFG হ্যান্ডওভার রিপোর্ট</div>
+                        <span class="card-badge bg-orange text-white">🔗 লাইভ</span>
+                    </a>
+
+                    <!-- 7. Packaging Entry Form -->
+                    <a href="https://my-dashboard-a4y.pages.dev/carton_entry" target="_blank" class="quick-link-card color-7">
+                        <span class="card-icon">📝</span>
+                        <div class="card-title">Packaging Entry Form</div>
+                        <div class="card-desc">প্যাকেজিং এন্ট্রি ফর্ম</div>
+                        <span class="card-badge bg-teal text-white">🔗 লাইভ</span>
+                    </a>
+
+                    <!-- 8. Admin Report -->
+                    <a href="https://my-dashboard-a4y.pages.dev/admin_report" target="_blank" class="quick-link-card color-8">
+                        <span class="card-icon">👨‍💼</span>
+                        <div class="card-title">Admin Report</div>
+                        <div class="card-desc">অ্যাডমিন রিপোর্ট</div>
+                        <span class="card-badge bg-danger text-white">🔗 লাইভ</span>
+                    </a>
+                </div>
+
+                <!-- Quick Links Stats -->
+                <div class="table-wrapper mt-2">
+                    <div class="table-header">
+                        <h6><i class="bi bi-info-circle me-2"></i>লিংক সমূহের সারাংশ</h6>
+                        <span style="font-size:12px; color:#6c7a8d;">সব লিংক লাইভ</span>
+                    </div>
+                    <div class="table-responsive-custom" style="max-height:150px;">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>লিংক নাম</th>
+                                    <th>স্ট্যাটাস</th>
+                                    <th>URL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>SFG Handover Management</td>
+                                    <td><span class="badge bg-success">✅ লাইভ</span></td>
+                                    <td style="font-size:10px;">ariftusher1-lang.github.io/my-dashboard/handover-management.html</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>MC Running & Manpower</td>
+                                    <td><span class="badge bg-success">✅ লাইভ</span></td>
+                                    <td style="font-size:10px;">my-dashboard-a4y.pages.dev</td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>HR Entry Packaging</td>
+                                    <td><span class="badge bg-success">✅ লাইভ</span></td>
+                                    <td style="font-size:10px;">my-dashboard-a4y.pages.dev/carton_entry</td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td>Report for Packaging</td>
+                                    <td><span class="badge bg-success">✅ লাইভ</span></td>
+                                    <td style="font-size:10px;">my-dashboard-a4y.pages.dev/carton_report</td>
+                                </tr>
+                                <tr>
+                                    <td>5</td>
+                                    <td>MC Running & Manpower Report</td>
+                                    <td><span class="badge bg-success">✅ লাইভ</span></td>
+                                    <td style="font-size:10px;">my-dashboard-a4y.pages.dev/admin_report</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- MODALS -->
+    <!-- ============================================================ -->
+    
     <!-- TRANSFER MODAL -->
     <div class="modal fade" id="transferModal" tabindex="-1">
         <div class="modal-dialog modal-md">
@@ -1173,10 +1550,6 @@
 
         function getPrintingOrderById(id) {
             return printingOrdersCache.find(o => o.id === id);
-        }
-
-        function getPrintingOrdersByMc(mc) {
-            return printingOrdersCache.filter(o => o.mcSl === mc);
         }
 
         function getShiftsForOrder(orderId) {
@@ -1412,7 +1785,7 @@
             if (event && event.target) {
                 event.target.closest('.menu-item').classList.add('active');
             }
-            ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday','section-printingDemand','section-printingProduction','section-printingReport'].forEach(id => {
+            ['section-dashboard','section-injection','section-production','section-mcstatus','section-lastday','section-printingDemand','section-printingProduction','section-printingReport','section-quickLinks'].forEach(id => {
                 document.getElementById(id).style.display = 'none';
             });
             const title = document.getElementById('pageTitle');
@@ -1453,6 +1826,9 @@
                 title.innerHTML = 'Printing রিপোর্ট <small>Printing অর্ডার সামারি</small>';
                 populatePrintingReportFilters();
                 renderPrintingReportTable();
+            } else if (section === 'quickLinks') {
+                document.getElementById('section-quickLinks').style.display = 'block';
+                title.innerHTML = 'Quick Links <small>দ্রুত অ্যাক্সেস</small>';
             }
             if (window.innerWidth <= 992) {
                 document.getElementById('sidebar').classList.remove('open');
@@ -1852,7 +2228,7 @@
         }
 
         // ============================================================
-        //  PRINTING REPORT TABLE RENDER (NEW)
+        //  PRINTING REPORT TABLE RENDER
         // ============================================================
         function renderPrintingReportTable() {
             const orders = getPrintingOrders();
@@ -1862,13 +2238,7 @@
             const dateTo = document.getElementById('printingReportDateTo').value;
 
             let filteredOrders = orders;
-            
-            // MC Filter
-            if (mcFilter) {
-                filteredOrders = filteredOrders.filter(o => o.mcSl === mcFilter);
-            }
-            
-            // Search Filter
+            if (mcFilter) filteredOrders = filteredOrders.filter(o => o.mcSl === mcFilter);
             if (searchTerm) {
                 filteredOrders = filteredOrders.filter(o =>
                     (o.printOrder || '').toLowerCase().includes(searchTerm) ||
@@ -1876,13 +2246,10 @@
                     (o.itemName || '').toLowerCase().includes(searchTerm)
                 );
             }
-            
-            // Date Filter - only show orders that have entries within date range
             if (dateFrom || dateTo) {
                 filteredOrders = filteredOrders.filter(o => {
                     const entries = getPrintingProdForOrder(o.id);
                     if (entries.length === 0) return false;
-                    
                     let hasEntryInRange = false;
                     entries.forEach(e => {
                         if (dateFrom && e.date < dateFrom) return;
@@ -1893,10 +2260,8 @@
                 });
             }
 
-            // Calculate stats
             let totalOrders = filteredOrders.length;
             let completed = 0, pending = 0, partial = 0;
-            
             filteredOrders.forEach(o => {
                 const status = getPrintingStatus(o.id);
                 if (status === 'Completed') completed++;
@@ -1922,20 +2287,11 @@
                 const due = getPrintingDue(order.id);
                 const status = getPrintingStatus(order.id);
                 
-                let statusClass = '';
-                let statusText = '';
-                if (status === 'Completed') {
-                    statusClass = 'status-completed-print';
-                    statusText = '✅ সম্পন্ন';
-                } else if (status === 'Pending') {
-                    statusClass = 'status-pending-print';
-                    statusText = '⏳ বাকি';
-                } else {
-                    statusClass = 'status-partial-print';
-                    statusText = '🔄 পার্শিয়াল';
-                }
+                let statusClass = '', statusText = '';
+                if (status === 'Completed') { statusClass = 'status-completed-print'; statusText = '✅ সম্পন্ন'; }
+                else if (status === 'Pending') { statusClass = 'status-pending-print'; statusText = '⏳ বাকি'; }
+                else { statusClass = 'status-partial-print'; statusText = '🔄 পার্শিয়াল'; }
                 
-                // Get last update date
                 const entries = getPrintingProdForOrder(order.id);
                 let lastUpdate = '-';
                 if (entries.length > 0) {
@@ -1961,23 +2317,34 @@
         }
 
         // ============================================================
+        //  EXPORT EFFICIENCY EXCEL
+        // ============================================================
+        function exportEfficiencyExcel() {
+            const data = [
+                { Department: 'Commercial', 'Total Task': 452, Pending: 452, Running: 0, Complete: 0 },
+                { Department: 'Design', 'Total Task': 2, Pending: 2, Running: 0, Complete: 0 },
+                { Department: 'Desk', 'Total Task': 720, Pending: 695, Running: 1, Complete: 24 },
+                { Department: 'OP', 'Total Task': 909, Pending: 763, Running: 22, Complete: 124 },
+                { Department: 'Store', 'Total Task': 28, Pending: 10, Running: 1, Complete: 17 }
+            ];
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'Efficiency');
+            XLSX.writeFile(wb, 'Efficiency_Report.xlsx');
+            showToast('✅ Efficiency Report Excel ডাউনলোড হয়েছে!', 'success', 3000);
+        }
+
+        // ============================================================
         //  PRINTING REPORT FILTERS
         // ============================================================
         function populatePrintingReportFilters() {
             const orders = getPrintingOrders();
             const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
-            
             const mcSelect = document.getElementById('printingReportMcFilter');
             const currentVal = mcSelect.value;
             mcSelect.innerHTML = '<option value="">-- সব MC --</option>';
-            uniqueMCs.forEach(mc => {
-                mcSelect.innerHTML += `<option value="${mc}">${mc}</option>`;
-            });
-            if (currentVal && uniqueMCs.includes(currentVal)) {
-                mcSelect.value = currentVal;
-            }
-            
-            // Set default dates (last 30 days)
+            uniqueMCs.forEach(mc => { mcSelect.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            if (currentVal && uniqueMCs.includes(currentVal)) { mcSelect.value = currentVal; }
             const now = new Date();
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(now.getDate() - 30);
@@ -2000,7 +2367,6 @@
             const orders = getPrintingOrders();
             const mcFilter = document.getElementById('printingReportMcFilter').value;
             const searchTerm = document.getElementById('printingReportSearch').value.toLowerCase().trim();
-            
             let filteredOrders = orders;
             if (mcFilter) filteredOrders = filteredOrders.filter(o => o.mcSl === mcFilter);
             if (searchTerm) {
@@ -2010,12 +2376,7 @@
                     (o.itemName || '').toLowerCase().includes(searchTerm)
                 );
             }
-            
-            if (filteredOrders.length === 0) {
-                alert('কোনো ডেটা নেই!');
-                return;
-            }
-            
+            if (filteredOrders.length === 0) { alert('কোনো ডেটা নেই!'); return; }
             const data = filteredOrders.map(order => {
                 const asOf = getPrintingAsOf(order.id);
                 const due = getPrintingDue(order.id);
@@ -2033,7 +2394,6 @@
                     'Status': status
                 };
             });
-            
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(data);
             XLSX.utils.book_append_sheet(wb, ws, 'PrintingReport');
@@ -2050,32 +2410,19 @@
                 alert('প্রিন্ট করার মতো কোনো ডেটা নেই!');
                 return;
             }
-            
             const win = window.open('', '_blank');
             win.document.write(`
                 <html><head><title>Printing Report</title>
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
-                <style>
-                    body{padding:20px;}
-                    .table{font-size:11px;}
-                    .table th{background:#f8f9fa; font-size:10px;}
-                    .table td{font-size:10px;}
-                    .status-completed-print{background:#d4edda;color:#155724;padding:2px 10px;border-radius:12px;font-weight:600;font-size:10px;}
-                    .status-pending-print{background:#f8d7da;color:#721c24;padding:2px 10px;border-radius:12px;font-weight:600;font-size:10px;}
-                    .status-partial-print{background:#fff3cd;color:#856404;padding:2px 10px;border-radius:12px;font-weight:600;font-size:10px;}
-                    .print-header{text-align:center;margin-bottom:20px;}
-                    .print-header h3{color:#1a2332;}
-                    .print-header small{color:#6c7a8d;}
-                </style>
-                </head><body>
-                <div class="print-header">
-                    <h3>📊 Printing রিপোর্ট</h3>
-                    <small>প্রিন্টের তারিখ: ${new Date().toLocaleString()}</small>
-                </div>
+                <style>body{padding:20px;}.table{font-size:11px;}.table th{background:#f8f9fa;font-size:10px;}.table td{font-size:10px;}
+                .status-completed-print{background:#d4edda;color:#155724;padding:2px 10px;border-radius:12px;font-weight:600;font-size:10px;}
+                .status-pending-print{background:#f8d7da;color:#721c24;padding:2px 10px;border-radius:12px;font-weight:600;font-size:10px;}
+                .status-partial-print{background:#fff3cd;color:#856404;padding:2px 10px;border-radius:12px;font-weight:600;font-size:10px;}
+                .print-header{text-align:center;margin-bottom:20px;}.print-header h3{color:#1a2332;}.print-header small{color:#6c7a8d;}
+                </style></head><body>
+                <div class="print-header"><h3>📊 Printing রিপোর্ট</h3><small>প্রিন্টের তারিখ: ${new Date().toLocaleString()}</small></div>
                 ${content}
-                <script>
-                    window.onload = function() { window.print(); window.close(); }
-                <\/script>
+                <script>window.onload = function() { window.print(); window.close(); }<\/script>
                 </body></html>
             `);
             win.document.close();
@@ -2375,10 +2722,8 @@
         // ============================================================
         function deleteOrder(id) {
             if (!confirm('এই অর্ডার ও সব শিফট ডেটা মুছবেন?')) return;
-            
             const shiftsToDelete = getShiftsForOrder(id);
             const promises = shiftsToDelete.map(s => deleteShiftFromFirebase(s.id));
-            
             Promise.all(promises).then(() => {
                 return deleteOrderFromFirebase(id);
             }).then(() => {
@@ -2389,7 +2734,6 @@
 
         function deleteShift(shiftId) {
             if (!confirm('এই শিফট এন্ট্রি মুছে ফেলবেন?')) return;
-            
             deleteShiftFromFirebase(shiftId).then(() => {
                 refreshAll();
                 showToast('✅ শিফট এন্ট্রি মুছে ফেলা হয়েছে।', 'success', 3000);
@@ -2398,7 +2742,6 @@
 
         function deleteAllOrders() {
             if (!confirm('সতর্কতা: সমস্ত অর্ডার ও শিফট ডেটা মুছে ফেলা হবে। আপনি কি নিশ্চিত?')) return;
-            
             Promise.all([
                 deleteAllOrdersFromFirebase(),
                 deleteAllShiftsFromFirebase()
@@ -2410,7 +2753,6 @@
 
         function deleteAllPrintingOrders() {
             if (!confirm('সতর্কতা: সমস্ত Printing অর্ডার ও Production ডেটা মুছে ফেলা হবে। আপনি কি নিশ্চিত?')) return;
-            
             Promise.all([
                 deleteAllPrintingOrdersFromFirebase(),
                 deleteAllPrintingProdFromFirebase()
@@ -2431,7 +2773,6 @@
                 printingProd: getPrintingProd(),
                 exportedAt: new Date().toISOString()
             };
-            
             backupDataToFirebase(data).then(() => {
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -2456,7 +2797,6 @@
                         return;
                     }
                     if (!confirm('বর্তমান ডেটা মুছে নতুন ডেটা রিস্টোর করতে চান?')) return;
-                    
                     Promise.all([
                         deleteAllOrdersFromFirebase(),
                         deleteAllShiftsFromFirebase(),
@@ -2581,16 +2921,8 @@
         const fileInput = document.getElementById('fileInput');
 
         dropZone.addEventListener('click', () => fileInput.click());
-
-        dropZone.addEventListener('dragover', e => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
         dropZone.addEventListener('drop', e => {
             e.preventDefault();
             dropZone.classList.remove('dragover');
@@ -2599,11 +2931,8 @@
                 handleFile(e.dataTransfer.files[0]);
             }
         });
-
         fileInput.addEventListener('change', e => {
-            if (e.target.files.length) {
-                handleFile(e.target.files[0]);
-            }
+            if (e.target.files.length) { handleFile(e.target.files[0]); }
         });
 
         function handleFile(file) {
@@ -2614,44 +2943,29 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                    
-                    if (jsonData.length === 0) {
-                        alert('⚠️ ফাইল খালি!');
-                        return;
-                    }
-
+                    if (jsonData.length === 0) { alert('⚠️ ফাইল খালি!'); return; }
                     const firstRow = jsonData[0];
                     const expectedColumns = ['MC SL', 'Order Name', 'Acc Code', 'Item Name', 'Unit Wt', 
                                             'Logo Symble', 'Origin', 'SCM Code', 'Color', 'Cavity', 'CT', 'Demand'];
-                    
                     const actualColumns = Object.keys(firstRow);
                     const missingColumns = expectedColumns.filter(col => 
                         !actualColumns.some(actual => actual.trim().toLowerCase() === col.toLowerCase())
                     );
-                    
                     if (missingColumns.length > 0) {
                         alert(`⚠️ এই কলামগুলো খুঁজে পাওয়া যায়নি:\n${missingColumns.join('\n')}\n\nআপনার Excel এর কলাম নাম চেক করুন।`);
                         return;
                     }
-                    
                     const getVal = (row, key) => {
                         for (let k in row) {
-                            if (k.trim().toLowerCase() === key.toLowerCase()) {
-                                return row[k];
-                            }
+                            if (k.trim().toLowerCase() === key.toLowerCase()) { return row[k]; }
                         }
                         return undefined;
                     };
-                    
                     importedData = jsonData.map((row, index) => {
                         const mcSl = (getVal(row, 'MC SL') || '').toString().trim();
                         const orderName = (getVal(row, 'Order Name') || '').toString().trim();
                         const demand = parseInt(getVal(row, 'Demand')) || 0;
-                        
-                        if (!mcSl || !orderName || demand === 0) {
-                            return null;
-                        }
-                        
+                        if (!mcSl || !orderName || demand === 0) { return null; }
                         return {
                             mcSl: mcSl,
                             orderName: orderName,
@@ -2667,20 +2981,16 @@
                             demand: demand,
                         };
                     }).filter(d => d !== null);
-                    
                     if (importedData.length === 0) {
                         alert('⚠️ কোনো বৈধ ডেটা পাওয়া যায়নি! Excel ফাইল চেক করুন।');
                         return;
                     }
-                    
                     const preview = document.getElementById('importPreview');
                     preview.style.display = 'block';
                     document.getElementById('importPreviewBody').innerHTML = importedData.map(d =>
                         `<tr><td>${d.mcSl}</td><td>${d.orderName}</td><td>${d.demand}</td></tr>`
                     ).join('');
-                    
                     showToast(`✅ ${importedData.length} টি ডেটা পাওয়া গেছে!`, 'success', 3000);
-                    
                 } catch (err) {
                     alert('❌ ত্রুটি: ' + err.message);
                 }
@@ -2700,17 +3010,12 @@
                 alert('⚠️ ডেটা নেই! আগে Excel ফাইল সিলেক্ট করুন।');
                 return;
             }
-            
-            let added = 0;
-            let skipped = 0;
-            const promises = [];
-            
+            let added = 0, skipped = 0, promises = [];
             importedData.forEach((d, index) => {
                 const exists = ordersCache.some(o => 
                     o.mcSl.toLowerCase() === d.mcSl.toLowerCase() && 
                     o.orderName.toLowerCase() === d.orderName.toLowerCase()
                 );
-                
                 if (!exists) {
                     const cap = Math.round((3600 / (d.ct || 1)) * (d.cavity || 1) * 12);
                     const order = {
@@ -2730,33 +3035,24 @@
                         capNight: cap,
                         demand: d.demand,
                     };
-                    
                     promises.push(saveOrderToFirebase(order));
                     added++;
-                } else {
-                    skipped++;
-                }
+                } else { skipped++; }
             });
-            
             if (added === 0) {
                 alert(`✅ সব ${skipped} টি অর্ডার ইতিমধ্যে আছে! নতুন কিছু যোগ হয়নি।`);
                 clearImport();
                 return;
             }
-            
             showToast(`⏳ ${added} টি অর্ডার ইমপোর্ট হচ্ছে...`, 'info', 4000);
-            
-            Promise.all(promises)
-                .then(() => {
-                    clearImport();
-                    return refreshAll();
-                })
-                .then(() => {
-                    showToast(`✅ ${added} টি অর্ডার সফলভাবে ইমপোর্ট হয়েছে! (${skipped} টি স্কিপ করা হয়েছে)`, 'success', 5000);
-                })
-                .catch(err => {
-                    alert('❌ ইমপোর্ট করতে সমস্যা: ' + err.message);
-                });
+            Promise.all(promises).then(() => {
+                clearImport();
+                return refreshAll();
+            }).then(() => {
+                showToast(`✅ ${added} টি অর্ডার সফলভাবে ইমপোর্ট হয়েছে! (${skipped} টি স্কিপ করা হয়েছে)`, 'success', 5000);
+            }).catch(err => {
+                alert('❌ ইমপোর্ট করতে সমস্যা: ' + err.message);
+            });
         }
 
         // ============================================================
@@ -2766,16 +3062,8 @@
         const printingDemandFileInput = document.getElementById('printingDemandFileInput');
 
         printingDemandDropZone.addEventListener('click', () => printingDemandFileInput.click());
-
-        printingDemandDropZone.addEventListener('dragover', e => {
-            e.preventDefault();
-            printingDemandDropZone.classList.add('dragover');
-        });
-
-        printingDemandDropZone.addEventListener('dragleave', () => {
-            printingDemandDropZone.classList.remove('dragover');
-        });
-
+        printingDemandDropZone.addEventListener('dragover', e => { e.preventDefault(); printingDemandDropZone.classList.add('dragover'); });
+        printingDemandDropZone.addEventListener('dragleave', () => { printingDemandDropZone.classList.remove('dragover'); });
         printingDemandDropZone.addEventListener('drop', e => {
             e.preventDefault();
             printingDemandDropZone.classList.remove('dragover');
@@ -2784,11 +3072,8 @@
                 handlePrintingDemandFile(e.dataTransfer.files[0]);
             }
         });
-
         printingDemandFileInput.addEventListener('change', e => {
-            if (e.target.files.length) {
-                handlePrintingDemandFile(e.target.files[0]);
-            }
+            if (e.target.files.length) { handlePrintingDemandFile(e.target.files[0]); }
         });
 
         function handlePrintingDemandFile(file) {
@@ -2799,34 +3084,23 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                    
-                    if (jsonData.length === 0) {
-                        alert('⚠️ ফাইল খালি!');
-                        return;
-                    }
-
+                    if (jsonData.length === 0) { alert('⚠️ ফাইল খালি!'); return; }
                     const firstRow = jsonData[0];
                     const expectedColumns = ['Print MC', 'Print Order', 'Item Code', 'Item Name', 'Color', 'Foil Name', 'Demand QTY', 'Cycle Time', 'Cavity'];
-                    
                     const actualColumns = Object.keys(firstRow);
                     const missingColumns = expectedColumns.filter(col => 
                         !actualColumns.some(actual => actual.trim().toLowerCase() === col.toLowerCase())
                     );
-                    
                     if (missingColumns.length > 0) {
                         alert(`⚠️ এই কলামগুলো খুঁজে পাওয়া যায়নি:\n${missingColumns.join('\n')}\n\nআপনার Excel এর কলাম নাম চেক করুন।`);
                         return;
                     }
-                    
                     const getVal = (row, key) => {
                         for (let k in row) {
-                            if (k.trim().toLowerCase() === key.toLowerCase()) {
-                                return row[k];
-                            }
+                            if (k.trim().toLowerCase() === key.toLowerCase()) { return row[k]; }
                         }
                         return undefined;
                     };
-                    
                     printingDemandImportData = jsonData.map((row, index) => {
                         const printMc = (getVal(row, 'Print MC') || '').toString().trim();
                         const printOrder = (getVal(row, 'Print Order') || '').toString().trim();
@@ -2837,11 +3111,7 @@
                         const demandQty = parseInt(getVal(row, 'Demand QTY')) || 0;
                         const cycleTime = parseInt(getVal(row, 'Cycle Time')) || 0;
                         const cavity = parseInt(getVal(row, 'Cavity')) || 1;
-                        
-                        if (!printMc || !printOrder || demandQty === 0) {
-                            return null;
-                        }
-                        
+                        if (!printMc || !printOrder || demandQty === 0) { return null; }
                         return {
                             mcSl: printMc,
                             printOrder: printOrder,
@@ -2854,20 +3124,16 @@
                             cavity: cavity || 1
                         };
                     }).filter(d => d !== null);
-                    
                     if (printingDemandImportData.length === 0) {
                         alert('⚠️ কোনো বৈধ ডেটা পাওয়া যায়নি! Excel ফাইল চেক করুন।');
                         return;
                     }
-                    
                     const preview = document.getElementById('printingDemandImportPreview');
                     preview.style.display = 'block';
                     document.getElementById('printingDemandImportBody').innerHTML = printingDemandImportData.map(d =>
                         `<tr><td>${d.mcSl}</td><td>${d.printOrder}</td><td>${d.itemCode}</td><td>${d.itemName}</td><td>${d.color}</td><td>${d.foilName}</td><td>${d.demand}</td><td>${d.cycleTime}</td><td>${d.cavity}</td></tr>`
                     ).join('');
-                    
                     showToast(`✅ ${printingDemandImportData.length} টি Printing ডেটা পাওয়া গেছে!`, 'success', 3000);
-                    
                 } catch (err) {
                     alert('❌ ত্রুটি: ' + err.message);
                 }
@@ -2887,17 +3153,12 @@
                 alert('⚠️ ডেটা নেই! আগে Excel ফাইল সিলেক্ট করুন।');
                 return;
             }
-            
-            let added = 0;
-            let skipped = 0;
-            const promises = [];
-            
+            let added = 0, skipped = 0, promises = [];
             printingDemandImportData.forEach((d, index) => {
                 const exists = printingOrdersCache.some(o => 
                     o.mcSl.toLowerCase() === d.mcSl.toLowerCase() && 
                     o.printOrder.toLowerCase() === d.printOrder.toLowerCase()
                 );
-                
                 if (!exists) {
                     const cap = Math.round((3600 / (d.cycleTime || 1)) * (d.cavity || 1) * 12);
                     const order = {
@@ -2913,33 +3174,24 @@
                         demand: d.demand,
                         capacity: cap
                     };
-                    
                     promises.push(savePrintingOrderToFirebase(order));
                     added++;
-                } else {
-                    skipped++;
-                }
+                } else { skipped++; }
             });
-            
             if (added === 0) {
                 alert(`✅ সব ${skipped} টি Printing অর্ডার ইতিমধ্যে আছে! নতুন কিছু যোগ হয়নি।`);
                 clearPrintingDemandImport();
                 return;
             }
-            
             showToast(`⏳ ${added} টি Printing অর্ডার ইমপোর্ট হচ্ছে...`, 'info', 4000);
-            
-            Promise.all(promises)
-                .then(() => {
-                    clearPrintingDemandImport();
-                    return refreshAll();
-                })
-                .then(() => {
-                    showToast(`✅ ${added} টি Printing অর্ডার সফলভাবে ইমপোর্ট হয়েছে! (${skipped} টি স্কিপ করা হয়েছে)`, 'success', 5000);
-                })
-                .catch(err => {
-                    alert('❌ ইমপোর্ট করতে সমস্যা: ' + err.message);
-                });
+            Promise.all(promises).then(() => {
+                clearPrintingDemandImport();
+                return refreshAll();
+            }).then(() => {
+                showToast(`✅ ${added} টি Printing অর্ডার সফলভাবে ইমপোর্ট হয়েছে! (${skipped} টি স্কিপ করা হয়েছে)`, 'success', 5000);
+            }).catch(err => {
+                alert('❌ ইমপোর্ট করতে সমস্যা: ' + err.message);
+            });
         }
 
         // ============================================================
@@ -2968,7 +3220,6 @@
                 alert('MC, অর্ডার নাম ও Demand দিন!');
                 return;
             }
-            
             saveOrderToFirebase(order).then(() => {
                 this.reset();
                 document.getElementById('capDay').value = '';
@@ -2983,18 +3234,14 @@
         // ============================================================
         document.getElementById('addPrintingOrderForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const mcSl = document.getElementById('printMcSl').value.trim();
             const printOrder = document.getElementById('printOrderName').value.trim();
             const demand = parseInt(document.getElementById('printDemand').value) || 0;
-            
             if (!mcSl || !printOrder || demand <= 0) {
                 alert('Print MC, Print Order ও Demand দিন!');
                 return;
             }
-            
             const cap = parseInt(document.getElementById('printCapShift').value) || 0;
-            
             const order = {
                 id: genId(),
                 mcSl: mcSl,
@@ -3008,7 +3255,6 @@
                 demand: demand,
                 capacity: cap
             };
-            
             savePrintingOrderToFirebase(order).then(() => {
                 this.reset();
                 document.getElementById('printCapShift').value = '';
@@ -3024,27 +3270,21 @@
             e.preventDefault();
             const orderId = document.getElementById('shiftOrderSelect').value;
             if (!orderId) { alert('অর্ডার সিলেক্ট করুন!'); return; }
-
             const icName = document.getElementById('icName').value;
             if (!icName) { alert('IC Name সিলেক্ট করুন!'); return; }
-
             const date = document.getElementById('shiftDate').value;
             const shiftType = document.getElementById('shiftType').value;
             const editId = document.getElementById('editShiftId').value;
-
             if (!editId && isDuplicateShift(orderId, date, shiftType, null)) {
                 if (!confirm('⚠️ এই তারিখ ও শিফটে ইতিমধ্যে এন্ট্রি করা হয়েছে! তবুও কি সেভ করবেন?')) return;
             }
-
             const totalCounter = parseInt(document.getElementById('totalCounter').value) || 0;
             const good = parseInt(document.getElementById('counterGood').value) || 0;
             const reject = parseInt(document.getElementById('counterReject').value) || 0;
-            
             if (good + reject !== totalCounter) {
                 alert('⚠️ Good + Reject অবশ্যই Total Counter এর সমান হতে হবে!');
                 return;
             }
-
             const shiftData = {
                 id: editId || genId(),
                 orderId: orderId,
@@ -3062,12 +3302,10 @@
                 capacityShift: parseInt(document.getElementById('capacityShift').value) || 0,
                 utilizationPercent: parseFloat(document.getElementById('utilizationPercent').value) || 0,
             };
-
             if (shiftData.totalCounter === 0 && shiftData.good === 0) {
                 alert('Counter বা Good দিন!');
                 return;
             }
-
             saveShiftToFirebase(shiftData).then(() => {
                 if (editId) {
                     showToast('✏️ শিফট এন্ট্রি আপডেট করা হয়েছে!', 'success', 3000);
@@ -3080,7 +3318,6 @@
                 } else {
                     showToast(`✅ ${shiftData.shiftType} সেভ! (IC: ${shiftData.icName})`, 'success', 3000);
                 }
-
                 document.getElementById('counterCycle').value = 0;
                 document.getElementById('counterGood').value = 0;
                 document.getElementById('counterReject').value = 0;
@@ -3088,7 +3325,6 @@
                 document.getElementById('icName').value = '';
                 calculateShift();
                 setDefaultDateAndShift();
-
                 refreshAll();
                 const order = getOrderById(orderId);
                 if (order) {
@@ -3102,34 +3338,25 @@
         // ============================================================
         document.getElementById('printProductionForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const itemId = document.getElementById('printProdItemCodeSelect').value;
             if (!itemId) { alert('Item Code সিলেক্ট করুন!'); return; }
-
             const date = document.getElementById('printProdDate').value;
             const shift = document.getElementById('printProdShift').value;
             const editId = document.getElementById('editPrintProdId').value;
-
             if (!editId && isDuplicatePrintProd(itemId, date, shift, null)) {
                 if (!confirm('⚠️ এই তারিখ ও শিফটে ইতিমধ্যে এন্ট্রি করা হয়েছে! তবুও কি সেভ করবেন?')) return;
             }
-
             const good = parseInt(document.getElementById('printProdGood').value) || 0;
             const reject = parseInt(document.getElementById('printProdReject').value) || 0;
             const total = good + reject;
-            
             if (good === 0 && reject === 0) {
                 alert('Print QTY দিন!');
                 return;
             }
-
             const order = getPrintingOrderById(itemId);
             const capacity = parseInt(document.getElementById('printProdCapacity').value) || 0;
             let util = 0;
-            if (capacity > 0 && total > 0) {
-                util = (total / capacity) * 100;
-            }
-
+            if (capacity > 0 && total > 0) { util = (total / capacity) * 100; }
             const entry = {
                 id: editId || genId(),
                 printOrderId: itemId,
@@ -3152,7 +3379,6 @@
                 shift: shift,
                 timestamp: Date.now()
             };
-
             savePrintingProdToFirebase(entry).then(() => {
                 if (editId) {
                     showToast('✏️ Printing Production এন্ট্রি আপডেট করা হয়েছে!', 'success', 3000);
@@ -3165,12 +3391,10 @@
                 } else {
                     showToast(`✅ Printing Production সেভ! (${shift})`, 'success', 3000);
                 }
-
                 document.getElementById('printProdGood').value = '';
                 document.getElementById('printProdReject').value = '';
                 document.getElementById('printProdRejectReason').value = '';
                 document.getElementById('printProdUtilization').value = '';
-                
                 updatePrintAsOfDue();
                 setDefaultDateAndShift();
                 refreshAll();
@@ -3219,7 +3443,6 @@
             document.getElementById('transferDemand').innerText = parseInt(order.demand).toLocaleString() || '0';
             document.getElementById('transferTotalGood').innerText = getTotalGood(order.id).toLocaleString() || '0';
             document.getElementById('transferDueProd').innerText = getDueProduction(order).toLocaleString() || '0';
-
             const allMCs = [...new Set(getOrders().map(o => o.mcSl))];
             const targetSelect = document.getElementById('transferTargetMc');
             targetSelect.innerHTML = '<option value="">-- সিলেক্ট --</option>';
@@ -3232,10 +3455,8 @@
             const orderId = document.getElementById('transferOrderId').value;
             const newMc = document.getElementById('transferTargetMc').value;
             if (!newMc) { alert('দয়া করে একটি MC সিলেক্ট করুন!'); return; }
-            
             const order = getOrderById(orderId);
             if (!order) { alert('অর্ডার খুঁজে পাওয়া যায়নি!'); return; }
-            
             order.mcSl = newMc;
             saveOrderToFirebase(order).then(() => {
                 bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
@@ -3254,7 +3475,6 @@
                 const isCompleted = due <= 0;
                 const isNear = isNearingCompletion(order) && !isCompleted;
                 const orderKey = order.id;
-
                 if (isCompleted && !notifiedOrders.has(orderKey + '_completed')) {
                     notifiedOrders.add(orderKey + '_completed');
                     showToast(`✅ ${order.mcSl} - ${order.orderName} অর্ডার সম্পন্ন হয়েছে!`, 'success', 6000);
@@ -3275,13 +3495,9 @@
                 renderMcStatus();
                 renderLastDay();
                 renderPrintingReportTable();
-                if (!document.getElementById('shiftDate').value) {
-                    setDefaultDateAndShift();
-                }
+                if (!document.getElementById('shiftDate').value) { setDefaultDateAndShift(); }
                 const itemId = document.getElementById('printProdItemCodeSelect').value;
-                if (itemId) {
-                    updatePrintAsOfDue();
-                }
+                if (itemId) { updatePrintAsOfDue(); }
                 checkAndNotify();
             });
         }
@@ -3300,7 +3516,6 @@
             ['shiftCavity','shiftCt','counterCycle'].forEach(id => {
                 document.getElementById(id).addEventListener('input', calculateShift);
             });
-            
             document.getElementById('counterGood').addEventListener('input', calculateShift);
             document.getElementById('counterReject').addEventListener('input', calculateShift);
 
@@ -3310,7 +3525,6 @@
             document.getElementById('printProdGood').addEventListener('input', calcPrintProdUtil);
             document.getElementById('printProdReject').addEventListener('input', calcPrintProdUtil);
             
-            // Printing Report filter listeners
             document.getElementById('printingReportMcFilter').addEventListener('change', renderPrintingReportTable);
             document.getElementById('printingReportSearch').addEventListener('input', renderPrintingReportTable);
             document.getElementById('printingReportDateFrom').addEventListener('change', renderPrintingReportTable);
