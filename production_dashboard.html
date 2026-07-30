@@ -265,28 +265,28 @@
         </div>
         <nav class="sidebar-menu">
             <div class="menu-label">Navigation</div>
-            <a class="menu-item color-dashboard active" onclick="showSection('dashboard')">
+            <a class="menu-item color-dashboard active" onclick="showSection('dashboard', this)">
                 <i class="bi bi-speedometer2"></i> ড্যাশবোর্ড
             </a>
-            <a class="menu-item color-injection" onclick="showSection('injection')">
+            <a class="menu-item color-injection" onclick="showSection('injection', this)">
                 <i class="bi bi-boxes"></i> ইনজেকশন ডিমান্ড
             </a>
-            <a class="menu-item color-production" onclick="showSection('production')">
+            <a class="menu-item color-production" onclick="showSection('production', this)">
                 <i class="bi bi-pencil-square"></i> প্রোডাকশন এন্ট্রি
             </a>
-            <a class="menu-item color-mcstatus" onclick="showSection('mcstatus')">
+            <a class="menu-item color-mcstatus" onclick="showSection('mcstatus', this)">
                 <i class="bi bi-clipboard-check"></i> এমসি স্ট্যাটাস
             </a>
-            <a class="menu-item color-lastday" onclick="showSection('lastday')">
+            <a class="menu-item color-lastday" onclick="showSection('lastday', this)">
                 <i class="bi bi-calendar-day"></i> Last Day Prod
             </a>
-            <a class="menu-item color-printing" onclick="showSection('printingDemand')">
+            <a class="menu-item color-printing" onclick="showSection('printingDemand', this)">
                 <i class="bi bi-printer"></i> Printing ডিমান্ড
             </a>
-            <a class="menu-item color-printing" onclick="showSection('printingProduction')">
+            <a class="menu-item color-printing" onclick="showSection('printingProduction', this)">
                 <i class="bi bi-pencil"></i> Printing এন্ট্রি
             </a>
-            <a class="menu-item color-quicklinks" onclick="showSection('quickLinks')">
+            <a class="menu-item color-quicklinks" onclick="showSection('quickLinks', this)">
                 <i class="bi bi-link-45deg"></i> 🔗 Quick Links
                 <span class="badge-menu">10</span>
             </a>
@@ -1256,21 +1256,28 @@
         updateClockAndShift();
 
         // ============================================================
-        // NAVIGATION
+        // NAVIGATION (*** FIXED HERE ***)
         // ============================================================
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('overlay').classList.toggle('show');
         }
 
-        function showSection(section) {
+        function showSection(section, element) {
+            // Fix: Handle active menu item properly
             document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => el.classList.remove('active'));
-            if (event && event.target) {
+            if (element && element.closest) {
+                element.closest('.menu-item').classList.add('active');
+            } else if (event && event.target) {
                 event.target.closest('.menu-item').classList.add('active');
             }
+
+            // Fix: Hide all sections safely
             ['section-dashboard','section-quickLinks','section-injection','section-production','section-mcstatus','section-lastday','section-printingDemand','section-printingProduction'].forEach(id => {
-                document.getElementById(id).style.display = 'none';
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
             });
+
             const title = document.getElementById('pageTitle');
             if (section === 'dashboard') {
                 document.getElementById('section-dashboard').style.display = 'block';
@@ -1665,8 +1672,10 @@
         }
 
         function resetPrintReportFilters() {
-            document.getElementById('printReportMcFilter').value = '';
-            document.getElementById('printReportStatusFilter').value = '';
+            const mcFilter = document.getElementById('printReportMcFilter');
+            const statusFilter = document.getElementById('printReportStatusFilter');
+            if(mcFilter) mcFilter.value = '';
+            if(statusFilter) statusFilter.value = '';
             renderPrintingReport();
         }
 
@@ -1674,6 +1683,10 @@
             console.log('🖨️ renderPrintingReport() called');
             const orders = getPrintingOrders();
             console.log('Printing Orders count:', orders.length);
+            
+            // *** FIX: Safely verify element exists before accessing ****
+            const mcFilterEl = document.getElementById('printReportMcFilter');
+            const statusFilterEl = document.getElementById('printReportStatusFilter');
             
             if (!orders || orders.length === 0) {
                 const tbody = document.getElementById('printingReportBody');
@@ -1687,8 +1700,8 @@
                 return;
             }
 
-            const mcFilter = document.getElementById('printReportMcFilter')?.value || '';
-            const statusFilter = document.getElementById('printReportStatusFilter')?.value || '';
+            const mcFilter = mcFilterEl ? mcFilterEl.value : '';
+            const statusFilter = statusFilterEl ? statusFilterEl.value : '';
 
             let filtered = orders;
             if (mcFilter) filtered = filtered.filter(o => o.mcSl === mcFilter);
