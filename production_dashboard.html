@@ -394,7 +394,8 @@
                             <span class="card-badge bg-purple text-white">🔗 লাইভ</span>
                         </a>
 
-                        <a href="#" class="quick-link-card color-6" onclick="showSection('printingDemand')">
+                        <!-- ===== PRINTING ORDER SUMMARY - FIXED ===== -->
+                        <a href="#" class="quick-link-card color-6" onclick="showSection('printingDemand'); return false;">
                             <span class="card-icon">🖨️</span>
                             <div class="card-title">Printing অর্ডার সামারি</div>
                             <div class="card-desc">Printing অর্ডার সামারি দেখুন</div>
@@ -473,7 +474,7 @@
                                 <tr><td>3</td><td>HR Entry Packaging</td><td><span class="badge bg-success">✅ লাইভ</span></td><td style="font-size:10px;">my-dashboard-a4y.pages.dev/carton_entry</td></tr>
                                 <tr><td>4</td><td>Report for Packaging</td><td><span class="badge bg-success">✅ লাইভ</span></td><td style="font-size:10px;">my-dashboard-a4y.pages.dev/carton_report</td></tr>
                                 <tr><td>5</td><td>MC Running Report</td><td><span class="badge bg-success">✅ লাইভ</span></td><td style="font-size:10px;">my-dashboard-a4y.pages.dev/admin_report</td></tr>
-                                <tr><td>6</td><td>Printing অর্ডার সামারি</td><td><span class="badge bg-info">🔄 ইন্টারনাল</span></td><td style="font-size:10px;">Printing ডিমান্ড সেকশনে দেখুন</td></tr>
+                                <tr><td>6</td><td>Printing অর্ডার সামারি</td><td><span class="badge bg-success">✅ লাইভ</span></td><td style="font-size:10px;">Printing ডিমান্ড সেকশনে দেখুন</td></tr>
                                 <tr><td>7</td><td>Packaging Entry Form</td><td><span class="badge bg-success">✅ লাইভ</span></td><td style="font-size:10px;">my-dashboard-a4y.pages.dev/carton_entry</td></tr>
                                 <tr><td>8</td><td>Admin Report</td><td><span class="badge bg-success">✅ লাইভ</span></td><td style="font-size:10px;">my-dashboard-a4y.pages.dev/admin_report</td></tr>
                                 <tr><td>9</td><td>Accessories Record & Monitoring</td><td><span class="badge bg-success">✅ লাইভ</span></td><td style="font-size:10px;">ariftusher1-lang.github.io/my-dashboard/stock-management.html</td></tr>
@@ -1661,7 +1662,7 @@
             if (!select) return;
             const uniqueMCs = [...new Set(orders.map(o => o.mcSl))];
             select.innerHTML = '<option value="">-- সব MC --</option>';
-            uniqueMCs.forEach(mc => { select.innerHTML += `<option value="${mc}">${mc}</option>`; });
+            uniqueMCs.forEach(mc => { if (mc) select.innerHTML += `<option value="${mc}">${mc}</option>`; });
         }
 
         function resetPrintReportFilters() {
@@ -1671,12 +1672,11 @@
         }
 
         function renderPrintingReport() {
+            console.log('🖨️ renderPrintingReport() called');
             const orders = getPrintingOrders();
-            
-            // Debug: Check if orders exist
             console.log('Printing Orders:', orders);
             
-            if (orders.length === 0) {
+            if (!orders || orders.length === 0) {
                 const tbody = document.getElementById('printingReportBody');
                 if (tbody) {
                     tbody.innerHTML = `<tr><td colspan="12" class="text-center text-muted py-4">কোনো Printing অর্ডার নেই। প্রথমে একটি Printing অর্ডার যোগ করুন।</td></tr>`;
@@ -1698,11 +1698,13 @@
             const uniqueOrders = [];
             const orderNames = new Set();
             filtered.forEach(o => {
-                if (!orderNames.has(o.printOrder)) {
+                if (o.printOrder && !orderNames.has(o.printOrder)) {
                     orderNames.add(o.printOrder);
                     uniqueOrders.push(o);
                 }
             });
+
+            console.log('Unique Orders:', uniqueOrders);
 
             const tbody = document.getElementById('printingReportBody');
             if (!tbody) return;
@@ -1760,6 +1762,8 @@
             document.getElementById('printCompletedOrders').innerText = totalCompleted;
             document.getElementById('printPendingOrders').innerText = totalPending;
             document.getElementById('printPartialOrders').innerText = totalPartial;
+            
+            console.log('Report rendered with', uniqueOrders.length, 'orders');
         }
 
         function getLastPrintingProd(orderId) {
@@ -1809,7 +1813,7 @@
             const uniqueOrders = [];
             const orderNames = new Set();
             orders.forEach(o => {
-                if (!orderNames.has(o.printOrder)) {
+                if (o.printOrder && !orderNames.has(o.printOrder)) {
                     orderNames.add(o.printOrder);
                     uniqueOrders.push(o);
                 }
@@ -2002,7 +2006,7 @@
             const uniqueOrders = [];
             const orderNames = new Set();
             orders.forEach(o => {
-                if (!orderNames.has(o.printOrder)) {
+                if (o.printOrder && !orderNames.has(o.printOrder)) {
                     orderNames.add(o.printOrder);
                     uniqueOrders.push(o);
                 }
