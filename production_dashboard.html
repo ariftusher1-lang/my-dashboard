@@ -265,28 +265,28 @@
         </div>
         <nav class="sidebar-menu">
             <div class="menu-label">Navigation</div>
-            <a class="menu-item color-dashboard active" onclick="showSection('dashboard')">
+            <a class="menu-item color-dashboard active" id="menuDashboard" onclick="showSection('dashboard', this)">
                 <i class="bi bi-speedometer2"></i> ড্যাশবোর্ড
             </a>
-            <a class="menu-item color-injection" onclick="showSection('injection')">
+            <a class="menu-item color-injection" id="menuInjection" onclick="showSection('injection', this)">
                 <i class="bi bi-boxes"></i> ইনজেকশন ডিমান্ড
             </a>
-            <a class="menu-item color-production" onclick="showSection('production')">
+            <a class="menu-item color-production" id="menuProduction" onclick="showSection('production', this)">
                 <i class="bi bi-pencil-square"></i> প্রোডাকশন এন্ট্রি
             </a>
-            <a class="menu-item color-mcstatus" onclick="showSection('mcstatus')">
+            <a class="menu-item color-mcstatus" id="menuMcstatus" onclick="showSection('mcstatus', this)">
                 <i class="bi bi-clipboard-check"></i> এমসি স্ট্যাটাস
             </a>
-            <a class="menu-item color-lastday" onclick="showSection('lastday')">
+            <a class="menu-item color-lastday" id="menuLastday" onclick="showSection('lastday', this)">
                 <i class="bi bi-calendar-day"></i> Last Day Prod
             </a>
-            <a class="menu-item color-printing" onclick="showSection('printingDemand')">
+            <a class="menu-item color-printing" id="menuPrinting" onclick="showSection('printingDemand', this)">
                 <i class="bi bi-printer"></i> Printing ডিমান্ড
             </a>
-            <a class="menu-item color-printing" onclick="showSection('printingProduction')">
+            <a class="menu-item color-printing" id="menuPrintingProd" onclick="showSection('printingProduction', this)">
                 <i class="bi bi-pencil"></i> Printing এন্ট্রি
             </a>
-            <a class="menu-item color-quicklinks" onclick="showSection('quickLinks')">
+            <a class="menu-item color-quicklinks" id="menuQuicklinks" onclick="showSection('quickLinks', this)">
                 <i class="bi bi-link-45deg"></i> 🔗 Quick Links
                 <span class="badge-menu">10</span>
             </a>
@@ -395,7 +395,7 @@
                         </a>
 
                         <!-- ===== PRINTING ORDER SUMMARY - FIXED ===== -->
-                        <a href="#" class="quick-link-card color-6" onclick="event.preventDefault(); showSection('printingDemand');">
+                        <a href="#" class="quick-link-card color-6" onclick="showSection('printingDemand', null); return false;">
                             <span class="card-icon">🖨️</span>
                             <div class="card-title">Printing অর্ডার সামারি</div>
                             <div class="card-desc">Printing অর্ডার সামারি দেখুন</div>
@@ -525,7 +525,7 @@
                             <div class="card-desc">MC রানিং রিপোর্ট</div>
                             <span class="card-badge bg-purple text-white">🔗 লাইভ</span>
                         </a>
-                        <a href="#" class="quick-link-card color-6" onclick="event.preventDefault(); showSection('printingDemand');">
+                        <a href="#" class="quick-link-card color-6" onclick="showSection('printingDemand', null); return false;">
                             <span class="card-icon">🖨️</span>
                             <div class="card-title">Printing অর্ডার সামারি</div>
                             <div class="card-desc">Printing অর্ডার সামারি দেখুন</div>
@@ -1257,19 +1257,39 @@
         updateClockAndShift();
 
         // ============================================================
-        // NAVIGATION
+        // NAVIGATION - FIXED
         // ============================================================
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('overlay').classList.toggle('show');
         }
 
-        function showSection(section) {
+        function showSection(section, menuItem) {
             console.log('📌 showSection called:', section);
             
+            // Remove active class from all menu items
             document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => el.classList.remove('active'));
-            if (window.event && window.event.target) {
-                window.event.target.closest('.menu-item').classList.add('active');
+            
+            // If menuItem is provided, add active class to it
+            if (menuItem) {
+                menuItem.classList.add('active');
+            } else {
+                // If menuItem is null, try to find and activate the corresponding menu item
+                const menuMap = {
+                    'dashboard': 'menuDashboard',
+                    'injection': 'menuInjection',
+                    'production': 'menuProduction',
+                    'mcstatus': 'menuMcstatus',
+                    'lastday': 'menuLastday',
+                    'printingDemand': 'menuPrinting',
+                    'printingProduction': 'menuPrintingProd',
+                    'quickLinks': 'menuQuicklinks'
+                };
+                const menuId = menuMap[section];
+                if (menuId) {
+                    const el = document.getElementById(menuId);
+                    if (el) el.classList.add('active');
+                }
             }
             
             ['section-dashboard','section-quickLinks','section-injection','section-production','section-mcstatus','section-lastday','section-printingDemand','section-printingProduction'].forEach(id => {
