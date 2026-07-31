@@ -265,28 +265,28 @@
         </div>
         <nav class="sidebar-menu">
             <div class="menu-label">Navigation</div>
-            <a class="menu-item color-dashboard active" onclick="showSection('dashboard', this)">
+            <a class="menu-item color-dashboard active" onclick="showSection('dashboard')">
                 <i class="bi bi-speedometer2"></i> ড্যাশবোর্ড
             </a>
-            <a class="menu-item color-injection" onclick="showSection('injection', this)">
+            <a class="menu-item color-injection" onclick="showSection('injection')">
                 <i class="bi bi-boxes"></i> ইনজেকশন ডিমান্ড
             </a>
-            <a class="menu-item color-production" onclick="showSection('production', this)">
+            <a class="menu-item color-production" onclick="showSection('production')">
                 <i class="bi bi-pencil-square"></i> প্রোডাকশন এন্ট্রি
             </a>
-            <a class="menu-item color-mcstatus" onclick="showSection('mcstatus', this)">
+            <a class="menu-item color-mcstatus" onclick="showSection('mcstatus')">
                 <i class="bi bi-clipboard-check"></i> এমসি স্ট্যাটাস
             </a>
-            <a class="menu-item color-lastday" onclick="showSection('lastday', this)">
+            <a class="menu-item color-lastday" onclick="showSection('lastday')">
                 <i class="bi bi-calendar-day"></i> Last Day Prod
             </a>
-            <a class="menu-item color-printing" onclick="showSection('printingDemand', this)">
+            <a class="menu-item color-printing" onclick="showSection('printingDemand')">
                 <i class="bi bi-printer"></i> Printing ডিমান্ড
             </a>
-            <a class="menu-item color-printing" onclick="showSection('printingProduction', this)">
+            <a class="menu-item color-printing" onclick="showSection('printingProduction')">
                 <i class="bi bi-pencil"></i> Printing এন্ট্রি
             </a>
-            <a class="menu-item color-quicklinks" onclick="showSection('quickLinks', this)">
+            <a class="menu-item color-quicklinks" onclick="showSection('quickLinks')">
                 <i class="bi bi-link-45deg"></i> 🔗 Quick Links
                 <span class="badge-menu">10</span>
             </a>
@@ -394,7 +394,8 @@
                             <span class="card-badge bg-purple text-white">🔗 লাইভ</span>
                         </a>
 
-                        <a href="#" class="quick-link-card color-6" onclick="showSection('printingDemand')">
+                        <!-- ===== PRINTING ORDER SUMMARY - FIXED ===== -->
+                        <a href="#" class="quick-link-card color-6" onclick="event.preventDefault(); showSection('printingDemand');">
                             <span class="card-icon">🖨️</span>
                             <div class="card-title">Printing অর্ডার সামারি</div>
                             <div class="card-desc">Printing অর্ডার সামারি দেখুন</div>
@@ -524,7 +525,7 @@
                             <div class="card-desc">MC রানিং রিপোর্ট</div>
                             <span class="card-badge bg-purple text-white">🔗 লাইভ</span>
                         </a>
-                        <a href="#" class="quick-link-card color-6" onclick="showSection('printingDemand')">
+                        <a href="#" class="quick-link-card color-6" onclick="event.preventDefault(); showSection('printingDemand');">
                             <span class="card-icon">🖨️</span>
                             <div class="card-title">Printing অর্ডার সামারি</div>
                             <div class="card-desc">Printing অর্ডার সামারি দেখুন</div>
@@ -771,7 +772,7 @@
                 </div>
 
                 <!-- ========================================================== -->
-                <!-- PRINTING ORDER SUMMARY REPORT -->
+                <!-- PRINTING ORDER SUMMARY REPORT - FIXED -->
                 <!-- ========================================================== -->
                 <div class="table-wrapper mt-3" id="printingReportWrapper">
                     <div class="table-header">
@@ -1256,66 +1257,76 @@
         updateClockAndShift();
 
         // ============================================================
-        // NAVIGATION (*** FIXED HERE ***)
+        // NAVIGATION
         // ============================================================
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('overlay').classList.toggle('show');
         }
 
-        function showSection(section, element) {
-            // Fix: Handle active menu item properly
+        function showSection(section) {
+            console.log('📌 showSection called:', section);
+            
             document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => el.classList.remove('active'));
-            if (element && element.closest) {
-                element.closest('.menu-item').classList.add('active');
-            } else if (event && event.target) {
-                event.target.closest('.menu-item').classList.add('active');
+            if (window.event && window.event.target) {
+                window.event.target.closest('.menu-item').classList.add('active');
             }
-
-            // Fix: Hide all sections safely
+            
             ['section-dashboard','section-quickLinks','section-injection','section-production','section-mcstatus','section-lastday','section-printingDemand','section-printingProduction'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.display = 'none';
+                document.getElementById(id).style.display = 'none';
             });
-
+            
             const title = document.getElementById('pageTitle');
+            
             if (section === 'dashboard') {
                 document.getElementById('section-dashboard').style.display = 'block';
                 title.innerHTML = 'RIP DPL Dashboard <small>প্রোডাকশন মনিটরিং</small>';
+                
             } else if (section === 'quickLinks') {
                 document.getElementById('section-quickLinks').style.display = 'block';
                 title.innerHTML = '🔗 Quick Links <small>দ্রুত অ্যাক্সেস</small>';
+                
             } else if (section === 'injection') {
                 document.getElementById('section-injection').style.display = 'block';
                 title.innerHTML = 'ইনজেকশন ডিমান্ড <small>নতুন অর্ডার যোগ করুন</small>';
+                
             } else if (section === 'production') {
                 document.getElementById('section-production').style.display = 'block';
                 title.innerHTML = 'প্রোডাকশন এন্ট্রি <small>শিফট ইনপুট</small>';
                 setDefaultDateAndShift();
                 populateFilters();
                 updateOrderDetails();
+                
             } else if (section === 'mcstatus') {
                 document.getElementById('section-mcstatus').style.display = 'block';
                 title.innerHTML = 'এমসি স্ট্যাটাস <small>অর্ডার মনিটরিং</small>';
                 populateStatusFilter();
                 renderMcStatus();
+                
             } else if (section === 'lastday') {
                 document.getElementById('section-lastday').style.display = 'block';
                 title.innerHTML = 'Last Day Prod <small>সর্বশেষ শিফট ডেটা</small>';
                 populateLastdayFilter();
                 renderLastDay();
+                
             } else if (section === 'printingDemand') {
+                console.log('🖨️ Printing Demand section called');
                 document.getElementById('section-printingDemand').style.display = 'block';
                 title.innerHTML = 'Printing ডিমান্ড <small>নতুন Printing অর্ডার যোগ করুন</small>';
                 populatePrintingDemandFilters();
                 populatePrintReportFilter();
-                renderPrintingReport();
+                // Force render after a small delay
+                setTimeout(function() {
+                    renderPrintingReport();
+                }, 100);
+                
             } else if (section === 'printingProduction') {
                 document.getElementById('section-printingProduction').style.display = 'block';
                 title.innerHTML = 'Printing Production Entry <small>দৈনিক Printing ইনপুট</small>';
                 setDefaultDateAndShift();
                 populatePrintProdFilters();
             }
+            
             if (window.innerWidth <= 992) {
                 document.getElementById('sidebar').classList.remove('open');
                 document.getElementById('overlay').classList.remove('show');
@@ -1672,27 +1683,40 @@
         }
 
         function resetPrintReportFilters() {
-            const mcFilter = document.getElementById('printReportMcFilter');
-            const statusFilter = document.getElementById('printReportStatusFilter');
-            if(mcFilter) mcFilter.value = '';
-            if(statusFilter) statusFilter.value = '';
+            document.getElementById('printReportMcFilter').value = '';
+            document.getElementById('printReportStatusFilter').value = '';
             renderPrintingReport();
         }
 
         function renderPrintingReport() {
-            console.log('🖨️ renderPrintingReport() called');
-            const orders = getPrintingOrders();
-            console.log('Printing Orders count:', orders.length);
+            console.log('🖨️ renderPrintingReport() STARTED');
             
-            // *** FIX: Safely verify element exists before accessing ****
-            const mcFilterEl = document.getElementById('printReportMcFilter');
-            const statusFilterEl = document.getElementById('printReportStatusFilter');
+            // Force fresh data from Firebase
+            database.ref('printingOrders').once('value', function(snapshot) {
+                const data = snapshot.val();
+                if (data) {
+                    printingOrdersCache = Object.values(data);
+                    console.log('✅ Printing Orders loaded from Firebase:', printingOrdersCache.length);
+                } else {
+                    printingOrdersCache = [];
+                    console.log('⚠️ No Printing Orders found in Firebase');
+                }
+                renderPrintingReportData();
+            });
+        }
+
+        function renderPrintingReportData() {
+            const orders = printingOrdersCache;
+            console.log('📊 Rendering report with', orders.length, 'orders');
+            
+            const tbody = document.getElementById('printingReportBody');
+            if (!tbody) {
+                console.error('❌ printingReportBody not found!');
+                return;
+            }
             
             if (!orders || orders.length === 0) {
-                const tbody = document.getElementById('printingReportBody');
-                if (tbody) {
-                    tbody.innerHTML = `<tr><td colspan="12" class="text-center text-muted py-4">কোনো Printing অর্ডার নেই। প্রথমে একটি Printing অর্ডার যোগ করুন।</td></tr>`;
-                }
+                tbody.innerHTML = `<tr><td colspan="12" class="text-center text-muted py-4">কোনো Printing অর্ডার নেই। প্রথমে একটি Printing অর্ডার যোগ করুন।</td></tr>`;
                 document.getElementById('printTotalOrders').innerText = 0;
                 document.getElementById('printCompletedOrders').innerText = 0;
                 document.getElementById('printPendingOrders').innerText = 0;
@@ -1700,13 +1724,12 @@
                 return;
             }
 
-            const mcFilter = mcFilterEl ? mcFilterEl.value : '';
-            const statusFilter = statusFilterEl ? statusFilterEl.value : '';
+            const mcFilter = document.getElementById('printReportMcFilter')?.value || '';
+            const statusFilter = document.getElementById('printReportStatusFilter')?.value || '';
 
             let filtered = orders;
             if (mcFilter) filtered = filtered.filter(o => o.mcSl === mcFilter);
 
-            // Get unique orders (by Print Order)
             const uniqueOrders = [];
             const orderNames = new Set();
             filtered.forEach(o => {
@@ -1716,10 +1739,7 @@
                 }
             });
 
-            console.log('Unique Orders count:', uniqueOrders.length);
-
-            const tbody = document.getElementById('printingReportBody');
-            if (!tbody) return;
+            console.log('📊 Unique Orders:', uniqueOrders.length);
 
             if (uniqueOrders.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="12" class="text-center text-muted py-4">কোনো Printing অর্ডার নেই।</td></tr>`;
