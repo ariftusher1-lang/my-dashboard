@@ -625,26 +625,26 @@
         if (!select) return;
         const currentValue = select.value;
         select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
-        // Unique Order Names only for the main selection
-        const uniqueOrderMap = {};
+        
+        // Get unique Order Names
+        const uniqueOrderNames = new Set();
         fgOrders.forEach(order => {
-            if (!uniqueOrderMap[order.orderName]) {
-                uniqueOrderMap[order.orderName] = order;
+            if (order.orderName && !uniqueOrderNames.has(order.orderName)) {
+                uniqueOrderNames.add(order.orderName);
+                const opt = document.createElement('option');
+                opt.value = order.key;
+                opt.textContent = order.orderName;
+                select.appendChild(opt);
             }
         });
-        Object.values(uniqueOrderMap).forEach(order => {
-            const opt = document.createElement('option');
-            opt.value = order.key;
-            opt.textContent = order.orderName || order.fgCode || 'Order';
-            select.appendChild(opt);
-        });
+
         if (currentValue && fgOrders.some(o => o.key === currentValue)) {
             select.value = currentValue;
         }
         updateOrderDetails();
     }
 
-    // ===== ✅ FINAL FIX: POPULATE FG CODE DROPDOWN =====
+    // ===== ✅ ULTIMATE FIX: POPULATE FG CODE DROPDOWN =====
     function populateFGCodeDropdown() {
         const select = getEl('fgCodeSelect');
         if (!select) return;
@@ -658,7 +658,6 @@
 
         if (selectedOrderKey) {
             // Find ALL items that belong to this specific Order Key
-            // (Your database might have multiple rows/keys for the same Order Name)
             const matchedOrders = fgOrders.filter(o => o.key === selectedOrderKey);
             
             if (matchedOrders.length > 0) {
@@ -730,12 +729,9 @@
         const order = fgOrders.find(o => o.key === orderKey);
         
         const orderSelect = getEl('orderSelect');
-        // Ensure the order select is correctly set to the parent order
-        if (order && orderSelect) {
-            // We don't force orderSelect.value = order.orderName here, 
-            // because orderSelect.value should be the parent 'Order Key', not the row key.
-            // But we might want to update the Order dropdown if the user manually picks an FG code from a different order? 
-            // Usually we stick to the parent context.
+        if (order && orderSelect && orderSelect.value !== orderKey) {
+            // Do not force the parent Order dropdown to change if not needed
+            // orderSelect.value = orderKey; 
         }
         
         const itemNameEl = getEl('itemName');
