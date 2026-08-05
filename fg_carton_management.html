@@ -625,7 +625,14 @@
         if (!select) return;
         const currentValue = select.value;
         select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
+        // Unique Order Names only for the main selection
+        const uniqueOrderMap = {};
         fgOrders.forEach(order => {
+            if (!uniqueOrderMap[order.orderName]) {
+                uniqueOrderMap[order.orderName] = order;
+            }
+        });
+        Object.values(uniqueOrderMap).forEach(order => {
             const opt = document.createElement('option');
             opt.value = order.key;
             opt.textContent = order.orderName || order.fgCode || 'Order';
@@ -637,7 +644,7 @@
         updateOrderDetails();
     }
 
-    // ===== ✅ সঠিকভাবে ফিক্স করা FG Code ড্রপডাউন ফাংশন =====
+    // ===== ✅ FINAL FIX: POPULATE FG CODE DROPDOWN =====
     function populateFGCodeDropdown() {
         const select = getEl('fgCodeSelect');
         if (!select) return;
@@ -646,54 +653,50 @@
         const orderSelect = getEl('orderSelect');
         const selectedOrderKey = orderSelect ? orderSelect.value : null;
         
-        // আগের সব অপশন ক্লিয়ার করুন
+        // Clear all previous options
         select.innerHTML = '';
 
         if (selectedOrderKey) {
-            // ঐ Order এর সাথে মিলে যাওয়া আইটেমগুলো খুঁজে বের করুন
-            // সতর্কতা: এখানে আমরা পুরো array থেকে শুধু মিলে যাওয়া আইটেম নিচ্ছি
+            // Find ALL items that belong to this specific Order Key
+            // (Your database might have multiple rows/keys for the same Order Name)
             const matchedOrders = fgOrders.filter(o => o.key === selectedOrderKey);
             
             if (matchedOrders.length > 0) {
-                // শুধুমাত্র সেই Order এর জন্য অপশন তৈরি করুন
+                // Create an option for EACH item found under this order key
                 matchedOrders.forEach(order => {
                     const opt = document.createElement('option');
-                    opt.value = order.key;
+                    opt.value = order.key; // The value is the unique key of this specific item row
                     opt.textContent = `${order.fgCode || ''} - ${order.itemName || ''}`;
                     select.appendChild(opt);
                 });
             } else {
-                // কোনো আইটেম না পেলে ডিফল্ট
                 const opt = document.createElement('option');
                 opt.value = "";
                 opt.textContent = "-- কোন ডেটা নেই --";
                 select.appendChild(opt);
             }
         } else {
-            // যদি কোনো Order সিলেক্ট করা না থাকে
             const opt = document.createElement('option');
             opt.value = "";
             opt.textContent = "-- সিলেক্ট করুন --";
             select.appendChild(opt);
         }
 
-        // পূর্বে সিলেক্ট করা ভ্যালু যদি নতুন লিস্টে থাকে তবে তা রিস্টোর করুন
+        // Restore previous value if it exists in the new list
         if (currentValue && fgOrders.some(o => o.key === currentValue && o.key === selectedOrderKey)) {
             select.value = currentValue;
         }
         
-        // অটো ফিল ফাংশন কল করুন
         updateFGCodeDetails();
     }
 
-    // ===== UPDATE ORDER DETAILS (পেজ পরিবর্তন হলে কল হবে) =====
+    // ===== UPDATE ORDER DETAILS =====
     window.updateOrderDetails = function() {
         const orderSelect = getEl('orderSelect');
         if (!orderSelect) return;
         
         const orderKey = orderSelect.value;
         
-        // যদি Order সিলেক্ট করা না থাকে তবে ফিল্ড ক্লিয়ার করুন
         if (!orderKey) {
             const fgSelect = getEl('fgCodeSelect');
             if (fgSelect) {
@@ -706,15 +709,11 @@
             return;
         }
 
-        // শুধু FG Code ড্রপডাউন রিফ্রেশ করুন
         populateFGCodeDropdown();
         
-        // স্বয়ংক্রিয়ভাবে FG Code সিলেক্ট করুন (যদি শুধু ১টি থাকে)
         const fgSelect = getEl('fgCodeSelect');
-        // options.length 1 হবে যদি শুধু ডিফল্ট অপশন থাকে। 
-        // যদি ১টির বেশি অপশন থাকে, আমরা প্রথমটি সিলেক্ট করছি
+        // If there is only one option found for this order, auto-select it
         if (fgSelect && fgSelect.options.length > 0) {
-             // যদি ১টি আইটেম থাকে, তবে সেটি সিলেক্ট করুন
             if (fgSelect.options.length === 1 && fgSelect.options[0].value !== "") {
                 fgSelect.value = fgSelect.options[0].value;
                 updateFGCodeDetails();
@@ -722,7 +721,7 @@
         }
     };
 
-    // ===== UPDATE FG CODE DETAILS (অটো ফিল) =====
+    // ===== UPDATE FG CODE DETAILS =====
     window.updateFGCodeDetails = function() {
         const fgSelect = getEl('fgCodeSelect');
         if (!fgSelect) return;
@@ -731,8 +730,12 @@
         const order = fgOrders.find(o => o.key === orderKey);
         
         const orderSelect = getEl('orderSelect');
-        if (order && orderSelect && orderSelect.value !== orderKey) {
-            orderSelect.value = orderKey;
+        // Ensure the order select is correctly set to the parent order
+        if (order && orderSelect) {
+            // We don't force orderSelect.value = order.orderName here, 
+            // because orderSelect.value should be the parent 'Order Key', not the row key.
+            // But we might want to update the Order dropdown if the user manually picks an FG code from a different order? 
+            // Usually we stick to the parent context.
         }
         
         const itemNameEl = getEl('itemName');
