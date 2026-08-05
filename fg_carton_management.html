@@ -642,13 +642,36 @@
         const select = getEl('fgCodeSelect');
         if (!select) return;
         const currentValue = select.value;
+        
+        // 1. Get the currently selected Order from the Order dropdown
+        const orderSelect = getEl('orderSelect');
+        const selectedOrderKey = orderSelect ? orderSelect.value : null;
+        
         select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
-        fgOrders.forEach(order => {
-            const opt = document.createElement('option');
-            opt.value = order.key;
-            opt.textContent = order.fgCode || order.orderName || 'FG';
-            select.appendChild(opt);
-        });
+
+        if (selectedOrderKey) {
+            // 2. If an Order is selected, filter orders to find the specific one
+            const order = fgOrders.find(o => o.key === selectedOrderKey);
+            
+            if (order) {
+                // 3. Create the option showing both FG Code and Item Name
+                const opt = document.createElement('option');
+                opt.value = order.key; // Value is still the key for database lookup
+                // Display Text: "FG Code - Item Name"
+                opt.textContent = `${order.fgCode || ''} - ${order.itemName || ''}`;
+                select.appendChild(opt);
+            }
+        } else {
+            // 4. If no Order is selected, show all as fallback (though order is required)
+            fgOrders.forEach(order => {
+                const opt = document.createElement('option');
+                opt.value = order.key;
+                opt.textContent = order.fgCode || order.orderName || 'FG';
+                select.appendChild(opt);
+            });
+        }
+
+        // 5. Restore previously selected value if it still exists
         if (currentValue && fgOrders.some(o => o.key === currentValue)) {
             select.value = currentValue;
         }
@@ -660,7 +683,45 @@
         if (!orderSelect) return;
         
         const orderKey = orderSelect.value;
+        
+        // Update FG Code dropdown based on the newly selected Order
+        populateFGCodeDropdown();
+        
+        // Try to auto-select the FG Code if only one exists for this Order
+        const fgSelect = getEl('fgCodeSelect');
+        if (fgSelect && fgSelect.options.length === 2) { // 1 default + 1 option
+            fgSelect.value = fgSelect.options[1].value;
+            updateFGCodeDetails();
+        } else if (fgSelect) {
+            fgSelect.value = '';
+            // Clear fields if no FG code is auto-selected
+            const itemNameEl = getEl('itemName');
+            const demandPcsEl = getEl('demandPcs');
+            const unitPerCtnEl = getEl('unitPerCtn');
+            const demandCtnEl = getEl('demandCtn');
+            const remainingCtnEl = getEl('remainingCtn');
+            const asOfPackagingEl = getEl('asOfPackaging');
+            if(itemNameEl) itemNameEl.value = '';
+            if(demandPcsEl) demandPcsEl.value = '';
+            if(unitPerCtnEl) unitPerCtnEl.value = '';
+            if(demandCtnEl) demandCtnEl.value = '';
+            if(remainingCtnEl) remainingCtnEl.value = '';
+            if(asOfPackagingEl) asOfPackagingEl.value = '';
+        }
+    };
+
+    // ===== UPDATE FG CODE DETAILS =====
+    window.updateFGCodeDetails = function() {
+        const fgSelect = getEl('fgCodeSelect');
+        if (!fgSelect) return;
+        
+        const orderKey = fgSelect.value;
         const order = fgOrders.find(o => o.key === orderKey);
+        
+        const orderSelect = getEl('orderSelect');
+        if (order && orderSelect && orderSelect.value !== orderKey) {
+            orderSelect.value = orderKey;
+        }
         
         const itemNameEl = getEl('itemName');
         const demandPcsEl = getEl('demandPcs');
@@ -668,17 +729,12 @@
         const demandCtnEl = getEl('demandCtn');
         const remainingCtnEl = getEl('remainingCtn');
         const asOfPackagingEl = getEl('asOfPackaging');
-        const fgCodeSelect = getEl('fgCodeSelect');
 
         if (!itemNameEl || !demandPcsEl || !unitPerCtnEl || !demandCtnEl || !remainingCtnEl || !asOfPackagingEl) {
             return;
         }
 
         if (order) {
-            if (fgCodeSelect && fgCodeSelect.value !== orderKey) {
-                fgCodeSelect.value = orderKey;
-            }
-            
             itemNameEl.value = order.itemName || '';
             demandPcsEl.value = order.demandPcs || 0;
             unitPerCtnEl.value = order.unitPerCtn || 0;
@@ -698,21 +754,6 @@
             remainingCtnEl.value = '';
             asOfPackagingEl.value = '';
         }
-    };
-
-    // ===== UPDATE FG CODE DETAILS =====
-    window.updateFGCodeDetails = function() {
-        const fgSelect = getEl('fgCodeSelect');
-        if (!fgSelect) return;
-        
-        const orderKey = fgSelect.value;
-        const order = fgOrders.find(o => o.key === orderKey);
-        
-        const orderSelect = getEl('orderSelect');
-        if (order && orderSelect && orderSelect.value !== orderKey) {
-            orderSelect.value = orderKey;
-        }
-        updateOrderDetails();
     };
 
     // ===== UPDATE AS OF PACKAGING =====
