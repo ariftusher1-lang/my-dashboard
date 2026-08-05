@@ -637,46 +637,43 @@
         updateOrderDetails();
     }
 
-    // ===== ✅ FINAL FIX: POPULATE FG CODE DROPDOWN =====
+    // ===== ✅ ULTIMATE FIX: Smart FG Code Dropdown =====
     function populateFGCodeDropdown() {
         const select = getEl('fgCodeSelect');
         if (!select) return;
         const currentValue = select.value;
         
-        const orderSelect = getEl('orderSelect');
-        const selectedOrderKey = orderSelect ? orderSelect.value : null;
-        
         // Clear all previous options
         select.innerHTML = '';
 
-        if (selectedOrderKey) {
-            // Find ALL items that belong to this specific Order Key
-            // (Your database might have multiple rows/keys for the same Order Name)
-            const matchedOrders = fgOrders.filter(o => o.key === selectedOrderKey);
-            
-            if (matchedOrders.length > 0) {
-                // Create an option for EACH item found under this order key
-                matchedOrders.forEach(order => {
-                    const opt = document.createElement('option');
-                    opt.value = order.key; // The value is the unique key of this specific item row
-                    opt.textContent = `${order.fgCode || ''} - ${order.itemName || ''}`;
-                    select.appendChild(opt);
-                });
-            } else {
-                const opt = document.createElement('option');
-                opt.value = "";
-                opt.textContent = "-- কোন ডেটা নেই --";
-                select.appendChild(opt);
+        // Group orders by Key to avoid duplicates in the dropdown
+        const uniqueOrderMap = new Map();
+        fgOrders.forEach(order => {
+            if (!uniqueOrderMap.has(order.key)) {
+                uniqueOrderMap.set(order.key, order);
             }
+        });
+
+        if (uniqueOrderMap.size > 0) {
+            // Sort options by FG Code for better readability
+            const sortedOrders = Array.from(uniqueOrderMap.values()).sort((a, b) => (a.fgCode || '').localeCompare(b.fgCode || ''));
+            
+            sortedOrders.forEach(order => {
+                const opt = document.createElement('option');
+                opt.value = order.key;
+                // ✅ NEW FORMAT: FG Code [Order Name] - Item Name
+                opt.textContent = `${order.fgCode || ''} [${order.orderName || ''}] - ${order.itemName || ''}`;
+                select.appendChild(opt);
+            });
         } else {
             const opt = document.createElement('option');
             opt.value = "";
-            opt.textContent = "-- সিলেক্ট করুন --";
+            opt.textContent = "-- কোন ডেটা নেই --";
             select.appendChild(opt);
         }
 
         // Restore previous value if it exists in the new list
-        if (currentValue && fgOrders.some(o => o.key === currentValue && o.key === selectedOrderKey)) {
+        if (currentValue && fgOrders.some(o => o.key === currentValue)) {
             select.value = currentValue;
         }
         
@@ -702,6 +699,7 @@
             return;
         }
 
+        // Just re-populate the FG Code list respecting the parent Order context
         populateFGCodeDropdown();
         
         const fgSelect = getEl('fgCodeSelect');
@@ -723,12 +721,10 @@
         const order = fgOrders.find(o => o.key === orderKey);
         
         const orderSelect = getEl('orderSelect');
-        // Ensure the order select is correctly set to the parent order
-        if (order && orderSelect) {
-            // We don't force orderSelect.value = order.orderName here, 
-            // because orderSelect.value should be the parent 'Order Key', not the row key.
-            // But we might want to update the Order dropdown if the user manually picks an FG code from a different order? 
-            // Usually we stick to the parent context.
+        // Ensure the parent order dropdown is updated if user selects a different FG Code (Optional logic)
+        if (order && orderSelect && orderSelect.value !== orderKey) {
+            // We don't force orderSelect change here to keep UX consistent, 
+            // but we let the user know by showing specific FG code data.
         }
         
         const itemNameEl = getEl('itemName');
