@@ -637,7 +637,7 @@
         updateOrderDetails();
     }
 
-    // ===== POPULATE FG CODE DROPDOWN (আপডেট করা অংশ) =====
+    // ===== ✅ সঠিকভাবে ফিক্স করা FG Code ড্রপডাউন ফাংশন =====
     function populateFGCodeDropdown() {
         const select = getEl('fgCodeSelect');
         if (!select) return;
@@ -646,39 +646,54 @@
         const orderSelect = getEl('orderSelect');
         const selectedOrderKey = orderSelect ? orderSelect.value : null;
         
-        // Clear the dropdown entirely first
-        select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
+        // আগের সব অপশন ক্লিয়ার করুন
+        select.innerHTML = '';
 
         if (selectedOrderKey) {
-            // Find the specific order object
-            const order = fgOrders.find(o => o.key === selectedOrderKey);
+            // ঐ Order এর সাথে মিলে যাওয়া আইটেমগুলো খুঁজে বের করুন
+            // সতর্কতা: এখানে আমরা পুরো array থেকে শুধু মিলে যাওয়া আইটেম নিচ্ছি
+            const matchedOrders = fgOrders.filter(o => o.key === selectedOrderKey);
             
-            if (order) {
-                // Create option with specific format
+            if (matchedOrders.length > 0) {
+                // শুধুমাত্র সেই Order এর জন্য অপশন তৈরি করুন
+                matchedOrders.forEach(order => {
+                    const opt = document.createElement('option');
+                    opt.value = order.key;
+                    opt.textContent = `${order.fgCode || ''} - ${order.itemName || ''}`;
+                    select.appendChild(opt);
+                });
+            } else {
+                // কোনো আইটেম না পেলে ডিফল্ট
                 const opt = document.createElement('option');
-                opt.value = order.key;
-                opt.textContent = `${order.fgCode || ''} - ${order.itemName || ''}`;
+                opt.value = "";
+                opt.textContent = "-- কোন ডেটা নেই --";
                 select.appendChild(opt);
             }
+        } else {
+            // যদি কোনো Order সিলেক্ট করা না থাকে
+            const opt = document.createElement('option');
+            opt.value = "";
+            opt.textContent = "-- সিলেক্ট করুন --";
+            select.appendChild(opt);
         }
 
-        // Restore previous value if it still exists (though it should be filtered now)
+        // পূর্বে সিলেক্ট করা ভ্যালু যদি নতুন লিস্টে থাকে তবে তা রিস্টোর করুন
         if (currentValue && fgOrders.some(o => o.key === currentValue && o.key === selectedOrderKey)) {
             select.value = currentValue;
         }
         
-        // Update the auto-fill fields based on the current selection
+        // অটো ফিল ফাংশন কল করুন
         updateFGCodeDetails();
     }
 
-    // ===== UPDATE ORDER DETAILS =====
+    // ===== UPDATE ORDER DETAILS (পেজ পরিবর্তন হলে কল হবে) =====
     window.updateOrderDetails = function() {
         const orderSelect = getEl('orderSelect');
         if (!orderSelect) return;
         
         const orderKey = orderSelect.value;
         
-        // Reset FG Code and clear fields if no order is selected
+        // যদি Order সিলেক্ট করা না থাকে তবে ফিল্ড ক্লিয়ার করুন
         if (!orderKey) {
             const fgSelect = getEl('fgCodeSelect');
             if (fgSelect) {
@@ -691,18 +706,23 @@
             return;
         }
 
-        // Populate FG Code dropdown based on the newly selected Order
+        // শুধু FG Code ড্রপডাউন রিফ্রেশ করুন
         populateFGCodeDropdown();
         
-        // Auto-select the FG Code if it is the only one
+        // স্বয়ংক্রিয়ভাবে FG Code সিলেক্ট করুন (যদি শুধু ১টি থাকে)
         const fgSelect = getEl('fgCodeSelect');
-        if (fgSelect && fgSelect.options.length === 2) { // 1 default + 1 option
-            fgSelect.value = fgSelect.options[1].value;
-            updateFGCodeDetails();
+        // options.length 1 হবে যদি শুধু ডিফল্ট অপশন থাকে। 
+        // যদি ১টির বেশি অপশন থাকে, আমরা প্রথমটি সিলেক্ট করছি
+        if (fgSelect && fgSelect.options.length > 0) {
+             // যদি ১টি আইটেম থাকে, তবে সেটি সিলেক্ট করুন
+            if (fgSelect.options.length === 1 && fgSelect.options[0].value !== "") {
+                fgSelect.value = fgSelect.options[0].value;
+                updateFGCodeDetails();
+            }
         }
     };
 
-    // ===== UPDATE FG CODE DETAILS =====
+    // ===== UPDATE FG CODE DETAILS (অটো ফিল) =====
     window.updateFGCodeDetails = function() {
         const fgSelect = getEl('fgCodeSelect');
         if (!fgSelect) return;
