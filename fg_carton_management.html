@@ -619,7 +619,7 @@
         });
     }
 
-    // ===== POPULATE ORDER DROPDOWN =====
+    // ===== POPULATE ORDER DROPDOWN (শুধু অর্ডার) =====
     function populateOrderDropdown() {
         const select = getEl('orderSelect');
         if (!select) return;
@@ -637,33 +637,36 @@
         updateOrderDetails();
     }
 
-    // ===== ✅ ULTIMATE FIX: POPULATE FG CODE (আপনার এক্সেল ফরম্যাট অনুযায়ী) =====
+    // ===== ✅ ULTIMATE FIX: PERFECT ORDER-SPECIFIC FILTERING =====
     function populateFGCodeDropdown() {
         const select = getEl('fgCodeSelect');
         if (!select) return;
         const currentValue = select.value;
+        const orderSelect = getEl('orderSelect');
+        const selectedOrderKey = orderSelect ? orderSelect.value : null;
         
         // Clear all options
-        select.innerHTML = '';
+        select.innerHTML = '<option value="">-- সিলেক্ট করুন --</option>';
 
-        // Get unique Order Names
-        const uniqueOrderKeys = new Set();
-        fgOrders.forEach(order => {
-            if (!uniqueOrderKeys.has(order.orderName) && order.orderName) {
-                uniqueOrderKeys.add(order.orderName);
+        if (selectedOrderKey) {
+            // 1. Find ALL items that belong to this specific Order Key
+            const matchedOrders = fgOrders.filter(o => o.key === selectedOrderKey);
+            
+            if (matchedOrders.length > 0) {
+                // 2. Create an option for EACH item found under this order key
+                matchedOrders.forEach(order => {
+                    const opt = document.createElement('option');
+                    opt.value = order.key; // Value is the unique key of this specific item row
+                    opt.textContent = `${order.fgCode || ''}-${order.itemName || ''}`;
+                    select.appendChild(opt);
+                });
+            } else {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "-- কোন ডেটা নেই --";
+                select.appendChild(opt);
             }
-        });
-
-        // Sort orders alphabetically by their display name
-        const sortedOrders = [...fgOrders].sort((a, b) => (a.orderName || '').localeCompare(b.orderName || ''));
-
-        sortedOrders.forEach(order => {
-            const opt = document.createElement('option');
-            opt.value = order.key;
-            // Display FORMAT: FG Code [Order Name] - Item Name
-            opt.textContent = `${order.fgCode || ''} [${order.orderName || ''}] - ${order.itemName || ''}`;
-            select.appendChild(opt);
-        });
+        }
 
         // Restore previous value if it exists in the new list
         if (currentValue && fgOrders.some(o => o.key === currentValue)) {
