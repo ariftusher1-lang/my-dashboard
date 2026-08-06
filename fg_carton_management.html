@@ -619,7 +619,7 @@
         });
     }
 
-    // ===== POPULATE ORDER DROPDOWN =====
+    // ===== POPULATE ORDER DROPDOWN (শুধু অর্ডার) =====
     function populateOrderDropdown() {
         const select = getEl('orderSelect');
         if (!select) return;
@@ -637,40 +637,33 @@
         updateOrderDetails();
     }
 
-    // ===== ✅ ULTIMATE FIX: Smart FG Code Dropdown =====
+    // ===== ✅ ULTIMATE FIX: POPULATE FG CODE (আপনার এক্সেল ফরম্যাট অনুযায়ী) =====
     function populateFGCodeDropdown() {
         const select = getEl('fgCodeSelect');
         if (!select) return;
         const currentValue = select.value;
         
-        // Clear all previous options
+        // Clear all options
         select.innerHTML = '';
 
-        // Group orders by Key to avoid duplicates in the dropdown
-        const uniqueOrderMap = new Map();
+        // Get unique Order Names
+        const uniqueOrderKeys = new Set();
         fgOrders.forEach(order => {
-            if (!uniqueOrderMap.has(order.key)) {
-                uniqueOrderMap.set(order.key, order);
+            if (!uniqueOrderKeys.has(order.orderName) && order.orderName) {
+                uniqueOrderKeys.add(order.orderName);
             }
         });
 
-        if (uniqueOrderMap.size > 0) {
-            // Sort options by FG Code for better readability
-            const sortedOrders = Array.from(uniqueOrderMap.values()).sort((a, b) => (a.fgCode || '').localeCompare(b.fgCode || ''));
-            
-            sortedOrders.forEach(order => {
-                const opt = document.createElement('option');
-                opt.value = order.key;
-                // ✅ NEW FORMAT: FG Code [Order Name] - Item Name
-                opt.textContent = `${order.fgCode || ''} [${order.orderName || ''}] - ${order.itemName || ''}`;
-                select.appendChild(opt);
-            });
-        } else {
+        // Sort orders alphabetically by their display name
+        const sortedOrders = [...fgOrders].sort((a, b) => (a.orderName || '').localeCompare(b.orderName || ''));
+
+        sortedOrders.forEach(order => {
             const opt = document.createElement('option');
-            opt.value = "";
-            opt.textContent = "-- কোন ডেটা নেই --";
+            opt.value = order.key;
+            // Display FORMAT: FG Code [Order Name] - Item Name
+            opt.textContent = `${order.fgCode || ''} [${order.orderName || ''}] - ${order.itemName || ''}`;
             select.appendChild(opt);
-        }
+        });
 
         // Restore previous value if it exists in the new list
         if (currentValue && fgOrders.some(o => o.key === currentValue)) {
@@ -699,33 +692,17 @@
             return;
         }
 
-        // Just re-populate the FG Code list respecting the parent Order context
+        // Update FG Dropdown based on selected Order
         populateFGCodeDropdown();
-        
-        const fgSelect = getEl('fgCodeSelect');
-        // If there is only one option found for this order, auto-select it
-        if (fgSelect && fgSelect.options.length > 0) {
-            if (fgSelect.options.length === 1 && fgSelect.options[0].value !== "") {
-                fgSelect.value = fgSelect.options[0].value;
-                updateFGCodeDetails();
-            }
-        }
     };
 
-    // ===== UPDATE FG CODE DETAILS =====
+    // ===== UPDATE FG CODE DETAILS (অটো ফিল লজিক) =====
     window.updateFGCodeDetails = function() {
         const fgSelect = getEl('fgCodeSelect');
         if (!fgSelect) return;
         
         const orderKey = fgSelect.value;
         const order = fgOrders.find(o => o.key === orderKey);
-        
-        const orderSelect = getEl('orderSelect');
-        // Ensure the parent order dropdown is updated if user selects a different FG Code (Optional logic)
-        if (order && orderSelect && orderSelect.value !== orderKey) {
-            // We don't force orderSelect change here to keep UX consistent, 
-            // but we let the user know by showing specific FG code data.
-        }
         
         const itemNameEl = getEl('itemName');
         const demandPcsEl = getEl('demandPcs');
