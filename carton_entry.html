@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -5,11 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>📦 কার্টন এন্ট্রি (Firebase Live)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
-    <!-- সঠিক ফায়ারবেস সংযোগ (CDN) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
@@ -548,8 +544,20 @@
     </div>
 </div>
 
-<script>
-    // ===== ফায়ারবেস কনফিগ =====
+<!-- Firebase Import Map & Script -->
+<script type="importmap">
+    {
+        "imports": {
+            "firebase-app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+            "firebase-database": "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"
+        }
+    }
+</script>
+
+<script type="module">
+    import { initializeApp } from "firebase-app";
+    import { getDatabase, ref, push, onValue, update, remove } from "firebase-database";
+
     const firebaseConfig = {
         apiKey: "AIzaSyAHMH9uGLQfXsCppY1xwbY91wbMcOMUUE",
         authDomain: "carton-management.firebaseapp.com",
@@ -561,10 +569,9 @@
         measurementId: "G-ZFZNK5Q4V"
     };
 
-    // ===== ফায়ারবেস ইনিশিয়ালাইজ (সাধারণ পদ্ধতি) =====
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    const cartonRef = database.ref('cartonEntries');
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const cartonRef = ref(database, 'cartonEntries');
 
     const PER_HR_CAPACITY = 20;
     const ITEMS_PER_PAGE = 6;
@@ -829,7 +836,7 @@
         };
 
         try {
-            await cartonRef.push(newEntry);
+            await push(cartonRef, newEntry);
             
             document.getElementById('deptSelect').value = '';
             document.getElementById('prodIC').value = '';
@@ -873,18 +880,22 @@
         }
         if (!confirm('এই এন্ট্রি মুছবেন?')) return;
         try {
-            await database.ref(`cartonEntries/${key}`).remove();
+            await remove(ref(database, `cartonEntries/${key}`));
         } catch (error) {
             alert('ডিলিট করতে সমস্যা: ' + error.message);
         }
     };
 
-    // ===== Output Update =====
+    // ===== Output Update (FIXED) =====
     window.showOutputUpdateForm = function(key) {
+        // সব ফর্ম লুকান
         document.querySelectorAll('.output-update-form').forEach(el => el.classList.remove('show'));
+        
+        // এই এন্ট্রির ফর্ম দেখান
         const form = document.getElementById(`edit-form-${key}`);
         if (form) {
             form.classList.toggle('show');
+            // Input ফিল্ডে ফোকাস দিন
             const input = form.querySelector('input[type="number"]');
             if (input) {
                 setTimeout(() => input.focus(), 100);
@@ -895,6 +906,7 @@
     };
 
     window.updateOutput = async function(key) {
+        // ইনপুট ফিল্ড থেকে মান নিন
         const input = document.getElementById(`edit-output-${key}`);
         if (!input) {
             alert('Input field not found!');
@@ -907,6 +919,7 @@
             return;
         }
 
+        // Entry খুঁজুন
         const entry = allEntries.find(e => e.key === key);
         if (!entry) {
             alert('এন্ট্রি পাওয়া যায়নি!');
@@ -918,14 +931,17 @@
         const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
 
         try {
-            await database.ref(`cartonEntries/${key}`).update({
+            // Firebase আপডেট
+            await update(ref(database, `cartonEntries/${key}`), {
                 output: newOutput,
                 perHr: perHr,
                 utilPct: utilPct
             });
             
+            // সাফল্যের মেসেজ
             showAlert(`✅ Output সফলভাবে আপডেট হয়েছে! নতুন Output: ${newOutput}`, 'success');
             
+            // ফর্ম লুকান
             const form = document.getElementById(`edit-form-${key}`);
             if (form) {
                 form.classList.remove('show');
@@ -981,7 +997,7 @@
         const utilPct = PER_HR_CAPACITY > 0 ? (perHr / PER_HR_CAPACITY) * 100 : 0;
 
         try {
-            await database.ref(`cartonEntries/${key}`).update({
+            await update(ref(database, `cartonEntries/${key}`), {
                 dayHr: dayHr,
                 output: output,
                 perHr: perHr,
@@ -1005,7 +1021,7 @@
         }
         if (!confirm('⚠️ সতর্কতা: সব ডেটা স্থায়ীভাবে মুছে ফেলা হবে। আপনি কি নিশ্চিত?')) return;
         try {
-            await cartonRef.remove();
+            await remove(cartonRef);
             alert('✅ সব ডেটা সফলভাবে মুছে ফেলা হয়েছে!');
         } catch (error) {
             alert('❌ সব ডেটা মুছতে সমস্যা: ' + error.message);
@@ -1108,6 +1124,7 @@
             pageItems.forEach((e, idx) => {
                 const globalIdx = startIndex + idx + 1;
                 const badgeClass = DEPARTMENTS.find(d => d.name === e.dept)?.type === 'MC' ? 'badge-mc' : 'badge-pack';
+                // Output দেখানোর বাটন দেখাবে শুধুমাত্র যদি output === 0 বা undefined হয়
                 const showOutputBtn = (e.output === 0 || e.output === undefined || e.output === null);
                 const outputDisplay = e.output || 0;
                 const outputClass = outputDisplay > 0 ? 'output-highlight' : 'output-zero';
@@ -1208,8 +1225,8 @@
         document.querySelector('.card:last-child').scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
-    // ===== Live Listener (সঠিক সিনট্যাক্স) =====
-    cartonRef.on('value', (snapshot) => {
+    // ===== Live Listener =====
+    onValue(cartonRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
             allEntries = Object.keys(data).map(key => ({ key, ...data[key] }));
