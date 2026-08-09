@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>মোল্ড ডেলিভারি সিস্টেম</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f0f4f8;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1600px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #1e293b;
+            border-left: 6px solid #2563eb;
+            padding-left: 16px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        /* স্ট্যাটাস বার */
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .status-card {
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .status-card .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .status-card .label {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .status-card.out .number { color: #dc2626; }
+        .status-card.in .number { color: #2563eb; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            background: #f8fafc;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #0f172a;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group label .required {
+            color: #dc2626;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            background: white;
+            transition: 0.2s;
+            outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .btn-submit {
+            grid-column: 1 / -1;
+            justify-self: center;
+            margin-top: 12px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-reset {
+            background: #64748b;
+            box-shadow: 0 4px 10px rgba(100, 116, 139, 0.25);
+        }
+
+        .btn-reset:hover {
+            background: #475569;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #2563eb;
+            color: #2563eb;
+            box-shadow: none;
+            padding: 10px 28px;
+        }
+
+        .btn-outline:hover {
+            background: #2563eb;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger-outline {
+            border-color: #dc2626;
+            color: #dc2626;
+        }
+
+        .btn-danger-outline:hover {
+            background: #dc2626;
+            color: white;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            padding: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            min-width: 1300px;
+        }
+
+        th {
+            background: #1e293b;
+            color: white;
+            padding: 14px 10px;
+            text-align: center;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 10px;
+            text-align: center;
+            background: white;
+            border-bottom: 1px solid #e9edf2;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f1f5f9;
+        }
+
+        tr.out td {
+            background: #fef2f2;
+            border-left: 4px solid #dc2626;
+        }
+
+        tr.out:hover td {
+            background: #fecaca;
+        }
+
+        tr.in td {
+            border-left: 4px solid #2563eb;
+        }
+
+        .empty-row td {
+            padding: 40px 10px;
+            color: #94a3b8;
+            font-style: italic;
+            background: #fafcff;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-out {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .badge-in {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .delete-btn {
+            background: #fee2e2;
+            border: none;
+            color: #b91c1c;
+            width: 32px;
+            height: 32px;
+            border-radius: 30px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 16px;
+        }
+
+        .delete-btn:hover {
+            background: #fecaca;
+            transform: scale(1.05);
+        }
+
+        .footer-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .return-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .return-btn:hover {
+            background: #b91c1c;
+            transform: scale(1.05);
+        }
+
+        /* Pending Report Box */
+        .pending-report-box {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .pending-report-box .label {
+            font-weight: 700;
+            color: #b45309;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pending-report-box .count-badge {
+            background: #b45309;
+            color: white;
+            border-radius: 30px;
+            padding: 2px 12px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .pending-report-box .item {
+            background: white;
+            border: 1px solid #fcd34d;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .pending-report-box .no-item {
+            color: #15803d;
+            font-weight: 600;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 16px; }
+            .container { padding: 16px; }
+            .form-grid { padding: 16px; gap: 14px; }
+            .status-bar { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏭 মোল্ড ডেলিভারি সিস্টেম</h1>
+
+        <!-- স্ট্যাটাস বার -->
+        <div class="status-bar">
+            <div class="status-card out">
+                <div class="number" id="outCount">0</div>
+                <div class="label">🔴 বর্তমানে Out</div>
+            </div>
+            <div class="status-card in">
+                <div class="number" id="inCount">0</div>
+                <div class="label">🟢 বর্তমানে In</div>
+            </div>
+        </div>
+
+        <!-- 1. Pending Return Report (যারা Out হয়ে এখনো ফিরে আসেনি) -->
+        <div class="pending-report-box" id="pendingReturnBox">
+            <span class="label">
+                ⏳ Pending Return (যারা এখনো ফেরত দেয়নি)
+                <span class="count-badge" id="pendingReturnCount">0</span>
+            </span>
+            <span id="pendingReturnItems" class="no-item">✅ কোনো Pending Return নেই</span>
+        </div>
+
+        <!-- ফর্ম -->
+        <form id="moldForm" class="form-grid">
+            <div class="form-group">
+                <label for="entryDate">📅 তারিখ <span class="required">*</span></label>
+                <input type="date" id="entryDate" required>
+            </div>
+            
+            <!-- শিফট ফিল্ড পুনরায় যুক্ত করা হয়েছে -->
+            <div class="form-group">
+                <label for="shift">⏰ শিফট <span class="required">*</span></label>
+                <select id="shift" required>
+                    <option value="Day">Day</option>
+                    <option value="Night">Night</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="moldName">🧩 মোল্ড/মালের নাম <span class="required">*</span></label>
+                <input type="text" id="moldName" placeholder="যেমন: Garden Chair" required>
+            </div>
+
+            <div class="form-group">
+                <label for="fromFloor">📍 কোথা থেকে (From Floor)</label>
+                <select id="fromFloor" required>
+                    <option value="Plastic-03">Plastic-03</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="toFloor">🎯 কোথায় নিয়ে যাচ্ছেন (To Floor) <span class="required">*</span></label>
+                <select id="toFloor" required>
+                    <option value="">-- নির্বাচন করুন --</option>
+                    <option value="Plastic-6.1">Plastic-6.1</option>
+                    <option value="Plastic-6.2">Plastic-6.2</option>
+                    <option value="Plastic-7.1">Plastic-7.1</option>
+                    <option value="Plastic-7.2">Plastic-7.2</option>
+                    <option value="Plastic-7.3">Plastic-7.3</option>
+                    <option value="Plastic-7.4">Plastic-7.4</option>
+                    <option value="Tool Room">Tool Room</option>
+                    <option value="DPL Development">DPL Development</option>
+                    <option value="QA R & D Sample Purpose">QA R & D Sample Purpose</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="forwardPerson">👤 কে Forward করছেন (কে নিয়ে যাচ্ছেন)? <span class="required">*</span></label>
+                <input type="text" id="forwardPerson" placeholder="নিয়ে যাওয়া ব্যক্তির নাম" required>
+            </div>
+
+            <div class="form-group">
+                <label for="forwardApprovedBy">👤 কার অনুমোদনে Forward হচ্ছে? <span class="required">*</span></label>
+                <input type="text" id="forwardApprovedBy" placeholder="অনুমোদনকারীর নাম" required>
+            </div>
+
+            <div class="form-group">
+                <label for="cause">📝 কারণ</label>
+                <input type="text" id="cause" placeholder="কাজের কারণ (ঐচ্ছিক)">
+            </div>
+
+            <div class="form-group btn-submit">
+                <button type="submit" class="btn" id="submitBtn">📦 Forward করুন (Out)</button>
+                <button type="reset" class="btn btn-reset">↺ রিসেট</button>
+            </div>
+        </form>
+
+        <div style="background: #eff6ff; padding: 12px 20px; border-radius: 10px; margin-bottom: 16px; border-left: 4px solid #2563eb;">
+            <span style="font-weight: 600; color: #1e40af;">📌 নিয়ম:</span>
+            <span style="color: #1e293b;">মাল নিয়ে যাওয়ার জন্য <strong>Forward করুন</strong> (🔴 Out হবে) → শেষে মাল ফেরত দিলে <strong>Return করুন</strong> (🟢 In হবে)</span>
+        </div>
+
+        <!-- ফিল্টার এবং 2. Same Mold In & Out Status Report -->
+        <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; background: #f1f5f9; padding: 12px 20px; border-radius: 12px;">
+            <span style="font-weight: 600; color: #0f172a;">🔍 ফিল্টার:</span>
+            <select id="filterType" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: white;">
+                <option value="All">সব</option>
+                <option value="Out">শুধু Out</option>
+                <option value="In">শুধু In</option>
+            </select>
+            <input type="text" id="searchMold" placeholder="🔎 মালের নাম দিয়ে খুঁজুন..." style="padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; flex: 1; min-width: 200px;">
+            
+            <!-- Same Mold History Report Button -->
+            <button id="showHistoryBtn" style="background: #0f172a; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;">📊 একই মোল্ডের হিসাব দেখুন</button>
+        </div>
+
+        <!-- রিপোর্ট টেবিল -->
+        <div style="margin-top: 10px;">
+            <h3 style="color: #0f172a; margin-bottom: 12px;">📋 ডেলিভারি রিপোর্ট</h3>
+            <div class="table-wrapper">
+                <table id="entryTable">
+                    <thead>
+                        <tr>
+                            <th>তারিখ</th>
+                            <th>শিফট</th>
+                            <th>মোল্ড/মালের নাম</th>
+                            <th>From Floor</th>
+                            <th>To Floor</th>
+                            <th>কারণ</th>
+                            <th>Forward করেছেন</th>
+                            <th>কার অনুমোদনে</th>
+                            <th>স্টেটাস</th>
+                            <th>অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr class="empty-row">
+                            <td colspan="10">🔍 এখনো কোনো এন্ট্রি নেই। উপরের ফর্ম ব্যবহার করে যোগ করুন।</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="footer-actions">
+                <button id="clearAllBtn" class="btn btn-outline btn-danger-outline">🗑️ সকল ডাটা মুছুন</button>
+                <button id="exportCsvBtn" class="btn btn-outline">⬇ CSV এক্সপোর্ট</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Modal (পপআপ) -->
+    <div class="modal-overlay" id="returnModal">
+        <div class="modal-box">
+            <h2>🔙 মোল্ড Return (ফিরিয়ে আনা)</h2>
+            <p class="sub-text">কে ফিরিয়ে আনছে এবং কে বুঝে নিচ্ছে, নাম লিখুন।</p>
+            
+            <div class="mold-info-card">
+                <div class="mold-name" id="modalMoldName">🔴 Garden Chair</div>
+                <div class="info-row">
+                    <span class="label">📍 কোথা থেকে ফিরছে</span>
+                    <span class="value" id="modalFromFloor">Other Floor</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">🎯 কোথায় ফিরবে</span>
+                    <span class="value" id="modalToFloor">Plastic-03</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">👤 কে Forward করেছিলেন</span>
+                    <span class="value" id="modalForwardPerson">-</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="modalReturnConcern">👤 কে Return করছেন (ফিরিয়ে আনছেন)? <span class="required">*</span></label>
+                <input type="text" id="modalReturnConcern" placeholder="যিনি ফিরিয়ে আনছেন" required>
+                <div class="validation-error" id="concernError">⚠️ দয়া করে নাম লিখুন</div>
+            </div>
+
+            <div class="form-group">
+                <label for="modalReceiveConcern">👤 কে Receive করছেন (Plastic-03 থেকে বুঝে নিচ্ছেন)? <span class="required">*</span></label>
+                <input type="text" id="modalReceiveConcern" placeholder="যিনি বুঝে নিচ্ছেন" required>
+                <div class="validation-error" id="receiveError">⚠️ দয়া করে নাম লিখুন</div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="closeReturnModal()">❌ বাতিল</button>
+                <button class="btn btn-confirm" onclick="confirmReturn()">✅ Return নিশ্চিত করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Same Mold History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-box" style="max-width: 700px;">
+            <h2>📊 একই মোল্ডের In & Out হিসাব</h2>
+            <p class="sub-text">নিচে মোল্ডের নাম লিখুন, তাহলে এর সম্পূর্ণ ইতিহাস দেখতে পাবেন।</p>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="historyMoldName">🔎 মোল্ডের নাম লিখুন <span class="required">*</span></label>
+                <input type="text" id="historyMoldName" placeholder="যেমন: Garden Chair" required>
+                <div class="validation-error" id="historyError" style="display: none; margin-top: 5px;">⚠️ দয়া করে মোল্ডের নাম লিখুন</div>
+            </div>
+
+            <div id="historyResult" style="background: #f8fafc; border-radius: 10px; padding: 20px; border: 1px solid #e2e8f0; display: none;">
+                <h4 style="margin-bottom: 15px; color: #0f172a; text-align: center;" id="historyTitle">Garden Chair এর হিসাব</h4>
+                <div style="display: flex; justify-content: space-around; margin-bottom: 20px; text-align: center;">
+                    <div style="background: #fef2f2; padding: 15px 25px; border-radius: 10px; border: 1px solid #fecaca;">
+                        <div style="font-size: 24px; font-weight: bold; color: #dc2626;" id="historyOutCount">0</div>
+                        <div style="color: #b91c1c; font-size: 14px;">🔴 মোট Out</div>
+                    </div>
+                    <div style="background: #f0fdf4; padding: 15px 25px; border-radius: 10px; border: 1px solid #bbf7d0;">
+                        <div style="font-size: 24px; font-weight: bold; color: #15803d;" id="historyInCount">0</div>
+                        <div style="color: #15803d; font-size: 14px;">🟢 মোট In (Return)</div>
+                    </div>
+                </div>
+                <div style="text-align: center; font-weight: 600; color: #1e293b;" id="historyCurrentStatus">বর্তমান স্টেটাস: <span id="historyCurrentStatusText" style="color: #2563eb;">-</span></div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="closeHistoryModal()">❌ বাতিল</button>
+                <button class="btn btn-confirm" onclick="showHistory()" style="background: #2563eb;">📊 হিসাব দেখুন</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Modal related CSS */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 520px;
+            width: 92%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-box h2 {
+            color: #1e293b;
+            margin-bottom: 4px;
+            font-size: 22px;
+        }
+        .modal-box .sub-text {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .mold-info-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        .mold-info-card .mold-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed #e2e8f0;
+        }
+        .mold-info-card .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 14px;
+        }
+        .mold-info-card .info-row .label {
+            color: #64748b;
+            font-weight: 500;
+        }
+        .mold-info-card .info-row .value {
+            color: #0f172a;
+            font-weight: 600;
+        }
+        .modal-box .form-group {
+            margin-bottom: 16px;
+        }
+        .modal-box .form-group label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #0f172a;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .modal-box .form-group label .required {
+            color: #dc2626;
+        }
+        .modal-box .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+        .modal-box .form-group input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        .modal-actions .btn {
+            padding: 10px 30px;
+            font-size: 14px;
+        }
+        .modal-actions .btn-cancel {
+            background: #e2e8f0;
+            color: #1e293b;
+            box-shadow: none;
+        }
+        .modal-actions .btn-cancel:hover {
+            background: #cbd5e1;
+        }
+        .modal-actions .btn-confirm {
+            background: #16a34a;
+        }
+        .modal-actions .btn-confirm:hover {
+            background: #15803d;
+        }
+        .validation-error {
+            color: #dc2626;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+    </style>
+
+    <script>
+        (function() {
+            let entries = [];
+            let nextId = 1;
+            let pendingReturnMold = null;
+
+            const form = document.getElementById('moldForm');
+            const tbody = document.getElementById('tableBody');
+            const clearAllBtn = document.getElementById('clearAllBtn');
+            const exportCsvBtn = document.getElementById('exportCsvBtn');
+            const filterType = document.getElementById('filterType');
+            const searchMold = document.getElementById('searchMold');
+            const showHistoryBtn = document.getElementById('showHistoryBtn');
+            
+            const returnModal = document.getElementById('returnModal');
+            const modalMoldName = document.getElementById('modalMoldName');
+            const modalFromFloor = document.getElementById('modalFromFloor');
+            const modalToFloor = document.getElementById('modalToFloor');
+            const modalForwardPerson = document.getElementById('modalForwardPerson');
+            const modalReturnConcern = document.getElementById('modalReturnConcern');
+            const modalReceiveConcern = document.getElementById('modalReceiveConcern');
+            const concernError = document.getElementById('concernError');
+            const receiveError = document.getElementById('receiveError');
+
+            const historyModal = document.getElementById('historyModal');
+            const historyMoldName = document.getElementById('historyMoldName');
+            const historyError = document.getElementById('historyError');
+            const historyResult = document.getElementById('historyResult');
+            const historyTitle = document.getElementById('historyTitle');
+            const historyOutCount = document.getElementById('historyOutCount');
+            const historyInCount = document.getElementById('historyInCount');
+            const historyCurrentStatusText = document.getElementById('historyCurrentStatusText');
+
+            const outCountEl = document.getElementById('outCount');
+            const inCountEl = document.getElementById('inCount');
+            
+            const pendingReturnItems = document.getElementById('pendingReturnItems');
+            const pendingReturnCount = document.getElementById('pendingReturnCount');
+
+            document.getElementById('entryDate').valueAsDate = new Date();
+
+            // ফর্ম সাবমিট (Forward করার জন্য)
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const date = document.getElementById('entryDate').value;
+                const shift = document.getElementById('shift').value; // Shift collected
+                const moldName = document.getElementById('moldName').value.trim();
+                const fromFloor = document.getElementById('fromFloor').value;
+                const toFloor = document.getElementById('toFloor').value;
+                const forwardPerson = document.getElementById('forwardPerson').value.trim();
+                const forwardApprovedBy = document.getElementById('forwardApprovedBy').value.trim();
+                const cause = document.getElementById('cause').value.trim();
+
+                if (!date || !shift || !moldName || !toFloor || !forwardPerson || !forwardApprovedBy) {
+                    alert('⚠️ দয়া করে প্রয়োজনীয় সব ফিল্ড পূরণ করুন (* চিহ্নিত ফিল্ডগুলো)');
+                    return;
+                }
+
+                const newEntry = {
+                    id: nextId++,
+                    date,
+                    shift, // Shift added
+                    moldName,
+                    fromFloor,
+                    toFloor,
+                    forwardPerson: forwardPerson,
+                    forwardApprovedBy: forwardApprovedBy,
+                    cause: cause || 'N/A',
+                    returnPerson: '',
+                    receivePerson: '',
+                    status: 'Out'
+                };
+
+                entries.push(newEntry);
+
+                renderTable();
+                form.reset();
+                document.getElementById('entryDate').valueAsDate = new Date();
+                document.getElementById('fromFloor').value = 'Plastic-03';
+
+                alert(`✅ "${moldName}" সফলভাবে Forward (Out) হয়েছে!\n👤 Forward করেছেন: ${forwardPerson}\n👤 অনুমোদন দিয়েছেন: ${forwardApprovedBy}`);
+            });
+
+            // Return Modal ফাংশন
+            window.openReturnModal = function(moldName, forwardPerson) {
+                pendingReturnMold = moldName;
+
+                const latestOut = entries.filter(e => e.moldName === moldName && e.status === 'Out').pop();
+
+                modalMoldName.textContent = '🔙 ' + moldName;
+                modalFromFloor.textContent = latestOut ? latestOut.toFloor : 'Unknown Floor';
+                modalToFloor.textContent = 'Plastic-03';
+                modalForwardPerson.textContent = forwardPerson || '-';
+
+                modalReturnConcern.value = '';
+                modalReceiveConcern.value = '';
+                concernError.style.display = 'none';
+                receiveError.style.display = 'none';
+
+                returnModal.classList.add('active');
+                setTimeout(() => modalReturnConcern.focus(), 150);
+            };
+
+            window.closeReturnModal = function() {
+                returnModal.classList.remove('active');
+                pendingReturnMold = null;
+            };
+
+            window.confirmReturn = function() {
+                const returnConcern = modalReturnConcern.value.trim();
+                const receiveConcern = modalReceiveConcern.value.trim();
+
+                let isValid = true;
+                if (!returnConcern) {
+                    concernError.style.display = 'block';
+                    isValid = false;
+                } else {
+                    concernError.style.display = 'none';
+                }
+                if (!receiveConcern) {
+                    receiveError.style.display = 'block';
+                    isValid = false;
+                } else {
+                    receiveError.style.display = 'none';
+                }
+                if (!isValid) return;
+
+                if (!pendingReturnMold) {
+                    alert('⚠️ কোনো মাল সিলেক্ট করা নেই');
+                    return;
+                }
+
+                const moldName = pendingReturnMold;
+                
+                const today = new Date().toISOString().slice(0, 10);
+                const newEntry = {
+                    id: nextId++,
+                    date: today,
+                    shift: 'Day', // Default shift for Return
+                    moldName: moldName,
+                    fromFloor: 'Unknown Floor',
+                    toFloor: 'Plastic-03',
+                    forwardPerson: '',
+                    forwardApprovedBy: '',
+                    cause: 'Returned',
+                    returnPerson: returnConcern,
+                    receivePerson: receiveConcern,
+                    status: 'In'
+                };
+
+                entries.push(newEntry);
+
+                entries.forEach(e => {
+                    if (e.moldName === moldName && e.status === 'Out') {
+                        e.status = 'In';
+                    }
+                });
+
+                renderTable();
+                closeReturnModal();
+                alert(`✅ "${moldName}" সফলভাবে Return (In) হয়েছে!\n👤 Return করেছেন: ${returnConcern}\n👤 Receive করেছেন: ${receiveConcern}`);
+            };
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && returnModal.classList.contains('active')) {
+                    e.preventDefault();
+                    confirmReturn();
+                }
+                if (e.key === 'Escape' && returnModal.classList.contains('active')) {
+                    closeReturnModal();
+                }
+            });
+            returnModal.addEventListener('click', function(e) {
+                if (e.target === this) closeReturnModal();
+            });
+
+            // Open History Modal
+            showHistoryBtn.addEventListener('click', function() {
+                historyMoldName.value = '';
+                historyResult.style.display = 'none';
+                historyError.style.display = 'none';
+                historyModal.classList.add('active');
+                setTimeout(() => historyMoldName.focus(), 150);
+            });
+
+            window.closeHistoryModal = function() {
+                historyModal.classList.remove('active');
+            };
+
+            // Show History Logic
+            window.showHistory = function() {
+                const moldName = historyMoldName.value.trim();
+                if (!moldName) {
+                    historyError.style.display = 'block';
+                    return;
+                }
+                historyError.style.display = 'none';
+
+                const moldEntries = entries.filter(e => e.moldName.toLowerCase() === moldName.toLowerCase());
+                
+                if (moldEntries.length === 0) {
+                    alert(`⚠️ "${moldName}" নামে কোনো এন্ট্রি পাওয়া যায়নি।`);
+                    return;
+                }
+
+                const totalOut = moldEntries.filter(e => e.status === 'Out').length;
+                const totalIn = moldEntries.filter(e => e.status === 'In').length;
+                const latestStatus = moldEntries[moldEntries.length - 1].status;
+
+                historyTitle.textContent = `"${moldName}" এর সম্পূর্ণ হিসাব`;
+                historyOutCount.textContent = totalOut;
+                historyInCount.textContent = totalIn;
+                
+                let statusText = '';
+                let statusColor = '';
+                if (latestStatus === 'Out') {
+                    statusText = '🔴 বর্তমানে Out (ফেরত আসেনি)';
+                    statusColor = '#dc2626';
+                } else {
+                    statusText = '🟢 বর্তমানে In (স্টোরে আছে)';
+                    statusColor = '#15803d';
+                }
+                historyCurrentStatusText.textContent = statusText;
+                historyCurrentStatusText.style.color = statusColor;
+
+                historyResult.style.display = 'block';
+            };
+
+            // Keyboard events for History Modal
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && historyModal.classList.contains('active')) {
+                    e.preventDefault();
+                    showHistory();
+                }
+                if (e.key === 'Escape' && historyModal.classList.contains('active')) {
+                    closeHistoryModal();
+                }
+            });
+            historyModal.addEventListener('click', function(e) {
+                if (e.target === this) closeHistoryModal();
+            });
+
+            // রেন্ডার
+            function renderTable() {
+                const filterVal = filterType.value;
+                const searchVal = searchMold.value.toLowerCase().trim();
+
+                let filtered = entries;
+
+                if (filterVal === 'Out') filtered = filtered.filter(e => e.status === 'Out');
+                else if (filterVal === 'In') filtered = filtered.filter(e => e.status === 'In');
+
+                if (searchVal) {
+                    filtered = filtered.filter(e => e.moldName.toLowerCase().includes(searchVal));
+                }
+
+                filtered = filtered.slice().reverse();
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">🔍 কোনো এন্ট্রি পাওয়া যায়নি।</td></tr>`;
+                    updateStatusBar();
+                    return;
+                }
+
+                let html = '';
+                filtered.forEach(entry => {
+                    let statusBadge = '';
+                    let actionButtons = '';
+
+                    if (entry.status === 'Out') {
+                        statusBadge = '<span class="badge badge-out">🔴 Out</span>';
+                        actionButtons = `
+                            <button class="return-btn" onclick="openReturnModal('${entry.moldName}', '${entry.forwardPerson}')">🔙 Return</button>
+                            <button class="delete-btn" data-id="${entry.id}">✕</button>
+                        `;
+                    } else {
+                        statusBadge = '<span class="badge badge-in">🟢 In</span>';
+                        actionButtons = `<button class="delete-btn" data-id="${entry.id}">✕</button>`;
+                    }
+
+                    html += `
+                        <tr class="${entry.status === 'Out' ? 'out' : 'in'}">
+                            <td>${entry.date}</td>
+                            <td>${entry.shift}</td>
+                            <td><strong>${entry.moldName}</strong></td>
+                            <td>${entry.fromFloor}</td>
+                            <td>${entry.toFloor}</td>
+                            <td>${entry.cause || '-'}</td>
+                            <td>${entry.forwardPerson || '-'}</td>
+                            <td>${entry.forwardApprovedBy || '-'}</td>
+                            <td>${statusBadge}</td>
+                            <td><div class="action-buttons" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">${actionButtons}</div></td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = Number(this.getAttribute('data-id'));
+                        if (confirm('এই এন্ট্রি ডিলিট করবেন?')) {
+                            entries = entries.filter(e => e.id !== id);
+                            renderTable();
+                        }
+                    });
+                });
+
+                updateStatusBar();
+            }
+
+            function updateStatusBar() {
+                const out = entries.filter(e => e.status === 'Out');
+                const inStatus = entries.filter(e => e.status === 'In');
+
+                outCountEl.textContent = out.length;
+                inCountEl.textContent = inStatus.length;
+
+                // Update Pending Return Report
+                if (out.length === 0) {
+                    pendingReturnItems.innerHTML = '✅ কোনো Pending Return নেই';
+                    pendingReturnItems.className = 'no-item';
+                } else {
+                    // Show distinct mold names that are currently Out
+                    const pendingMolds = [...new Set(out.map(e => e.moldName))];
+                    pendingReturnCount.textContent = pendingMolds.length;
+                    
+                    pendingReturnItems.innerHTML = pendingMolds.map(mold => `
+                        <span class="item">⏳ ${mold}</span>
+                    `).join(' ');
+                    pendingReturnItems.className = '';
+                }
+            }
+
+            filterType.addEventListener('change', renderTable);
+            searchMold.addEventListener('input', renderTable);
+
+            clearAllBtn.addEventListener('click', function() {
+                if (entries.length === 0) {
+                    alert('ইতিমধ্যে টেবিল খালি।');
+                    return;
+                }
+                if (confirm('আপনি কি সকল এন্ট্রি স্থায়ীভাবে মুছতে চান?')) {
+                    entries = [];
+                    nextId = 1;
+                    renderTable();
+                }
+            });
+
+            exportCsvBtn.addEventListener('click', function() {
+                if (entries.length === 0) {
+                    alert('এক্সপোর্ট করার জন্য কোনো ডাটা নেই।');
+                    return;
+                }
+
+                const headers = ['তারিখ', 'শিফট', 'মোল্ড/মালের নাম', 'From Floor', 'To Floor', 'কারণ', 'Forward করেছেন', 'কার অনুমোদনে', 'স্টেটাস'];
+                let csvContent = headers.join(',') + '\n';
+
+                entries.forEach(entry => {
+                    const row = [
+                        entry.date,
+                        entry.shift,
+                        `"${entry.moldName}"`,
+                        entry.fromFloor,
+                        entry.toFloor,
+                        `"${entry.cause || ''}"`,
+                        `"${entry.forwardPerson || ''}"`,
+                        `"${entry.forwardApprovedBy || ''}"`,
+                        entry.status
+                    ];
+                    csvContent += row.join(',') + '\n';
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `delivery_report_${new Date().toISOString().slice(0,10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            });
+
+            document.querySelector('.btn-reset').addEventListener('click', function(e) {
+                setTimeout(() => {
+                    document.getElementById('entryDate').valueAsDate = new Date();
+                    document.getElementById('fromFloor').value = 'Plastic-03';
+                }, 10);
+            });
+
+            // ডেমো ডাটা
+            function loadDemoData() {
+                entries = [
+                    { id: nextId++, date: '2026-08-09', shift: 'Day', moldName: 'Garden Chair', fromFloor: 'Plastic-03', toFloor: 'Plastic-6.1', forwardPerson: 'Rafiq', forwardApprovedBy: 'Rahim', cause: 'Carrying to floor 6.1', returnPerson: '', receivePerson: '', status: 'Out' },
+                    { id: nextId++, date: '2026-08-08', shift: 'Night', moldName: 'Garden Chair', fromFloor: 'Plastic-03', toFloor: 'Tool Room', forwardPerson: 'Salam', forwardApprovedBy: 'Karim', cause: 'Maintenance', returnPerson: 'Rafiq', receivePerson: 'Rahim', status: 'In' },
+                    { id: nextId++, date: '2026-08-07', shift: 'Day', moldName: 'Stand', fromFloor: 'Plastic-03', toFloor: 'Plastic-7.2', forwardPerson: 'Kamal', forwardApprovedBy: 'Rahim', cause: 'Testing', returnPerson: '', receivePerson: '', status: 'Out' },
+                ];
+                renderTable();
+            }
+
+            loadDemoData();
+
+        })();
+    </script>
+
+</body>
+</html>
