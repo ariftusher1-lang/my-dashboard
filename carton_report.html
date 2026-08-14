@@ -110,6 +110,49 @@
         .btn-email-image:hover {
             background: #1da851;
         }
+        .floor-log-summary {
+            background: #e3f2fd !important;
+            font-weight: 700;
+        }
+        .floor-log-summary td {
+            border-top: 2px solid #1976d2;
+        }
+        /* লগ ফাইলের জন্য Hide/Show স্টাইল */
+        .log-section-content.hidden {
+            display: none;
+        }
+        .log-toggle-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-left: 10px;
+        }
+        .log-toggle-btn:hover {
+            background: #5a6268;
+        }
+        .log-toggle-btn.show {
+            background: #28a745;
+        }
+        .log-toggle-btn.show:hover {
+            background: #1e7e34;
+        }
+        .log-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .log-header h3 {
+            color: #0d47a1;
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -243,6 +286,17 @@
                 </select>
             </div>
             <div id="monthlySummaryContainer"><div class="empty-msg">কোনো ডেটা নেই</div></div>
+
+            <!-- ফ্লোর ওয়াইজ লগ ফাইল - Hide/Show সহ -->
+            <div style="margin-top:30px; border-top:2px solid #1976d2; padding-top:15px;">
+                <div class="log-header">
+                    <h3>📋 ফ্লোর ওয়াইজ লগ ফাইল (মাস অনুযায়ী)</h3>
+                    <button class="log-toggle-btn" onclick="toggleLogSection('monthlyLogContent')" id="monthlyLogToggle">👁️ দেখান</button>
+                </div>
+                <div id="monthlyLogContent" class="log-section-content hidden">
+                    <div id="monthlyLogContainer"><div class="empty-msg">লগ দেখাতে মাস সিলেক্ট করুন</div></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -329,6 +383,22 @@
             content.classList.add('hidden');
             btn.textContent = '👁️ দেখান';
             btn.classList.add('hide');
+        }
+    };
+
+    // লগ ফাইলের জন্য আলাদা টগল ফাংশন
+    window.toggleLogSection = function(contentId) {
+        const content = document.getElementById(contentId);
+        const btn = document.getElementById(contentId.replace('Content', 'Toggle'));
+        if (!content || !btn) return;
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            btn.textContent = '🙈 লুকান';
+            btn.classList.remove('show');
+        } else {
+            content.classList.add('hidden');
+            btn.textContent = '👁️ দেখান';
+            btn.classList.add('show');
         }
     };
 
@@ -1057,14 +1127,16 @@
     }
 
     // ================================================================
-    // মাস অনুযায়ী সারাংশ
+    // মাস অনুযায়ী সারাংশ + ফ্লোর ওয়াইজ লগ (Hide/Show সহ)
     // ================================================================
     window.renderMonthlySummary = function() {
         const container = document.getElementById('monthlySummaryContainer');
+        const logContainer = document.getElementById('monthlyLogContainer');
         const selectedMonth = document.getElementById('monthFilter').value;
 
         if (!selectedMonth) {
             container.innerHTML = `<div class="empty-msg">দয়া করে একটি মাস সিলেক্ট করুন</div>`;
+            logContainer.innerHTML = `<div class="empty-msg">লগ দেখাতে মাস সিলেক্ট করুন</div>`;
             window._monthlyData = null;
             return;
         }
@@ -1083,8 +1155,10 @@
             return eYear === year && eMonth === monthIndex;
         });
 
+        // --- মাসের সারাংশ টেবিল ---
         if (monthEntries.length === 0) {
             container.innerHTML = `<div class="empty-msg">এই মাসে কোনো এন্ট্রি নেই</div>`;
+            logContainer.innerHTML = `<div class="empty-msg">এই মাসে কোনো এন্ট্রি নেই</div>`;
             window._monthlyData = null;
             return;
         }
@@ -1155,9 +1229,74 @@
             <td><strong>${grandUtil.toFixed(1)}%</strong></td>
             <td><strong>-</strong></td>
         </tr>`;
-
         html += `</tbody></table></div>`;
         container.innerHTML = html;
+
+        // --- ✅ ফ্লোর ওয়াইজ লগ তৈরি ---
+        // ফ্লোর অনুযায়ী গ্রুপিং
+        const floorGroups = {};
+        monthEntries.forEach(e => {
+            const floor = e.dept || 'অজানা ফ্লোর';
+            if (!floorGroups[floor]) {
+                floorGroups[floor] = [];
+            }
+            floorGroups[floor].push(e);
+        });
+
+        let logHtml = `<div class="table-wrap"><table>
+            <thead><tr>
+                <th>ফ্লোর</th>
+                <th>Prod IC</th>
+                <th>শিফট</th>
+                <th>IC Name</th>
+                <th>Day HR</th>
+                <th>Target</th>
+                <th>Output</th>
+                <th>Per HR</th>
+                <th>Util%</th>
+                <th>তারিখ</th>
+            </tr></thead><tbody>`;
+
+        for (const [floor, entries] of Object.entries(floorGroups)) {
+            // ফ্লোরের মোট হিসাব
+            let totalHr = 0, totalTarget = 0, totalOutput = 0, count = 0;
+            entries.forEach(e => {
+                totalHr += e.dayHr;
+                totalTarget += e.target;
+                totalOutput += e.output;
+                count++;
+            });
+            const avgPerHr = count > 0 ? (totalOutput / (totalHr || 1)) : 0;
+            const avgUtil = totalTarget > 0 ? (totalOutput / totalTarget) * 100 : 0;
+
+            // ফ্লোরের সারাংশ রো
+            logHtml += `<tr class="floor-log-summary">
+                <td><strong>${floor}</strong></td>
+                <td colspan="8"><strong>মোট:</strong> HR=${totalHr}, Target=${totalTarget}, Output=${totalOutput}, CTN/HR=${avgPerHr.toFixed(2)}, Util=${avgUtil.toFixed(1)}%</td>
+                <td></td>
+            </tr>`;
+
+            // ফ্লোরের প্রতিটি এন্ট্রি
+            entries.forEach((e) => {
+                const util = e.utilPct || 0;
+                const utilClass = util >= 80 ? 'util-high' : (util >= 50 ? 'util-mid' : 'util-low');
+                logHtml += `<tr>
+                    <td></td>
+                    <td>${e.prodIC || ''}</td>
+                    <td>${e.shift || ''}</td>
+                    <td>${e.icName || ''}</td>
+                    <td>${e.dayHr || 0}</td>
+                    <td>${e.target || 0}</td>
+                    <td><strong>${e.output || 0}</strong></td>
+                    <td>${e.perHr || 0}</td>
+                    <td class="${utilClass}">${util.toFixed(1)}%</td>
+                    <td>${e.entryDate || ''}</td>
+                </tr>`;
+            });
+        }
+
+        logHtml += `</tbody></table></div>`;
+        logContainer.innerHTML = logHtml;
     };
 
     // ================================================================
