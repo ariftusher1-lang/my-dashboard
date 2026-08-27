@@ -194,7 +194,7 @@
 
 <!-- Notice Bar -->
 <div class="notice-bar">
-    📢 ফায়ারবেস রিয়েল-টাইম ডাটাবেজের মাধ্যমে যেকোনো জায়গা থেকে করা এন্ট্রি সাথে সাথে এখানে আপডেট হবে!
+    📢 ক্লাউড ডাটাবেজ আপডেট করা হয়েছে—এখন যেকোনো ডিভাইস থেকে মাস্টার লিস্ট ও লিভ এন্ট্রি রিয়েল-টাইমে পাওয়া যাবে!
 </div>
 
 <!-- Main Wrapper -->
@@ -322,7 +322,7 @@
         <div class="card upload-card">
             <div class="section-title"><span>📁 মাস্টার লিস্ট আপলোড</span></div>
             <p style="font-size: 13px; color: #636e72; margin-bottom: 12px;">
-                এক্সেল ফাইল আপলোড করলে সার্চ বক্সে আইডি দিয়ে দ্রুত খুঁজে পাওয়া যাবে।
+                এক্সেল ফাইল আপলোড করলে তা ফায়ারবেসে ক্লাউড সেভ হয়ে যাবে এবং সবাই সার্চ বক্সে আইডি পাবে।
             </p>
             
             <div class="file-input-wrapper">
@@ -411,7 +411,28 @@
         if(fromDateInput) fromDateInput.addEventListener("change", calculateDays);
         if(toDateInput) toDateInput.addEventListener("change", calculateDays);
 
-        // Fetch Data from Firebase Realtime Database in Real-Time
+        // Fetch Master Employee List from Firebase Realtime Database
+        db.ref('masterEmployees').on('value', (snapshot) => {
+            const data = snapshot.val();
+            employeeData = {};
+            const datalist = document.getElementById("staffListOptions");
+            if(datalist) datalist.innerHTML = '';
+
+            if (data) {
+                employeeData = data;
+                Object.keys(data).forEach(empId => {
+                    const emp = data[empId];
+                    if(datalist) {
+                        const opt = document.createElement("option");
+                        opt.value = empId;
+                        opt.label = emp.name + " (" + empId + ")";
+                        datalist.appendChild(opt);
+                    }
+                });
+            }
+        });
+
+        // Fetch Leave Reports from Firebase Realtime Database
         db.ref('leaveReports').on('value', (snapshot) => {
             const data = snapshot.val();
             leaveReports = [];
@@ -419,7 +440,7 @@
                 Object.keys(data).forEach(key => {
                     leaveReports.push({ firebaseKey: key, ...data[key] });
                 });
-                leaveReports.reverse(); // Newest first
+                leaveReports.reverse();
             }
             renderReports();
         });
@@ -465,7 +486,6 @@
                         imageName: imageName
                     };
 
-                    // Push to Firebase Database
                     db.ref('leaveReports').push(newReport, (error) => {
                         submitButton.disabled = false;
                         submitButton.innerText = "💾 এন্ট্রি সেভ করুন";
@@ -488,7 +508,6 @@
                     const rawFile = imageInput.files[0];
                     const reader = new FileReader();
                     reader.onload = function(event) {
-                        // Compress or save image as base64 string to store in Firebase DB
                         processData(event.target.result, rawFile.name);
                     };
                     reader.readAsDataURL(rawFile);
@@ -529,10 +548,7 @@
                 if(mobileIdx === -1) mobileIdx = 2;
                 if(joiningIdx === -1) joiningIdx = 3;
 
-                employeeData = {}; 
-                const datalist = document.getElementById("staffListOptions");
-                if(datalist) datalist.innerHTML = '';
-
+                let parsedEmployees = {};
                 for (let i = 1; i < jsonRows.length; i++) {
                     const row = jsonRows[i];
                     if (row && row[idIdx] !== undefined) {
@@ -541,18 +557,18 @@
                         const mobile = row[mobileIdx] ? row[mobileIdx].toString() : "";
                         let joining = row[joiningIdx] ? row[joiningIdx].toString() : "";
 
-                        employeeData[empId] = { name: name, mobile: mobile, joining: joining };
-
-                        if(datalist) {
-                            const opt = document.createElement("option");
-                            opt.value = empId;
-                            opt.label = name + " (" + empId + ")";
-                            datalist.appendChild(opt);
-                        }
+                        parsedEmployees[empId] = { name: name, mobile: mobile, joining: joining };
                     }
                 }
 
-                alert("✅ Master Employee List Uploaded Successfully!");
+                // Save Master List to Firebase Database so all devices can access it
+                db.ref('masterEmployees').set(parsedEmployees, (error) => {
+                    if (error) {
+                        alert("⚠️ ক্লাউডে মাস্টার লিস্ট সেভ করতে সমস্যা হয়েছে: " + error.message);
+                    } else {
+                        alert("✅ Master Employee List Uploaded & Synced to Cloud Successfully!");
+                    }
+                });
 
             } catch (error) {
                 console.error(error);
