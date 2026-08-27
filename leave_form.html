@@ -202,7 +202,9 @@
         .close-modal { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 30px; font-weight: bold; cursor: pointer; }
         
         .action-del-btn { background: var(--danger); color: white; border: none; padding: 3px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
-        .approve-checkbox { transform: scale(1.2); cursor: pointer; }
+        .approve-btn { background: var(--success); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        .reject-btn { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; margin-left: 4px; }
+        
         .no-data-row { text-align: center; color: #a4b0be; padding: 20px; font-style: italic; }
         
         #qrcode {
@@ -214,7 +216,6 @@
             margin-top: 8px;
         }
 
-        /* অ্যাডমিন বাটন প্যানেল হেডার */
         .admin-toggle-bar {
             text-align: right;
             padding: 8px 20px 0 20px;
@@ -324,10 +325,10 @@
         </form>
     </div>
 
-    <!-- Column 2: Right Section (User sees Approval card; Admin sees all cards) -->
+    <!-- Column 2: Right Section -->
     <div class="right-column" id="rightColumn">
         
-        <!-- Waiting Department Head Approval Card (Visible in User Mode & Admin Mode) -->
+        <!-- Waiting Department Head Approval Card -->
         <div class="card approval-card" id="approvalCard">
             <div class="section-title"><span>⏳ Waiting Department Head Approval</span></div>
             <div class="table-responsive">
@@ -335,13 +336,13 @@
                     <thead>
                         <tr>
                             <th>আইডি</th>
-                            <th>নাম</th>
+                            <th>নাম ও মোবাইল</th>
                             <th>টাইপ</th>
                             <th>তারিখ</th>
                             <th>দিন</th>
                             <th>ছবি</th>
                             <th>কারণ</th>
-                            <th id="approvalActionHeader">অ্যাপ্রুভ</th>
+                            <th id="approvalActionHeader">অ্যাকশন</th>
                         </tr>
                     </thead>
                     <tbody id="approvalTableBody">
@@ -367,7 +368,7 @@
                         <thead>
                             <tr>
                                 <th>আইডি</th>
-                                <th>নাম</th>
+                                <th>নাম ও মোবাইল</th>
                                 <th>টাইপ</th>
                                 <th>তারিখ</th>
                                 <th>দিন</th>
@@ -415,7 +416,6 @@
 </div>
 
 <script>
-    // Firebase Configuration Settings
     const firebaseConfig = {
         apiKey: "AIzaSyDMxDYXmomoa3e5XW8nlVVHhOei9yI1S-k",
         authDomain: "leave-form-11356.firebaseapp.com",
@@ -460,9 +460,8 @@
         document.getElementById("adminToggleBar").style.display = "block";
         document.getElementById("mainWrapper").classList.remove("admin-layout");
 
-        // Hide admin-only features
         document.querySelectorAll('.admin-only-feature').forEach(el => el.style.display = 'none');
-        document.getElementById("approvalActionHeader").style.display = "none"; // Hide checkbox header for normal users
+        document.getElementById("approvalActionHeader").style.display = "none";
         renderApprovals();
     }
 
@@ -473,9 +472,8 @@
         document.getElementById("adminToggleBar").style.display = "none";
         document.getElementById("mainWrapper").classList.add("admin-layout");
 
-        // Show admin-only features
         document.querySelectorAll('.admin-only-feature').forEach(el => el.style.display = 'block');
-        document.getElementById("approvalActionHeader").style.display = "table-cell"; // Show checkbox header for admin
+        document.getElementById("approvalActionHeader").style.display = "table-cell";
         renderApprovals();
         renderReports();
     }
@@ -490,7 +488,6 @@
         }
     }
 
-    // Live Clock Update
     function updateTime() {
         const now = new Date();
         const timeEl = document.getElementById('liveTime');
@@ -521,7 +518,6 @@
         if(fromDateInput) fromDateInput.addEventListener("change", calculateDays);
         if(toDateInput) toDateInput.addEventListener("change", calculateDays);
 
-        // Fetch Master Employee List
         db.ref('masterEmployees').on('value', (snapshot) => {
             const data = snapshot.val();
             employeeData = {};
@@ -542,7 +538,6 @@
             }
         });
 
-        // Fetch Pending Approvals
         db.ref('pendingApprovals').on('value', (snapshot) => {
             const data = snapshot.val();
             pendingApprovals = [];
@@ -555,7 +550,6 @@
             renderApprovals();
         });
 
-        // Fetch Leave Reports
         db.ref('leaveReports').on('value', (snapshot) => {
             const data = snapshot.val();
             leaveReports = [];
@@ -752,13 +746,16 @@
 
             let actionCol = "";
             if (isAdminMode) {
-                actionCol = `<td><input type="checkbox" class="approve-checkbox" onclick="approveEntry('${item.firebaseKey}')" title="অ্যাপ্রুভ করতে টিক দিন"></td>`;
+                actionCol = `<td>
+                    <button class="approve-btn" onclick="approveEntry('${item.firebaseKey}')">অ্যাপ্রুভ</button>
+                    <button class="reject-btn" onclick="rejectPendingEntry('${item.firebaseKey}')">রিজেক্ট</button>
+                </td>`;
             }
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td><b>${item.staffId}</b></td>
-                <td>${item.name}</td>
+                <td>${item.name}<br><small style="color:#555;">📞 ${item.mobile}</small></td>
                 <td>${item.leaveType}</td>
                 <td>${item.fromDate} <br><small>হতে ${item.toDate}</small></td>
                 <td><b>${item.totalDays} দিন</b></td>
@@ -798,8 +795,15 @@
                     }
                 });
             }
-        } else {
-            renderApprovals();
+        }
+    }
+
+    function rejectPendingEntry(firebaseKey) {
+        if(!isAdminMode) return;
+        if(confirm("আপনি কি এই আবেদনটি রিজেক্ট (বাতিল) করতে চান?")) {
+            db.ref('pendingApprovals/' + firebaseKey).remove().then(() => {
+                alert("❌ আবেদনটি রিজেক্ট করে তালিকা থেকে মুছে ফেলা হয়েছে!");
+            });
         }
     }
 
@@ -820,7 +824,7 @@
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td><b>${rep.staffId}</b></td>
-                <td>${rep.name}</td>
+                <td>${rep.name}<br><small style="color:#555;">📞 ${rep.mobile}</small></td>
                 <td>${rep.leaveType}</td>
                 <td>${rep.fromDate} <br><small>হতে ${rep.toDate}</small></td>
                 <td><b>${rep.totalDays} দিন</b></td>
