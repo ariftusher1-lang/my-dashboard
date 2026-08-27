@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Leave Entry Form & Live Realtime Portal</title>
+    <!-- SheetJS Library Excel ফাইল পড়ার ও ডাউনলোডের জন্য -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- QRCode Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- Firebase App (Modular SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .top-header {
+            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .top-header h1 {
+            margin: 0;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .live-badge {
+            background-color: #ff4757;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 0 8px rgba(255, 71, 87, 0.6);
+        }
+        .time-display {
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .notice-bar {
+            background: linear-gradient(90deg, #d4fc79 0%, #96e6a1 100%);
+            color: #1b5e20;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: inset 0 -2px 5px rgba(0,0,0,0.05);
+        }
+        .wrapper {
+            max-width: 1350px;
+            margin: 30px auto;
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 20px;
+            padding: 0 15px;
+        }
+        @media (max-width: 1000px) {
+            .wrapper { grid-template-columns: 1fr; }
+        }
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            border-top: 5px solid #2a5298;
+        }
+        .card.report-card { border-top-color: #2ed573; background: #f4fff7; }
+        .card.upload-card { border-top-color: #ff9f43; background: #fffdf9; }
+        .card.qr-card { border-top-color: #3742fa; background: #f0f3ff; text-align: center; }
+        
+        .section-title {
+            color: #2a5298;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #f1f2f6;
+            padding-bottom: 10px;
+        }
+        .report-card .section-title { color: #2ed573; }
+        .upload-card .section-title { color: #e67e22; }
+        .qr-card .section-title { color: #3742fa; justify-content: center; }
+
+        .form-group { margin-bottom: 12px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #2f3542; font-size: 13px; }
+        select, input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced6e0;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            background-color: #f8f9fa;
+        }
+        input[readonly] { background-color: #e4e7eb; color: #57606f; }
+        textarea { resize: vertical; height: 65px; }
+        .remarks-box {
+            display: none;
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border: 1px solid #ffeeba;
+            border-radius: 6px;
+            margin-top: 6px;
+            font-size: 13px;
+        }
+        .total-days-badge {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #bbdefb;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #1dd1a1 0%, #10ac84 100%);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        .file-input-wrapper {
+            border: 2px dashed #ff9f43;
+            padding: 15px;
+            text-align: center;
+            border-radius: 6px;
+            background: #fffaf0;
+        }
+        
+        .report-controls { display: flex; gap: 10px; }
+        .btn-control, .btn-excel {
+            border: none; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600; color: white;
+        }
+        .btn-control { background: #57606f; }
+        .btn-excel { background: #20bf6b; }
+        .table-responsive { max-height: 400px; overflow-y: auto; border: 1px solid #dcdde1; border-radius: 6px; background: #fff; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        th, td { padding: 10px 12px; border-bottom: 1px solid #dfe4ea; vertical-align: middle; }
+        th { background-color: #f1f2f6; color: #2f3542; position: sticky; top: 0; z-index: 10; }
+        .thumb-img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+        .modal-content { max-width: 80%; max-height: 80%; border-radius: 8px; }
+        .close-modal { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 35px; font-weight: bold; cursor: pointer; }
+        .action-del-btn { background: #ff4757; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .no-data-row { text-align: center; color: #a4b0be; padding: 25px; font-style: italic; }
+        
+        #qrcode {
+            display: inline-block;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Header -->
+<div class="top-header">
+    <h1>📦 লিভ এন্ট্রি ও রিয়েল-টাইম পোর্টাল <span class="live-badge">🔴 লাইভ</span></h1>
+    <div class="time-display" id="liveTime"></div>
+</div>
+
+<!-- Notice Bar -->
+<div class="notice-bar">
+    📢 ফায়ারবেস রিয়েল-টাইম ডাটাবেজের মাধ্যমে যেকোনো জায়গা থেকে করা এন্ট্রি সাথে সাথে এখানে আপডেট হবে!
+</div>
+
+<!-- Main Wrapper -->
+<div class="wrapper">
+
+    <!-- Column 1: Leave Entry Form -->
+    <div class="card">
+        <div class="section-title">➕ নতুন লিভ এন্ট্রি ফরম</div>
+
+        <form id="leaveForm">
+            <div class="form-group">
+                <label>স্টাফ আইডি সার্চ করুন (Search Staff ID)</label>
+                <input list="staffListOptions" id="staffSearchInput" placeholder="এখানে আইডি লিখে দ্রুত সার্চ করুন..." autocomplete="off">
+                <datalist id="staffListOptions"></datalist>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>নাম (Name)</label>
+                    <input type="text" id="name" readonly placeholder="অটো শো">
+                </div>
+                <div class="form-group">
+                    <label>মোবাইল নম্বর (Mobile)</label>
+                    <input type="text" id="mobile" readonly placeholder="অটো শো">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>যোগদানের তারিখ (Joining Date)</label>
+                <input type="text" id="joiningDate" readonly placeholder="অটো শো করবে">
+            </div>
+
+            <div class="form-group">
+                <label>লিভ টাইপ (Leave Type)</label>
+                <select id="leaveType" required>
+                    <option value="">-- লিভ টাইপ সিলেক্ট করুন --</option>
+                    <option value="CL">CL (Casual Leave)</option>
+                    <option value="SL">SL (Sick Leave)</option>
+                    <option value="EL">EL (Earned Leave)</option>
+                </select>
+                <div id="elRemarks" class="remarks-box">
+                    ⚠️ <b>রিমার্ক্স:</b> EL Leave nite hole chakrir boyos 1 years hote hobe!
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>যে তারিখ থেকে (From)</label>
+                    <input type="date" id="fromDate" required>
+                </div>
+                <div class="form-group">
+                    <label>যে তারিখ পর্যন্ত (To)</label>
+                    <input type="date" id="toDate" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="total-days-badge" id="totalDaysText">⏱️ মোট ছুটির দিন: ০ দিন</div>
+            </div>
+
+            <div class="form-group">
+                <label>ছুটির কারণ (Causes of Leave)</label>
+                <textarea id="cause" placeholder="এখানে কারণ লিখুন..." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>কর্তৃপক্ষের অনুমোদন ছবি (Authority Image)</label>
+                <input type="file" id="authorityImage" accept="image/*" style="padding: 7px; background: #fff;">
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <button type="submit" class="btn-submit">💾 এন্ট্রি সেভ করুন</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Column 2: Right Section -->
+    <div class="right-column">
+        
+        <!-- Live Report Table Card -->
+        <div class="card report-card">
+            <div class="section-title">
+                <span>📊 লাইভ লিভ রিপোর্ট টেবিল</span>
+                <div class="report-controls">
+                    <button class="btn-excel" onclick="downloadExcel()">📥 Excel Download</button>
+                    <button class="btn-control" id="toggleReportBtn" onclick="toggleReportView()">Hide</button>
+                </div>
+            </div>
+            
+            <div id="reportSectionWrapper">
+                <div class="table-responsive">
+                    <table id="reportTable">
+                        <thead>
+                            <tr>
+                                <th>আইডি</th>
+                                <th>নাম</th>
+                                <th>টাইপ</th>
+                                <th>তারিখ</th>
+                                <th>মোট দিন</th>
+                                <th>অনুমোদন ছবি</th>
+                                <th>কারণ</th>
+                                <th>অ্যাকশন</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody">
+                            <tr>
+                                <td colspan="8" class="no-data-row">ডাটা লোড হচ্ছে...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code Card -->
+        <div class="card qr-card">
+            <div class="section-title">📱 স্ক্যান করে ফরম ওপেন করুন (QR Code)</div>
+            <p style="font-size: 13px; color: #57606f; margin-bottom: 10px;">
+                মোবাইল বা যেকোনো ডিভাইস দিয়ে স্ক্যান করলে সরাসরি এই ফরমটি ওপেন হবে।
+            </p>
+            <div id="qrcode"></div>
+        </div>
+
+        <!-- Master Employee List Upload Card -->
+        <div class="card upload-card">
+            <div class="section-title"><span>📁 মাস্টার লিস্ট আপলোড</span></div>
+            <p style="font-size: 13px; color: #636e72; margin-bottom: 12px;">
+                এক্সেল ফাইল আপলোড করলে সার্চ বক্সে আইডি দিয়ে দ্রুত খুঁজে পাওয়া যাবে।
+            </p>
+            
+            <div class="file-input-wrapper">
+                <input type="file" id="masterFile" accept=".csv, .xlsx, .xls" style="font-size: 12px;">
+            </div>
+
+            <div style="margin-top: 15px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #dfe6e9;">
+                <strong style="font-size: 12px; color: #2d3436;">📌 এক্সেল কলাম বিন্যাস:</strong>
+                <ul style="font-size: 11px; color: #636e72; padding-left: 15px; margin: 5px 0 0 0;">
+                    <li>১ম কলাম: <b>ID</b></li>
+                    <li>২য় কলাম: <b>Name</b></li>
+                    <li>৩য় কলাম: <b>Mobile</b></li>
+                    <li>৪র্থ কলাম: <b>Joining Date</b></li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Image Modal Pop-up Viewer -->
+<div id="imageModal" class="modal" onclick="closeModal()">
+    <span class="close-modal">&times;</span>
+    <img class="modal-content" id="modalImg">
+</div>
+
+<script>
+    // Firebase Configuration Settings
+    const firebaseConfig = {
+        apiKey: "AIzaSyDMxDYXmomoa3e5XW8nlVVHhOei9yI1S-k",
+        authDomain: "leave-form-11356.firebaseapp.com",
+        databaseURL: "https://leave-form-11356-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "leave-form-11356",
+        storageBucket: "leave-form-11356.firebasestorage.app",
+        messagingSenderId: "599326009440",
+        appId: "1:599326009440:web:eda7a8e2ff7f8be58d3b05",
+        measurementId: "G-SL3M347DJ4"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Automatically Generate QR Code for Current Page URL
+    window.onload = function() {
+        const currentUrl = window.location.href;
+        document.getElementById("qrcode").innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), {
+            text: currentUrl,
+            width: 140,
+            height: 140,
+            colorDark: "#1e3c72",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    };
+
+    // Live Clock Update
+    function updateTime() {
+        const now = new Date();
+        const timeEl = document.getElementById('liveTime');
+        if(timeEl) timeEl.innerText = now.toLocaleString('bn-BD');
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    let employeeData = {};
+    let leaveReports = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const masterFileInput = document.getElementById("masterFile");
+        if(masterFileInput) masterFileInput.addEventListener("change", handleFileUpload);
+
+        const staffSearchInput = document.getElementById("staffSearchInput");
+        if(staffSearchInput) {
+            staffSearchInput.addEventListener("input", onStaffSelected);
+            staffSearchInput.addEventListener("change", onStaffSelected);
+        }
+
+        const leaveTypeSelect = document.getElementById("leaveType");
+        if(leaveTypeSelect) leaveTypeSelect.addEventListener("change", checkLeaveType);
+
+        const fromDateInput = document.getElementById("fromDate");
+        const toDateInput = document.getElementById("toDate");
+        if(fromDateInput) fromDateInput.addEventListener("change", calculateDays);
+        if(toDateInput) toDateInput.addEventListener("change", calculateDays);
+
+        // Fetch Data from Firebase Realtime Database in Real-Time
+        db.ref('leaveReports').on('value', (snapshot) => {
+            const data = snapshot.val();
+            leaveReports = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    leaveReports.push({ firebaseKey: key, ...data[key] });
+                });
+                leaveReports.reverse(); // Newest first
+            }
+            renderReports();
+        });
+
+        const leaveForm = document.getElementById("leaveForm");
+        if(leaveForm) {
+            leaveForm.addEventListener("submit", function(e) {
+                e.preventDefault();
+                const staffId = document.getElementById("staffSearchInput").value.trim();
+                
+                if(!staffId || !employeeData[staffId]) {
+                    alert("⚠️ দয়া করে মাস্টার লিস্ট থেকে সঠিক একটি স্টাফ আইডি সার্চ করে সিলেক্ট করুন!");
+                    return;
+                }
+
+                const name = document.getElementById("name").value;
+                const mobile = document.getElementById("mobile").value;
+                const leaveType = document.getElementById("leaveType").value;
+                const fromDate = document.getElementById("fromDate").value;
+                const toDate = document.getElementById("toDate").value;
+                const cause = document.getElementById("cause").value;
+                const imageInput = document.getElementById("authorityImage");
+                
+                const diffTime = new Date(toDate) - new Date(fromDate);
+                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                const submitButton = this.querySelector('.btn-submit');
+                submitButton.disabled = true;
+                submitButton.innerText = "Saving to Cloud...";
+
+                let processData = (imageUrl = "", imageName = "নেই") => {
+                    const newReport = {
+                        id: Date.now(),
+                        staffId: staffId,
+                        name: name,
+                        mobile: mobile,
+                        leaveType: leaveType,
+                        fromDate: fromDate,
+                        toDate: toDate,
+                        totalDays: diffDays > 0 ? diffDays : 1,
+                        cause: cause,
+                        imageUrl: imageUrl,
+                        imageName: imageName
+                    };
+
+                    // Push to Firebase Database
+                    db.ref('leaveReports').push(newReport, (error) => {
+                        submitButton.disabled = false;
+                        submitButton.innerText = "💾 এন্ট্রি সেভ করুন";
+                        
+                        if (error) {
+                            alert("⚠️ ডাটা সেভ করতে সমস্যা হয়েছে: " + error.message);
+                        } else {
+                            alert("✅ Leave Entry Successfully Saved to Cloud!");
+                            leaveForm.reset();
+                            document.getElementById("elRemarks").style.display = "none";
+                            document.getElementById("name").value = "";
+                            document.getElementById("mobile").value = "";
+                            document.getElementById("joiningDate").value = "";
+                            document.getElementById("totalDaysText").innerText = "⏱️ মোট ছুটির দিন: ০ দিন";
+                        }
+                    });
+                };
+
+                if (imageInput.files && imageInput.files[0]) {
+                    const rawFile = imageInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        // Compress or save image as base64 string to store in Firebase DB
+                        processData(event.target.result, rawFile.name);
+                    };
+                    reader.readAsDataURL(rawFile);
+                } else {
+                    processData();
+                }
+            });
+        }
+    });
+
+    function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                if (jsonRows.length < 2) {
+                    alert("⚠️ ফাইলে পর্যাপ্ত ডেটা পাওয়া যায়নি!");
+                    return;
+                }
+
+                const headers = jsonRows[0].map(h => h ? h.toString().toLowerCase().trim() : "");
+                let idIdx = headers.findIndex(h => h.includes('id') || h.includes('কোড'));
+                let nameIdx = headers.findIndex(h => h.includes('name') || h.includes('নাম'));
+                let mobileIdx = headers.findIndex(h => h.includes('mobile') || h.includes('phone') || h.includes('মোবাইল'));
+                let joiningIdx = headers.findIndex(h => h.includes('join') || h.includes('date') || h.includes('তারিখ'));
+
+                if(idIdx === -1) idIdx = 0;
+                if(nameIdx === -1) nameIdx = 1;
+                if(mobileIdx === -1) mobileIdx = 2;
+                if(joiningIdx === -1) joiningIdx = 3;
+
+                employeeData = {}; 
+                const datalist = document.getElementById("staffListOptions");
+                if(datalist) datalist.innerHTML = '';
+
+                for (let i = 1; i < jsonRows.length; i++) {
+                    const row = jsonRows[i];
+                    if (row && row[idIdx] !== undefined) {
+                        const empId = row[idIdx].toString().trim();
+                        const name = row[nameIdx] ? row[nameIdx].toString() : "";
+                        const mobile = row[mobileIdx] ? row[mobileIdx].toString() : "";
+                        let joining = row[joiningIdx] ? row[joiningIdx].toString() : "";
+
+                        employeeData[empId] = { name: name, mobile: mobile, joining: joining };
+
+                        if(datalist) {
+                            const opt = document.createElement("option");
+                            opt.value = empId;
+                            opt.label = name + " (" + empId + ")";
+                            datalist.appendChild(opt);
+                        }
+                    }
+                }
+
+                alert("✅ Master Employee List Uploaded Successfully!");
+
+            } catch (error) {
+                console.error(error);
+                alert("⚠️ ফাইল পড়তে সমস্যা হয়েছে। সঠিক ফরম্যাটের ফাইল দিন।");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function onStaffSelected() {
+        const inputVal = document.getElementById("staffSearchInput").value.trim();
+        if (employeeData[inputVal]) {
+            document.getElementById("name").value = employeeData[inputVal].name;
+            document.getElementById("mobile").value = employeeData[inputVal].mobile;
+            document.getElementById("joiningDate").value = employeeData[inputVal].joining;
+        } else {
+            document.getElementById("name").value = "";
+            document.getElementById("mobile").value = "";
+            document.getElementById("joiningDate").value = "";
+        }
+    }
+
+    function calculateDays() {
+        const fromDateStr = document.getElementById("fromDate").value;
+        const toDateStr = document.getElementById("toDate").value;
+        const badge = document.getElementById("totalDaysText");
+
+        if (fromDateStr && toDateStr) {
+            const diffTime = new Date(toDateStr) - new Date(fromDateStr);
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+            if (diffDays > 0) {
+                badge.innerText = `⏱️ মোট ছুটির দিন: ${diffDays} দিন`;
+            } else if (diffDays === 0) {
+                badge.innerText = `⏱️ মোট ছুটির দিন: ১ দিন (একই দিন)`;
+            } else {
+                badge.innerText = `⚠️ ভুল তারিখ! 'To Date' সঠিক নয়।`;
+            }
+        } else {
+            badge.innerText = `⏱️ মোট ছুটির দিন: ০ দিন`;
+        }
+    }
+
+    function checkLeaveType() {
+        const leaveType = document.getElementById("leaveType").value;
+        const remarksBox = document.getElementById("elRemarks");
+        if(!remarksBox) return;
+        remarksBox.style.display = (leaveType === "EL") ? "block" : "none";
+    }
+
+    function renderReports() {
+        const tbody = document.getElementById("reportTableBody");
+        if (leaveReports.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="no-data-row">এখনো কোনো লিভ এন্ট্রি করা হয়নি।</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = "";
+        leaveReports.forEach(rep => {
+            let imgColumn = `<span class="no-image">ছবি নেই</span>`;
+            if (rep.imageUrl) {
+                imgColumn = `<img src="${rep.imageUrl}" class="thumb-img" onclick="openModal('${rep.imageUrl}')" title="বড় করে দেখতে ক্লিক করুন">`;
+            }
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><b>${rep.staffId}</b></td>
+                <td>${rep.name}</td>
+                <td>${rep.leaveType}</td>
+                <td>${rep.fromDate} <br><small>হতে ${rep.toDate}</small></td>
+                <td><b>${rep.totalDays} দিন</b></td>
+                <td>${imgColumn}</td>
+                <td>${rep.cause}</td>
+                <td><button class="action-del-btn" onclick="deleteReport('${rep.firebaseKey}')">ডিলিট</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function deleteReport(firebaseKey) {
+        if (confirm("আপনি কি এই লিভ এন্ট্রিটি ডিলিট করতে চান?")) {
+            db.ref('leaveReports/' + firebaseKey).remove().then(() => {
+                alert("✅ সফলভাবে ডিলিট করা হয়েছে!");
+            }).catch(error => {
+                alert("⚠️ ডিলিট করতে সমস্যা হয়েছে: " + error.message);
+            });
+        }
+    }
+
+    function openModal(imgSrc) {
+        const modal = document.getElementById("imageModal");
+        const modalImg = document.getElementById("modalImg");
+        modal.style.display = "flex";
+        modalImg.src = imgSrc;
+    }
+
+    function closeModal() {
+        document.getElementById("imageModal").style.display = "none";
+    }
+
+    function toggleReportView() {
+        const wrapper = document.getElementById("reportSectionWrapper");
+        const btn = document.getElementById("toggleReportBtn");
+        if (wrapper.style.display === "none") {
+            wrapper.style.display = "block";
+            btn.innerText = "Hide";
+        } else {
+            wrapper.style.display = "none";
+            btn.innerText = "Show";
+        }
+    }
+
+    function downloadExcel() {
+        if (leaveReports.length === 0) {
+            alert("⚠️ ডাউনলোড করার মতো কোনো রিপোর্ট ডেটা নেই!");
+            return;
+        }
+
+        const exportData = leaveReports.map(r => ({
+            "Staff ID": r.staffId,
+            "Name": r.name,
+            "Mobile": r.mobile,
+            "Leave Type": r.leaveType,
+            "From Date": r.fromDate,
+            "To Date": r.toDate,
+            "Total Days": r.totalDays,
+            "Authority Image File": r.imageName,
+            "Causes": r.cause
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Leave Reports");
+        XLSX.writeFile(workbook, "Leave_Report_List.xlsx");
+
+        let imageCount = 0;
+        leaveReports.forEach((r) => {
+            if (r.imageUrl && r.imageName !== "নেই") {
+                imageCount++;
+                const link = document.createElement('a');
+                link.href = r.imageUrl;
+                link.download = `Leave_${r.staffId}_${r.imageName}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+
+        if (imageCount > 0) {
+            alert(`✅ Excel ফাইল ডাউনলোডের পাশাপাশি সাথে ${imageCount}টি অনুমোদন ছবিও আপনার কম্পিউটারে ডাউনলোড হয়ে গেছে!`);
+        } else {
+            alert("✅ Excel ফাইল সফলভাবে ডাউনলোড হয়েছে!");
+        }
+    }
+</script>
+
+</body>
+</html>
