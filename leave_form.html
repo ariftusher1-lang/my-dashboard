@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Leave Entry Form & Live Realtime Portal</title>
+    <title>Employee Leave Entry Form & Approval Portal</title>
     <!-- SheetJS Library Excel ফাইল পড়ার ও ডাউনলোডের জন্য -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- QRCode Generator Library -->
@@ -84,6 +84,7 @@
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
             border-top: 5px solid #2a5298;
         }
+        .card.approval-card { border-top-color: #f39c12; background: #fffdf5; }
         .card.report-card { border-top-color: #2ed573; background: #f4fff7; }
         .card.upload-card { border-top-color: #ff9f43; background: #fffdf9; }
         .card.qr-card { border-top-color: #3742fa; background: #f0f3ff; text-align: center; }
@@ -99,6 +100,7 @@
             border-bottom: 2px solid #f1f2f6;
             padding-bottom: 10px;
         }
+        .approval-card .section-title { color: #d35400; }
         .report-card .section-title { color: #2ed573; }
         .upload-card .section-title { color: #e67e22; }
         .qr-card .section-title { color: #3742fa; justify-content: center; }
@@ -163,7 +165,7 @@
         }
         .btn-control { background: #57606f; }
         .btn-excel { background: #20bf6b; }
-        .table-responsive { max-height: 400px; overflow-y: auto; border: 1px solid #dcdde1; border-radius: 6px; background: #fff; }
+        .table-responsive { max-height: 320px; overflow-y: auto; border: 1px solid #dcdde1; border-radius: 6px; background: #fff; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
         th, td { padding: 10px 12px; border-bottom: 1px solid #dfe4ea; vertical-align: middle; }
         th { background-color: #f1f2f6; color: #2f3542; position: sticky; top: 0; z-index: 10; }
@@ -172,6 +174,7 @@
         .modal-content { max-width: 80%; max-height: 80%; border-radius: 8px; }
         .close-modal { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 35px; font-weight: bold; cursor: pointer; }
         .action-del-btn { background: #ff4757; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .approve-checkbox { transform: scale(1.3); cursor: pointer; }
         .no-data-row { text-align: center; color: #a4b0be; padding: 25px; font-style: italic; }
         
         #qrcode {
@@ -188,13 +191,13 @@
 
 <!-- Top Header -->
 <div class="top-header">
-    <h1>📦 লিভ এন্ট্রি ও রিয়েল-টাইম পোর্টাল <span class="live-badge">🔴 লাইভ</span></h1>
+    <h1>📦 লিভ এন্ট্রি ও ডিপার্টমেন্ট হেড এপ্রোভাল পোর্টাল <span class="live-badge">🔴 লাইভ</span></h1>
     <div class="time-display" id="liveTime"></div>
 </div>
 
 <!-- Notice Bar -->
 <div class="notice-bar">
-    📢 ক্লাউড ডাটাবেজ আপডেট করা হয়েছে—এখন যেকোনো ডিভাইস থেকে মাস্টার লিস্ট ও লিভ এন্ট্রি রিয়েল-টাইমে পাওয়া যাবে!
+    📢 নতুন আপডেট: এন্ট্রি সাবমিট করার পর ডিপার্টমেন্ট হেড অ্যাপ্রুভ করলে তবেই তা মূল লাইভ রিপোর্টে যাবে। ডিলিট করতে পাসওয়ার্ড লাগবে (Password: Leave)।
 </div>
 
 <!-- Main Wrapper -->
@@ -274,6 +277,34 @@
     <!-- Column 2: Right Section -->
     <div class="right-column">
         
+        <!-- Waiting Department Head Approval Card -->
+        <div class="card approval-card">
+            <div class="section-title">
+                <span>⏳ Waiting Department Head Approval</span>
+            </div>
+            <div class="table-responsive">
+                <table id="approvalTable">
+                    <thead>
+                        <tr>
+                            <th>আইডি</th>
+                            <th>নাম</th>
+                            <th>টাইপ</th>
+                            <th>তারিখ</th>
+                            <th>মোট দিন</th>
+                            <th>ছবি</th>
+                            <th>কারণ</th>
+                            <th>অ্যাপ্রুভ (Tick)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approvalTableBody">
+                        <tr>
+                            <td colspan="8" class="no-data-row">অপেক্ষমাণ কোনো এন্ট্রি নেই।</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Live Report Table Card -->
         <div class="card report-card">
             <div class="section-title">
@@ -391,6 +422,7 @@
     updateTime();
 
     let employeeData = {};
+    let pendingApprovals = [];
     let leaveReports = [];
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -432,6 +464,19 @@
             }
         });
 
+        // Fetch Pending Approvals from Firebase
+        db.ref('pendingApprovals').on('value', (snapshot) => {
+            const data = snapshot.val();
+            pendingApprovals = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    pendingApprovals.push({ firebaseKey: key, ...data[key] });
+                });
+                pendingApprovals.reverse();
+            }
+            renderApprovals();
+        });
+
         // Fetch Leave Reports from Firebase Realtime Database
         db.ref('leaveReports').on('value', (snapshot) => {
             const data = snapshot.val();
@@ -469,11 +514,10 @@
 
                 const submitButton = this.querySelector('.btn-submit');
                 submitButton.disabled = true;
-                submitButton.innerText = "Saving to Cloud...";
+                submitButton.innerText = "Submitting for Approval...";
 
                 let processData = (imageUrl = "", imageName = "নেই") => {
-                    const newReport = {
-                        id: Date.now(),
+                    const newPending = {
                         staffId: staffId,
                         name: name,
                         mobile: mobile,
@@ -486,14 +530,14 @@
                         imageName: imageName
                     };
 
-                    db.ref('leaveReports').push(newReport, (error) => {
+                    db.ref('pendingApprovals').push(newPending, (error) => {
                         submitButton.disabled = false;
                         submitButton.innerText = "💾 এন্ট্রি সেভ করুন";
                         
                         if (error) {
-                            alert("⚠️ ডাটা সেভ করতে সমস্যা হয়েছে: " + error.message);
+                            alert("⚠️ এন্ট্রি সাবমিট করতে সমস্যা হয়েছে: " + error.message);
                         } else {
-                            alert("✅ Leave Entry Successfully Saved to Cloud!");
+                            alert("✅ সফলভাবে সাবমিট হয়েছে এবং 'Waiting Department Head Approval' সেকশনে পাঠানো হয়েছে!");
                             leaveForm.reset();
                             document.getElementById("elRemarks").style.display = "none";
                             document.getElementById("name").value = "";
@@ -561,7 +605,6 @@
                     }
                 }
 
-                // Save Master List to Firebase Database so all devices can access it
                 db.ref('masterEmployees').set(parsedEmployees, (error) => {
                     if (error) {
                         alert("⚠️ ক্লাউডে মাস্টার লিস্ট সেভ করতে সমস্যা হয়েছে: " + error.message);
@@ -619,10 +662,72 @@
         remarksBox.style.display = (leaveType === "EL") ? "block" : "none";
     }
 
+    function renderApprovals() {
+        const tbody = document.getElementById("approvalTableBody");
+        if (pendingApprovals.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="no-data-row">অপেক্ষমাণ কোনো এন্ট্রি নেই।</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = "";
+        pendingApprovals.forEach(item => {
+            let imgColumn = `<span class="no-image">ছবি নেই</span>`;
+            if (item.imageUrl) {
+                imgColumn = `<img src="${item.imageUrl}" class="thumb-img" onclick="openModal('${item.imageUrl}')" title="বড় করে দেখতে ক্লিক করুন">`;
+            }
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><b>${item.staffId}</b></td>
+                <td>${item.name}</td>
+                <td>${item.leaveType}</td>
+                <td>${item.fromDate} <br><small>হতে ${item.toDate}</small></td>
+                <td><b>${item.totalDays} দিন</b></td>
+                <td>${imgColumn}</td>
+                <td>${item.cause}</td>
+                <td><input type="checkbox" class="approve-checkbox" onclick="approveEntry('${item.firebaseKey}')" title="অ্যাপ্রুভ করতে টিক দিন"></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function approveEntry(firebaseKey) {
+        if(confirm("আপনি কি এই লিভ আবেদনটি অ্যাপ্রুভ করতে চান? এটি লাইভ লিভ রিপোর্ট টেবিলে চলে যাবে।")) {
+            const itemToMove = pendingApprovals.find(i => i.firebaseKey === firebaseKey);
+            if(itemToMove) {
+                const newReport = {
+                    staffId: itemToMove.staffId,
+                    name: itemToMove.name,
+                    mobile: itemToMove.mobile,
+                    leaveType: itemToMove.leaveType,
+                    fromDate: itemToMove.fromDate,
+                    toDate: itemToMove.toDate,
+                    totalDays: itemToMove.totalDays,
+                    cause: itemToMove.cause,
+                    imageUrl: itemToMove.imageUrl,
+                    imageName: itemToMove.imageName
+                };
+
+                // Add to Live Reports and Remove from Pending Approvals
+                db.ref('leaveReports').push(newReport, (error) => {
+                    if(!error) {
+                        db.ref('pendingApprovals/' + firebaseKey).remove().then(() => {
+                            alert("✅ সফলভাবে অ্যাপ্রুভ করা হয়েছে এবং লাইভ রিপোর্টে যুক্ত হয়েছে!");
+                        });
+                    } else {
+                        alert("⚠️ সমস্যা হয়েছে: " + error.message);
+                    }
+                });
+            }
+        } else {
+            renderApprovals(); // Reset checkbox if cancelled
+        }
+    }
+
     function renderReports() {
         const tbody = document.getElementById("reportTableBody");
         if (leaveReports.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="no-data-row">এখনো কোনো লিভ এন্ট্রি করা হয়নি।</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="no-data-row">এখনো কোনো অনুমোদিত লিভ এন্ট্রি নেই।</td></tr>`;
             return;
         }
 
@@ -649,12 +754,19 @@
     }
 
     function deleteReport(firebaseKey) {
-        if (confirm("আপনি কি এই লিভ এন্ট্রিটি ডিলিট করতে চান?")) {
-            db.ref('leaveReports/' + firebaseKey).remove().then(() => {
-                alert("✅ সফলভাবে ডিলিট করা হয়েছে!");
-            }).catch(error => {
-                alert("⚠️ ডিলিট করতে সমস্যা হয়েছে: " + error.message);
-            });
+        const password = prompt("⚠️ এই এন্ট্রিটি ডিলিট করতে পাসওয়ার্ড দিন:");
+        if (password === null) return; // Cancelled
+        
+        if (password === "Leave") {
+            if (confirm("আপনি কি সত্যিই এই এন্ট্রিটি ডিলিট করতে চান?")) {
+                db.ref('leaveReports/' + firebaseKey).remove().then(() => {
+                    alert("✅ সফলভাবে ডিলিট করা হয়েছে!");
+                }).catch(error => {
+                    alert("⚠️ ডিলিট করতে সমস্যা হয়েছে: " + error.message);
+                });
+            }
+        } else {
+            alert("❌ ভুল পাসওয়ার্ড! ডিলিট করা সম্ভব হয়নি। সঠিক পাসওয়ার্ড দিন (Leave)।");
         }
     }
 
