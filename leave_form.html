@@ -88,7 +88,7 @@
         /* ল্যাপটপ বা বড় স্ক্রিনের জন্য টু-কলাম লেআউট */
         @media (min-width: 992px) {
             .wrapper.admin-layout {
-                grid-template-columns: 400px 1fr;
+                grid-template-columns: 420px 1fr;
             }
         }
 
@@ -242,12 +242,12 @@
 
 <!-- Admin Login / Mode Toggle Bar -->
 <div class="admin-toggle-bar" id="adminToggleBar">
-    <button class="btn-admin-login" onclick="requestAdminAccess()">🔐 ডিপার্টমেন্ট হেড / অ্যাডমিন লগইন</button>
+    <button class="btn-admin-login" onclick="requestAdminAccess()">🔐 অ্যাডমিন প্যানেল লগইন</button>
 </div>
 
 <!-- Notice Bar -->
 <div class="notice-bar">
-    📢 নির্দেশনা: আপনার সঠিক স্টাফ আইডি সিলেক্ট করে ছুটির আবেদন ফরম পূরণ করুন।
+    📢 নির্দেশনা: আপনার সঠিক স্টাফ আইডি সিলেক্ট করে ছুটির আবেদন ফরম পূরণ করুন এবং নিচের সেকশনে স্ট্যাটাস দেখুন।
 </div>
 
 <!-- Main Wrapper -->
@@ -324,11 +324,11 @@
         </form>
     </div>
 
-    <!-- Column 2: Right Section (Admin Only: Approval, Report, QR & Upload) -->
-    <div class="right-column" id="adminRightColumn" style="display: none;">
+    <!-- Column 2: Right Section (User sees Approval card; Admin sees all cards) -->
+    <div class="right-column" id="rightColumn">
         
-        <!-- Waiting Department Head Approval Card -->
-        <div class="card approval-card">
+        <!-- Waiting Department Head Approval Card (Visible in User Mode & Admin Mode) -->
+        <div class="card approval-card" id="approvalCard">
             <div class="section-title"><span>⏳ Waiting Department Head Approval</span></div>
             <div class="table-responsive">
                 <table id="approvalTable">
@@ -341,7 +341,7 @@
                             <th>দিন</th>
                             <th>ছবি</th>
                             <th>কারণ</th>
-                            <th>অ্যাপ্রুভ</th>
+                            <th id="approvalActionHeader">অ্যাপ্রুভ</th>
                         </tr>
                     </thead>
                     <tbody id="approvalTableBody">
@@ -351,8 +351,8 @@
             </div>
         </div>
 
-        <!-- Live Report Table Card -->
-        <div class="card report-card">
+        <!-- Live Report Table Card (Admin Only) -->
+        <div class="card report-card admin-only-feature" style="display: none;">
             <div class="section-title">
                 <span>📊 লাইভ লিভ রিপোর্ট টেবিল</span>
                 <div class="report-controls">
@@ -384,17 +384,17 @@
             </div>
         </div>
 
-        <!-- QR Code Card -->
-        <div class="card qr-card">
+        <!-- QR Code Card (Admin Only) -->
+        <div class="card qr-card admin-only-feature" style="display: none;">
             <div class="section-title">📱 স্ক্যান করে ফরম ওপেন করুন (QR Code)</div>
             <p style="font-size: 12px; color: #57606f; margin-bottom: 8px;">
-                এই QR কোডটি স্ক্যান করলে সরাসরি শুধু নতুন লিভ এন্ট্রি ফরমটি ওপেন হবে।
+                এই QR কোডটি স্ক্যান করলে সরাসরি শুধু নতুন লিভ এন্ট্রি ফরম ও ওয়েটিং লিস্ট ওপেন হবে।
             </p>
             <div id="qrcode"></div>
         </div>
 
-        <!-- Master Employee List Upload Card -->
-        <div class="card upload-card">
+        <!-- Master Employee List Upload Card (Admin Only) -->
+        <div class="card upload-card admin-only-feature" style="display: none;">
             <div class="section-title"><span>📁 মাস্টার লিস্ট আপলোড</span></div>
             <p style="font-size: 12px; color: #636e72; margin-bottom: 10px;">
                 এক্সেল ফাইল আপলোড করে ক্লাউডে সিঙ্ক করুন।
@@ -432,19 +432,20 @@
     let isAdminMode = false;
 
     window.onload = function() {
-        // Generate QR code pointing to clean entry page URL (without admin params)
         const cleanBaseUrl = window.location.origin + window.location.pathname;
-        document.getElementById("qrcode").innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), {
-            text: cleanBaseUrl,
-            width: 120,
-            height: 120,
-            colorDark: "#1e3c72",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
+        const qrContainer = document.getElementById("qrcode");
+        if(qrContainer) {
+            qrContainer.innerHTML = "";
+            new QRCode(qrContainer, {
+                text: cleanBaseUrl,
+                width: 120,
+                height: 120,
+                colorDark: "#1e3c72",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
 
-        // Check if URL has admin mode query or session
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'admin' || sessionStorage.getItem('adminAuth') === 'true') {
             enableAdminMode();
@@ -456,22 +457,31 @@
     function enableUserMode() {
         isAdminMode = false;
         document.getElementById("modeBadge").innerText = "👤 ইউজার মোড (স্ক্যানার ভিউ)";
-        document.getElementById("adminRightColumn").style.display = "none";
         document.getElementById("adminToggleBar").style.display = "block";
         document.getElementById("mainWrapper").classList.remove("admin-layout");
+
+        // Hide admin-only features
+        document.querySelectorAll('.admin-only-feature').forEach(el => el.style.display = 'none');
+        document.getElementById("approvalActionHeader").style.display = "none"; // Hide checkbox header for normal users
+        renderApprovals();
     }
 
     function enableAdminMode() {
         isAdminMode = true;
         sessionStorage.setItem('adminAuth', 'true');
-        document.getElementById("modeBadge").innerText = "👑 ডিপার্টমেন্ট হেড / অ্যাডমিন মোড";
-        document.getElementById("adminRightColumn").style.display = "flex";
+        document.getElementById("modeBadge").innerText = "👑 অ্যাডমিন প্যানেল মোড";
         document.getElementById("adminToggleBar").style.display = "none";
         document.getElementById("mainWrapper").classList.add("admin-layout");
+
+        // Show admin-only features
+        document.querySelectorAll('.admin-only-feature').forEach(el => el.style.display = 'block');
+        document.getElementById("approvalActionHeader").style.display = "table-cell"; // Show checkbox header for admin
+        renderApprovals();
+        renderReports();
     }
 
     function requestAdminAccess() {
-        const pass = prompt("🔐 ডিপার্টমেন্ট হেড / অ্যাডমিন পাসওয়ার্ড দিন:");
+        const pass = prompt("🔐 অ্যাডমিন পাসওয়ার্ড দিন:");
         if (pass === "Leave") {
             enableAdminMode();
             alert("✅ অ্যাডমিন মোড সফলভাবে সচল করা হয়েছে!");
@@ -542,7 +552,7 @@
                 });
                 pendingApprovals.reverse();
             }
-            if(isAdminMode) renderApprovals();
+            renderApprovals();
         });
 
         // Fetch Leave Reports
@@ -605,7 +615,7 @@
                         if (error) {
                             alert("⚠️ এন্ট্রি সাবমিট করতে সমস্যা হয়েছে: " + error.message);
                         } else {
-                            alert("✅ সফলভাবে সাবমিট হয়েছে এবং ডিপার্টমেন্ট হেড অ্যাপ্রুভালে পাঠানো হয়েছে!");
+                            alert("✅ সফলভাবে সাবমিট হয়েছে এবং ওয়েটিং লিস্টে যুক্ত হয়েছে!");
                             leaveForm.reset();
                             document.getElementById("elRemarks").style.display = "none";
                             document.getElementById("name").value = "";
@@ -729,7 +739,7 @@
     function renderApprovals() {
         const tbody = document.getElementById("approvalTableBody");
         if (pendingApprovals.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="no-data-row">অপেক্ষমাণ কোনো এন্ট্রি নেই।</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${isAdminMode ? 8 : 7}" class="no-data-row">অপেক্ষমাণ কোনো এন্ট্রি নেই।</td></tr>`;
             return;
         }
 
@@ -738,6 +748,11 @@
             let imgColumn = `<span style="color:#aaa; font-size:11px;">নেই</span>`;
             if (item.imageUrl) {
                 imgColumn = `<img src="${item.imageUrl}" class="thumb-img" onclick="openModal('${item.imageUrl}')">`;
+            }
+
+            let actionCol = "";
+            if (isAdminMode) {
+                actionCol = `<td><input type="checkbox" class="approve-checkbox" onclick="approveEntry('${item.firebaseKey}')" title="অ্যাপ্রুভ করতে টিক দিন"></td>`;
             }
 
             const tr = document.createElement("tr");
@@ -749,13 +764,14 @@
                 <td><b>${item.totalDays} দিন</b></td>
                 <td>${imgColumn}</td>
                 <td>${item.cause}</td>
-                <td><input type="checkbox" class="approve-checkbox" onclick="approveEntry('${item.firebaseKey}')"></td>
+                ${actionCol}
             `;
             tbody.appendChild(tr);
         });
     }
 
     function approveEntry(firebaseKey) {
+        if(!isAdminMode) return;
         if(confirm("আপনি কি এই লিভ আবেদনটি অ্যাপ্রুভ করতে চান? এটি লাইভ লিভ রিপোর্ট টেবিলে চলে যাবে।")) {
             const itemToMove = pendingApprovals.find(i => i.firebaseKey === firebaseKey);
             if(itemToMove) {
