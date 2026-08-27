@@ -3,102 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Leave Entry Form & Approval Portal</title>
-    <!-- SheetJS Library Excel ফাইল পড়ার ও ডাউনলোডের জন্য -->
+    <title>Employee Leave Entry & Approval Portal</title>
+    <!-- SheetJS Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- QRCode Generator Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
-    <!-- Firebase App (Modular SDK) -->
+    <!-- Firebase App & Database -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     
     <style>
+        :root {
+            --primary: #1e3c72;
+            --secondary: #2a5298;
+            --success: #2ed573;
+            --warning: #ffa502;
+            --danger: #ff4757;
+            --dark: #2f3542;
+            --light: #f8f9fa;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'SolaimanLipi', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             margin: 0;
             padding: 0;
             min-height: 100vh;
+            color: var(--dark);
         }
+
         .top-header {
-            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
-            padding: 15px 25px;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .top-header h1 {
             margin: 0;
-            font-size: 22px;
+            font-size: 18px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         .live-badge {
-            background-color: #ff4757;
+            background-color: var(--danger);
             color: white;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: bold;
-            box-shadow: 0 0 8px rgba(255, 71, 87, 0.6);
         }
         .time-display {
-            font-size: 14px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 5px 10px;
-            border-radius: 5px;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 4px;
         }
+
         .notice-bar {
             background: linear-gradient(90deg, #d4fc79 0%, #96e6a1 100%);
             color: #1b5e20;
-            padding: 10px;
+            padding: 8px 15px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             box-shadow: inset 0 -2px 5px rgba(0,0,0,0.05);
         }
+
         .wrapper {
-            max-width: 1350px;
-            margin: 30px auto;
+            max-width: 1300px;
+            margin: 20px auto;
             display: grid;
-            grid-template-columns: 420px 1fr;
+            grid-template-columns: 1fr;
             gap: 20px;
-            padding: 0 15px;
+            padding: 0 12px;
         }
-        @media (max-width: 1000px) {
-            .wrapper { grid-template-columns: 1fr; }
+
+        /* ল্যাপটপ বা বড় স্ক্রিনের জন্য টু-কলাম লেআউট */
+        @media (min-width: 992px) {
+            .wrapper.admin-layout {
+                grid-template-columns: 400px 1fr;
+            }
         }
+
         .right-column {
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
+
         .card {
             background: #ffffff;
-            padding: 25px;
+            padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-            border-top: 5px solid #2a5298;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            border-top: 4px solid var(--secondary);
         }
-        .card.approval-card { border-top-color: #f39c12; background: #fffdf5; }
-        .card.report-card { border-top-color: #2ed573; background: #f4fff7; }
+        .card.approval-card { border-top-color: var(--warning); background: #fffdf5; }
+        .card.report-card { border-top-color: var(--success); background: #f4fff7; }
         .card.upload-card { border-top-color: #ff9f43; background: #fffdf9; }
         .card.qr-card { border-top-color: #3742fa; background: #f0f3ff; text-align: center; }
-        
+
         .section-title {
-            color: #2a5298;
-            font-size: 18px;
+            color: var(--secondary);
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 18px;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 2px solid #f1f2f6;
-            padding-bottom: 10px;
+            padding-bottom: 8px;
         }
         .approval-card .section-title { color: #d35400; }
         .report-card .section-title { color: #2ed573; }
@@ -106,84 +127,108 @@
         .qr-card .section-title { color: #3742fa; justify-content: center; }
 
         .form-group { margin-bottom: 12px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; color: #2f3542; font-size: 13px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        label { display: block; margin-bottom: 4px; font-weight: 600; color: var(--dark); font-size: 12px; }
         select, input, textarea {
             width: 100%;
-            padding: 10px;
+            padding: 9px 10px;
             border: 1px solid #ced6e0;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
             box-sizing: border-box;
             background-color: #f8f9fa;
         }
         input[readonly] { background-color: #e4e7eb; color: #57606f; }
-        textarea { resize: vertical; height: 65px; }
+        textarea { resize: vertical; height: 60px; }
+        
         .remarks-box {
             display: none;
             background-color: #fff3cd;
             color: #856404;
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ffeeba;
             border-radius: 6px;
-            margin-top: 6px;
-            font-size: 13px;
+            margin-top: 5px;
+            font-size: 12px;
         }
         .total-days-badge {
             background-color: #e3f2fd;
             color: #0d47a1;
-            padding: 10px;
+            padding: 8px;
             border-radius: 6px;
             border: 1px solid #bbdefb;
             font-weight: bold;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             margin-top: 5px;
         }
         .btn-submit {
             background: linear-gradient(135deg, #1dd1a1 0%, #10ac84 100%);
             color: white;
-            padding: 12px 20px;
+            padding: 11px 15px;
             border: none;
             border-radius: 6px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
+            transition: 0.2s;
         }
+        .btn-submit:hover { opacity: 0.9; }
+
         .file-input-wrapper {
             border: 2px dashed #ff9f43;
-            padding: 15px;
+            padding: 12px;
             text-align: center;
             border-radius: 6px;
             background: #fffaf0;
         }
-        
-        .report-controls { display: flex; gap: 10px; }
+
+        .report-controls { display: flex; gap: 8px; }
         .btn-control, .btn-excel {
-            border: none; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600; color: white;
+            border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: 600; color: white;
         }
         .btn-control { background: #57606f; }
         .btn-excel { background: #20bf6b; }
-        .table-responsive { max-height: 320px; overflow-y: auto; border: 1px solid #dcdde1; border-radius: 6px; background: #fff; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-        th, td { padding: 10px 12px; border-bottom: 1px solid #dfe4ea; vertical-align: middle; }
-        th { background-color: #f1f2f6; color: #2f3542; position: sticky; top: 0; z-index: 10; }
-        .thumb-img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+        
+        .table-responsive { max-height: 280px; overflow-y: auto; border: 1px solid #dcdde1; border-radius: 6px; background: #fff; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid #dfe4ea; vertical-align: middle; }
+        th { background-color: #f1f2f6; color: var(--dark); position: sticky; top: 0; z-index: 10; }
+        .thumb-img { width: 35px; height: 35px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+        
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
         .modal-content { max-width: 80%; max-height: 80%; border-radius: 8px; }
-        .close-modal { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 35px; font-weight: bold; cursor: pointer; }
-        .action-del-btn { background: #ff4757; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; }
-        .approve-checkbox { transform: scale(1.3); cursor: pointer; }
-        .no-data-row { text-align: center; color: #a4b0be; padding: 25px; font-style: italic; }
+        .close-modal { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 30px; font-weight: bold; cursor: pointer; }
+        
+        .action-del-btn { background: var(--danger); color: white; border: none; padding: 3px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        .approve-checkbox { transform: scale(1.2); cursor: pointer; }
+        .no-data-row { text-align: center; color: #a4b0be; padding: 20px; font-style: italic; }
         
         #qrcode {
             display: inline-block;
-            padding: 10px;
+            padding: 8px;
             background: white;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            margin-top: 10px;
+            margin-top: 8px;
+        }
+
+        /* অ্যাডমিন বাটন প্যানেল হেডার */
+        .admin-toggle-bar {
+            text-align: right;
+            padding: 8px 20px 0 20px;
+            background: #f5f7fa;
+        }
+        .btn-admin-login {
+            background: #3742fa;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -191,26 +236,31 @@
 
 <!-- Top Header -->
 <div class="top-header">
-    <h1>📦 লিভ এন্ট্রি ও ডিপার্টমেন্ট হেড এপ্রোভাল পোর্টাল <span class="live-badge">🔴 লাইভ</span></h1>
+    <h1>📦 লিভ এন্ট্রি পোর্টাল <span class="live-badge" id="modeBadge">👤 ইউজার মোড</span></h1>
     <div class="time-display" id="liveTime"></div>
+</div>
+
+<!-- Admin Login / Mode Toggle Bar -->
+<div class="admin-toggle-bar" id="adminToggleBar">
+    <button class="btn-admin-login" onclick="requestAdminAccess()">🔐 ডিপার্টমেন্ট হেড / অ্যাডমিন লগইন</button>
 </div>
 
 <!-- Notice Bar -->
 <div class="notice-bar">
-    📢 নতুন আপডেট: এন্ট্রি সাবমিট করার পর ডিপার্টমেন্ট হেড অ্যাপ্রুভ করলে তবেই তা মূল লাইভ রিপোর্টে যাবে। ডিলিট করতে পাসওয়ার্ড লাগবে (Password: Leave)।
+    📢 নির্দেশনা: আপনার সঠিক স্টাফ আইডি সিলেক্ট করে ছুটির আবেদন ফরম পূরণ করুন।
 </div>
 
 <!-- Main Wrapper -->
-<div class="wrapper">
+<div class="wrapper" id="mainWrapper">
 
     <!-- Column 1: Leave Entry Form -->
-    <div class="card">
+    <div class="card" id="leaveFormCard">
         <div class="section-title">➕ নতুন লিভ এন্ট্রি ফরম</div>
 
         <form id="leaveForm">
             <div class="form-group">
                 <label>স্টাফ আইডি সার্চ করুন (Search Staff ID)</label>
-                <input list="staffListOptions" id="staffSearchInput" placeholder="এখানে আইডি লিখে দ্রুত সার্চ করুন..." autocomplete="off">
+                <input list="staffListOptions" id="staffSearchInput" placeholder="আইডি বা নাম লিখে সার্চ করুন..." autocomplete="off" required>
                 <datalist id="staffListOptions"></datalist>
             </div>
 
@@ -227,7 +277,7 @@
 
             <div class="form-group">
                 <label>যোগদানের তারিখ (Joining Date)</label>
-                <input type="text" id="joiningDate" readonly placeholder="অটো শো করবে">
+                <input type="text" id="joiningDate" readonly placeholder="অটো শো">
             </div>
 
             <div class="form-group">
@@ -265,23 +315,21 @@
 
             <div class="form-group">
                 <label>কর্তৃপক্ষের অনুমোদন ছবি (Authority Image)</label>
-                <input type="file" id="authorityImage" accept="image/*" style="padding: 7px; background: #fff;">
+                <input type="file" id="authorityImage" accept="image/*" style="padding: 5px; background: #fff;">
             </div>
 
-            <div class="form-group" style="margin-top: 15px;">
-                <button type="submit" class="btn-submit">💾 এন্ট্রি সেভ করুন</button>
+            <div class="form-group" style="margin-top: 12px;">
+                <button type="submit" class="btn-submit">💾 এন্ট্রি সাবমিট করুন</button>
             </div>
         </form>
     </div>
 
-    <!-- Column 2: Right Section -->
-    <div class="right-column">
+    <!-- Column 2: Right Section (Admin Only: Approval, Report, QR & Upload) -->
+    <div class="right-column" id="adminRightColumn" style="display: none;">
         
         <!-- Waiting Department Head Approval Card -->
         <div class="card approval-card">
-            <div class="section-title">
-                <span>⏳ Waiting Department Head Approval</span>
-            </div>
+            <div class="section-title"><span>⏳ Waiting Department Head Approval</span></div>
             <div class="table-responsive">
                 <table id="approvalTable">
                     <thead>
@@ -290,16 +338,14 @@
                             <th>নাম</th>
                             <th>টাইপ</th>
                             <th>তারিখ</th>
-                            <th>মোট দিন</th>
+                            <th>দিন</th>
                             <th>ছবি</th>
                             <th>কারণ</th>
-                            <th>অ্যাপ্রুভ (Tick)</th>
+                            <th>অ্যাপ্রুভ</th>
                         </tr>
                     </thead>
                     <tbody id="approvalTableBody">
-                        <tr>
-                            <td colspan="8" class="no-data-row">অপেক্ষমাণ কোনো এন্ট্রি নেই।</td>
-                        </tr>
+                        <tr><td colspan="8" class="no-data-row">অপেক্ষমাণ কোনো এন্ট্রি নেই।</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -310,7 +356,7 @@
             <div class="section-title">
                 <span>📊 লাইভ লিভ রিপোর্ট টেবিল</span>
                 <div class="report-controls">
-                    <button class="btn-excel" onclick="downloadExcel()">📥 Excel Download</button>
+                    <button class="btn-excel" onclick="downloadExcel()">📥 Excel</button>
                     <button class="btn-control" id="toggleReportBtn" onclick="toggleReportView()">Hide</button>
                 </div>
             </div>
@@ -324,16 +370,14 @@
                                 <th>নাম</th>
                                 <th>টাইপ</th>
                                 <th>তারিখ</th>
-                                <th>মোট দিন</th>
-                                <th>অনুমোদন ছবি</th>
+                                <th>দিন</th>
+                                <th>ছবি</th>
                                 <th>কারণ</th>
                                 <th>অ্যাকশন</th>
                             </tr>
                         </thead>
                         <tbody id="reportTableBody">
-                            <tr>
-                                <td colspan="8" class="no-data-row">ডাটা লোড হচ্ছে...</td>
-                            </tr>
+                            <tr><td colspan="8" class="no-data-row">ডাটা লোড হচ্ছে...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -343,8 +387,8 @@
         <!-- QR Code Card -->
         <div class="card qr-card">
             <div class="section-title">📱 স্ক্যান করে ফরম ওপেন করুন (QR Code)</div>
-            <p style="font-size: 13px; color: #57606f; margin-bottom: 10px;">
-                মোবাইল বা যেকোনো ডিভাইস দিয়ে স্ক্যান করলে সরাসরি এই ফরমটি ওপেন হবে।
+            <p style="font-size: 12px; color: #57606f; margin-bottom: 8px;">
+                এই QR কোডটি স্ক্যান করলে সরাসরি শুধু নতুন লিভ এন্ট্রি ফরমটি ওপেন হবে।
             </p>
             <div id="qrcode"></div>
         </div>
@@ -352,22 +396,11 @@
         <!-- Master Employee List Upload Card -->
         <div class="card upload-card">
             <div class="section-title"><span>📁 মাস্টার লিস্ট আপলোড</span></div>
-            <p style="font-size: 13px; color: #636e72; margin-bottom: 12px;">
-                এক্সেল ফাইল আপলোড করলে তা ফায়ারবেসে ক্লাউড সেভ হয়ে যাবে এবং সবাই সার্চ বক্সে আইডি পাবে।
+            <p style="font-size: 12px; color: #636e72; margin-bottom: 10px;">
+                এক্সেল ফাইল আপলোড করে ক্লাউডে সিঙ্ক করুন।
             </p>
-            
             <div class="file-input-wrapper">
-                <input type="file" id="masterFile" accept=".csv, .xlsx, .xls" style="font-size: 12px;">
-            </div>
-
-            <div style="margin-top: 15px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #dfe6e9;">
-                <strong style="font-size: 12px; color: #2d3436;">📌 এক্সেল কলাম বিন্যাস:</strong>
-                <ul style="font-size: 11px; color: #636e72; padding-left: 15px; margin: 5px 0 0 0;">
-                    <li>১ম কলাম: <b>ID</b></li>
-                    <li>২য় কলাম: <b>Name</b></li>
-                    <li>৩য় কলাম: <b>Mobile</b></li>
-                    <li>৪র্থ কলাম: <b>Joining Date</b></li>
-                </ul>
+                <input type="file" id="masterFile" accept=".csv, .xlsx, .xls" style="font-size: 11px;">
             </div>
         </div>
 
@@ -388,29 +421,64 @@
         authDomain: "leave-form-11356.firebaseapp.com",
         databaseURL: "https://leave-form-11356-default-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "leave-form-11356",
-        storageBucket: "leave-form-11356.firebasestorage.app",
+        storageBucket: "leave-form-11356.appspot.com",
         messagingSenderId: "599326009440",
-        appId: "1:599326009440:web:eda7a8e2ff7f8be58d3b05",
-        measurementId: "G-SL3M347DJ4"
+        appId: "1:599326009440:web:eda7a8e2ff7f8be58d3b05"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Automatically Generate QR Code for Current Page URL
+    let isAdminMode = false;
+
     window.onload = function() {
-        const currentUrl = window.location.href;
+        // Generate QR code pointing to clean entry page URL (without admin params)
+        const cleanBaseUrl = window.location.origin + window.location.pathname;
         document.getElementById("qrcode").innerHTML = "";
         new QRCode(document.getElementById("qrcode"), {
-            text: currentUrl,
-            width: 140,
-            height: 140,
+            text: cleanBaseUrl,
+            width: 120,
+            height: 120,
             colorDark: "#1e3c72",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
         });
+
+        // Check if URL has admin mode query or session
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'admin' || sessionStorage.getItem('adminAuth') === 'true') {
+            enableAdminMode();
+        } else {
+            enableUserMode();
+        }
     };
+
+    function enableUserMode() {
+        isAdminMode = false;
+        document.getElementById("modeBadge").innerText = "👤 ইউজার মোড (স্ক্যানার ভিউ)";
+        document.getElementById("adminRightColumn").style.display = "none";
+        document.getElementById("adminToggleBar").style.display = "block";
+        document.getElementById("mainWrapper").classList.remove("admin-layout");
+    }
+
+    function enableAdminMode() {
+        isAdminMode = true;
+        sessionStorage.setItem('adminAuth', 'true');
+        document.getElementById("modeBadge").innerText = "👑 ডিপার্টমেন্ট হেড / অ্যাডমিন মোড";
+        document.getElementById("adminRightColumn").style.display = "flex";
+        document.getElementById("adminToggleBar").style.display = "none";
+        document.getElementById("mainWrapper").classList.add("admin-layout");
+    }
+
+    function requestAdminAccess() {
+        const pass = prompt("🔐 ডিপার্টমেন্ট হেড / অ্যাডমিন পাসওয়ার্ড দিন:");
+        if (pass === "Leave") {
+            enableAdminMode();
+            alert("✅ অ্যাডমিন মোড সফলভাবে সচল করা হয়েছে!");
+        } else if (pass !== null) {
+            alert("❌ ভুল পাসওয়ার্ড! প্রবেশাধিকার সংরক্ষিত।");
+        }
+    }
 
     // Live Clock Update
     function updateTime() {
@@ -443,7 +511,7 @@
         if(fromDateInput) fromDateInput.addEventListener("change", calculateDays);
         if(toDateInput) toDateInput.addEventListener("change", calculateDays);
 
-        // Fetch Master Employee List from Firebase Realtime Database
+        // Fetch Master Employee List
         db.ref('masterEmployees').on('value', (snapshot) => {
             const data = snapshot.val();
             employeeData = {};
@@ -464,7 +532,7 @@
             }
         });
 
-        // Fetch Pending Approvals from Firebase
+        // Fetch Pending Approvals
         db.ref('pendingApprovals').on('value', (snapshot) => {
             const data = snapshot.val();
             pendingApprovals = [];
@@ -474,10 +542,10 @@
                 });
                 pendingApprovals.reverse();
             }
-            renderApprovals();
+            if(isAdminMode) renderApprovals();
         });
 
-        // Fetch Leave Reports from Firebase Realtime Database
+        // Fetch Leave Reports
         db.ref('leaveReports').on('value', (snapshot) => {
             const data = snapshot.val();
             leaveReports = [];
@@ -487,7 +555,7 @@
                 });
                 leaveReports.reverse();
             }
-            renderReports();
+            if(isAdminMode) renderReports();
         });
 
         const leaveForm = document.getElementById("leaveForm");
@@ -514,7 +582,7 @@
 
                 const submitButton = this.querySelector('.btn-submit');
                 submitButton.disabled = true;
-                submitButton.innerText = "Submitting for Approval...";
+                submitButton.innerText = "Submitting...";
 
                 let processData = (imageUrl = "", imageName = "নেই") => {
                     const newPending = {
@@ -532,12 +600,12 @@
 
                     db.ref('pendingApprovals').push(newPending, (error) => {
                         submitButton.disabled = false;
-                        submitButton.innerText = "💾 এন্ট্রি সেভ করুন";
+                        submitButton.innerText = "💾 এন্ট্রি সাবমিট করুন";
                         
                         if (error) {
                             alert("⚠️ এন্ট্রি সাবমিট করতে সমস্যা হয়েছে: " + error.message);
                         } else {
-                            alert("✅ সফলভাবে সাবমিট হয়েছে এবং 'Waiting Department Head Approval' সেকশনে পাঠানো হয়েছে!");
+                            alert("✅ সফলভাবে সাবমিট হয়েছে এবং ডিপার্টমেন্ট হেড অ্যাপ্রুভালে পাঠানো হয়েছে!");
                             leaveForm.reset();
                             document.getElementById("elRemarks").style.display = "none";
                             document.getElementById("name").value = "";
@@ -571,7 +639,6 @@
             try {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -600,21 +667,18 @@
                         const name = row[nameIdx] ? row[nameIdx].toString() : "";
                         const mobile = row[mobileIdx] ? row[mobileIdx].toString() : "";
                         let joining = row[joiningIdx] ? row[joiningIdx].toString() : "";
-
                         parsedEmployees[empId] = { name: name, mobile: mobile, joining: joining };
                     }
                 }
 
                 db.ref('masterEmployees').set(parsedEmployees, (error) => {
                     if (error) {
-                        alert("⚠️ ক্লাউডে মাস্টার লিস্ট সেভ করতে সমস্যা হয়েছে: " + error.message);
+                        alert("⚠️ ক্লাউডে সেভ করতে সমস্যা হয়েছে: " + error.message);
                     } else {
-                        alert("✅ Master Employee List Uploaded & Synced to Cloud Successfully!");
+                        alert("✅ মাস্টার লিস্ট সফলভাবে আপলোড ও ক্লাউডে সিঙ্ক হয়েছে!");
                     }
                 });
-
             } catch (error) {
-                console.error(error);
                 alert("⚠️ ফাইল পড়তে সমস্যা হয়েছে। সঠিক ফরম্যাটের ফাইল দিন।");
             }
         };
@@ -671,9 +735,9 @@
 
         tbody.innerHTML = "";
         pendingApprovals.forEach(item => {
-            let imgColumn = `<span class="no-image">ছবি নেই</span>`;
+            let imgColumn = `<span style="color:#aaa; font-size:11px;">নেই</span>`;
             if (item.imageUrl) {
-                imgColumn = `<img src="${item.imageUrl}" class="thumb-img" onclick="openModal('${item.imageUrl}')" title="বড় করে দেখতে ক্লিক করুন">`;
+                imgColumn = `<img src="${item.imageUrl}" class="thumb-img" onclick="openModal('${item.imageUrl}')">`;
             }
 
             const tr = document.createElement("tr");
@@ -685,7 +749,7 @@
                 <td><b>${item.totalDays} দিন</b></td>
                 <td>${imgColumn}</td>
                 <td>${item.cause}</td>
-                <td><input type="checkbox" class="approve-checkbox" onclick="approveEntry('${item.firebaseKey}')" title="অ্যাপ্রুভ করতে টিক দিন"></td>
+                <td><input type="checkbox" class="approve-checkbox" onclick="approveEntry('${item.firebaseKey}')"></td>
             `;
             tbody.appendChild(tr);
         });
@@ -708,11 +772,10 @@
                     imageName: itemToMove.imageName
                 };
 
-                // Add to Live Reports and Remove from Pending Approvals
                 db.ref('leaveReports').push(newReport, (error) => {
                     if(!error) {
                         db.ref('pendingApprovals/' + firebaseKey).remove().then(() => {
-                            alert("✅ সফলভাবে অ্যাপ্রুভ করা হয়েছে এবং লাইভ রিপোর্টে যুক্ত হয়েছে!");
+                            alert("✅ সফলভাবে অ্যাপ্রুভ করা হয়েছে!");
                         });
                     } else {
                         alert("⚠️ সমস্যা হয়েছে: " + error.message);
@@ -720,22 +783,22 @@
                 });
             }
         } else {
-            renderApprovals(); // Reset checkbox if cancelled
+            renderApprovals();
         }
     }
 
     function renderReports() {
         const tbody = document.getElementById("reportTableBody");
         if (leaveReports.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="no-data-row">এখনো কোনো অনুমোদিত লিভ এন্ট্রি নেই।</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="no-data-row">এখনো কোনো অনুমোদিত লিভ নেই।</td></tr>`;
             return;
         }
 
         tbody.innerHTML = "";
         leaveReports.forEach(rep => {
-            let imgColumn = `<span class="no-image">ছবি নেই</span>`;
+            let imgColumn = `<span style="color:#aaa; font-size:11px;">নেই</span>`;
             if (rep.imageUrl) {
-                imgColumn = `<img src="${rep.imageUrl}" class="thumb-img" onclick="openModal('${rep.imageUrl}')" title="বড় করে দেখতে ক্লিক করুন">`;
+                imgColumn = `<img src="${rep.imageUrl}" class="thumb-img" onclick="openModal('${rep.imageUrl}')">`;
             }
 
             const tr = document.createElement("tr");
@@ -754,19 +817,17 @@
     }
 
     function deleteReport(firebaseKey) {
-        const password = prompt("⚠️ এই এন্ট্রিটি ডিলিট করতে পাসওয়ার্ড দিন:");
-        if (password === null) return; // Cancelled
+        const password = prompt("⚠️ ডিলিট করতে পাসওয়ার্ড দিন:");
+        if (password === null) return;
         
         if (password === "Leave") {
             if (confirm("আপনি কি সত্যিই এই এন্ট্রিটি ডিলিট করতে চান?")) {
                 db.ref('leaveReports/' + firebaseKey).remove().then(() => {
                     alert("✅ সফলভাবে ডিলিট করা হয়েছে!");
-                }).catch(error => {
-                    alert("⚠️ ডিলিট করতে সমস্যা হয়েছে: " + error.message);
                 });
             }
         } else {
-            alert("❌ ভুল পাসওয়ার্ড! ডিলিট করা সম্ভব হয়নি। সঠিক পাসওয়ার্ড দিন (Leave)।");
+            alert("❌ ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন (Leave)।");
         }
     }
 
@@ -795,7 +856,7 @@
 
     function downloadExcel() {
         if (leaveReports.length === 0) {
-            alert("⚠️ ডাউনলোড করার মতো কোনো রিপোর্ট ডেটা নেই!");
+            alert("⚠️ ডাউনলোড করার মতো কোনো ডেটা নেই!");
             return;
         }
 
@@ -807,7 +868,7 @@
             "From Date": r.fromDate,
             "To Date": r.toDate,
             "Total Days": r.totalDays,
-            "Authority Image File": r.imageName,
+            "Authority Image": r.imageName,
             "Causes": r.cause
         }));
 
@@ -815,25 +876,7 @@
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Leave Reports");
         XLSX.writeFile(workbook, "Leave_Report_List.xlsx");
-
-        let imageCount = 0;
-        leaveReports.forEach((r) => {
-            if (r.imageUrl && r.imageName !== "নেই") {
-                imageCount++;
-                const link = document.createElement('a');
-                link.href = r.imageUrl;
-                link.download = `Leave_${r.staffId}_${r.imageName}`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        });
-
-        if (imageCount > 0) {
-            alert(`✅ Excel ফাইল ডাউনলোডের পাশাপাশি সাথে ${imageCount}টি অনুমোদন ছবিও আপনার কম্পিউটারে ডাউনলোড হয়ে গেছে!`);
-        } else {
-            alert("✅ Excel ফাইল সফলভাবে ডাউনলোড হয়েছে!");
-        }
+        alert("✅ Excel ফাইল সফলভাবে ডাউনলোড হয়েছে!");
     }
 </script>
 
