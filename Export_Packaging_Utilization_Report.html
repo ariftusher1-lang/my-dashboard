@@ -361,10 +361,10 @@
 
             <div class="form-group">
                 <label>পাসওয়ার্ড</label>
-                <input type="password" id="login-pwd" class="login-input" placeholder="Enter Password">
+                <input type="password" id="login-pwd" class="login-input" placeholder="Enter Password" onkeypress="handleLoginKeyPress(event)">
             </div>
 
-            <button class="login-btn" onclick="handleDepartmentLogin()">🔓 লগইন</button>
+            <button class="login-btn" type="button" onclick="handleDepartmentLogin()" ontouchend="handleDepartmentLogin()">🔓 লগইন</button>
             <div style="font-size: 11px; color: #64748b; margin-top: 15px;">🔒 শুধুমাত্র প্রোডাকশন ফ্লোরের জন্য</div>
         </div>
     </div>
@@ -683,6 +683,12 @@
             setLoggedInEnvironment(savedFloor, savedLead);
         }
     };
+
+    function handleLoginKeyPress(event) {
+        if (event.key === 'Enter') {
+            handleDepartmentLogin();
+        }
+    }
 
     function handleDepartmentLogin() {
         let dept = document.getElementById('login-dept').value;
@@ -1216,8 +1222,6 @@
         });
     }
 
-    let icChartInstance = null;
-
     function renderICPerformanceData() {
         let selectedIC = document.getElementById('perf-ic-select').value;
         let icPerfTbody = document.getElementById('ic-perf-table-body');
@@ -1232,10 +1236,6 @@
             }
 
             let icMap = {};
-            let allChartLabels = [];
-            let allChartTargetSets = [];
-            let allChartCompleteSets = [];
-
             snapshot.forEach((childSnapshot) => {
                 let d = childSnapshot.val();
                 let icName = d.shiftIc || "Unassigned";
@@ -1280,7 +1280,7 @@
             if (icKeys.length === 0) {
                 icPerfTbody.innerHTML = `<tr><td colspan="11">No records found for ${selectedIC}.</td></tr>`;
                 currentPosDisplay.innerText = "Not Assigned";
-                if (icChartInstance) icChartInstance.destroy();
+                if (window.icChartInstance) window.icChartInstance.destroy();
                 return;
             }
 
@@ -1329,11 +1329,11 @@
             });
 
             let ctx = document.getElementById('icPerformanceChart').getContext('2d');
-            if (icChartInstance) {
-                icChartInstance.destroy();
+            if (window.icChartInstance) {
+                window.icChartInstance.destroy();
             }
 
-            icChartInstance = new Chart(ctx, {
+            window.icChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: chartLabels,
