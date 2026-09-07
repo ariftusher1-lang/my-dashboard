@@ -97,7 +97,7 @@
             background: #dc2626;
         }
 
-        /* --- MAIN APP STYLING (Laptop Full Width Support) --- */
+        /* --- MAIN APP STYLING --- */
         #app-container {
             display: none;
             width: 100%;
@@ -196,7 +196,7 @@
             padding: 8px;
             text-align: center;
             white-space: nowrap;
-            position: relative; /* ড্রপডাউন সঠিক পজিশনে রাখার জন্য জরুরি */
+            position: relative;
         }
         th {
             background-color: #2c3e50;
@@ -221,7 +221,7 @@
             background-color: #e9ecef;
         }
 
-        /* --- AUTOCOMPLETE SEARCH DROPDOWN STYLING (FIXED FOR LAPTOP/TABLE) --- */
+        /* --- AUTOCOMPLETE SEARCH DROPDOWN STYLING --- */
         .searchable-dropdown-container {
             position: relative;
             width: 100%;
@@ -247,7 +247,7 @@
             max-height: 180px;
             overflow-y: auto;
             display: none;
-            z-index: 999999; /* যেন টেবিলের উপরে ভেসে থাকে এবং নিচে না লুকিয়ে যায় */
+            z-index: 999999;
             text-align: left;
             box-shadow: 0px 8px 16px rgba(0,0,0,0.25);
         }
@@ -439,7 +439,7 @@
                         <option value="Shift-B (Night)">Shift-B (Night)</option>
                     </select>
                 </div>
-                <!-- Concern Shift IC (Only Active for Plastic Packaging - 2) -->
+                <!-- Concern Shift IC -->
                 <div id="shift-ic-container" style="display: none;">
                     <label style="color: #c0392b;">Concern Shift IC:</label>
                     <select id="shift-ic-select" onchange="checkAndCaptureICSelfie(this)">
@@ -472,7 +472,7 @@
             <!-- EXCEL UPLOAD & MANUAL JO / ITEM ADDITION -->
             <div style="background: #e2e8f0; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                 <div>
-                    <strong style="font-size: 13px; color: #1e293b;">📁 Upload JO Excel:</strong>
+                    <strong style="font-size: 13px; color: #1e293b;">📁 Master Excel Upload (JO, Item & Unit):</strong>
                     <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" style="margin-left: 5px; font-size: 12px;">
                 </div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -481,14 +481,9 @@
                         <input type="text" id="manual-new-jo" placeholder="Job Order Name" style="padding: 4px 6px; font-size: 12px; width: 120px; border: 1px solid #ccc; border-radius: 4px; display: inline-block;">
                         <button type="button" onclick="addManualJOToList()" style="padding: 4px 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">Add</button>
                     </div>
-                    <div>
-                        <strong style="font-size: 12px; color: #1e293b;">➕ Add Manual Items Name:</strong>
-                        <input type="text" id="manual-new-item" placeholder="Item Name" style="padding: 4px 6px; font-size: 12px; width: 120px; border: 1px solid #ccc; border-radius: 4px; display: inline-block;">
-                        <button type="button" onclick="addManualItemToList()" style="padding: 4px 8px; background: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">Add</button>
-                    </div>
                 </div>
                 <div style="font-size: 11px; color: #475569;">
-                    JOs: <b id="uploaded-jo-count" style="color: #27ae60;">0</b> | Items: <b id="uploaded-item-count" style="color: #2980b9;">0</b>
+                    Loaded Master Records: <b id="uploaded-jo-count" style="color: #27ae60;">0</b>
                 </div>
             </div>
 
@@ -511,12 +506,12 @@
                     <thead>
                         <tr>
                             <th>Line</th>
-                            <th>JO Name (Searchable / Manual)</th>
-                            <th>Items Name (Searchable / Manual)</th>
+                            <th>JO Name (Auto Select / Search)</th>
+                            <th>Items Name (Auto Filled)</th>
                             <th>WF</th>
                             <th>WH</th>
                             <th>SMV</th>
-                            <th>Unit/CTN</th>
+                            <th>Unit/CTN (Auto Filled)</th>
                             <th>Target Set</th>
                             <th>Complete Set</th>
                             <th>Target CTN</th>
@@ -744,8 +739,7 @@
 
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
-    let uploadedJOList = []; 
-    let uploadedItemList = []; 
+    let masterJobOrdersMap = {}; // Maps JO Name -> { itemName, unitCtn }
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -754,48 +748,31 @@
         if (savedFloor && savedLead) {
             setLoggedInEnvironment(savedFloor, savedLead);
         }
-        initCloudJOListener();
-        initCloudItemListener();
+        initCloudMasterListener();
     };
 
-    function initCloudJOListener() {
-        db.ref('job_orders').on('value', (snapshot) => {
-            uploadedJOList = [];
+    function initCloudMasterListener() {
+        db.ref('job_master_data').on('value', (snapshot) => {
+            masterJobOrdersMap = {};
             if (snapshot.exists()) {
                 snapshot.forEach((childSnap) => {
-                    let joVal = childSnap.val();
-                    if (joVal && typeof joVal === 'string') {
-                        uploadedJOList.push(joVal);
+                    let val = childSnap.val();
+                    if (val && val.joName) {
+                        masterJobOrdersMap[val.joName] = {
+                            itemName: val.itemName || "",
+                            unitCtn: val.unitCtn || 0
+                        };
                     }
                 });
             }
-            uploadedJOList = [...new Set(uploadedJOList)];
             let countElem = document.getElementById('uploaded-jo-count');
             if(countElem) {
-                countElem.innerText = uploadedJOList.length;
+                countElem.innerText = Object.keys(masterJobOrdersMap).length;
             }
         });
     }
 
-    function initCloudItemListener() {
-        db.ref('item_names').on('value', (snapshot) => {
-            uploadedItemList = [];
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnap) => {
-                    let itemVal = childSnap.val();
-                    if (itemVal && typeof itemVal === 'string') {
-                        uploadedItemList.push(itemVal);
-                    }
-                });
-            }
-            uploadedItemList = [...new Set(uploadedItemList)];
-            let countElem = document.getElementById('uploaded-item-count');
-            if(countElem) {
-                countElem.innerText = uploadedItemList.length;
-            }
-        });
-    }
-
+    // Handle Master Excel Upload with Job Order, Item Name and Unit/Ctn columns
     function handleExcelUpload(event) {
         let file = event.target.files[0];
         if (!file) return;
@@ -808,31 +785,34 @@
             let worksheet = workbook.Sheets[firstSheetName];
             let json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-            let newJOs = [];
-            json.forEach(row => {
-                if(row[0] && String(row[0]).trim() !== "") {
-                    newJOs.push(String(row[0]).trim());
+            let masterDataUpdates = {};
+            let count = 0;
+
+            // Assuming header is at row 0, data starts from row 1
+            // Columns based on Job Order Master.xlsx: Index 1 = Job Order No, Index 2 = Item Names, Index 4 = Unit/Ctn
+            for (let i = 1; i < json.length; i++) {
+                let row = json[i];
+                let joName = row[1] ? String(row[1]).trim() : "";
+                let itemName = row[2] ? String(row[2]).trim() : "";
+                let unitCtn = row[4] ? Number(row[4]) || 0 : 0;
+
+                if (joName !== "") {
+                    let safeKey = "jo_" + count;
+                    masterDataUpdates[safeKey] = {
+                        joName: joName,
+                        itemName: itemName,
+                        unitCtn: unitCtn
+                    };
+                    count++;
                 }
-            });
+            }
 
-            if(newJOs.length > 0) {
-                let joRef = db.ref('job_orders');
-                joRef.once('value', (snap) => {
-                    let existing = [];
-                    if(snap.exists()) {
-                        snap.forEach(c => existing.push(c.val()));
-                    }
-                    let combined = [...new Set([...existing, ...newJOs])];
-                    
-                    let updates = {};
-                    combined.forEach((jo, index) => {
-                        updates['item_' + index] = jo;
-                    });
-
-                    joRef.set(updates).then(() => {
-                        alert("✅ JO Excel File successfully uploaded and synced!");
-                    });
+            if (count > 0) {
+                db.ref('job_master_data').set(masterDataUpdates).then(() => {
+                    alert(`✅ ${count} টি Job Order মাস্টার ডাটা সফলভাবে আপলোড ও সিঙ্ক হয়েছে! এখন JO সিলেক্ট করলেই Item Name এবং Unit/Ctn অটোমেটিক চলে আসবে।`);
                 });
+            } else {
+                alert("⚠️ এক্সেল ফাইল থেকে সঠিক কলাম ডাটা পাওয়া যায়নি। দয়া করে সঠিক ফরম্যাটের ফাইল আপলোড করুন।");
             }
         };
         reader.readAsArrayBuffer(file);
@@ -846,58 +826,28 @@
             return;
         }
 
-        let joRef = db.ref('job_orders');
-        joRef.once('value', (snap) => {
-            let existing = [];
+        let ref = db.ref('job_master_data');
+        ref.once('value', (snap) => {
+            let list = [];
+            let maxIdx = 0;
             if(snap.exists()) {
-                snap.forEach(c => existing.push(c.val()));
+                snap.forEach(c => {
+                    list.push(c.val().joName);
+                    maxIdx++;
+                });
             }
 
-            if(!existing.includes(val)) {
-                existing.push(val);
-                let updates = {};
-                existing.forEach((jo, index) => {
-                    updates['item_' + index] = jo;
-                });
-
-                joRef.set(updates).then(() => {
+            if(!list.includes(val)) {
+                db.ref('job_master_data/jo_' + maxIdx).set({
+                    joName: val,
+                    itemName: "Manual Entry Item",
+                    unitCtn: 1
+                }).then(() => {
                     manualInput.value = "";
                     alert("✅ নতুন JO সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
                 });
             } else {
-                alert("⚠️ এই JO টি ইতিমধ্যে লিস্টে রয়েছে!");
-            }
-        });
-    }
-
-    function addManualItemToList() {
-        let manualInput = document.getElementById('manual-new-item');
-        let val = manualInput.value.trim();
-        if(!val) {
-            alert("⚠️ দয়া করে সঠিক Item Name লিখুন!");
-            return;
-        }
-
-        let itemRef = db.ref('item_names');
-        itemRef.once('value', (snap) => {
-            let existing = [];
-            if(snap.exists()) {
-                snap.forEach(c => existing.push(c.val()));
-            }
-
-            if(!existing.includes(val)) {
-                existing.push(val);
-                let updates = {};
-                existing.forEach((item, index) => {
-                    updates['item_' + index] = item;
-                });
-
-                itemRef.set(updates).then(() => {
-                    manualInput.value = "";
-                    alert("✅ নতুন Item Name সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
-                });
-            } else {
-                alert("⚠️ এই Item Name টি ইতিমধ্যে লিস্টে রয়েছে!");
+                alert("⚠️ এই JO টি ইতিমধ্যে মাস্টার লিস্টে রয়েছে!");
             }
         });
     }
@@ -1050,15 +1000,12 @@
                 </div>
             </td>
             <td>
-                <div class="searchable-dropdown-container">
-                    <input type="text" class="item-search-input item-name" value="${itemVal}" placeholder="Search or Type Item" oninput="filterItemDropdown(this)" onfocus="showItemDropdown(this)" autocomplete="off">
-                    <div class="item-dropdown-list"></div>
-                </div>
+                <input type="text" class="item-name" value="${itemVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly>
             </td>
             <td><input type="number" class="wf" value="${wfVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="wh" value="${whVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" step="0.1" class="smv" value="${smvVal}" placeholder="" oninput="calculateValues(this)"></td>
-            <td><input type="number" class="unit-ctn" value="${unitVal}" placeholder="" oninput="calculateValues(this)"></td>
+            <td><input type="number" class="unit-ctn" value="${unitVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly></td>
             <td><input type="number" class="target-set calculated-field" value="0" readonly></td>
             <td><input type="number" class="complete-set" value="${compSetVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="target-ctn calculated-field" value="0" readonly></td>
@@ -1115,16 +1062,13 @@
             </div>
             <div class="card-row">
                 <label>Items Name:</label>
-                <div class="searchable-dropdown-container">
-                    <input type="text" class="item-search-input m-item-name" value="${itemVal}" placeholder="Search or Type Item" oninput="filterItemDropdown(this)" onfocus="showItemDropdown(this)" autocomplete="off">
-                    <div class="item-dropdown-list"></div>
-                </div>
+                <input type="text" class="m-item-name" value="${itemVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly>
             </div>
             <div class="card-grid-4 card-row">
                 <div><label>WF:</label><input type="number" class="m-wf" value="${wfVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
                 <div><label>WH:</label><input type="number" class="m-wh" value="${whVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
                 <div><label>SMV:</label><input type="number" step="0.1" class="m-smv" value="${smvVal}" placeholder="" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
-                <div><label>Unit/CTN:</label><input type="number" class="m-unit-ctn" value="${unitVal}" placeholder="" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+                <div><label>Unit/CTN:</label><input type="number" class="m-unit-ctn" value="${unitVal}" placeholder="Auto" style="background:#f1f5f9;" readonly></div>
             </div>
             <div class="card-grid-2 card-row">
                 <div><label>Complete Set:</label><input type="number" class="m-complete-set" value="${compSetVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
@@ -1140,7 +1084,6 @@
         calculateValues(tr.querySelector('.wf'));
     }
 
-    // --- COMPLETE CTN ENTRY AUTO 2ND LINE CREATE & HIDE ADD LINE BUTTON LOGIC ---
     let isAutoAdding = false;
     function checkCompleteCtnEntryAndAutoCreate(completeCtnInput) {
         let tr = completeCtnInput.closest('tr');
@@ -1153,9 +1096,9 @@
             isAutoAdding = true;
             setTimeout(() => {
                 addNewRow();
-                if(addLineBtn) addLineBtn.style.display = 'none'; // ➕ Add Line button hide করে দেওয়া হলো
+                if(addLineBtn) addLineBtn.style.display = 'inline-block';
                 isAutoAdding = false;
-            }, 100);
+            }, 150);
         }
     }
 
@@ -1170,9 +1113,9 @@
             isAutoAdding = true;
             setTimeout(() => {
                 addNewRow();
-                if(addLineBtn) addLineBtn.style.display = 'none'; // ➕ Add Line button hide করে দেওয়া হলো
+                if(addLineBtn) addLineBtn.style.display = 'inline-block';
                 isAutoAdding = false;
-            }, 100);
+            }, 150);
         }
     }
 
@@ -1200,7 +1143,8 @@
     function renderDropdownItems(listDiv, filterText) {
         listDiv.innerHTML = '';
         let filter = filterText.toLowerCase();
-        let matches = uploadedJOList.filter(jo => jo.toLowerCase().includes(filter));
+        let allJOKeys = Object.keys(masterJobOrdersMap);
+        let matches = allJOKeys.filter(jo => jo.toLowerCase().includes(filter));
 
         if(matches.length === 0) {
             listDiv.innerHTML = `<div class="jo-dropdown-item" style="color: #94a3b8; font-style: italic;">No matching JO found</div>`;
@@ -1218,10 +1162,20 @@
                 input.value = jo;
                 listDiv.style.display = 'none';
 
-                if(input.classList.contains('jo-name')) {
-                    syncFields(input);
+                // AUTO FILL ITEM NAME AND UNIT/CTN BASED ON MASTER DATA
+                let masterInfo = masterJobOrdersMap[jo];
+                let rowOrCard = container.closest('tr') || container.closest('.prod-card');
+                
+                if (rowOrCard.tagName === 'TR') {
+                    rowOrCard.querySelector('.item-name').value = masterInfo.itemName;
+                    rowOrCard.querySelector('.unit-ctn').value = masterInfo.unitCtn;
+                    syncFields(rowOrCard.querySelector('.jo-name'));
+                    calculateValues(rowOrCard.querySelector('.wf'));
                 } else {
-                    syncBackFromMobile(input);
+                    rowOrCard.querySelector('.m-item-name').value = masterInfo.itemName;
+                    rowOrCard.querySelector('.m-unit-ctn').value = masterInfo.unitCtn;
+                    syncBackFromMobile(rowOrCard.querySelector('.m-jo-name'));
+                    calculateValuesMobile(rowOrCard.querySelector('.m-wf'));
                 }
                 updateReport();
             };
@@ -1229,62 +1183,9 @@
         });
     }
 
-    function showItemDropdown(inputElem) {
-        let container = inputElem.closest('.searchable-dropdown-container');
-        let listDiv = container.querySelector('.item-dropdown-list');
-        renderItemDropdownItems(listDiv, inputElem.value);
-        listDiv.style.display = 'block';
-    }
-
-    function filterItemDropdown(inputElem) {
-        let container = inputElem.closest('.searchable-dropdown-container');
-        let listDiv = container.querySelector('.item-dropdown-list');
-        renderItemDropdownItems(listDiv, inputElem.value);
-        listDiv.style.display = 'block';
-
-        if(inputElem.classList.contains('item-name')) {
-            syncFields(inputElem);
-        } else {
-            syncBackFromMobile(inputElem);
-        }
-        updateReport();
-    }
-
-    function renderItemDropdownItems(listDiv, filterText) {
-        listDiv.innerHTML = '';
-        let filter = filterText.toLowerCase();
-        let matches = uploadedItemList.filter(item => item.toLowerCase().includes(filter));
-
-        if(matches.length === 0) {
-            listDiv.innerHTML = `<div class="item-dropdown-item" style="color: #94a3b8; font-style: italic;">No matching item found</div>`;
-            return;
-        }
-
-        matches.forEach(itemName => {
-            let itemDiv = document.createElement('div');
-            itemDiv.className = 'item-dropdown-item';
-            itemDiv.innerText = itemName;
-            itemDiv.onmousedown = function(e) {
-                e.preventDefault(); 
-                let container = listDiv.closest('.searchable-dropdown-container');
-                let input = container.querySelector('.item-search-input');
-                input.value = itemName;
-                listDiv.style.display = 'none';
-
-                if(input.classList.contains('item-name')) {
-                    syncFields(input);
-                } else {
-                    syncBackFromMobile(input);
-                }
-                updateReport();
-            };
-            listDiv.appendChild(itemDiv);
-        });
-    }
-
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.searchable-dropdown-container')) {
-            document.querySelectorAll('.jo-dropdown-list, .item-dropdown-list').forEach(list => list.style.display = 'none');
+            document.querySelectorAll('.jo-dropdown-list').forEach(list => list.style.display = 'none');
         }
     });
 
@@ -1298,7 +1199,7 @@
             isAutoAdding = true;
             setTimeout(() => {
                 addNewRow();
-                if(addLineBtn) addLineBtn.style.display = 'none';
+                if(addLineBtn) addLineBtn.style.display = 'inline-block';
                 isAutoAdding = false;
             }, 200);
         }
@@ -1314,7 +1215,7 @@
             isAutoAdding = true;
             setTimeout(() => {
                 addNewRow();
-                if(addLineBtn) addLineBtn.style.display = 'none';
+                if(addLineBtn) addLineBtn.style.display = 'inline-block';
                 isAutoAdding = false;
             }, 200);
         }
