@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRAN-RFL Packaging Production & Report System</title>
+    <!-- SheetJS Library for Excel Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
+    <!-- Firebase App (Core SDK) & Realtime Database SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
@@ -292,6 +294,7 @@
 </head>
 <body>
 
+    <!-- DEPARTMENT LOGIN SCREEN -->
     <div id="login-container">
         <div class="login-card">
             <div class="login-logo">🏭</div>
@@ -317,7 +320,9 @@
         </div>
     </div>
 
+    <!-- MAIN APP INTERFACE -->
     <div id="app-container" class="container">
+        <!-- Navigation & Logout Tabs -->
         <div class="nav-tabs">
             <div class="nav-left">
                 <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
@@ -326,7 +331,9 @@
             <button class="logout-btn" onclick="handleLogout()">🚪 Log Out</button>
         </div>
 
+        <!-- PAGE 1: DATA ENTRY FORM -->
         <div id="entry-page" class="page-section active">
+            <!-- Header Info -->
             <div class="header-info">
                 <div>
                     <label>Date:</label>
@@ -337,6 +344,23 @@
                     <select id="shift-select" onchange="updateReport()">
                         <option value="Shift-A (Day)" selected>Shift-A (Day)</option>
                         <option value="Shift-B (Night)">Shift-B (Night)</option>
+                    </select>
+                </div>
+                <!-- Concern Shift IC (Only Active for Plastic Packaging 2) -->
+                <div id="shift-ic-container" style="display: none;">
+                    <label style="color: #c0392b;">Concern Shift IC:</label>
+                    <select id="shift-ic-select">
+                        <option value="">-- Select IC --</option>
+                        <option value="Bithi">Bithi</option>
+                        <option value="Riya">Riya</option>
+                        <option value="Murad">Murad</option>
+                        <option value="Rasel">Rasel</option>
+                        <option value="Sabana">Sabana</option>
+                        <option value="Noyon">Noyon</option>
+                        <option value="Mosarof">Mosarof</option>
+                        <option value="Tarek">Tarek</option>
+                        <option value="Tajrul">Tajrul</option>
+                        <option value="Fahim">Fahim</option>
                     </select>
                 </div>
                 <div>
@@ -372,7 +396,9 @@
                         </tr>
                     </thead>
                     <tbody id="entry-table-body">
-                        </tbody>
+                        <!-- Dynamically starts with 1 Row -->
+                    </tbody>
+                    <!-- Summary Footer Row -->
                     <tfoot>
                         <tr>
                             <td colspan="3" style="text-align: right; font-weight: bold;">Summary Shift >></td>
@@ -398,14 +424,16 @@
                 <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data</button>
             </div>
 
+            <!-- LIVE STREAM MONITORING SECTION ON ENTRY PAGE -->
             <div style="margin-top: 35px;">
                 <div class="report-title" style="color: #d9534f; margin-bottom: 10px;">🔴 Live Production Entry Stream (Real-Time Monitoring)</div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                `<th>Date</th>
+                                <th>Date</th>
                                 <th>Shift</th>
+                                <th>Shift IC</th>
                                 <th>Floor</th>
                                 <th>Line</th>
                                 <th>JO Name</th>
@@ -417,13 +445,14 @@
                             </tr>
                         </thead>
                         <tbody id="live-stream-tbody">
-                            <tr><td colspan="10">Waiting for live entries...</td></tr>
+                            <tr><td colspan="11">Waiting for live entries...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
+        <!-- PAGE 2: PACKAGING REPORT & DOWNLOAD -->
         <div id="report-page" class="page-section">
             <div class="report-header">
                 <div class="report-title">📊 Detailed Packaging Utilization Report</div>
@@ -431,12 +460,14 @@
             </div>
 
             <div class="report-grid">
+                <!-- Detailed Report Table -->
                 <div class="table-responsive">
                     <table id="report-table">
                         <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Shift</th>
+                                <th>Shift IC</th>
                                 <th>Floor</th>
                                 <th>Department</th>
                                 <th>Line</th>
@@ -458,10 +489,12 @@
                             </tr>
                         </thead>
                         <tbody id="report-table-body">
-                            </tbody>
+                            <!-- Data will populate dynamically from Firebase -->
+                        </tbody>
                     </table>
                 </div>
 
+                <!-- JO & Items Summary Report Section -->
                 <div>
                     <div class="report-title" style="margin-bottom: 15px; font-size: 14px;">📋 JO Name & Items Name Summary (As of Complete CTN)</div>
                     <div class="table-responsive">
@@ -474,7 +507,8 @@
                                 </tr>
                             </thead>
                             <tbody id="jo-summary-body">
-                                </tbody>
+                                <!-- Dynamic JO & Items Complete CTN Summary -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -519,6 +553,14 @@
         document.getElementById('floor-display').innerText = floorName;
         document.getElementById('dept-name').innerText = leadName;
 
+        // Show Shift IC dropdown only for Plastic Packaging 2
+        let shiftIcContainer = document.getElementById('shift-ic-container');
+        if (floorName === "Plastic Packaging 2") {
+            shiftIcContainer.style.display = "flex";
+        } else {
+            shiftIcContainer.style.display = "none";
+        }
+
         if (document.querySelectorAll('#entry-table-body tr').length === 0) {
             addNewRow();
         }
@@ -530,6 +572,7 @@
         document.getElementById('app-container').style.display = 'none';
         document.getElementById('login-pwd').value = '';
         document.getElementById('login-dept').value = '';
+        document.getElementById('shift-ic-select').value = '';
     }
 
     // Toggle Between Tabs
@@ -692,6 +735,12 @@
         let shift = document.getElementById('shift-select').value;
         let floor = document.getElementById('floor-display').innerText;
         let dept = document.getElementById('dept-name').innerText;
+        let shiftIc = (floor === "Plastic Packaging 2") ? document.getElementById('shift-ic-select').value : "-";
+
+        if (floor === "Plastic Packaging 2" && shiftIc === "") {
+            alert("⚠️ Please select Concern Shift IC!");
+            return;
+        }
 
         let rows = document.querySelectorAll('#entry-table-body tr');
         let entriesToSave = [];
@@ -704,6 +753,7 @@
                 let entryData = {
                     date: date,
                     shift: shift,
+                    shiftIc: shiftIc,
                     floor: floor,
                     department: dept,
                     line: row.querySelector('.line-val').value,
@@ -757,6 +807,7 @@
                     tr.innerHTML = `
                         <td>${data.date}</td>
                         <td>${data.shift}</td>
+                        <td style="font-weight: bold; color: #8e44ad;">${data.shiftIc || '-'}</td>
                         <td>${data.floor}</td>
                         <td>${data.line}</td>
                         <td style="font-weight: bold; color: #007bff;">${data.joName}</td>
@@ -769,7 +820,7 @@
                     liveStreamTbody.appendChild(tr);
                 });
             } else {
-                liveStreamTbody.innerHTML = `<tr><td colspan="10">No live entries yet.</td></tr>`;
+                liveStreamTbody.innerHTML = `<tr><td colspan="11">No live entries yet.</td></tr>`;
             }
         });
     }
@@ -777,7 +828,7 @@
     // Load Data from Firebase into Report Page with Edit/Delete Password protection
     function loadFirebaseData() {
         let reportBody = document.getElementById('report-table-body');
-        reportBody.innerHTML = `<tr><td colspan="20">Loading data...</td></tr>`;
+        reportBody.innerHTML = `<tr><td colspan="21">Loading data...</td></tr>`;
 
         let dbRef = db.ref('productions');
         dbRef.once('value', (snapshot) => {
@@ -793,6 +844,7 @@
                     tr.innerHTML = `
                         <td>${data.date}</td>
                         <td>${data.shift}</td>
+                        <td>${data.shiftIc || '-'}</td>
                         <td>${data.floor}</td>
                         <td>${data.department}</td>
                         <td>${data.line}</td>
@@ -840,7 +892,7 @@
                 }
 
             } else {
-                reportBody.innerHTML = `<tr><td colspan="20">No data found.</td></tr>`;
+                reportBody.innerHTML = `<tr><td colspan="21">No data found.</td></tr>`;
                 document.getElementById('jo-summary-body').innerHTML = `<tr><td colspan="3">No data available.</td></tr>`;
             }
         });
@@ -872,6 +924,14 @@
                     document.getElementById('shift-select').value = data.shift;
                     document.getElementById('floor-display').innerText = data.floor;
                     document.getElementById('dept-name').innerText = data.department;
+
+                    let shiftIcContainer = document.getElementById('shift-ic-container');
+                    if (data.floor === "Plastic Packaging 2") {
+                        shiftIcContainer.style.display = "flex";
+                        document.getElementById('shift-ic-select').value = data.shiftIc || '';
+                    } else {
+                        shiftIcContainer.style.display = "none";
+                    }
 
                     let tbody = document.getElementById('entry-table-body');
                     tbody.innerHTML = '';
