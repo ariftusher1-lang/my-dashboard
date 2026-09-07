@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Production Entry & Report System</title>
-    <!-- SheetJS Library for Excel Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <!-- Firebase App (Core SDK) & Realtime Database SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
@@ -208,15 +206,12 @@
 <body>
 
 <div class="container">
-    <!-- Toggle Navigation Tabs -->
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
         <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
     </div>
 
-    <!-- PAGE 1: DATA ENTRY FORM -->
     <div id="entry-page" class="page-section active">
-        <!-- Header Info -->
         <div class="header-info">
             <div>
                 <label>Date:</label>
@@ -265,9 +260,7 @@
                     </tr>
                 </thead>
                 <tbody id="entry-table-body">
-                    <!-- Dynamically starts with 1 Row -->
-                </tbody>
-                <!-- Summary Footer Row -->
+                    </tbody>
                 <tfoot>
                     <tr>
                         <td colspan="3" style="text-align: right; font-weight: bold;">Summary A-Shift >></td>
@@ -292,18 +285,40 @@
         <div class="btn-container">
             <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data</button>
         </div>
+
+        <div style="margin-top: 35px;">
+            <div class="report-title" style="color: #d9534f; margin-bottom: 10px;">🔴 Live Production Entry Stream (Real-Time Monitoring)</div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Shift</th>
+                            <th>Floor</th>
+                            <th>Line</th>
+                            <th>JO Name</th>
+                            <th>Items Name</th>
+                            <th>Complete Set</th>
+                            <th>Complete CTN</th>
+                            <th>MH Util (%)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="live-stream-tbody">
+                        <tr><td colspan="10">Waiting for live entries...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- PAGE 2: PACKAGING REPORT & DOWNLOAD -->
     <div id="report-page" class="page-section">
         <div class="report-header">
             <div class="report-title">📊 Detailed Packaging Utilization Report</div>
             <button class="action-btn btn-excel" onclick="exportToExcel()">📥 Download as Excel</button>
         </div>
 
-        <!-- Grid layout to show both tables side-by-side on laptop and stacked on mobile -->
         <div class="report-grid">
-            <!-- Detailed Report Table -->
             <div class="table-responsive">
                 <table id="report-table">
                     <thead>
@@ -331,12 +346,10 @@
                         </tr>
                     </thead>
                     <tbody id="report-table-body">
-                        <!-- Data will populate dynamically from Firebase -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
 
-            <!-- JO & Items Summary Report Section -->
             <div>
                 <div class="report-title" style="margin-bottom: 15px; font-size: 14px;">📋 JO Name & Items Name Summary (As of Complete CTN)</div>
                 <div class="table-responsive">
@@ -349,8 +362,7 @@
                             </tr>
                         </thead>
                         <tbody id="jo-summary-body">
-                            <!-- Dynamic JO & Items Complete CTN Summary -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -386,6 +398,7 @@
 
     window.onload = function() {
         addNewRow();
+        initLiveStream(); // Start listening for live data automatically
     };
 
     function updateDepartment() {
@@ -543,9 +556,7 @@
         document.getElementById('sum-mh-util').innerText = Math.round(avgUtil) + '%';
     }
 
-    function updateReport() {
-        // Optional tracking if needed
-    }
+    function updateReport() {}
 
     // Save Data to Firebase Realtime Database
     function saveDataToFirebase() {
@@ -604,13 +615,44 @@
             });
     }
 
+    // Real-Time Live Stream Listener for Data Entry Page
+    function initLiveStream() {
+        let liveStreamTbody = document.getElementById('live-stream-tbody');
+        let dbRef = db.ref('productions');
+
+        dbRef.on('value', (snapshot) => {
+            liveStreamTbody.innerHTML = '';
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    let data = childSnapshot.val();
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${data.date}</td>
+                        <td>${data.shift}</td>
+                        <td>${data.floor}</td>
+                        <td>${data.line}</td>
+                        <td style="font-weight: bold; color: #007bff;">${data.joName}</td>
+                        <td>${data.itemName}</td>
+                        <td>${data.completeSet}</td>
+                        <td style="font-weight: bold; color: #28a745;">${data.completeCtn}</td>
+                        <td>${data.mhUtil}</td>
+                        <td><span style="background: #e2f0d9; padding: 2px 6px; border-radius: 4px; color: #385723; font-weight: bold;">${data.status || 'Running'}</span></td>
+                    `;
+                    liveStreamTbody.appendChild(tr);
+                });
+            } else {
+                liveStreamTbody.innerHTML = `<tr><td colspan="10">No live entries yet.</td></tr>`;
+            }
+        });
+    }
+
     // Load Data from Firebase into Report Page with Edit/Delete Password protection
     function loadFirebaseData() {
         let reportBody = document.getElementById('report-table-body');
         reportBody.innerHTML = `<tr><td colspan="20">Loading data...</td></tr>`;
 
         let dbRef = db.ref('productions');
-        dbRef.on('value', (snapshot) => {
+        dbRef.once('value', (snapshot) => {
             reportBody.innerHTML = '';
             let joSummaryMap = {};
 
