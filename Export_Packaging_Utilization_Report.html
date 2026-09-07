@@ -593,14 +593,28 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Check Login State on Page Load
+    window.onload = function() {
+        let savedFloor = localStorage.getItem('pran_floor');
+        let savedLead = localStorage.getItem('pran_lead');
+
+        if (savedFloor && savedLead) {
+            setLoggedInEnvironment(savedFloor, savedLead);
+        }
+    };
+
     // Department Login Handler
     function handleDepartmentLogin() {
         let dept = document.getElementById('login-dept').value;
         let pwd = document.getElementById('login-pwd').value;
 
         if (dept === "Plastic Packaging 1" && pwd === "P12") {
+            localStorage.setItem('pran_floor', dept);
+            localStorage.setItem('pran_lead', "Mr. Shawon");
             setLoggedInEnvironment(dept, "Mr. Shawon");
         } else if (dept === "Plastic Packaging 2" && pwd === "P76") {
+            localStorage.setItem('pran_floor', dept);
+            localStorage.setItem('pran_lead', "Mr. Rakib");
             setLoggedInEnvironment(dept, "Mr. Rakib");
         } else {
             alert("❌ ভুল পাসওয়ার্ড অথবা ডিপার্টমেন্ট সিলেক্ট করা হয়নি!");
@@ -631,6 +645,9 @@
     }
 
     function handleLogout() {
+        localStorage.removeItem('pran_floor');
+        localStorage.removeItem('pran_lead');
+
         document.getElementById('login-container').style.display = 'flex';
         document.getElementById('app-container').style.display = 'none';
         document.getElementById('login-pwd').value = '';
