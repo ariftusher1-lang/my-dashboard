@@ -213,6 +213,56 @@
         .calculated-field {
             background-color: #e9ecef;
         }
+        
+        /* --- MOBILE CARD VIEW STYLING (DEFAULT HIDDEN ON DESKTOP) --- */
+        #mobile-card-container {
+            display: none;
+        }
+
+        /* Responsive Media Query for Mobile Devices */
+        @media(max-width: 768px) {
+            .table-responsive {
+                display: none; /* Hide Desktop Table on Mobile */
+            }
+            #mobile-card-container {
+                display: block; /* Show Vertical Cards on Mobile */
+            }
+        }
+
+        .prod-card {
+            background: #f8f9fa;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .card-row {
+            margin-bottom: 10px;
+        }
+        .card-row label {
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            color: #475569;
+            margin-bottom: 3px;
+        }
+        .card-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .card-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        .card-grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
         .report-header {
             display: flex;
             justify-content: space-between;
@@ -373,6 +423,7 @@
                 </div>
             </div>
 
+            <!-- DESKTOP TABLE VIEW -->
             <div class="table-responsive">
                 <table>
                     <thead>
@@ -418,6 +469,22 @@
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+
+            <!-- MOBILE CARD VIEW (Vertical Niche Niche Layout) -->
+            <div id="mobile-card-container">
+                <div id="mobile-cards-list">
+                    <!-- Dynamic Mobile Cards Will Go Here -->
+                </div>
+                <!-- Summary Card for Mobile -->
+                <div style="background: #e2e8f0; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-top: 15px;">
+                    <div>Shift Summary >></div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                        <span>Tot. Complete Set: <span id="mob-sum-complete-set" style="color: #27ae60;">0</span></span>
+                        <span>Tot. Complete CTN: <span id="mob-sum-complete-ctn" style="color: #27ae60;">0</span></span>
+                        <span>Avg MH Util: <span id="mob-sum-mh-util" style="color: #d9534f;">0%</span></span>
+                    </div>
+                </div>
             </div>
             
             <div class="btn-container">
@@ -553,7 +620,6 @@
         document.getElementById('floor-display').innerText = floorName;
         document.getElementById('dept-name').innerText = leadName;
 
-        // Show Shift IC dropdown only for Plastic Packaging 2
         let shiftIcContainer = document.getElementById('shift-ic-container');
         if (floorName === "Plastic Packaging 2") {
             shiftIcContainer.style.display = "flex";
@@ -561,7 +627,10 @@
             shiftIcContainer.style.display = "none";
         }
 
-        if (document.querySelectorAll('#entry-table-body tr').length === 0) {
+        let desktopRows = document.querySelectorAll('#entry-table-body tr');
+        let mobileCards = document.querySelectorAll('#mobile-cards-list .prod-card');
+
+        if (desktopRows.length === 0 && mobileCards.length === 0) {
             addNewRow();
         }
         initLiveStream();
@@ -575,7 +644,6 @@
         document.getElementById('shift-ic-select').value = '';
     }
 
-    // Toggle Between Tabs
     function switchTab(pageId, btnElement) {
         document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -584,14 +652,14 @@
         btnElement.classList.add('active');
     }
 
-    // Function to add a new row dynamically
+    // Function to add a new row & card dynamically
     function addNewRow(lineVal='A-1', joVal='', itemVal='', wfVal='', whVal='', smvVal=1.0, unitVal=24, compSetVal='', compCtnVal='', statusVal='Running') {
         let tbody = document.getElementById('entry-table-body');
         let tr = document.createElement('tr');
         
         tr.innerHTML = `
             <td>
-                <select class="line-val" onchange="updateReport()">
+                <select class="line-val" onchange="syncFields(this); updateReport();">
                     <option value="A-1" ${lineVal==='A-1'?'selected':''}>A-1</option>
                     <option value="B-1" ${lineVal==='B-1'?'selected':''}>B-1</option>
                     <option value="C-1" ${lineVal==='C-1'?'selected':''}>C-1</option>
@@ -600,8 +668,8 @@
                     <option value="E-2" ${lineVal==='E-2'?'selected':''}>E-2</option>
                 </select>
             </td>
-            <td><input type="text" class="jo-name" value="${joVal}" oninput="checkAndAutoAddRow(this); updateReport();"></td>
-            <td><input type="text" class="item-name" value="${itemVal}" oninput="checkAndAutoAddRow(this); updateReport();"></td>
+            <td><input type="text" class="jo-name" value="${joVal}" oninput="checkAndAutoAddRow(this); syncFields(this); updateReport();"></td>
+            <td><input type="text" class="item-name" value="${itemVal}" oninput="checkAndAutoAddRow(this); syncFields(this); updateReport();"></td>
             <td><input type="number" class="wf" value="${wfVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="wh" value="${whVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" step="0.1" class="smv" value="${smvVal}" oninput="calculateValues(this)"></td>
@@ -614,7 +682,7 @@
             <td><input type="number" step="0.01" class="actual-mh calculated-field" value="0" readonly></td>
             <td><input type="text" class="mh-util calculated-field" value="0%" readonly></td>
             <td>
-                <select class="status-val">
+                <select class="status-val" onchange="syncFields(this)">
                     <option value="Running" ${statusVal==='Running'?'selected':''}>Running</option>
                     <option value="Completed" ${statusVal==='Completed'?'selected':''}>Completed</option>
                     <option value="Hold" ${statusVal==='Hold'?'selected':''}>Hold</option>
@@ -622,8 +690,66 @@
             </td>
             <td><button class="btn-delete" onclick="deleteLocalRow(this)">X</button></td>
         `;
-        
         tbody.appendChild(tr);
+
+        // Add corresponding Mobile Card
+        let mobileList = document.getElementById('mobile-cards-list');
+        let cardDiv = document.createElement('div');
+        cardDiv.className = 'prod-card';
+        cardDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-weight: bold; color: #007bff; font-size: 13px;">Production Entry</span>
+                <button class="btn-delete" onclick="deleteLocalRowFromMobile(this)">❌ Delete</button>
+            </div>
+            <div class="card-grid-2 card-row">
+                <div>
+                    <label>Line:</label>
+                    <select class="m-line-val" onchange="syncBackFromMobile(this); updateReport();">
+                        <option value="A-1" ${lineVal==='A-1'?'selected':''}>A-1</option>
+                        <option value="B-1" ${lineVal==='B-1'?'selected':''}>B-1</option>
+                        <option value="C-1" ${lineVal==='C-1'?'selected':''}>C-1</option>
+                        <option value="D-1" ${lineVal==='D-1'?'selected':''}>D-1</option>
+                        <option value="E-1" ${lineVal==='E-1'?'selected':''}>E-1</option>
+                        <option value="E-2" ${lineVal==='E-2'?'selected':''}>E-2</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Status:</label>
+                    <select class="m-status-val" onchange="syncBackFromMobile(this)">
+                        <option value="Running" ${statusVal==='Running'?'selected':''}>Running</option>
+                        <option value="Completed" ${statusVal==='Completed'?'selected':''}>Completed</option>
+                        <option value="Hold" ${statusVal==='Hold'?'selected':''}>Hold</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-row">
+                <label>JO Name:</label>
+                <input type="text" class="m-jo-name" value="${joVal}" placeholder="Enter JO Name" oninput="checkAndAutoAddRowMobile(this); syncBackFromMobile(this); updateReport();">
+            </div>
+            <div class="card-row">
+                <label>Items Name:</label>
+                <input type="text" class="m-item-name" value="${itemVal}" placeholder="Enter Item Name" oninput="checkAndAutoAddRowMobile(this); syncBackFromMobile(this); updateReport();">
+            </div>
+            <div class="card-grid-4 card-row">
+                <div><label>WF:</label><input type="number" class="m-wf" value="${wfVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+                <div><label>WH:</label><input type="number" class="m-wh" value="${whVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+                <div><label>SMV:</label><input type="number" step="0.1" class="m-smv" value="${smvVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+                <div><label>Unit/CTN:</label><input type="number" class="m-unit-ctn" value="${unitVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+            </div>
+            <div class="card-grid-2 card-row">
+                <div><label>Complete Set:</label><input type="number" class="m-complete-set" value="${compSetVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+                <div><label>Complete CTN:</label><input type="number" class="m-complete-ctn" value="${compCtnVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+            </div>
+            <div style="background: #e2e8f0; padding: 6px; border-radius: 4px; font-size: 11px; display: flex; justify-content: space-between; margin-top: 8px;">
+                <span>Target Set: <b class="m-target-set">0</b></span>
+                <span>Target CTN: <b class="m-target-ctn">0</b></span>
+                <span>MH Util: <b class="m-mh-util" style="color: #d9534f;">0%</b></span>
+            </div>
+        `;
+        mobileList.appendChild(cardDiv);
+
+        // Run calculation init for newly added row
+        calculateValues(tr.querySelector('.wf'));
     }
 
     let isAddingRow = false;
@@ -635,17 +761,89 @@
         if (currentRow === lastRow && element.value.trim() !== "" && !isAddingRow) {
             isAddingRow = true;
             setTimeout(() => {
+                let index = Array.from(tbody.children).indexOf(currentRow);
+                // Get values to check synchronization
                 addNewRow();
                 isAddingRow = false;
             }, 100);
         }
     }
 
+    function checkAndAutoAddRowMobile(element) {
+        let currentCard = element.closest('.prod-card');
+        let list = document.getElementById('mobile-cards-list');
+        let lastCard = list.lastElementChild;
+
+        if (currentCard === lastCard && element.value.trim() !== "" && !isAddingRow) {
+            isAddingRow = true;
+            setTimeout(() => {
+                addNewRow();
+                isAddingRow = false;
+            }, 100);
+        }
+    }
+
+    // Synchronization between Desktop Table and Mobile Cards
+    function syncFields(desktopElem) {
+        let tr = desktopElem.closest('tr');
+        let index = Array.from(document.querySelectorAll('#entry-table-body tr')).indexOf(tr);
+        let card = document.querySelectorAll('#mobile-cards-list .prod-card')[index];
+        if (!card) return;
+
+        card.querySelector('.m-line-val').value = tr.querySelector('.line-val').value;
+        card.querySelector('.m-jo-name').value = tr.querySelector('.jo-name').value;
+        card.querySelector('.m-item-name').value = tr.querySelector('.item-name').value;
+        card.querySelector('.m-wf').value = tr.querySelector('.wf').value;
+        card.querySelector('.m-wh').value = tr.querySelector('.wh').value;
+        card.querySelector('.m-smv').value = tr.querySelector('.smv').value;
+        card.querySelector('.m-unit-ctn').value = tr.querySelector('.unit-ctn').value;
+        card.querySelector('.m-complete-set').value = tr.querySelector('.complete-set').value;
+        card.querySelector('.m-complete-ctn').value = tr.querySelector('.complete-ctn').value;
+        card.querySelector('.m-status-val').value = tr.querySelector('.status-val').value;
+    }
+
+    function syncBackFromMobile(mobileElem) {
+        let card = mobileElem.closest('.prod-card');
+        let index = Array.from(document.querySelectorAll('#mobile-cards-list .prod-card')).indexOf(card);
+        let tr = document.querySelectorAll('#entry-table-body tr')[index];
+        if (!tr) return;
+
+        tr.querySelector('.line-val').value = card.querySelector('.m-line-val').value;
+        tr.querySelector('.jo-name').value = card.querySelector('.m-jo-name').value;
+        tr.querySelector('.item-name').value = card.querySelector('.m-item-name').value;
+        tr.querySelector('.wf').value = card.querySelector('.m-wf').value;
+        tr.querySelector('.wh').value = card.querySelector('.m-wh').value;
+        tr.querySelector('.smv').value = card.querySelector('.m-smv').value;
+        tr.querySelector('.unit-ctn').value = card.querySelector('.m-unit-ctn').value;
+        tr.querySelector('.complete-set').value = card.querySelector('.m-complete-set').value;
+        tr.querySelector('.complete-ctn').value = card.querySelector('.m-complete-ctn').value;
+        tr.querySelector('.status-val').value = card.querySelector('.m-status-val').value;
+    }
+
     function deleteLocalRow(btn) {
         let row = btn.closest('tr');
         let tbody = document.getElementById('entry-table-body');
+        let index = Array.from(tbody.children).indexOf(row);
+        let card = document.querySelectorAll('#mobile-cards-list .prod-card')[index];
+
         if (tbody.rows.length > 1) {
             row.remove();
+            if (card) card.remove();
+            updateSummaryAndReport();
+        } else {
+            alert("At least one line is required!");
+        }
+    }
+
+    function deleteLocalRowFromMobile(btn) {
+        let card = btn.closest('.prod-card');
+        let list = document.getElementById('mobile-cards-list');
+        let index = Array.from(list.children).indexOf(card);
+        let row = document.querySelectorAll('#entry-table-body tr')[index];
+
+        if (list.children.length > 1) {
+            card.remove();
+            if (row) row.remove();
             updateSummaryAndReport();
         } else {
             alert("At least one line is required!");
@@ -654,34 +852,49 @@
 
     function calculateValues(element) {
         let row = element.closest('tr');
+        syncFields(row.querySelector('.wf'));
+        
         let wf = parseFloat(row.querySelector('.wf').value) || 0;
         let wh = parseFloat(row.querySelector('.wh').value) || 0;
         let smv = parseFloat(row.querySelector('.smv').value) || 0; 
         let unitCtn = parseFloat(row.querySelector('.unit-ctn').value) || 1;
         let completeSet = parseFloat(row.querySelector('.complete-set').value) || 0;
         
-        let targetSetInput = row.querySelector('.target-set');
-        let targetCtnInput = row.querySelector('.target-ctn');
-        let planMhInput = row.querySelector('.plan-mh');
-        let actualMhInput = row.querySelector('.actual-mh');
-        let mhUtilInput = row.querySelector('.mh-util');
-        
         let targetSet = smv > 0 ? (wf * wh * 60) / smv : 0;
-        targetSetInput.value = Math.round(targetSet);
+        row.querySelector('.target-set').value = Math.round(targetSet);
 
         let targetCtn = unitCtn > 0 ? targetSet / unitCtn : 0;
-        targetCtnInput.value = Math.round(targetCtn);
+        row.querySelector('.target-ctn').value = Math.round(targetCtn);
 
         let planMh = wf * wh;
-        planMhInput.value = Math.round(planMh);
+        row.querySelector('.plan-mh').value = Math.round(planMh);
 
         let actualMh = (completeSet * smv) / 60;
-        actualMhInput.value = actualMh.toFixed(2);
+        row.querySelector('.actual-mh').value = actualMh.toFixed(2);
 
         let mhUtil = planMh > 0 ? (actualMh / planMh) * 100 : 0;
-        mhUtilInput.value = Math.round(mhUtil) + '%';
+        row.querySelector('.mh-util').value = Math.round(mhUtil) + '%';
+
+        // Update mobile card calculated view
+        let index = Array.from(document.querySelectorAll('#entry-table-body tr')).indexOf(row);
+        let card = document.querySelectorAll('#mobile-cards-list .prod-card')[index];
+        if (card) {
+            card.querySelector('.m-target-set').innerText = Math.round(targetSet);
+            card.querySelector('.m-target-ctn').innerText = Math.round(targetCtn);
+            card.querySelector('.m-mh-util').innerText = Math.round(mhUtil) + '%';
+        }
 
         updateSummaryAndReport();
+    }
+
+    function calculateValuesMobile(mobileElem) {
+        let card = mobileElem.closest('.prod-card');
+        let index = Array.from(document.querySelectorAll('#mobile-cards-list .prod-card')).indexOf(card);
+        let row = document.querySelectorAll('#entry-table-body tr')[index];
+        if (!row) return;
+
+        syncBackFromMobile(mobileElem);
+        calculateValues(row.querySelector('.wf'));
     }
 
     function updateSummaryAndReport() {
@@ -725,6 +938,11 @@
 
         let avgUtil = validRowCount > 0 ? totalUtilPercent / validRowCount : 0;
         document.getElementById('sum-mh-util').innerText = Math.round(avgUtil) + '%';
+
+        // Update mobile summary footer
+        document.getElementById('mob-sum-complete-set').innerText = Math.round(totalCompleteSet);
+        document.getElementById('mob-sum-complete-ctn').innerText = Math.round(totalCompleteCtn);
+        document.getElementById('mob-sum-mh-util').innerText = Math.round(avgUtil) + '%';
     }
 
     function updateReport() {}
@@ -933,11 +1151,12 @@
                         shiftIcContainer.style.display = "none";
                     }
 
-                    let tbody = document.getElementById('entry-table-body');
-                    tbody.innerHTML = '';
+                    document.getElementById('entry-table-body').innerHTML = '';
+                    document.getElementById('mobile-cards-list').innerHTML = '';
+                    
                     addNewRow(data.line, data.joName, data.itemName, data.wf, data.wh, data.smv, data.unitCtn, data.completeSet, data.completeCtn, data.status);
                     
-                    let firstRowInput = tbody.querySelector('.wf');
+                    let firstRowInput = document.getElementById('entry-table-body').querySelector('.wf');
                     calculateValues(firstRowInput);
 
                     db.ref('productions/' + keyId).remove();
