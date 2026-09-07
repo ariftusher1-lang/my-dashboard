@@ -183,6 +183,7 @@
             margin-bottom: 20px;
             border: 1px solid #ccc;
             border-radius: 4px;
+            overflow-y: visible !important; /* To show search dropdown list cleanly */
         }
         table {
             width: 100%;
@@ -195,6 +196,7 @@
             padding: 8px;
             text-align: center;
             white-space: nowrap;
+            position: relative;
         }
         th {
             background-color: #2c3e50;
@@ -217,6 +219,47 @@
         }
         .calculated-field {
             background-color: #e9ecef;
+        }
+
+        /* --- AUTOCOMPLETE SEARCH DROPDOWN STYLING --- */
+        .searchable-dropdown-container {
+            position: relative;
+            width: 100%;
+        }
+        .jo-search-input {
+            width: 100%;
+            padding: 6px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: left;
+            background: #fff;
+            font-size: 13px;
+        }
+        .jo-dropdown-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            max-height: 160px;
+            overflow-y: auto;
+            display: none;
+            z-index: 99999;
+            text-align: left;
+            box-shadow: 0px 4px 8px rgba(0,0,0,0.15);
+        }
+        .jo-dropdown-item {
+            padding: 7px 10px;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .jo-dropdown-item:hover {
+            background-color: #007bff;
+            color: white;
         }
         
         /* --- MOBILE CARD VIEW STYLING --- */
@@ -723,7 +766,6 @@
 
             uploadedJOList = [...new Set(uploadedJOList)];
             document.getElementById('uploaded-jo-count').innerText = uploadedJOList.length + " items";
-            refreshAllJOSelects();
             alert("✅ JO Excel File Successfully Uploaded!");
         };
         reader.readAsArrayBuffer(file);
@@ -741,20 +783,11 @@
         if(!uploadedJOList.includes(val)) {
             uploadedJOList.push(val);
             document.getElementById('uploaded-jo-count').innerText = uploadedJOList.length + " items";
-            refreshAllJOSelects();
             manualInput.value = "";
             alert("✅ নতুন JO সফলভাবে লিস্টে যোগ করা হয়েছে!");
         } else {
             alert("⚠️ এই JO টি ইতিমধ্যে লিস্টে রয়েছে!");
         }
-    }
-
-    function refreshAllJOSelects() {
-        document.querySelectorAll('.jo-select-search').forEach(selectElem => {
-            let currentVal = selectElem.value;
-            selectElem.innerHTML = `<option value="">-- Select or Type JO --</option>` + 
-                uploadedJOList.map(jo => `<option value="${jo}" ${jo===currentVal?'selected':''}>${jo}</option>`).join('');
-        });
     }
 
     function handleLoginKeyPress(event) {
@@ -892,11 +925,10 @@
                 </select>
             </td>
             <td>
-                <select class="jo-select-search" onchange="selectJOFromDropdown(this)" style="width:100%;">
-                    <option value="">-- Select or Type JO --</option>
-                    ${uploadedJOList.map(jo => `<option value="${jo}" ${jo===joVal?'selected':''}>${jo}</option>`).join('')}
-                </select>
-                <input type="hidden" class="jo-name" value="${joVal}">
+                <div class="searchable-dropdown-container">
+                    <input type="text" class="jo-search-input jo-name" value="${joVal}" placeholder="Search or Type JO" oninput="filterJODropdown(this)" onfocus="showJODropdown(this)" autocomplete="off">
+                    <div class="jo-dropdown-list"></div>
+                </div>
             </td>
             <td><input type="text" class="item-name" value="${itemVal}" oninput="syncFields(this); updateReport();"></td>
             <td><input type="number" class="wf" value="${wfVal}" oninput="calculateValues(this)"></td>
@@ -952,11 +984,10 @@
             </div>
             <div class="card-row">
                 <label>JO Name:</label>
-                <select class="m-jo-select-search" onchange="selectJOFromDropdownMobile(this)" style="width:100%;">
-                    <option value="">-- Select or Type JO --</option>
-                    ${uploadedJOList.map(jo => `<option value="${jo}" ${jo===joVal?'selected':''}>${jo}</option>`).join('')}
-                </select>
-                <input type="hidden" class="m-jo-name" value="${joVal}">
+                <div class="searchable-dropdown-container">
+                    <input type="text" class="jo-search-input m-jo-name" value="${joVal}" placeholder="Search or Type JO" oninput="filterJODropdown(this)" onfocus="showJODropdown(this)" autocomplete="off">
+                    <div class="jo-dropdown-list"></div>
+                </div>
             </div>
             <div class="card-row">
                 <label>Items Name:</label>
@@ -982,23 +1013,68 @@
         calculateValues(tr.querySelector('.wf'));
     }
 
-    function selectJOFromDropdown(selectElem) {
-        let val = selectElem.value;
-        let td = selectElem.closest('td');
-        td.querySelector('.jo-name').value = val;
-        syncFields(selectElem);
+    // Autocomplete & Search Logic for JO Name
+    function showJODropdown(inputElem) {
+        let container = inputElem.closest('.searchable-dropdown-container');
+        let listDiv = container.querySelector('.jo-dropdown-list');
+        renderDropdownItems(listDiv, inputElem.value);
+        listDiv.style.display = 'block';
+    }
+
+    function filterJODropdown(inputElem) {
+        let container = inputElem.closest('.searchable-dropdown-container');
+        let listDiv = container.querySelector('.jo-dropdown-list');
+        renderDropdownItems(listDiv, inputElem.value);
+        listDiv.style.display = 'block';
+
+        if(inputElem.classList.contains('jo-name')) {
+            syncFields(inputElem);
+        } else {
+            syncBackFromMobile(inputElem);
+        }
         updateReport();
     }
 
-    function selectJOFromDropdownMobile(selectElem) {
-        let val = selectElem.value;
-        let card = selectElem.closest('.prod-card');
-        card.querySelector('.m-jo-name').value = val;
-        syncBackFromMobile(selectElem);
-        updateReport();
+    function renderDropdownItems(listDiv, filterText) {
+        listDiv.innerHTML = '';
+        let filter = filterText.toLowerCase();
+        let matches = uploadedJOList.filter(jo => jo.toLowerCase().includes(filter));
+
+        if(matches.length === 0) {
+            listDiv.innerHTML = `<div class="jo-dropdown-item" style="color: #94a3b8; font-style: italic;">No matching JO found (Type custom)</div>`;
+            return;
+        }
+
+        matches.forEach(jo => {
+            let item = document.createElement('div');
+            item.className = 'jo-dropdown-item';
+            item.innerText = jo;
+            item.onmousedown = function(e) {
+                e.preventDefault(); // Prevent blur before click registers
+                let container = listDiv.closest('.searchable-dropdown-container');
+                let input = container.querySelector('.jo-search-input');
+                input.value = jo;
+                listDiv.style.display = 'none';
+
+                if(input.classList.contains('jo-name')) {
+                    syncFields(input);
+                } else {
+                    syncBackFromMobile(input);
+                }
+                updateReport();
+            };
+            listDiv.appendChild(item);
+        });
     }
 
-    // Auto create next line when 1st line status is marked as 'Completed' or 'Hold' (or data entry done)
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.searchable-dropdown-container')) {
+            document.querySelectorAll('.jo-dropdown-list').forEach(list => list.style.display = 'none');
+        }
+    });
+
+    // Auto create next line when 1st line status is marked as 'Completed'
     let isAutoAdding = false;
     function checkLineStatusAndAutoAdd(statusElem) {
         let tr = statusElem.closest('tr');
@@ -1035,7 +1111,6 @@
         if (!card) return;
 
         card.querySelector('.m-line-val').value = tr.querySelector('.line-val').value;
-        card.querySelector('.m-jo-select-search').value = tr.querySelector('.jo-name').value;
         card.querySelector('.m-jo-name').value = tr.querySelector('.jo-name').value;
         card.querySelector('.m-item-name').value = tr.querySelector('.item-name').value;
         card.querySelector('.m-wf').value = tr.querySelector('.wf').value;
@@ -1054,7 +1129,6 @@
         if (!tr) return;
 
         tr.querySelector('.line-val').value = card.querySelector('.m-line-val').value;
-        tr.querySelector('.jo-select-search').value = card.querySelector('.m-jo-name').value;
         tr.querySelector('.jo-name').value = card.querySelector('.m-jo-name').value;
         tr.querySelector('.item-name').value = card.querySelector('.m-item-name').value;
         tr.querySelector('.wf').value = card.querySelector('.m-wf').value;
