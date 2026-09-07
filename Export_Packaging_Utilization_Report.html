@@ -94,7 +94,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
-            min-width: 900px; /* Forces horizontal scroll on tiny screens instead of squishing */
+            min-width: 900px;
         }
         th, td {
             border: 1px solid #ccc;
@@ -408,7 +408,7 @@
             <td><input type="number" class="target-ctn calculated-field" value="0" readonly></td>
             <td><input type="number" class="complete-ctn" value="${compCtnVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="plan-mh calculated-field" value="0" readonly></td>
-            <td><input type="number" class="actual-mh calculated-field" value="0" readonly></td>
+            <td><input type="number" step="0.01" class="actual-mh calculated-field" value="0" readonly></td>
             <td><input type="text" class="mh-util calculated-field" value="0%" readonly></td>
             <td><button class="btn-delete" onclick="deleteRow(this)">X</button></td>
         `;
@@ -447,7 +447,7 @@
         let row = element.closest('tr');
         let wf = parseFloat(row.querySelector('.wf').value) || 0;
         let wh = parseFloat(row.querySelector('.wh').value) || 0;
-        let smv = parseFloat(row.querySelector('.smv').value) || 1; 
+        let smv = parseFloat(row.querySelector('.smv').value) || 0; 
         let unitCtn = parseFloat(row.querySelector('.unit-ctn').value) || 1;
         let completeSet = parseFloat(row.querySelector('.complete-set').value) || 0;
         
@@ -466,8 +466,9 @@
         let planMh = wf * wh;
         planMhInput.value = Math.round(planMh);
 
-        let actualMh = smv > 0 ? completeSet / smv : 0;
-        actualMhInput.value = Math.round(actualMh);
+        // Updated Actual MH Formula: (Complete Set * SMV) / 60
+        let actualMh = (completeSet * smv) / 60;
+        actualMhInput.value = actualMh.toFixed(2);
 
         let mhUtil = planMh > 0 ? (actualMh / planMh) * 100 : 0;
         mhUtilInput.value = Math.round(mhUtil) + '%';
@@ -512,7 +513,7 @@
         document.getElementById('sum-target-ctn').innerText = Math.round(totalTargetCtn);
         document.getElementById('sum-complete-ctn').innerText = Math.round(totalCompleteCtn);
         document.getElementById('sum-plan-mh').innerText = Math.round(totalPlanMh);
-        document.getElementById('sum-actual-mh').innerText = Math.round(totalActualMh);
+        document.getElementById('sum-actual-mh').innerText = totalActualMh.toFixed(2);
 
         let avgUtil = validRowCount > 0 ? totalUtilPercent / validRowCount : 0;
         document.getElementById('sum-mh-util').innerText = Math.round(avgUtil) + '%';
