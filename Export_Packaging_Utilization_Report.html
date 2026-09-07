@@ -101,7 +101,7 @@
         #app-container {
             display: none;
             width: 100%;
-            max-width: 100%; /* Laptop e left & right boro korar jonno full width */
+            max-width: 100%;
             padding: 15px 25px;
             margin: auto;
             box-sizing: border-box;
@@ -520,10 +520,11 @@
                                 <th>Complete CTN</th>
                                 <th>MH Util (%)</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="live-stream-tbody">
-                            <tr><td colspan="12">Waiting for live entries...</td></tr>
+                            <tr><td colspan="13">Waiting for live entries...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -590,23 +591,31 @@
 
         <!-- PAGE 3: IC PERFORMANCE MONITORING -->
         <div id="ic-performance-page" class="page-section">
-            <div class="report-header">
+            <div class="report-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                 <div class="report-title">📈 Concern Shift IC Performance Dashboard</div>
-                <div>
-                    <label style="font-weight: bold; margin-right: 8px;">Select IC:</label>
-                    <select id="perf-ic-select" onchange="renderICPerformanceData()" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; color: #c0392b;">
-                        <option value="">-- Select Shift IC --</option>
-                        <option value="Bithi">Bithi</option>
-                        <option value="Riya">Riya</option>
-                        <option value="Murad">Murad</option>
-                        <option value="Rasel">Rasel</option>
-                        <option value="Sabana">Sabana</option>
-                        <option value="Noyon">Noyon</option>
-                        <option value="Mosarof">Mosarof</option>
-                        <option value="Tarek">Tarek</option>
-                        <option value="Tajrul">Tajrul</option>
-                        <option value="Fahim">Fahim</option>
-                    </select>
+                
+                <!-- Present Position & Summary Section placed right beside IC Performance -->
+                <div style="display: flex; gap: 15px; align-items: center; background: #e9ecef; padding: 8px 15px; border-radius: 6px;">
+                    <div>
+                        <span style="font-size: 12px; color: #475569; font-weight: bold;">Current Position:</span>
+                        <span id="ic-current-position-display" style="font-size: 13px; font-weight: bold; color: #007bff;">--</span>
+                    </div>
+                    <div>
+                        <label style="font-weight: bold; margin-right: 5px; font-size: 12px;">Select IC:</label>
+                        <select id="perf-ic-select" onchange="renderICPerformanceData()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; color: #c0392b;">
+                            <option value="">-- Select Shift IC --</option>
+                            <option value="Bithi">Bithi</option>
+                            <option value="Riya">Riya</option>
+                            <option value="Murad">Murad</option>
+                            <option value="Rasel">Rasel</option>
+                            <option value="Sabana">Sabana</option>
+                            <option value="Noyon">Noyon</option>
+                            <option value="Mosarof">Mosarof</option>
+                            <option value="Tarek">Tarek</option>
+                            <option value="Tajrul">Tajrul</option>
+                            <option value="Fahim">Fahim</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -689,7 +698,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let temporaryCapturedPhoto = ""; // Temporarily hold base64 image before saving to DB
+    let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
 
     window.onload = function() {
@@ -761,12 +770,15 @@
         btnElement.classList.add('active');
     }
 
-    // Camera Popup Trigger on IC Select
+    // Camera Popup Trigger on IC Select (Mandatory Selfie)
     function checkAndCaptureICSelfie(selectElem) {
         let icName = selectElem.value;
-        if (icName === "") return;
+        if (icName === "") {
+            temporaryCapturedPhoto = "";
+            return;
+        }
 
-        document.getElementById('camModalTitle').innerText = "📸 Take Selfie for IC: " + icName;
+        document.getElementById('camModalTitle').innerText = "📸 Mandatory Selfie for IC: " + icName;
         let modal = document.getElementById('cameraModal');
         modal.style.display = 'flex';
 
@@ -777,8 +789,9 @@
                 video.srcObject = stream;
             })
             .catch(err => {
-                alert("❌ ক্যামেরা চালু করা যায়নি বা পারমিশন দেওয়া হয়নি!");
+                alert("❌ ক্যামেরা চালু করা যায়নি বা পারমিশন দেওয়া হয়নি! সেলফি তোলা বাধ্যতামূলক।");
                 modal.style.display = 'none';
+                selectElem.value = ""; // Reset dropdown
             });
     }
 
@@ -792,15 +805,17 @@
         canvas.height = video.videoHeight || 240;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        temporaryCapturedPhoto = canvas.toDataURL('image/png'); // Save as Base64 string
+        temporaryCapturedPhoto = canvas.toDataURL('image/png'); 
 
         closeCameraModal();
-        alert("✅ IC সেলফি সফলভাবে ক্যাপচার হয়েছে! এখন ডাটা সেভ করুন।");
+        alert("✅ IC সেলফি সফলভাবে ক্যাপচার হয়েছে!");
     });
 
     document.getElementById('closeCamBtn').addEventListener('click', function() {
         closeCameraModal();
-        document.getElementById('shift-ic-select').value = ""; // Reset dropdown if cancelled
+        alert("⚠️ IC সেলফি না তুললে ফর্ম সাবমিট করা যাবে না!");
+        document.getElementById('shift-ic-select').value = ""; 
+        temporaryCapturedPhoto = "";
     });
 
     function closeCameraModal() {
@@ -1095,6 +1110,7 @@
 
     function updateReport() {}
 
+    // Validation & Duplicate Checking Before Save
     function saveDataToFirebase() {
         let date = document.getElementById('prod-date').value;
         let shift = document.getElementById('shift-select').value;
@@ -1102,37 +1118,57 @@
         let dept = document.getElementById('dept-name').innerText;
         let shiftIc = (floor === "Plastic Packaging 2") ? document.getElementById('shift-ic-select').value : "-";
 
-        if (floor === "Plastic Packaging 2" && shiftIc === "") {
-            alert("⚠️ Please select Concern Shift IC!");
-            return;
+        // 1. Mandatory Validation: IC Selection & Selfie check for Floor 2
+        if (floor === "Plastic Packaging 2") {
+            if (shiftIc === "") {
+                alert("⚠️ দয়া করে Concern Shift IC সিলেক্ট করুন!");
+                return;
+            }
+            if (!temporaryCapturedPhoto) {
+                alert("⚠️ IC-এর জন্য সেলফি তোলা বাধ্যতামূলক! দয়া করে সেলফি ক্যাপচার করুন।");
+                checkAndCaptureICSelfie(document.getElementById('shift-ic-select'));
+                return;
+            }
         }
 
         let rows = document.querySelectorAll('#entry-table-body tr');
         let entriesToSave = [];
+        let hasIncompleteFields = false;
 
         rows.forEach(row => {
             let jo = row.querySelector('.jo-name').value.trim();
+            let itemName = row.querySelector('.item-name').value.trim();
             let wf = parseFloat(row.querySelector('.wf').value) || 0;
+            let wh = parseFloat(row.querySelector('.wh').value) || 0;
+            let smv = parseFloat(row.querySelector('.smv').value) || 0;
+            let unitCtn = parseFloat(row.querySelector('.unit-ctn').value) || 0;
+            let completeSet = parseFloat(row.querySelector('.complete-set').value) || 0;
+            let completeCtn = parseFloat(row.querySelector('.complete-ctn').value) || 0;
 
             if (jo !== "" || wf > 0) {
+                // Check if any mandatory field is missing or empty
+                if (jo === "" || itemName === "" || wf <= 0 || wh <= 0 || smv <= 0 || unitCtn <= 0) {
+                    hasIncompleteFields = true;
+                }
+
                 let entryData = {
                     date: date,
                     shift: shift,
                     shiftIc: shiftIc,
-                    icPhoto: temporaryCapturedPhoto || "", // Save IC Selfie Base64
+                    icPhoto: temporaryCapturedPhoto || "", 
                     floor: floor,
                     department: dept,
                     line: row.querySelector('.line-val').value,
                     joName: jo,
-                    itemName: row.querySelector('.item-name').value.trim(),
+                    itemName: itemName,
                     wf: wf,
-                    wh: parseFloat(row.querySelector('.wh').value) || 0,
-                    smv: parseFloat(row.querySelector('.smv').value) || 0,
-                    unitCtn: parseFloat(row.querySelector('.unit-ctn').value) || 0,
+                    wh: wh,
+                    smv: smv,
+                    unitCtn: unitCtn,
                     targetSet: parseFloat(row.querySelector('.target-set').value) || 0,
-                    completeSet: parseFloat(row.querySelector('.complete-set').value) || 0,
+                    completeSet: completeSet,
                     targetCtn: parseFloat(row.querySelector('.target-ctn').value) || 0,
-                    completeCtn: parseFloat(row.querySelector('.complete-ctn').value) || 0,
+                    completeCtn: completeCtn,
                     planMh: parseFloat(row.querySelector('.plan-mh').value) || 0,
                     actualMh: parseFloat(row.querySelector('.actual-mh').value) || 0,
                     mhUtil: row.querySelector('.mh-util').value,
@@ -1142,21 +1178,42 @@
             }
         });
 
-        if (entriesToSave.length === 0) {
-            alert("Please enter valid data before saving!");
+        // 2. All Form Fill Up Validation Alert
+        if (hasIncompleteFields || entriesToSave.length === 0) {
+            alert("❌ সব ফিল্ড সঠিকভাবে পূরণ না করলে ডাটা সেভ করা যাবে না! দয়া করে JO Name, Items Name, WF, WH, SMV এবং Unit/CTN সঠিকভাবে পূরণ করুন।");
             return;
         }
 
+        // 3. Duplicate Prevention Check (Same Date & Same Shift)
         let dbRef = db.ref('productions');
-        let promises = entriesToSave.map(entry => dbRef.push(entry));
+        dbRef.once('value', (snapshot) => {
+            let isDuplicate = false;
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    let d = childSnapshot.val();
+                    // Checking if date and shift match for the same floor/IC
+                    if (d.date === date && d.shift === shift && d.floor === floor) {
+                        isDuplicate = true;
+                    }
+                });
+            }
 
-        Promise.all(promises)
-            .then(() => {
-                alert("✅ Data & IC Selfie Successfully Saved!");
-            })
-            .catch((error) => {
-                alert("❌ Error saving data: " + error.message);
-            });
+            if (isDuplicate) {
+                alert(`⚠️ ডুপ্লিকেট এন্ট্রি! Date: ${date} এবং Shift: (${shift})-এর জন্য ইতিমধ্যে এই ফ্লোরে ডাটা এন্ট্রি করা হয়েছে। একই শিফটে ১ বারের বেশি এন্ট্রি দেওয়া নিষেধ।`);
+                return;
+            }
+
+            // If all checks pass, save to Firebase
+            let promises = entriesToSave.map(entry => dbRef.push(entry));
+            Promise.all(promises)
+                .then(() => {
+                    alert("✅ Data & IC Selfie Successfully Saved!");
+                    location.reload(); // Refresh to clean form
+                })
+                .catch((error) => {
+                    alert("❌ Error saving data: " + error.message);
+                });
+        });
     }
 
     function initLiveStream() {
@@ -1167,6 +1224,7 @@
             liveStreamTbody.innerHTML = '';
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
+                    let keyId = childSnapshot.key;
                     let data = childSnapshot.val();
                     let photoHtml = data.icPhoto ? `<img src="${data.icPhoto}" width="35" height="35" style="border-radius: 50%; object-fit: cover;">` : '-';
                     let tr = document.createElement('tr');
@@ -1183,11 +1241,12 @@
                         <td style="font-weight: bold; color: #28a745;">${data.completeCtn}</td>
                         <td>${data.mhUtil}</td>
                         <td><span style="background: #e2f0d9; padding: 2px 6px; border-radius: 4px; color: #385723; font-weight: bold;">${data.status || 'Running'}</span></td>
+                        <td><button class="btn-edit" onclick="editLiveRecord('${keyId}')">Edit</button></td>
                     `;
                     liveStreamTbody.appendChild(tr);
                 });
             } else {
-                liveStreamTbody.innerHTML = `<tr><td colspan="12">No live entries yet.</td></tr>`;
+                liveStreamTbody.innerHTML = `<tr><td colspan="13">No live entries yet.</td></tr>`;
             }
         });
     }
@@ -1200,10 +1259,12 @@
         let selectedIC = document.getElementById('perf-ic-select').value;
         let lastDayTbody = document.getElementById('last-day-perf-tbody');
         let totalPerfTbody = document.getElementById('total-perf-tbody');
+        let currentPosDisplay = document.getElementById('ic-current-position-display');
 
         if (!selectedIC) {
             lastDayTbody.innerHTML = `<tr><td colspan="11">Please select a Shift IC.</td></tr>`;
             totalPerfTbody.innerHTML = `<tr><td colspan="10">Please select a Shift IC.</td></tr>`;
+            currentPosDisplay.innerText = "--";
             if (icChartInstance) icChartInstance.destroy();
             return;
         }
@@ -1213,6 +1274,7 @@
             if (!snapshot.exists()) {
                 lastDayTbody.innerHTML = `<tr><td colspan="11">No data found in database.</td></tr>`;
                 totalPerfTbody.innerHTML = `<tr><td colspan="10">No data found in database.</td></tr>`;
+                currentPosDisplay.innerText = "Inactive";
                 return;
             }
 
@@ -1227,11 +1289,16 @@
             if (icRecords.length === 0) {
                 lastDayTbody.innerHTML = `<tr><td colspan="11">No records found for ${selectedIC}.</td></tr>`;
                 totalPerfTbody.innerHTML = `<tr><td colspan="10">No records found for ${selectedIC}.</td></tr>`;
+                currentPosDisplay.innerText = "Not Assigned";
                 if (icChartInstance) icChartInstance.destroy();
                 return;
             }
 
             icRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // Set Current Position text dynamically based on latest active record
+            let latestRecord = icRecords[icRecords.length - 1];
+            currentPosDisplay.innerText = `Floor: ${latestRecord.floor} | Line: ${latestRecord.line} (${latestRecord.status || 'Active'})`;
 
             let dateShiftMap = {};
             icRecords.forEach(rec => {
@@ -1251,7 +1318,7 @@
                         actualMh: 0
                     };
                 }
-                if(rec.icPhoto) dateShiftMap[key].icPhoto = rec.icPhoto; // Keep latest photo if available
+                if(rec.icPhoto) dateShiftMap[key].icPhoto = rec.icPhoto; 
                 dateShiftMap[key].smvSum += Number(rec.smv) || 0;
                 dateShiftMap[key].smvCount += 1;
                 dateShiftMap[key].targetSet += Number(rec.targetSet) || 0;
@@ -1460,7 +1527,7 @@
         }
     }
 
-    function editRecord(keyId) {
+    function editLiveRecord(keyId) {
         let pwd = prompt("Enter Password to Edit:");
         if (pwd === "Rakib") {
             db.ref('productions/' + keyId).once('value', (snapshot) => {
@@ -1497,6 +1564,10 @@
         } else if (pwd !== null) {
             alert("❌ Incorrect Password!");
         }
+    }
+
+    function editRecord(keyId) {
+        editLiveRecord(keyId);
     }
 
     function exportToExcel() {
