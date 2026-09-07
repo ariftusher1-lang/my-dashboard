@@ -26,20 +26,13 @@
             border-radius: 8px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-        /* Navigation / Toggle Buttons & Top Right Summary Container */
+        /* Navigation / Toggle Buttons */
         .nav-tabs {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 10px;
             margin-bottom: 20px;
             border-bottom: 2px solid #ddd;
             padding-bottom: 10px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .nav-left-buttons {
-            display: flex;
-            gap: 10px;
             overflow-x: auto;
         }
         .tab-btn {
@@ -60,28 +53,6 @@
         .tab-btn:hover {
             opacity: 0.9;
         }
-        /* Top Right Summary Widget (Placed where red box was marked) */
-        .top-summary-box {
-            background: #f8f9fa;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            padding: 6px 12px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            max-height: 45px;
-            overflow-x: auto;
-            font-size: 13px;
-        }
-        .top-summary-item {
-            font-weight: bold;
-            color: #2c3e50;
-            white-space: nowrap;
-        }
-        .top-summary-val {
-            color: #28a745;
-        }
-
         /* Page Sections */
         .page-section {
             display: none;
@@ -222,19 +193,10 @@
 <body>
 
 <div class="container">
-    <!-- Toggle Navigation Tabs & Top Right Summary Area -->
+    <!-- Toggle Navigation Tabs -->
     <div class="nav-tabs">
-        <div class="nav-left-buttons">
-            <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
-            <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
-        </div>
-        <!-- Top Right Summary Section (As marked in Red Box) -->
-        <div class="top-summary-box" id="top-summary-container">
-            <span style="font-weight: bold; color: #2c3e50;">📋 JO Summary:</span>
-            <div id="top-summary-items-list" style="display: flex; gap: 15px;">
-                <span style="color: #6c757d;">No Data Loaded</span>
-            </div>
-        </div>
+        <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
+        <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
     </div>
 
     <!-- PAGE 1: DATA ENTRY FORM -->
@@ -401,14 +363,10 @@
         
         document.getElementById(pageId).classList.add('active');
         btnElement.classList.add('active');
-        
-        // Auto load summary when switching to tabs
-        loadFirebaseData();
     }
 
     window.onload = function() {
         addNewRow();
-        loadFirebaseData(); // Load summary initially for top bar
     };
 
     function updateDepartment() {
@@ -613,14 +571,13 @@
         Promise.all(promises)
             .then(() => {
                 alert("✅ Data Successfully Saved!");
-                loadFirebaseData(); // Refresh summary bar
             })
             .catch((error) => {
                 alert("❌ Error saving data: " + error.message);
             });
     }
 
-    // Load Data from Firebase into Report Page & Top Summary Bar
+    // Load Data from Firebase into Report Page
     function loadFirebaseData() {
         let reportBody = document.getElementById('report-table-body');
         reportBody.innerHTML = `<tr><td colspan="18">Loading data...</td></tr>`;
@@ -665,18 +622,12 @@
                     }
                 });
 
-                // Populate JO Summary Table in Report Page
+                // Populate JO Summary Table
                 let joSummaryBody = document.getElementById('jo-summary-body');
                 joSummaryBody.innerHTML = '';
 
-                // Populate Top Bar Summary Widget (Red Box Area)
-                let topSummaryList = document.getElementById('top-summary-items-list');
-                topSummaryList.innerHTML = '';
-
                 for (let key in joSummaryMap) {
                     let parts = key.split("___");
-                    
-                    // Detailed Report Section Table Row
                     let sumTr = document.createElement('tr');
                     sumTr.innerHTML = `
                         <td style="font-weight: bold; text-align: left; padding-left: 10px;">${parts[0]}</td>
@@ -684,18 +635,11 @@
                         <td style="font-weight: bold; color: #28a745;">${Math.round(joSummaryMap[key])}</td>
                     `;
                     joSummaryBody.appendChild(sumTr);
-
-                    // Top Bar Summary Widget Element
-                    let itemBadge = document.createElement('div');
-                    itemBadge.style.cssText = "display: flex; gap: 5px; align-items: center; white-space: nowrap;";
-                    itemBadge.innerHTML = `<span><b>${parts[0]}</b> (${parts[1]}):</span> <span class="top-summary-val"><b>${Math.round(joSummaryMap[key])} CTN</b></span>`;
-                    topSummaryList.appendChild(itemBadge);
                 }
 
             } else {
                 reportBody.innerHTML = `<tr><td colspan="18">No data found.</td></tr>`;
                 document.getElementById('jo-summary-body').innerHTML = `<tr><td colspan="3">No data available.</td></tr>`;
-                document.getElementById('top-summary-items-list').innerHTML = `<span style="color: #6c757d;">No Data Available</span>`;
             }
         });
     }
