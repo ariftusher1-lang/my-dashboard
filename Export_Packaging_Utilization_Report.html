@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Production Entry & Report System</title>
+    <title>PRAN-RFL Packaging Production & Report System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -12,11 +12,89 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
+            background-color: #0b192c;
             margin: 0;
             padding: 10px;
         }
-        .container {
+
+        /* --- LOGIN PAGE STYLING --- */
+        #login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-card {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
+            width: 350px;
+            text-align: center;
+            color: white;
+            border: 1px solid #334155;
+        }
+        .login-logo {
+            background: #ef4444;
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 15px auto;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .login-card h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #f8fafc;
+        }
+        .login-card p {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: #cbd5e1;
+            margin-bottom: 5px;
+        }
+        .login-input {
+            width: 100%;
+            padding: 10px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            color: white;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .login-btn {
+            width: 100%;
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+        .login-btn:hover {
+            background: #dc2626;
+        }
+
+        /* --- MAIN APP STYLING --- */
+        #app-container {
+            display: none;
             max-width: 1400px;
             background: #ffffff;
             padding: 15px;
@@ -24,14 +102,18 @@
             border-radius: 8px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-        /* Navigation / Toggle Buttons */
         .nav-tabs {
             display: flex;
-            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
             border-bottom: 2px solid #ddd;
             padding-bottom: 10px;
             overflow-x: auto;
+        }
+        .nav-left {
+            display: flex;
+            gap: 10px;
         }
         .tab-btn {
             background-color: #6c757d;
@@ -48,10 +130,18 @@
         .tab-btn.active {
             background-color: #007bff;
         }
-        .tab-btn:hover {
-            opacity: 0.9;
+        .logout-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
         }
-        /* Page Sections */
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
         .page-section {
             display: none;
         }
@@ -80,7 +170,6 @@
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-        /* Responsive Table Wrapper for Mobile & Laptop */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -189,8 +278,6 @@
         .btn-edit:hover {
             background-color: #e0a800;
         }
-
-        /* Layout Grid for Reports */
         .report-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -205,128 +292,67 @@
 </head>
 <body>
 
-<div class="container">
-    <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
-        <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
+    <div id="login-container">
+        <div class="login-card">
+            <div class="login-logo">🏭</div>
+            <h2>PRAN-RFL</h2>
+            <p>PACKAGING MANAGEMENT SYSTEM</p>
+            
+            <div class="form-group">
+                <label>ডিার্টমেন্ট নির্বাচন করুন</label>
+                <select id="login-dept" class="login-input">
+                    <option value="">-- সিলেক্ট করুন --</option>
+                    <option value="Plastic Packaging 1">Plastic Packaging - 01</option>
+                    <option value="Plastic Packaging 2">Plastic Packaging - 02</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>পাসওয়ার্ড</label>
+                <input type="password" id="login-pwd" class="login-input" placeholder="Enter Password">
+            </div>
+
+            <button class="login-btn" onclick="handleDepartmentLogin()">🔓 লগইন</button>
+            <div style="font-size: 11px; color: #64748b; margin-top: 15px;">🔒 শুধুমাত্র প্রোডাকশন ফ্লোরের জন্য</div>
+        </div>
     </div>
 
-    <div id="entry-page" class="page-section active">
-        <div class="header-info">
-            <div>
-                <label>Date:</label>
-                <input type="date" id="prod-date" value="2026-06-09" onchange="updateReport()">
+    <div id="app-container" class="container">
+        <div class="nav-tabs">
+            <div class="nav-left">
+                <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
+                <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
             </div>
-            <div>
-                <label>Shift:</label>
-                <select id="shift-select" onchange="updateReport()">
-                    <option value="Shift-A (Day)" selected>Shift-A (Day)</option>
-                    <option value="Shift-B (Night)">Shift-B (Night)</option>
-                </select>
-            </div>
-            <div>
-                <label>Floor Name:</label>
-                <select id="floor-select" onchange="updateDepartment()">
-                    <option value="Plastic Packaging 1" selected>Plastic Packaging 1</option>
-                    <option value="Plastic Packaging 2">Plastic Packaging 2</option>
-                </select>
-            </div>
-            <div>
-                <label>Department:</label>
-                <span id="dept-name" style="color: #d9534f; background: #fff; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px;">Mr. Shawon</span>
-            </div>
+            <button class="logout-btn" onclick="handleLogout()">🚪 Log Out</button>
         </div>
 
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Line</th>
-                        <th>JO Name</th>
-                        <th>Items Name</th>
-                        <th>WF</th>
-                        <th>WH</th>
-                        <th>SMV</th>
-                        <th>Unit/CTN</th>
-                        <th>Target Set</th>
-                        <th>Complete Set</th>
-                        <th>Target CTN</th>
-                        <th>Complete CTN</th>
-                        <th>Plan MH</th>
-                        <th>Actual MH</th>
-                        <th>MH Utilization (%)</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="entry-table-body">
-                    </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3" style="text-align: right; font-weight: bold;">Summary A-Shift >></td>
-                        <td id="sum-wf">0</td>
-                        <td id="sum-wh">0</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td id="sum-target-set">0</td>
-                        <td id="sum-complete-set">0</td>
-                        <td id="sum-target-ctn">0</td>
-                        <td id="sum-complete-ctn">0</td>
-                        <td id="sum-plan-mh">0</td>
-                        <td id="sum-actual-mh">0</td>
-                        <td id="sum-mh-util" style="color: #d9534f; font-weight: bold;">0%</td>
-                        <td>-</td>
-                        <td>-</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-        
-        <div class="btn-container">
-            <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data</button>
-        </div>
+        <div id="entry-page" class="page-section active">
+            <div class="header-info">
+                <div>
+                    <label>Date:</label>
+                    <input type="date" id="prod-date" value="2026-06-09" onchange="updateReport()">
+                </div>
+                <div>
+                    <label>Shift:</label>
+                    <select id="shift-select" onchange="updateReport()">
+                        <option value="Shift-A (Day)" selected>Shift-A (Day)</option>
+                        <option value="Shift-B (Night)">Shift-B (Night)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Floor Name:</label>
+                    <span id="floor-display" style="color: #007bff; background: #fff; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px;">Plastic Packaging 1</span>
+                </div>
+                <div>
+                    <label>Department Lead:</label>
+                    <span id="dept-name" style="color: #d9534f; background: #fff; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px;">Mr. Shawon</span>
+                </div>
+            </div>
 
-        <div style="margin-top: 35px;">
-            <div class="report-title" style="color: #d9534f; margin-bottom: 10px;">🔴 Live Production Entry Stream (Real-Time Monitoring)</div>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Shift</th>
-                            <th>Floor</th>
-                            <th>Line</th>
-                            <th>JO Name</th>
-                            <th>Items Name</th>
-                            <th>Complete Set</th>
-                            <th>Complete CTN</th>
-                            <th>MH Util (%)</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="live-stream-tbody">
-                        <tr><td colspan="10">Waiting for live entries...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="report-page" class="page-section">
-        <div class="report-header">
-            <div class="report-title">📊 Detailed Packaging Utilization Report</div>
-            <button class="action-btn btn-excel" onclick="exportToExcel()">📥 Download as Excel</button>
-        </div>
-
-        <div class="report-grid">
-            <div class="table-responsive">
-                <table id="report-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Shift</th>
-                            <th>Floor</th>
-                            <th>Department</th>
                             <th>Line</th>
                             <th>JO Name</th>
                             <th>Items Name</th>
@@ -345,30 +371,116 @@
                             <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody id="report-table-body">
+                    <tbody id="entry-table-body">
                         </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" style="text-align: right; font-weight: bold;">Summary Shift >></td>
+                            <td id="sum-wf">0</td>
+                            <td id="sum-wh">0</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td id="sum-target-set">0</td>
+                            <td id="sum-complete-set">0</td>
+                            <td id="sum-target-ctn">0</td>
+                            <td id="sum-complete-ctn">0</td>
+                            <td id="sum-plan-mh">0</td>
+                            <td id="sum-actual-mh">0</td>
+                            <td id="sum-mh-util" style="color: #d9534f; font-weight: bold;">0%</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
+            
+            <div class="btn-container">
+                <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data</button>
+            </div>
 
-            <div>
-                <div class="report-title" style="margin-bottom: 15px; font-size: 14px;">📋 JO Name & Items Name Summary (As of Complete CTN)</div>
+            <div style="margin-top: 35px;">
+                <div class="report-title" style="color: #d9534f; margin-bottom: 10px;">🔴 Live Production Entry Stream (Real-Time Monitoring)</div>
                 <div class="table-responsive">
-                    <table id="jo-summary-table" style="min-width: 300px;">
+                    <table>
                         <thead>
                             <tr>
+                                `<th>Date</th>
+                                <th>Shift</th>
+                                <th>Floor</th>
+                                <th>Line</th>
                                 <th>JO Name</th>
                                 <th>Items Name</th>
-                                <th>As of Complete CTN</th>
+                                <th>Complete Set</th>
+                                <th>Complete CTN</th>
+                                <th>MH Util (%)</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody id="jo-summary-body">
-                            </tbody>
+                        <tbody id="live-stream-tbody">
+                            <tr><td colspan="10">Waiting for live entries...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
+
+        <div id="report-page" class="page-section">
+            <div class="report-header">
+                <div class="report-title">📊 Detailed Packaging Utilization Report</div>
+                <button class="action-btn btn-excel" onclick="exportToExcel()">📥 Download as Excel</button>
+            </div>
+
+            <div class="report-grid">
+                <div class="table-responsive">
+                    <table id="report-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Shift</th>
+                                <th>Floor</th>
+                                <th>Department</th>
+                                <th>Line</th>
+                                <th>JO Name</th>
+                                <th>Items Name</th>
+                                <th>WF</th>
+                                <th>WH</th>
+                                <th>SMV</th>
+                                <th>Unit/CTN</th>
+                                <th>Target Set</th>
+                                <th>Complete Set</th>
+                                <th>Target CTN</th>
+                                <th>Complete CTN</th>
+                                <th>Plan MH</th>
+                                <th>Actual MH</th>
+                                <th>MH Utilization (%)</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <div class="report-title" style="margin-bottom: 15px; font-size: 14px;">📋 JO Name & Items Name Summary (As of Complete CTN)</div>
+                    <div class="table-responsive">
+                        <table id="jo-summary-table" style="min-width: 300px;">
+                            <thead>
+                                <tr>
+                                    <th>JO Name</th>
+                                    <th>Items Name</th>
+                                    <th>As of Complete CTN</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jo-summary-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
 <script>
     // Firebase Configuration Setup
@@ -383,9 +495,42 @@
         databaseURL: "https://proud-parity-464415-v1-default-rtdb.asia-southeast1.firebasedatabase.app"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // Department Login Handler
+    function handleDepartmentLogin() {
+        let dept = document.getElementById('login-dept').value;
+        let pwd = document.getElementById('login-pwd').value;
+
+        if (dept === "Plastic Packaging 1" && pwd === "P12") {
+            setLoggedInEnvironment(dept, "Mr. Shawon");
+        } else if (dept === "Plastic Packaging 2" && pwd === "P76") {
+            setLoggedInEnvironment(dept, "Mr. Rakib");
+        } else {
+            alert("❌ ভুল পাসওয়ার্ড অথবা ডিপার্টমেন্ট সিলেক্ট করা হয়নি!");
+        }
+    }
+
+    function setLoggedInEnvironment(floorName, leadName) {
+        document.getElementById('login-container').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+
+        document.getElementById('floor-display').innerText = floorName;
+        document.getElementById('dept-name').innerText = leadName;
+
+        if (document.querySelectorAll('#entry-table-body tr').length === 0) {
+            addNewRow();
+        }
+        initLiveStream();
+    }
+
+    function handleLogout() {
+        document.getElementById('login-container').style.display = 'flex';
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('login-pwd').value = '';
+        document.getElementById('login-dept').value = '';
+    }
 
     // Toggle Between Tabs
     function switchTab(pageId, btnElement) {
@@ -394,22 +539,6 @@
         
         document.getElementById(pageId).classList.add('active');
         btnElement.classList.add('active');
-    }
-
-    window.onload = function() {
-        addNewRow();
-        initLiveStream(); // Start listening for live data automatically
-    };
-
-    function updateDepartment() {
-        let floor = document.getElementById('floor-select').value;
-        let deptSpan = document.getElementById('dept-name');
-        if (floor === 'Plastic Packaging 1') {
-            deptSpan.innerText = 'Mr. Shawon';
-        } else if (floor === 'Plastic Packaging 2') {
-            deptSpan.innerText = 'Mr. Rakib';
-        }
-        updateReport();
     }
 
     // Function to add a new row dynamically
@@ -454,7 +583,6 @@
         tbody.appendChild(tr);
     }
 
-    // Automatically create new row when typing starts in the last row
     let isAddingRow = false;
     function checkAndAutoAddRow(element) {
         let currentRow = element.closest('tr');
@@ -562,7 +690,7 @@
     function saveDataToFirebase() {
         let date = document.getElementById('prod-date').value;
         let shift = document.getElementById('shift-select').value;
-        let floor = document.getElementById('floor-select').value;
+        let floor = document.getElementById('floor-display').innerText;
         let dept = document.getElementById('dept-name').innerText;
 
         let rows = document.querySelectorAll('#entry-table-body tr');
@@ -697,7 +825,6 @@
                     }
                 });
 
-                // Populate JO Summary Table
                 let joSummaryBody = document.getElementById('jo-summary-body');
                 joSummaryBody.innerHTML = '';
 
@@ -740,22 +867,19 @@
             db.ref('productions/' + keyId).once('value', (snapshot) => {
                 let data = snapshot.val();
                 if (data) {
-                    // Switch back to Entry Tab & populate row
                     switchTab('entry-page', document.querySelectorAll('.tab-btn')[0]);
                     document.getElementById('prod-date').value = data.date;
                     document.getElementById('shift-select').value = data.shift;
-                    document.getElementById('floor-select').value = data.floor;
+                    document.getElementById('floor-display').innerText = data.floor;
                     document.getElementById('dept-name').innerText = data.department;
 
                     let tbody = document.getElementById('entry-table-body');
-                    tbody.innerHTML = ''; // clear first row
+                    tbody.innerHTML = '';
                     addNewRow(data.line, data.joName, data.itemName, data.wf, data.wh, data.smv, data.unitCtn, data.completeSet, data.completeCtn, data.status);
                     
-                    // Trigger calculation for the populated row
                     let firstRowInput = tbody.querySelector('.wf');
                     calculateValues(firstRowInput);
 
-                    // Remove old record so saving acts as update/replace
                     db.ref('productions/' + keyId).remove();
                     alert("✏️ Record loaded into Data Entry form for editing. Click 'Save Entry Data' after modifying.");
                 }
