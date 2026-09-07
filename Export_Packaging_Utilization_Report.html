@@ -376,7 +376,7 @@
             <div class="nav-left">
                 <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
                 <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
-                <button class="tab-btn" onclick="switchTab('ic-performance-page', this); initICPerformanceTab();">📈 IC Performance</button>
+                <button class="tab-btn" onclick="switchTab('ic-performance-page', this); renderICPerformanceData();">📈 IC Performance</button>
             </div>
             <button class="logout-btn" onclick="handleLogout()">🚪 Log Out</button>
         </div>
@@ -594,16 +594,16 @@
             <div class="report-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                 <div class="report-title">📈 Concern Shift IC Performance Dashboard</div>
                 
-                <!-- Present Position & Summary Section placed right beside IC Performance -->
+                <!-- Current Position & Filter Section -->
                 <div style="display: flex; gap: 15px; align-items: center; background: #e9ecef; padding: 8px 15px; border-radius: 6px;">
                     <div>
                         <span style="font-size: 12px; color: #475569; font-weight: bold;">Current Position:</span>
-                        <span id="ic-current-position-display" style="font-size: 13px; font-weight: bold; color: #007bff;">--</span>
+                        <span id="ic-current-position-display" style="font-size: 13px; font-weight: bold; color: #007bff;">All ICs Active</span>
                     </div>
                     <div>
-                        <label style="font-weight: bold; margin-right: 5px; font-size: 12px;">Select IC:</label>
+                        <label style="font-weight: bold; margin-right: 5px; font-size: 12px;">Filter IC:</label>
                         <select id="perf-ic-select" onchange="renderICPerformanceData()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; color: #c0392b;">
-                            <option value="">-- Select Shift IC --</option>
+                            <option value="">-- All ICs (Default) --</option>
                             <option value="Bithi">Bithi</option>
                             <option value="Riya">Riya</option>
                             <option value="Murad">Murad</option>
@@ -619,16 +619,16 @@
                 </div>
             </div>
 
-            <!-- Last Day Performance Section -->
+            <!-- Performance Table Section -->
             <div style="margin-bottom: 25px;">
-                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 10px;">📌 Last Day Performance Summary</h3>
+                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 10px;">📌 IC Performance & Summary Table</h3>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Shift</th>
+                                <th>Shift IC Name</th>
                                 <th>IC Photo</th>
+                                <th>Total Shifts</th>
                                 <th>Avg SMV</th>
                                 <th>Target Set</th>
                                 <th>Complete Set</th>
@@ -639,34 +639,8 @@
                                 <th>MH Utilization (%)</th>
                             </tr>
                         </thead>
-                        <tbody id="last-day-perf-tbody">
-                            <tr><td colspan="11">Please select a Shift IC above.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- As of Total Cumulative Performance Section -->
-            <div style="margin-bottom: 25px;">
-                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 10px;">📊 As of Total Cumulative Performance</h3>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Total Shifts Worked</th>
-                                <th>IC Photo</th>
-                                <th>Avg SMV</th>
-                                <th>Target Set</th>
-                                <th>Complete Set</th>
-                                <th>Target CTN</th>
-                                <th>Complete CTN</th>
-                                <th>Plan MH</th>
-                                <th>Actual MH</th>
-                                <th>MH Utilization (%)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="total-perf-tbody">
-                            <tr><td colspan="10">Please select a Shift IC above.</td></tr>
+                        <tbody id="ic-perf-table-body">
+                            <tr><td colspan="11">Loading performance data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -770,7 +744,6 @@
         btnElement.classList.add('active');
     }
 
-    // Camera Popup Trigger on IC Select (Mandatory Selfie)
     function checkAndCaptureICSelfie(selectElem) {
         let icName = selectElem.value;
         if (icName === "") {
@@ -791,11 +764,10 @@
             .catch(err => {
                 alert("❌ ক্যামেরা চালু করা যায়নি বা পারমিশন দেওয়া হয়নি! সেলফি তোলা বাধ্যতামূলক।");
                 modal.style.display = 'none';
-                selectElem.value = ""; // Reset dropdown
+                selectElem.value = ""; 
             });
     }
 
-    // Capture Button Action
     document.getElementById('captureBtn').addEventListener('click', function() {
         let video = document.getElementById('video');
         let canvas = document.getElementById('canvas');
@@ -1110,7 +1082,6 @@
 
     function updateReport() {}
 
-    // Validation & Duplicate Checking Before Save
     function saveDataToFirebase() {
         let date = document.getElementById('prod-date').value;
         let shift = document.getElementById('shift-select').value;
@@ -1118,7 +1089,6 @@
         let dept = document.getElementById('dept-name').innerText;
         let shiftIc = (floor === "Plastic Packaging 2") ? document.getElementById('shift-ic-select').value : "-";
 
-        // 1. Mandatory Validation: IC Selection & Selfie check for Floor 2
         if (floor === "Plastic Packaging 2") {
             if (shiftIc === "") {
                 alert("⚠️ দয়া করে Concern Shift IC সিলেক্ট করুন!");
@@ -1146,7 +1116,6 @@
             let completeCtn = parseFloat(row.querySelector('.complete-ctn').value) || 0;
 
             if (jo !== "" || wf > 0) {
-                // Check if any mandatory field is missing or empty
                 if (jo === "" || itemName === "" || wf <= 0 || wh <= 0 || smv <= 0 || unitCtn <= 0) {
                     hasIncompleteFields = true;
                 }
@@ -1178,20 +1147,17 @@
             }
         });
 
-        // 2. All Form Fill Up Validation Alert
         if (hasIncompleteFields || entriesToSave.length === 0) {
             alert("❌ সব ফিল্ড সঠিকভাবে পূরণ না করলে ডাটা সেভ করা যাবে না! দয়া করে JO Name, Items Name, WF, WH, SMV এবং Unit/CTN সঠিকভাবে পূরণ করুন।");
             return;
         }
 
-        // 3. Duplicate Prevention Check (Same Date & Same Shift)
         let dbRef = db.ref('productions');
         dbRef.once('value', (snapshot) => {
             let isDuplicate = false;
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
                     let d = childSnapshot.val();
-                    // Checking if date and shift match for the same floor/IC
                     if (d.date === date && d.shift === shift && d.floor === floor) {
                         isDuplicate = true;
                     }
@@ -1203,12 +1169,11 @@
                 return;
             }
 
-            // If all checks pass, save to Firebase
             let promises = entriesToSave.map(entry => dbRef.push(entry));
             Promise.all(promises)
                 .then(() => {
                     alert("✅ Data & IC Selfie Successfully Saved!");
-                    location.reload(); // Refresh to clean form
+                    location.reload(); 
                 })
                 .catch((error) => {
                     alert("❌ Error saving data: " + error.message);
@@ -1253,61 +1218,37 @@
 
     let icChartInstance = null;
 
-    function initICPerformanceTab() {}
-
+    // IC Performance rendering with Default (All ICs) & Filter Support
     function renderICPerformanceData() {
         let selectedIC = document.getElementById('perf-ic-select').value;
-        let lastDayTbody = document.getElementById('last-day-perf-tbody');
-        let totalPerfTbody = document.getElementById('total-perf-tbody');
+        let icPerfTbody = document.getElementById('ic-perf-table-body');
         let currentPosDisplay = document.getElementById('ic-current-position-display');
-
-        if (!selectedIC) {
-            lastDayTbody.innerHTML = `<tr><td colspan="11">Please select a Shift IC.</td></tr>`;
-            totalPerfTbody.innerHTML = `<tr><td colspan="10">Please select a Shift IC.</td></tr>`;
-            currentPosDisplay.innerText = "--";
-            if (icChartInstance) icChartInstance.destroy();
-            return;
-        }
 
         let dbRef = db.ref('productions');
         dbRef.once('value', (snapshot) => {
             if (!snapshot.exists()) {
-                lastDayTbody.innerHTML = `<tr><td colspan="11">No data found in database.</td></tr>`;
-                totalPerfTbody.innerHTML = `<tr><td colspan="10">No data found in database.</td></tr>`;
-                currentPosDisplay.innerText = "Inactive";
+                icPerfTbody.innerHTML = `<tr><td colspan="11">No data found in database.</td></tr>`;
+                currentPosDisplay.innerText = "No Data";
                 return;
             }
 
-            let icRecords = [];
+            let icMap = {};
+            let allChartLabels = [];
+            let allChartTargetSets = [];
+            let allChartCompleteSets = [];
+
             snapshot.forEach((childSnapshot) => {
                 let d = childSnapshot.val();
-                if (d.shiftIc === selectedIC) {
-                    icRecords.push(d);
-                }
-            });
+                let icName = d.shiftIc || "Unassigned";
 
-            if (icRecords.length === 0) {
-                lastDayTbody.innerHTML = `<tr><td colspan="11">No records found for ${selectedIC}.</td></tr>`;
-                totalPerfTbody.innerHTML = `<tr><td colspan="10">No records found for ${selectedIC}.</td></tr>`;
-                currentPosDisplay.innerText = "Not Assigned";
-                if (icChartInstance) icChartInstance.destroy();
-                return;
-            }
+                // If filter is selected, skip other ICs
+                if (selectedIC && icName !== selectedIC) return;
 
-            icRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            // Set Current Position text dynamically based on latest active record
-            let latestRecord = icRecords[icRecords.length - 1];
-            currentPosDisplay.innerText = `Floor: ${latestRecord.floor} | Line: ${latestRecord.line} (${latestRecord.status || 'Active'})`;
-
-            let dateShiftMap = {};
-            icRecords.forEach(rec => {
-                let key = rec.date + "_" + rec.shift;
-                if (!dateShiftMap[key]) {
-                    dateShiftMap[key] = {
-                        date: rec.date,
-                        shift: rec.shift,
-                        icPhoto: rec.icPhoto || "",
+                if (!icMap[icName]) {
+                    icMap[icName] = {
+                        icName: icName,
+                        icPhoto: d.icPhoto || "",
+                        shiftsSet = new Set(),
                         smvSum: 0,
                         smvCount: 0,
                         targetSet: 0,
@@ -1315,88 +1256,76 @@
                         targetCtn: 0,
                         completeCtn: 0,
                         planMh: 0,
-                        actualMh: 0
+                        actualMh: 0,
+                        latestFloor: d.floor,
+                        latestLine: d.line,
+                        latestStatus: d.status || 'Running'
                     };
                 }
-                if(rec.icPhoto) dateShiftMap[key].icPhoto = rec.icPhoto; 
-                dateShiftMap[key].smvSum += Number(rec.smv) || 0;
-                dateShiftMap[key].smvCount += 1;
-                dateShiftMap[key].targetSet += Number(rec.targetSet) || 0;
-                dateShiftMap[key].completeSet += Number(rec.completeSet) || 0;
-                dateShiftMap[key].targetCtn += Number(rec.targetCtn) || 0;
-                dateShiftMap[key].completeCtn += Number(rec.completeCtn) || 0;
-                dateShiftMap[key].planMh += Number(rec.planMh) || 0;
-                dateShiftMap[key].actualMh += Number(rec.actualMh) || 0;
+
+                if(d.icPhoto) icMap[icName].icPhoto = d.icPhoto;
+                icMap[icName].shiftsSet.add(d.date + "_" + d.shift);
+                icMap[icName].smvSum += Number(d.smv) || 0;
+                icMap[icName].smvCount += 1;
+                icMap[icName].targetSet += Number(d.targetSet) || 0;
+                icMap[icName].completeSet += Number(d.completeSet) || 0;
+                icMap[icName].targetCtn += Number(d.targetCtn) || 0;
+                icMap[icName].completeCtn += Number(d.completeCtn) || 0;
+                icMap[icName].planMh += Number(d.planMh) || 0;
+                icMap[icName].actualMh += Number(d.actualMh) || 0;
+                icMap[icName].latestFloor = d.floor;
+                icMap[icName].latestLine = d.line;
+                icMap[icName].latestStatus = d.status || 'Running';
             });
 
-            let sortedGroupKeys = Object.keys(dateShiftMap);
-            let lastGroupKey = sortedGroupKeys[sortedGroupKeys.length - 1];
-            let lastDayData = dateShiftMap[lastGroupKey];
+            let icKeys = Object.keys(icMap);
+            if (icKeys.length === 0) {
+                icPerfTbody.innerHTML = `<tr><td colspan="11">No records found for ${selectedIC}.</td></tr>`;
+                currentPosDisplay.innerText = "Not Assigned";
+                if (icChartInstance) icChartInstance.destroy();
+                return;
+            }
 
-            let lastAvgSmv = lastDayData.smvCount > 0 ? (lastDayData.smvSum / lastDayData.smvCount).toFixed(2) : 0;
-            let lastUtil = lastDayData.planMh > 0 ? Math.round((lastDayData.actualMh / lastDayData.planMh) * 100) : 0;
-            let lastPhotoHtml = lastDayData.icPhoto ? `<img src="${lastDayData.icPhoto}" width="40" height="40" style="border-radius: 50%; object-fit: cover;">` : '-';
+            if (selectedIC) {
+                let activeIC = icMap[selectedIC];
+                if(activeIC) {
+                    currentPosDisplay.innerText = `Floor: ${activeIC.latestFloor} | Line: ${activeIC.latestLine} (${activeIC.latestStatus})`;
+                } else {
+                    currentPosDisplay.innerText = "Not Active";
+                }
+            } else {
+                currentPosDisplay.innerText = "All ICs Overview";
+            }
 
-            lastDayTbody.innerHTML = `
-                <tr>
-                    <td>${lastDayData.date}</td>
-                    <td>${lastDayData.shift}</td>
-                    <td>${lastPhotoHtml}</td>
-                    <td>${lastAvgSmv}</td>
-                    <td>${Math.round(lastDayData.targetSet)}</td>
-                    <td style="color: #27ae60; font-weight: bold;">${Math.round(lastDayData.completeSet)}</td>
-                    <td>${Math.round(lastDayData.targetCtn)}</td>
-                    <td style="color: #27ae60; font-weight: bold;">${Math.round(lastDayData.completeCtn)}</td>
-                    <td>${Math.round(lastDayData.planMh)}</td>
-                    <td>${lastDayData.actualMh.toFixed(2)}</td>
-                    <td style="color: #d9534f; font-weight: bold;">${lastUtil}%</td>
-                </tr>
-            `;
-
-            let totalShifts = sortedGroupKeys.length;
-            let totalSmvSum = 0, totalSmvCount = 0;
-            let totalTargetSet = 0, totalCompleteSet = 0;
-            let totalTargetCtn = 0, totalCompleteCtn = 0;
-            let totalPlanMh = 0, totalActualMh = 0;
-            let latestAvailablePhoto = lastDayData.icPhoto ? `<img src="${lastDayData.icPhoto}" width="40" height="40" style="border-radius: 50%; object-fit: cover;">` : '-';
-
-            sortedGroupKeys.forEach(k => {
-                let obj = dateShiftMap[k];
-                totalSmvSum += obj.smvSum;
-                totalSmvCount += obj.smvCount;
-                totalTargetSet += obj.targetSet;
-                totalCompleteSet += obj.completeSet;
-                totalTargetCtn += obj.targetCtn;
-                totalCompleteCtn += obj.completeCtn;
-                totalPlanMh += obj.planMh;
-                totalActualMh += obj.actualMh;
-            });
-
-            let cumulativeAvgSmv = totalSmvCount > 0 ? (totalSmvSum / totalSmvCount).toFixed(2) : 0;
-            let cumulativeUtil = totalPlanMh > 0 ? Math.round((totalActualMh / totalPlanMh) * 100) : 0;
-
-            totalPerfTbody.innerHTML = `
-                <tr>
-                    <td style="font-weight: bold; color: #007bff;">${totalShifts} Shifts</td>
-                    <td>${latestAvailablePhoto}</td>
-                    <td>${cumulativeAvgSmv}</td>
-                    <td>${Math.round(totalTargetSet)}</td>
-                    <td style="color: #27ae60; font-weight: bold;">${Math.round(totalCompleteSet)}</td>
-                    <td>${Math.round(totalTargetCtn)}</td>
-                    <td style="color: #27ae60; font-weight: bold;">${Math.round(totalCompleteCtn)}</td>
-                    <td>${Math.round(totalPlanMh)}</td>
-                    <td>${totalActualMh.toFixed(2)}</td>
-                    <td style="color: #d9534f; font-weight: bold;">${cumulativeUtil}%</td>
-                </tr>
-            `;
-
+            icPerfTbody.innerHTML = "";
             let chartLabels = [];
             let chartTargetSets = [];
             let chartCompleteSets = [];
 
-            sortedGroupKeys.forEach(k => {
-                let obj = dateShiftMap[k];
-                chartLabels.push(obj.date + " (" + obj.shift.split(" ")[0] + ")");
+            icKeys.forEach(icName => {
+                let obj = icMap[icName];
+                let totalShifts = obj.shiftsSet.size;
+                let avgSmv = obj.smvCount > 0 ? (obj.smvSum / obj.smvCount).toFixed(2) : 0;
+                let util = obj.planMh > 0 ? Math.round((obj.actualMh / obj.planMh) * 100) : 0;
+                let photoHtml = obj.icPhoto ? `<img src="${obj.icPhoto}" width="40" height="40" style="border-radius: 50%; object-fit: cover;">` : '-';
+
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: bold; color: #8e44ad;">${obj.icName}</td>
+                    <td>${photoHtml}</td>
+                    <td style="font-weight: bold; color: #007bff;">${totalShifts} Shifts</td>
+                    <td>${avgSmv}</td>
+                    <td>${Math.round(obj.targetSet)}</td>
+                    <td style="color: #27ae60; font-weight: bold;">${Math.round(obj.completeSet)}</td>
+                    <td>${Math.round(obj.targetCtn)}</td>
+                    <td style="color: #27ae60; font-weight: bold;">${Math.round(obj.completeCtn)}</td>
+                    <td>${Math.round(obj.planMh)}</td>
+                    <td>${obj.actualMh.toFixed(2)}</td>
+                    <td style="color: #d9534f; font-weight: bold;">${util}%</td>
+                `;
+                icPerfTbody.appendChild(tr);
+
+                chartLabels.push(obj.icName);
                 chartTargetSets.push(Math.round(obj.targetSet));
                 chartCompleteSets.push(Math.round(obj.completeSet));
             });
