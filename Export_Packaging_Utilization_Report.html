@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Production Entry & Report System</title>
+    <title>Production Entry & Report System with Firebase</title>
+    <!-- SheetJS Library for Excel Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Firebase App (Core SDK) & Realtime Database SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -123,6 +129,7 @@
             justify-content: flex-end;
             align-items: center;
             margin-top: 15px;
+            gap: 10px;
         }
         button.action-btn {
             background-color: #28a745;
@@ -159,12 +166,15 @@
 <body>
 
 <div class="container">
+    <!-- Toggle Navigation Tabs -->
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
-        <button class="tab-btn" onclick="switchTab('report-page', this)">📊 Packaging Report & Download</button>
+        <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
     </div>
 
+    <!-- PAGE 1: DATA ENTRY FORM -->
     <div id="entry-page" class="page-section active">
+        <!-- Header Info -->
         <div class="header-info">
             <div>
                 <label>Date:</label>
@@ -211,7 +221,9 @@
                 </tr>
             </thead>
             <tbody id="entry-table-body">
-                </tbody>
+                <!-- Dynamically starts with 1 Row -->
+            </tbody>
+            <!-- Summary Footer Row -->
             <tfoot>
                 <tr>
                     <td colspan="3" style="text-align: right; font-weight: bold;">Summary A-Shift >></td>
@@ -232,13 +244,14 @@
         </table>
         
         <div class="btn-container">
-            <button class="action-btn" onclick="alert('Data Saved Successfully!')">Save Entry Data</button>
+            <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data to Firebase</button>
         </div>
     </div>
 
+    <!-- PAGE 2: PACKAGING REPORT & DOWNLOAD -->
     <div id="report-page" class="page-section">
         <div class="report-header">
-            <div class="report-title">📊 Detailed Packaging Utilization Report</div>
+            <div class="report-title">📊 Detailed Packaging Utilization Report (Firebase Database)</div>
             <button class="action-btn btn-excel" onclick="exportToExcel()">📥 Download as Excel</button>
         </div>
 
@@ -266,9 +279,11 @@
                 </tr>
             </thead>
             <tbody id="report-table-body">
-                </tbody>
+                <!-- Data will populate dynamically from Firebase -->
+            </tbody>
         </table>
 
+        <!-- JO & Items Summary Report Section -->
         <div class="report-header">
             <div class="report-title">📋 JO Name & Items Name Summary (As of Complete CTN)</div>
         </div>
@@ -282,12 +297,29 @@
                 </tr>
             </thead>
             <tbody id="jo-summary-body">
-                </tbody>
+                <!-- Dynamic JO & Items Complete CTN Summary -->
+            </tbody>
         </table>
     </div>
 </div>
 
 <script>
+    // Firebase Configuration Setup
+    const firebaseConfig = {
+        apiKey: "AIzaSyA4L2BlPRKUhxr6LXVH2pJQk7jLMD6jF4",
+        authDomain: "proud-parity-464415-v1.firebaseapp.com",
+        projectId: "proud-parity-464415-v1",
+        storageBucket: "proud-parity-464415-v1.firebasestorage.app",
+        messagingSenderId: "579993816939",
+        appId: "1:579993816939:web:d4e5a2cfd608b043af862e",
+        measurementId: "G-134LZGKR3L",
+        databaseURL: "https://proud-parity-464415-v1-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     // Toggle Between Tabs
     function switchTab(pageId, btnElement) {
         document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
@@ -355,7 +387,6 @@
         let tbody = document.getElementById('entry-table-body');
         let lastRow = tbody.lastElementChild;
 
-        // If user is typing in the last row and it has some text, add a new empty row automatically
         if (currentRow === lastRow && element.value.trim() !== "" && !isAddingRow) {
             isAddingRow = true;
             setTimeout(() => {
@@ -422,7 +453,6 @@
             let jo = row.querySelector('.jo-name').value.trim();
             let wfVal = parseFloat(row.querySelector('.wf').value) || 0;
             
-            // Only count rows that have actual data/typing
             if (jo !== "" || wfVal > 0) {
                 validRowCount++;
                 totalWf += wfVal;
@@ -451,89 +481,135 @@
         let avgUtil = validRowCount > 0 ? totalUtilPercent / validRowCount : 0;
         document.getElementById('sum-mh-util').innerText = Math.round(avgUtil) + '%';
 
-        updateReport();
+        updateReportPreview();
     }
 
-    function updateReport() {
+    function updateReportPreview() {
+        // Just local helper if needed for summary on entry tab
+    }
+
+    // Save Data to Firebase Realtime Database
+    function saveDataToFirebase() {
         let date = document.getElementById('prod-date').value;
         let shift = document.getElementById('shift-select').value;
         let floor = document.getElementById('floor-select').value;
         let dept = document.getElementById('dept-name').innerText;
 
         let rows = document.querySelectorAll('#entry-table-body tr');
-        let reportBody = document.getElementById('report-table-body');
-        reportBody.innerHTML = '';
-
-        let joSummaryMap = {};
+        let entriesToSave = [];
 
         rows.forEach(row => {
             let jo = row.querySelector('.jo-name').value.trim();
             let wf = parseFloat(row.querySelector('.wf').value) || 0;
 
-            // Only export/display rows that contain actual entry data
             if (jo !== "" || wf > 0) {
-                let line = row.querySelector('.line-val').value;
-                let item = row.querySelector('.item-name').value.trim();
-                let wh = row.querySelector('.wh').value;
-                let smv = row.querySelector('.smv').value;
-                let unitCtn = row.querySelector('.unit-ctn').value;
-                let targetSet = row.querySelector('.target-set').value;
-                let completeSet = row.querySelector('.complete-set').value;
-                let targetCtn = row.querySelector('.target-ctn').value;
-                let completeCtn = parseFloat(row.querySelector('.complete-ctn').value) || 0;
-                let planMh = row.querySelector('.plan-mh').value;
-                let actualMh = row.querySelector('.actual-mh').value;
-                let mhUtil = row.querySelector('.mh-util').value;
-
-                let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${date}</td>
-                    <td>${shift}</td>
-                    <td>${floor}</td>
-                    <td>${dept}</td>
-                    <td>${line}</td>
-                    <td>${jo}</td>
-                    <td>${item}</td>
-                    <td>${wf}</td>
-                    <td>${wh}</td>
-                    <td>${smv}</td>
-                    <td>${unitCtn}</td>
-                    <td>${targetSet}</td>
-                    <td>${completeSet}</td>
-                    <td>${targetCtn}</td>
-                    <td>${completeCtn}</td>
-                    <td>${planMh}</td>
-                    <td>${actualMh}</td>
-                    <td>${mhUtil}</td>
-                `;
-                reportBody.appendChild(tr);
-
-                let key = jo + "___" + item;
-                if (joSummaryMap[key]) {
-                    joSummaryMap[key] += completeCtn;
-                } else {
-                    joSummaryMap[key] = completeCtn;
-                }
+                let entryData = {
+                    date: date,
+                    shift: shift,
+                    floor: floor,
+                    department: dept,
+                    line: row.querySelector('.line-val').value,
+                    joName: jo,
+                    itemName: row.querySelector('.item-name').value.trim(),
+                    wf: wf,
+                    wh: parseFloat(row.querySelector('.wh').value) || 0,
+                    smv: parseFloat(row.querySelector('.smv').value) || 0,
+                    unitCtn: parseFloat(row.querySelector('.unit-ctn').value) || 0,
+                    targetSet: parseFloat(row.querySelector('.target-set').value) || 0,
+                    completeSet: parseFloat(row.querySelector('.complete-set').value) || 0,
+                    targetCtn: parseFloat(row.querySelector('.target-ctn').value) || 0,
+                    completeCtn: parseFloat(row.querySelector('.complete-ctn').value) || 0,
+                    planMh: parseFloat(row.querySelector('.plan-mh').value) || 0,
+                    actualMh: parseFloat(row.querySelector('.actual-mh').value) || 0,
+                    mhUtil: row.querySelector('.mh-util').value
+                };
+                entriesToSave.push(entryData);
             }
         });
 
-        let joSummaryBody = document.getElementById('jo-summary-body');
-        joSummaryBody.innerHTML = '';
-
-        for (let key in joSummaryMap) {
-            let parts = key.split("___");
-            let joName = parts[0];
-            let itemName = parts[1];
-            let totalCtn = Math.round(joSummaryMap[key]);
-
-            let sumTr = document.createElement('tr');
-            sumTr.innerHTML = `
-                <td style="font-weight: bold; text-align: left; padding-left: 15px;">${joName}</td>
-                <td style="text-align: left; padding-left: 15px;">${itemName}</td>
-                <td style="font-weight: bold; color: #28a745;">${totalCtn}</td>
-            `;
-            joSummaryBody.appendChild(sumTr);
+        if (entriesToSave.length === 0) {
+            alert("Please enter valid data before saving!");
+            return;
         }
+
+        // Push data to Firebase under 'productions' node
+        let dbRef = db.ref('productions');
+        let promises = entriesToSave.map(entry => dbRef.push(entry));
+
+        Promise.all(promises)
+            .then(() => {
+                alert("✅ Data Successfully Saved to Firebase Database!");
+            })
+            .catch((error) => {
+                alert("❌ Error saving data: " + error.message);
+            });
+    }
+
+    // Load Data from Firebase into Report Page
+    function loadFirebaseData() {
+        let reportBody = document.getElementById('report-table-body');
+        reportBody.innerHTML = `<tr><td colspan="18">Loading data from Firebase...</td></tr>`;
+
+        let dbRef = db.ref('productions');
+        dbRef.once('value', (snapshot) => {
+            reportBody.innerHTML = '';
+            let joSummaryMap = {};
+
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    let data = childSnapshot.val();
+                    
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${data.date}</td>
+                        <td>${data.shift}</td>
+                        <td>${data.floor}</td>
+                        <td>${data.department}</td>
+                        <td>${data.line}</td>
+                        <td>${data.joName}</td>
+                        <td>${data.itemName}</td>
+                        <td>${data.wf}</td>
+                        <td>${data.wh}</td>
+                        <td>${data.smv}</td>
+                        <td>${data.unitCtn}</td>
+                        <td>${data.targetSet}</td>
+                        <td>${data.completeSet}</td>
+                        <td>${data.targetCtn}</td>
+                        <td>${data.completeCtn}</td>
+                        <td>${data.planMh}</td>
+                        <td>${data.actualMh}</td>
+                        <td>${data.mhUtil}</td>
+                    `;
+                    reportBody.appendChild(tr);
+
+                    let key = data.joName + "___" + data.itemName;
+                    if (joSummaryMap[key]) {
+                        joSummaryMap[key] += Number(data.completeCtn);
+                    } else {
+                        joSummaryMap[key] = Number(data.completeCtn);
+                    }
+                });
+
+                // Populate JO Summary Table
+                let joSummaryBody = document.getElementById('jo-summary-body');
+                joSummaryBody.innerHTML = '';
+
+                for (let key in joSummaryMap) {
+                    let parts = key.split("___");
+                    let sumTr = document.createElement('tr');
+                    sumTr.innerHTML = `
+                        <td style="font-weight: bold; text-align: left; padding-left: 15px;">${parts[0]}</td>
+                        <td style="text-align: left; padding-left: 15px;">${parts[1]}</td>
+                        <td style="font-weight: bold; color: #28a745;">${Math.round(joSummaryMap[key])}</td>
+                    `;
+                    joSummaryBody.appendChild(sumTr);
+                }
+
+            } else {
+                reportBody.innerHTML = `<tr><td colspan="18">No data found in Firebase database.</td></tr>`;
+                document.getElementById('jo-summary-body').innerHTML = `<tr><td colspan="3">No data available.</td></tr>`;
+            }
+        });
     }
 
     function exportToExcel() {
