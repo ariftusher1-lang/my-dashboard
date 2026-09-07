@@ -7,6 +7,9 @@
     <!-- SheetJS Library for Excel Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
+    <!-- Chart.js Library for Graph Visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <!-- Firebase App (Core SDK) & Realtime Database SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -371,6 +374,7 @@
             <div class="nav-left">
                 <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
                 <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
+                <button class="tab-btn" onclick="switchTab('ic-performance-page', this); initICPerformanceTab();">📈 IC Performance</button>
             </div>
             <button class="logout-btn" onclick="handleLogout()">🚪 Log Out</button>
         </div>
@@ -572,6 +576,88 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 3: IC PERFORMANCE MONITORING -->
+        <div id="ic-performance-page" class="page-section">
+            <div class="report-header">
+                <div class="report-title">📈 Concern Shift IC Performance Dashboard</div>
+                <div>
+                    <label style="font-weight: bold; margin-right: 8px;">Select IC:</label>
+                    <select id="perf-ic-select" onchange="renderICPerformanceData()" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; color: #c0392b;">
+                        <option value="">-- Select Shift IC --</option>
+                        <option value="Bithi">Bithi</option>
+                        <option value="Riya">Riya</option>
+                        <option value="Murad">Murad</option>
+                        <option value="Rasel">Rasel</option>
+                        <option value="Sabana">Sabana</option>
+                        <option value="Noyon">Noyon</option>
+                        <option value="Mosarof">Mosarof</option>
+                        <option value="Tarek">Tarek</option>
+                        <option value="Tajrul">Tajrul</option>
+                        <option value="Fahim">Fahim</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Last Day Performance Section -->
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 10px;">📌 Last Day Performance Summary</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Shift</th>
+                                <th>Avg SMV</th>
+                                <th>Target Set</th>
+                                <th>Complete Set</th>
+                                <th>Target CTN</th>
+                                <th>Complete CTN</th>
+                                <th>Plan MH</th>
+                                <th>Actual MH</th>
+                                <th>MH Utilization (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="last-day-perf-tbody">
+                            <tr><td colspan="10">Please select a Shift IC above.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- As of Total Cumulative Performance Section -->
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 10px;">📊 As of Total Cumulative Performance</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Total Shifts Worked</th>
+                                <th>Avg SMV</th>
+                                <th>Target Set</th>
+                                <th>Complete Set</th>
+                                <th>Target CTN</th>
+                                <th>Complete CTN</th>
+                                <th>Plan MH</th>
+                                <th>Actual MH</th>
+                                <th>MH Utilization (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="total-perf-tbody">
+                            <tr><td colspan="9">Please select a Shift IC above.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Graphical Visualization Section -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1;">
+                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 15px; text-align: center;">📉 Performance Trend Graph (Target vs Complete Set)</h3>
+                <div style="position: relative; height: 350px; width: 100%;">
+                    <canvas id="icPerformanceChart"></canvas>
                 </div>
             </div>
         </div>
@@ -1047,6 +1133,189 @@
             } else {
                 liveStreamTbody.innerHTML = `<tr><td colspan="11">No live entries yet.</td></tr>`;
             }
+        });
+    }
+
+    // IC Performance Logic & Chart Rendering
+    let icChartInstance = null;
+
+    function initICPerformanceTab() {
+        // Can be initialized when tab is clicked
+    }
+
+    function renderICPerformanceData() {
+        let selectedIC = document.getElementById('perf-ic-select').value;
+        let lastDayTbody = document.getElementById('last-day-perf-tbody');
+        let totalPerfTbody = document.getElementById('total-perf-tbody');
+
+        if (!selectedIC) {
+            lastDayTbody.innerHTML = `<tr><td colspan="10">Please select a Shift IC.</td></tr>`;
+            totalPerfTbody.innerHTML = `<tr><td colspan="9">Please select a Shift IC.</td></tr>`;
+            if (icChartInstance) icChartInstance.destroy();
+            return;
+        }
+
+        let dbRef = db.ref('productions');
+        dbRef.once('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                lastDayTbody.innerHTML = `<tr><td colspan="10">No data found in database.</td></tr>`;
+                totalPerfTbody.innerHTML = `<tr><td colspan="9">No data found in database.</td></tr>`;
+                return;
+            }
+
+            let icRecords = [];
+            snapshot.forEach((childSnapshot) => {
+                let d = childSnapshot.val();
+                if (d.shiftIc === selectedIC) {
+                    icRecords.push(d);
+                }
+            });
+
+            if (icRecords.length === 0) {
+                lastDayTbody.innerHTML = `<tr><td colspan="10">No records found for ${selectedIC}.</td></tr>`;
+                totalPerfTbody.innerHTML = `<tr><td colspan="9">No records found for ${selectedIC}.</td></tr>`;
+                if (icChartInstance) icChartInstance.destroy();
+                return;
+            }
+
+            // Sort records by date ascending
+            icRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // Group by Date & Shift
+            let dateShiftMap = {};
+            icRecords.forEach(rec => {
+                let key = rec.date + "_" + rec.shift;
+                if (!dateShiftMap[key]) {
+                    dateShiftMap[key] = {
+                        date: rec.date,
+                        shift: rec.shift,
+                        smvSum: 0,
+                        smvCount: 0,
+                        targetSet: 0,
+                        completeSet: 0,
+                        targetCtn: 0,
+                        completeCtn: 0,
+                        planMh: 0,
+                        actualMh: 0
+                    };
+                }
+                dateShiftMap[key].smvSum += Number(rec.smv) || 0;
+                dateShiftMap[key].smvCount += 1;
+                dateShiftMap[key].targetSet += Number(rec.targetSet) || 0;
+                dateShiftMap[key].completeSet += Number(rec.completeSet) || 0;
+                dateShiftMap[key].targetCtn += Number(rec.targetCtn) || 0;
+                dateShiftMap[key].completeCtn += Number(rec.completeCtn) || 0;
+                dateShiftMap[key].planMh += Number(rec.planMh) || 0;
+                dateShiftMap[key].actualMh += Number(rec.actualMh) || 0;
+            });
+
+            let sortedGroupKeys = Object.keys(dateShiftMap);
+            let lastGroupKey = sortedGroupKeys[sortedGroupKeys.length - 1];
+            let lastDayData = dateShiftMap[lastGroupKey];
+
+            // Calculate Last Day Metrics
+            let lastAvgSmv = lastDayData.smvCount > 0 ? (lastDayData.smvSum / lastDayData.smvCount).toFixed(2) : 0;
+            let lastUtil = lastDayData.planMh > 0 ? Math.round((lastDayData.actualMh / lastDayData.planMh) * 100) : 0;
+
+            lastDayTbody.innerHTML = `
+                <tr>
+                    <td>${lastDayData.date}</td>
+                    <td>${lastDayData.shift}</td>
+                    <td>${lastAvgSmv}</td>
+                    <td>${Math.round(lastDayData.targetSet)}</td>
+                    <td style="color: #27ae60; font-weight: bold;">${Math.round(lastDayData.completeSet)}</td>
+                    <td>${Math.round(lastDayData.targetCtn)}</td>
+                    <td style="color: #27ae60; font-weight: bold;">${Math.round(lastDayData.completeCtn)}</td>
+                    <td>${Math.round(lastDayData.planMh)}</td>
+                    <td>${lastDayData.actualMh.toFixed(2)}</td>
+                    <td style="color: #d9534f; font-weight: bold;">${lastUtil}%</td>
+                </tr>
+            `;
+
+            // Calculate Cumulative Total Metrics
+            let totalShifts = sortedGroupKeys.length;
+            let totalSmvSum = 0, totalSmvCount = 0;
+            let totalTargetSet = 0, totalCompleteSet = 0;
+            let totalTargetCtn = 0, totalCompleteCtn = 0;
+            let totalPlanMh = 0, totalActualMh = 0;
+
+            sortedGroupKeys.forEach(k => {
+                let obj = dateShiftMap[k];
+                totalSmvSum += obj.smvSum;
+                totalSmvCount += obj.smvCount;
+                totalTargetSet += obj.targetSet;
+                totalCompleteSet += obj.completeSet;
+                totalTargetCtn += obj.targetCtn;
+                totalCompleteCtn += obj.completeCtn;
+                totalPlanMh += obj.planMh;
+                totalActualMh += obj.actualMh;
+            });
+
+            let cumulativeAvgSmv = totalSmvCount > 0 ? (totalSmvSum / totalSmvCount).toFixed(2) : 0;
+            let cumulativeUtil = totalPlanMh > 0 ? Math.round((totalActualMh / totalPlanMh) * 100) : 0;
+
+            totalPerfTbody.innerHTML = `
+                <tr>
+                    <td style="font-weight: bold; color: #007bff;">${totalShifts} Shifts</td>
+                    <td>${cumulativeAvgSmv}</td>
+                    <td>${Math.round(totalTargetSet)}</td>
+                    <td style="color: #27ae60; font-weight: bold;">${Math.round(totalCompleteSet)}</td>
+                    <td>${Math.round(totalTargetCtn)}</td>
+                    <td style="color: #27ae60; font-weight: bold;">${Math.round(totalCompleteCtn)}</td>
+                    <td>${Math.round(totalPlanMh)}</td>
+                    <td>${totalActualMh.toFixed(2)}</td>
+                    <td style="color: #d9534f; font-weight: bold;">${cumulativeUtil}%</td>
+                </tr>
+            `;
+
+            // Render Chart Data
+            let chartLabels = [];
+            let chartTargetSets = [];
+            let chartCompleteSets = [];
+
+            sortedGroupKeys.forEach(k => {
+                let obj = dateShiftMap[k];
+                chartLabels.push(obj.date + " (" + obj.shift.split(" ")[0] + ")");
+                chartTargetSets.push(Math.round(obj.targetSet));
+                chartCompleteSets.push(Math.round(obj.completeSet));
+            });
+
+            let ctx = document.getElementById('icPerformanceChart').getContext('2d');
+            if (icChartInstance) {
+                icChartInstance.destroy();
+            }
+
+            icChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        {
+                            label: 'Target Set',
+                            data: chartTargetSets,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Complete Set',
+                            data: chartCompleteSets,
+                            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
         });
     }
 
