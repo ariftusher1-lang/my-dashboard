@@ -183,7 +183,7 @@
             margin-bottom: 20px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            overflow-y: visible !important; /* To show search dropdown list cleanly */
+            overflow-y: visible !important;
         }
         table {
             width: 100%;
@@ -478,7 +478,7 @@
                     <button type="button" onclick="addManualJOToList()" style="padding: 4px 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">Add JO</button>
                 </div>
                 <div style="font-size: 12px; color: #475569;">
-                    Loaded JOs: <b id="uploaded-jo-count" style="color: #27ae60;">0 items</b>
+                    Loaded JOs (Cloud): <b id="uploaded-jo-count" style="color: #27ae60;">0 items</b>
                 </div>
             </div>
 
@@ -734,7 +734,7 @@
 
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
-    let uploadedJOList = []; // Stores JO names from uploaded Excel & Manual addition
+    let uploadedJOList = []; // Synchronized with Firebase Database
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -743,9 +743,30 @@
         if (savedFloor && savedLead) {
             setLoggedInEnvironment(savedFloor, savedLead);
         }
+        initCloudJOListener();
     };
 
-    // Excel Upload Handler for JO Names
+    // Listen to Firebase Realtime Database for Shared JO List across all devices
+    function initCloudJOListener() {
+        db.ref('job_orders').on('value', (snapshot) => {
+            uploadedJOList = [];
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnap) => {
+                    let joVal = childSnap.val();
+                    if (joVal && typeof joVal === 'string') {
+                        uploadedJOList.push(joVal);
+                    }
+                });
+            }
+            uploadedJOList = [...new Set(uploadedJOList)];
+            let countElem = document.getElementById('uploaded-jo-count');
+            if(countElem) {
+                countElem.innerText = uploadedJOList.length + " items";
+            }
+        });
+    }
+
+    // Excel Upload Handler for JO Names (Saves to Firebase Cloud)
     function handleExcelUpload(event) {
         let file = event.target.files[0];
         if (!file) return;
@@ -758,20 +779,31 @@
             let worksheet = workbook.Sheets[firstSheetName];
             let json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
+            let newJOs = [];
             json.forEach(row => {
                 if(row[0] && String(row[0]).trim() !== "") {
-                    uploadedJOList.push(String(row[0]).trim());
+                    newJOs.push(String(row[0]).trim());
                 }
             });
 
-            uploadedJOList = [...new Set(uploadedJOList)];
-            document.getElementById('uploaded-jo-count').innerText = uploadedJOList.length + " items";
-            alert("✅ JO Excel File Successfully Uploaded!");
+            if(newJOs.length > 0) {
+                let joRef = db.ref('job_orders');
+                joRef.once('value', (snap) => {
+                    let existing = [];
+                    if(snap.exists()) {
+                        snap.forEach(c => existing.push(c.val()));
+                    }
+                    let combined = [...new Set([...existing, ...newJOs])];
+                    joRef.set(combined).then(() => {
+                        alert("✅ JO Excel File successfully uploaded and synced to all devices!");
+                    });
+                });
+            }
         };
         reader.readAsArrayBuffer(file);
     }
 
-    // Manual JO Addition from Input Box
+    // Manual JO Addition (Saves to Firebase Cloud)
     function addManualJOToList() {
         let manualInput = document.getElementById('manual-new-jo');
         let val = manualInput.value.trim();
@@ -780,14 +812,23 @@
             return;
         }
 
-        if(!uploadedJOList.includes(val)) {
-            uploadedJOList.push(val);
-            document.getElementById('uploaded-jo-count').innerText = uploadedJOList.length + " items";
-            manualInput.value = "";
-            alert("✅ নতুন JO সফলভাবে লিস্টে যোগ করা হয়েছে!");
-        } else {
-            alert("⚠️ এই JO টি ইতিমধ্যে লিস্টে রয়েছে!");
-        }
+        let joRef = db.ref('job_orders');
+        joRef.once('value', (snap) => {
+            let existing = [];
+            if(snap.exists()) {
+                snap.forEach(c => existing.push(c.val()));
+            }
+
+            if(!existing.includes(val)) {
+                existing.push(val);
+                joRef.set(existing).then(() => {
+                    manualInput.value = "";
+                    alert("✅ নতুন JO সফলভাবে ক্লাউডে যোগ করা হয়েছে এবং সব ডিভাইসে সিনক হয়ে গেছে!");
+                });
+            } else {
+                alert("⚠️ এই JO টি ইতিমধ্যে লিস্টে রয়েছে!");
+            }
+        });
     }
 
     function handleLoginKeyPress(event) {
@@ -1050,7 +1091,7 @@
             item.className = 'jo-dropdown-item';
             item.innerText = jo;
             item.onmousedown = function(e) {
-                e.preventDefault(); // Prevent blur before click registers
+                e.preventDefault(); 
                 let container = listDiv.closest('.searchable-dropdown-container');
                 let input = container.querySelector('.jo-search-input');
                 input.value = jo;
@@ -1067,14 +1108,12 @@
         });
     }
 
-    // Hide dropdown when clicking outside
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.searchable-dropdown-container')) {
             document.querySelectorAll('.jo-dropdown-list').forEach(list => list.style.display = 'none');
         }
     });
 
-    // Auto create next line when 1st line status is marked as 'Completed'
     let isAutoAdding = false;
     function checkLineStatusAndAutoAdd(statusElem) {
         let tr = statusElem.closest('tr');
