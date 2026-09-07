@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRAN-RFL Packaging Production & Report System</title>
-    <!-- SheetJS Library for Excel Export -->
+    <!-- SheetJS Library for Excel Export & Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <!-- Chart.js Library for Graph Visualization -->
@@ -278,7 +278,7 @@
         }
         .btn-container {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
             margin-top: 15px;
             gap: 10px;
@@ -423,6 +423,17 @@
                 </div>
             </div>
 
+            <!-- EXCEL UPLOAD FOR JO LIST -->
+            <div style="background: #e2e8f0; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <strong style="font-size: 13px; color: #1e293b;">📁 Upload JO Excel File (For Dropdown List):</strong>
+                    <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" style="margin-left: 10px; font-size: 12px;">
+                </div>
+                <div style="font-size: 12px; color: #475569;">
+                    Loaded JOs: <b id="uploaded-jo-count" style="color: #27ae60;">0 items</b>
+                </div>
+            </div>
+
             <!-- CAMERA POPUP MODAL FOR IC SELFIES -->
             <div id="cameraModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
                 <div style="background: white; padding: 25px; border-radius: 10px; text-align: center; width: 360px; box-shadow: 0px 5px 15px rgba(0,0,0,0.3);">
@@ -442,7 +453,7 @@
                     <thead>
                         <tr>
                             <th>Line</th>
-                            <th>JO Name</th>
+                            <th>JO Name (Click for Dropdown / Manual)</th>
                             <th>Items Name</th>
                             <th>WF</th>
                             <th>WH</th>
@@ -498,6 +509,7 @@
             </div>
             
             <div class="btn-container">
+                <button class="action-btn btn-excel" onclick="addNewRow()">➕ Add Line</button>
                 <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data</button>
             </div>
 
@@ -674,6 +686,7 @@
 
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
+    let uploadedJOList = []; // Stores JO names from uploaded Excel
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -683,6 +696,34 @@
             setLoggedInEnvironment(savedFloor, savedLead);
         }
     };
+
+    // Excel Upload Handler for JO Names
+    function handleExcelUpload(event) {
+        let file = event.target.files[0];
+        if (!file) return;
+
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let data = new Uint8Array(e.target.result);
+            let workbook = XLSX.read(data, {type: 'array'});
+            let firstSheetName = workbook.SheetNames[0];
+            let worksheet = workbook.Sheets[firstSheetName];
+            let json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+            uploadedJOList = [];
+            json.forEach(row => {
+                if(row[0] && String(row[0]).trim() !== "") {
+                    uploadedJOList.push(String(row[0]).trim());
+                }
+            });
+
+            // Remove duplicates
+            uploadedJOList = [...new Set(uploadedJOList)];
+            document.getElementById('uploaded-jo-count').innerText = uploadedJOList.length + " items";
+            alert("✅ JO Excel File Successfully Uploaded! Now you can choose JO from Dropdown or Type Manually.");
+        };
+        reader.readAsArrayBuffer(file);
+    }
 
     function handleLoginKeyPress(event) {
         if (event.key === 'Enter') {
@@ -818,7 +859,15 @@
                     <option value="E-2" ${lineVal==='E-2'?'selected':''}>E-2</option>
                 </select>
             </td>
-            <td><input type="text" class="jo-name" value="${joVal}" oninput="checkAndAutoAddRow(this); syncFields(this); updateReport();"></td>
+            <td>
+                <div style="display: flex; gap: 4px;">
+                    <select class="jo-dropdown" style="display: ${uploadedJOList.length > 0 ? 'block' : 'none'};" onchange="selectJODropdown(this)">
+                        <option value="">-- Select JO --</option>
+                        ${uploadedJOList.map(jo => `<option value="${jo}" ${jo===joVal?'selected':''}>${jo}</option>`).join('')}
+                    </select>
+                    <input type="text" class="jo-name" value="${joVal}" placeholder="Type or Select JO" oninput="checkAndAutoAddRow(this); syncFields(this); updateReport();">
+                </div>
+            </td>
             <td><input type="text" class="item-name" value="${itemVal}" oninput="checkAndAutoAddRow(this); syncFields(this); updateReport();"></td>
             <td><input type="number" class="wf" value="${wfVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="wh" value="${whVal}" oninput="calculateValues(this)"></td>
@@ -872,8 +921,14 @@
                 </div>
             </div>
             <div class="card-row">
-                <label>JO Name:</label>
-                <input type="text" class="m-jo-name" value="${joVal}" placeholder="Enter JO Name" oninput="checkAndAutoAddRowMobile(this); syncBackFromMobile(this); updateReport();">
+                <label>JO Name (Dropdown / Manual):</label>
+                <div style="display: flex; gap: 4px;">
+                    <select class="m-jo-dropdown" style="display: ${uploadedJOList.length > 0 ? 'block' : 'none'}; width: 40%;" onchange="selectJODropdownMobile(this)">
+                        <option value="">-- Select --</option>
+                        ${uploadedJOList.map(jo => `<option value="${jo}" ${jo===joVal?'selected':''}>${jo}</option>`).join('')}
+                    </select>
+                    <input type="text" class="m-jo-name" value="${joVal}" placeholder="Type or Select JO" oninput="checkAndAutoAddRowMobile(this); syncBackFromMobile(this); updateReport();" style="width: 60%;">
+                </div>
             </div>
             <div class="card-row">
                 <label>Items Name:</label>
@@ -897,6 +952,26 @@
         `;
         mobileList.appendChild(cardDiv);
         calculateValues(tr.querySelector('.wf'));
+    }
+
+    function selectJODropdown(dropdownElem) {
+        let val = dropdownElem.value;
+        if(val) {
+            let td = dropdownElem.closest('td');
+            td.querySelector('.jo-name').value = val;
+            syncFields(td.querySelector('.jo-name'));
+            updateReport();
+        }
+    }
+
+    function selectJODropdownMobile(dropdownElem) {
+        let val = dropdownElem.value;
+        if(val) {
+            let card = dropdownElem.closest('.prod-card');
+            card.querySelector('.m-jo-name').value = val;
+            syncBackFromMobile(card.querySelector('.m-jo-name'));
+            updateReport();
+        }
     }
 
     let isAddingRow = false;
