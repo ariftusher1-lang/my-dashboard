@@ -766,7 +766,7 @@
         });
     }
 
-    // Excel Upload Handler for JO Names (Saves permanently to Firebase Cloud using push/update)
+    // Excel Upload Handler for JO Names (Saves permanently to Firebase Cloud)
     function handleExcelUpload(event) {
         let file = event.target.files[0];
         if (!file) return;
@@ -961,7 +961,8 @@
         document.getElementById('cameraModal').style.display = 'none';
     }
 
-    function addNewRow(lineVal='A-1', joVal='', itemVal='', wfVal='', whVal='', smvVal=1.0, unitVal=24, compSetVal='', compCtnVal='', statusVal='Running') {
+    // SMV and Unit/CTN default value set to blank ("")
+    function addNewRow(lineVal='A-1', joVal='', itemVal='', wfVal='', whVal='', smvVal='', unitVal='', compSetVal='', compCtnVal='', statusVal='Running') {
         let tbody = document.getElementById('entry-table-body');
         let tr = document.createElement('tr');
         
@@ -985,8 +986,8 @@
             <td><input type="text" class="item-name" value="${itemVal}" oninput="syncFields(this); updateReport();"></td>
             <td><input type="number" class="wf" value="${wfVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="wh" value="${whVal}" oninput="calculateValues(this)"></td>
-            <td><input type="number" step="0.1" class="smv" value="${smvVal}" oninput="calculateValues(this)"></td>
-            <td><input type="number" class="unit-ctn" value="${unitVal}" oninput="calculateValues(this)"></td>
+            <td><input type="number" step="0.1" class="smv" value="${smvVal}" placeholder="" oninput="calculateValues(this)"></td>
+            <td><input type="number" class="unit-ctn" value="${unitVal}" placeholder="" oninput="calculateValues(this)"></td>
             <td><input type="number" class="target-set calculated-field" value="0" readonly></td>
             <td><input type="number" class="complete-set" value="${compSetVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="target-ctn calculated-field" value="0" readonly></td>
@@ -1048,8 +1049,8 @@
             <div class="card-grid-4 card-row">
                 <div><label>WF:</label><input type="number" class="m-wf" value="${wfVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
                 <div><label>WH:</label><input type="number" class="m-wh" value="${whVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
-                <div><label>SMV:</label><input type="number" step="0.1" class="m-smv" value="${smvVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
-                <div><label>Unit/CTN:</label><input type="number" class="m-unit-ctn" value="${unitVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+                <div><label>SMV:</label><input type="number" step="0.1" class="m-smv" value="${smvVal}" placeholder="" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+                <div><label>Unit/CTN:</label><input type="number" class="m-unit-ctn" value="${unitVal}" placeholder="" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
             </div>
             <div class="card-grid-2 card-row">
                 <div><label>Complete Set:</label><input type="number" class="m-complete-set" value="${compSetVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
@@ -1227,7 +1228,7 @@
         let wf = parseFloat(row.querySelector('.wf').value) || 0;
         let wh = parseFloat(row.querySelector('.wh').value) || 0;
         let smv = parseFloat(row.querySelector('.smv').value) || 0; 
-        let unitCtn = parseFloat(row.querySelector('.unit-ctn').value) || 1;
+        let unitCtn = parseFloat(row.querySelector('.unit-ctn').value) || 0;
         let completeSet = parseFloat(row.querySelector('.complete-set').value) || 0;
         
         let targetSet = smv > 0 ? (wf * wh * 60) / smv : 0;
@@ -1239,7 +1240,7 @@
         let planMh = wf * wh;
         row.querySelector('.plan-mh').value = Math.round(planMh);
 
-        let actualMh = (completeSet * smv) / 60;
+        let actualMh = smv > 0 ? (completeSet * smv) / 60 : 0;
         row.querySelector('.actual-mh').value = actualMh.toFixed(2);
 
         let mhUtil = planMh > 0 ? (actualMh / planMh) * 100 : 0;
