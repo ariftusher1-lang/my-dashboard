@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Production Entry & Report System with Firebase</title>
+    <title>Production Entry & Report System</title>
     <!-- SheetJS Library for Excel Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
@@ -244,14 +244,14 @@
         </table>
         
         <div class="btn-container">
-            <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data to Firebase</button>
+            <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data</button>
         </div>
     </div>
 
     <!-- PAGE 2: PACKAGING REPORT & DOWNLOAD -->
     <div id="report-page" class="page-section">
         <div class="report-header">
-            <div class="report-title">📊 Detailed Packaging Utilization Report (Firebase Database)</div>
+            <div class="report-title">📊 Detailed Packaging Utilization Report</div>
             <button class="action-btn btn-excel" onclick="exportToExcel()">📥 Download as Excel</button>
         </div>
 
@@ -480,12 +480,10 @@
 
         let avgUtil = validRowCount > 0 ? totalUtilPercent / validRowCount : 0;
         document.getElementById('sum-mh-util').innerText = Math.round(avgUtil) + '%';
-
-        updateReportPreview();
     }
 
-    function updateReportPreview() {
-        // Just local helper if needed for summary on entry tab
+    function updateReport() {
+        // Optional tracking if needed
     }
 
     // Save Data to Firebase Realtime Database
@@ -532,13 +530,12 @@
             return;
         }
 
-        // Push data to Firebase under 'productions' node
         let dbRef = db.ref('productions');
         let promises = entriesToSave.map(entry => dbRef.push(entry));
 
         Promise.all(promises)
             .then(() => {
-                alert("✅ Data Successfully Saved to Firebase Database!");
+                alert("✅ Data Successfully Saved!");
             })
             .catch((error) => {
                 alert("❌ Error saving data: " + error.message);
@@ -548,7 +545,7 @@
     // Load Data from Firebase into Report Page
     function loadFirebaseData() {
         let reportBody = document.getElementById('report-table-body');
-        reportBody.innerHTML = `<tr><td colspan="18">Loading data from Firebase...</td></tr>`;
+        reportBody.innerHTML = `<tr><td colspan="18">Loading data...</td></tr>`;
 
         let dbRef = db.ref('productions');
         dbRef.once('value', (snapshot) => {
@@ -606,7 +603,7 @@
                 }
 
             } else {
-                reportBody.innerHTML = `<tr><td colspan="18">No data found in Firebase database.</td></tr>`;
+                reportBody.innerHTML = `<tr><td colspan="18">No data found.</td></tr>`;
                 document.getElementById('jo-summary-body').innerHTML = `<tr><td colspan="3">No data available.</td></tr>`;
             }
         });
