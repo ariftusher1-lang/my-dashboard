@@ -189,7 +189,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
-            min-width: 1000px;
+            min-width: 1200px;
         }
         th, td {
             border: 1px solid #ccc;
@@ -508,10 +508,15 @@
                             <th>Line</th>
                             <th>JO Name (Auto Select / Search)</th>
                             <th>Items Name (Auto Filled)</th>
+                            <th>SMV</th>
+                            <th>Unit (Set/Piece)</th>
+                            <th>Unit/CTN (Auto Filled)</th>
+                            <th>Order (QTY)</th>
+                            <th>CTN Demand (QTY)</th>
+                            <th>As of CTN</th>
+                            <th>Due CTN</th>
                             <th>WF</th>
                             <th>WH</th>
-                            <th>SMV</th>
-                            <th>Unit/CTN (Auto Filled)</th>
                             <th>Target Set</th>
                             <th>Complete Set</th>
                             <th>Target CTN</th>
@@ -529,11 +534,9 @@
                     <!-- Summary Footer Row -->
                     <tfoot>
                         <tr>
-                            <td colspan="3" style="text-align: right; font-weight: bold;">Summary Shift >></td>
+                            <td colspan="10" style="text-align: right; font-weight: bold;">Summary Shift >></td>
                             <td id="sum-wf">0</td>
                             <td id="sum-wh">0</td>
-                            <td>-</td>
-                            <td>-</td>
                             <td id="sum-target-set">0</td>
                             <td id="sum-complete-set">0</td>
                             <td id="sum-target-ctn">0</td>
@@ -541,8 +544,7 @@
                             <td id="sum-plan-mh">0</td>
                             <td id="sum-actual-mh">0</td>
                             <td id="sum-mh-util" style="color: #d9534f; font-weight: bold;">0%</td>
-                            <td>-</td>
-                            <td>-</td>
+                            <td colspan="2">-</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -617,10 +619,15 @@
                                 <th>Line</th>
                                 <th>JO Name</th>
                                 <th>Items Name</th>
+                                <th>SMV</th>
+                                <th>Unit (Set/Piece)</th>
+                                <th>Unit/CTN</th>
+                                <th>Order (QTY)</th>
+                                <th>CTN Demand (QTY)</th>
+                                <th>As of CTN</th>
+                                <th>Due CTN</th>
                                 <th>WF</th>
                                 <th>WH</th>
-                                <th>SMV</th>
-                                <th>Unit/CTN</th>
                                 <th>Target Set</th>
                                 <th>Complete Set</th>
                                 <th>Target CTN</th>
@@ -739,7 +746,7 @@
 
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
-    let masterJobOrdersMap = {}; // Maps JO Name -> { itemName, unitCtn }
+    let masterJobOrdersMap = {}; // Maps JO Name -> { itemName, unitCtn, unitType }
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -760,7 +767,8 @@
                     if (val && val.joName) {
                         masterJobOrdersMap[val.joName] = {
                             itemName: val.itemName || "",
-                            unitCtn: val.unitCtn || 0
+                            unitCtn: val.unitCtn || 0,
+                            unitType: val.unitType || "Piece"
                         };
                     }
                 });
@@ -788,20 +796,20 @@
             let masterDataUpdates = {};
             let count = 0;
 
-            // Assuming header is at row 0, data starts from row 1
-            // Columns based on Job Order Master.xlsx: Index 1 = Job Order No, Index 2 = Item Names, Index 4 = Unit/Ctn
             for (let i = 1; i < json.length; i++) {
                 let row = json[i];
                 let joName = row[1] ? String(row[1]).trim() : "";
                 let itemName = row[2] ? String(row[2]).trim() : "";
                 let unitCtn = row[4] ? Number(row[4]) || 0 : 0;
+                let unitType = "Piece";
 
                 if (joName !== "") {
                     let safeKey = "jo_" + count;
                     masterDataUpdates[safeKey] = {
                         joName: joName,
                         itemName: itemName,
-                        unitCtn: unitCtn
+                        unitCtn: unitCtn,
+                        unitType: unitType
                     };
                     count++;
                 }
@@ -809,10 +817,10 @@
 
             if (count > 0) {
                 db.ref('job_master_data').set(masterDataUpdates).then(() => {
-                    alert(`✅ ${count} টি Job Order মাস্টার ডাটা সফলভাবে আপলোড ও সিঙ্ক হয়েছে! এখন JO সিলেক্ট করলেই Item Name এবং Unit/Ctn অটোমেটিক চলে আসবে।`);
+                    alert(`✅ ${count} টি Job Order মাস্টার ডাটা সফলভাবে আপলোড ও সিঙ্ক হয়েছে!`);
                 });
             } else {
-                alert("⚠️ এক্সেল ফাইল থেকে সঠিক কলাম ডাটা পাওয়া যায়নি। দয়া করে সঠিক ফরম্যাটের ফাইল আপলোড করুন।");
+                alert("⚠️ এক্সেল ফাইল থেকে সঠিক কলাম ডাটা পাওয়া যায়নি।");
             }
         };
         reader.readAsArrayBuffer(file);
@@ -841,7 +849,8 @@
                 db.ref('job_master_data/jo_' + maxIdx).set({
                     joName: val,
                     itemName: "Manual Entry Item",
-                    unitCtn: 1
+                    unitCtn: 1,
+                    unitType: "Piece"
                 }).then(() => {
                     manualInput.value = "";
                     alert("✅ নতুন JO সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
@@ -978,7 +987,7 @@
         document.getElementById('cameraModal').style.display = 'none';
     }
 
-    function addNewRow(lineVal='A-1', joVal='', itemVal='', wfVal='', whVal='', smvVal='', unitVal='', compSetVal='', compCtnVal='', statusVal='Running') {
+    function addNewRow(lineVal='A-1', joVal='', itemVal='', smvVal='', unitTypeVal='Piece', unitVal='', orderQtyVal='', ctnDemandVal='', asOfCtnVal='', wfVal='', whVal='', compSetVal='', compCtnVal='', statusVal='Running') {
         let tbody = document.getElementById('entry-table-body');
         let tr = document.createElement('tr');
         
@@ -1002,10 +1011,20 @@
             <td>
                 <input type="text" class="item-name" value="${itemVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly>
             </td>
+            <td><input type="number" step="0.1" class="smv" value="${smvVal}" placeholder="" oninput="calculateValues(this)"></td>
+            <td>
+                <select class="unit-type">
+                    <option value="Piece" ${unitTypeVal==='Piece'?'selected':''}>Piece</option>
+                    <option value="Set" ${unitTypeVal==='Set'?'selected':''}>Set</option>
+                </select>
+            </td>
+            <td><input type="number" class="unit-ctn" value="${unitVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly></td>
+            <td><input type="number" class="order-qty" value="${orderQtyVal}" placeholder="0"></td>
+            <td><input type="number" class="ctn-demand" value="${ctnDemandVal}" placeholder="0" oninput="calculateDueCtn(this)"></td>
+            <td><input type="number" class="as-of-ctn" value="${asOfCtnVal}" placeholder="0" oninput="calculateDueCtn(this)"></td>
+            <td><input type="number" class="due-ctn calculated-field" value="0" readonly></td>
             <td><input type="number" class="wf" value="${wfVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="wh" value="${whVal}" oninput="calculateValues(this)"></td>
-            <td><input type="number" step="0.1" class="smv" value="${smvVal}" placeholder="" oninput="calculateValues(this)"></td>
-            <td><input type="number" class="unit-ctn" value="${unitVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly></td>
             <td><input type="number" class="target-set calculated-field" value="0" readonly></td>
             <td><input type="number" class="complete-set" value="${compSetVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="target-ctn calculated-field" value="0" readonly></td>
@@ -1065,13 +1084,28 @@
                 <input type="text" class="m-item-name" value="${itemVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly>
             </div>
             <div class="card-grid-4 card-row">
-                <div><label>WF:</label><input type="number" class="m-wf" value="${wfVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
-                <div><label>WH:</label><input type="number" class="m-wh" value="${whVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
                 <div><label>SMV:</label><input type="number" step="0.1" class="m-smv" value="${smvVal}" placeholder="" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+                <div>
+                    <label>Unit Type:</label>
+                    <select class="m-unit-type" onchange="syncBackFromMobile(this)">
+                        <option value="Piece" ${unitTypeVal==='Piece'?'selected':''}>Piece</option>
+                        <option value="Set" ${unitTypeVal==='Set'?'selected':''}>Set</option>
+                    </select>
+                </div>
                 <div><label>Unit/CTN:</label><input type="number" class="m-unit-ctn" value="${unitVal}" placeholder="Auto" style="background:#f1f5f9;" readonly></div>
+                <div><label>Order QTY:</label><input type="number" class="m-order-qty" value="${orderQtyVal}" oninput="syncBackFromMobile(this)"></div>
+            </div>
+            <div class="card-grid-4 card-row">
+                <div><label>CTN Demand:</label><input type="number" class="m-ctn-demand" value="${ctnDemandVal}" oninput="syncBackFromMobile(this)"></div>
+                <div><label>As of CTN:</label><input type="number" class="m-as-of-ctn" value="${asOfCtnVal}" oninput="syncBackFromMobile(this)"></div>
+                <div><label>Due CTN:</label><input type="number" class="m-due-ctn" value="0" readonly style="background:#e9ecef;"></div>
+                <div><label>WF:</label><input type="number" class="m-wf" value="${wfVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
             </div>
             <div class="card-grid-2 card-row">
+                <div><label>WH:</label><input type="number" class="m-wh" value="${whVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
                 <div><label>Complete Set:</label><input type="number" class="m-complete-set" value="${compSetVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+            </div>
+            <div class="card-grid-2 card-row">
                 <div><label>Complete CTN:</label><input type="number" class="m-complete-ctn" value="${compCtnVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this); checkCompleteCtnEntryAndAutoCreateMobile(this)"></div>
             </div>
             <div style="background: #e2e8f0; padding: 6px; border-radius: 4px; font-size: 11px; display: flex; justify-content: space-between; margin-top: 8px;">
@@ -1082,6 +1116,15 @@
         `;
         mobileList.appendChild(cardDiv);
         calculateValues(tr.querySelector('.wf'));
+    }
+
+    function calculateDueCtn(element) {
+        let row = element.closest('tr');
+        let ctnDemand = parseFloat(row.querySelector('.ctn-demand').value) || 0;
+        let asOfCtn = parseFloat(row.querySelector('.as-of-ctn').value) || 0;
+        let dueCtn = ctnDemand - asOfCtn;
+        row.querySelector('.due-ctn').value = dueCtn >= 0 ? dueCtn : 0;
+        syncFields(element);
     }
 
     let isAutoAdding = false;
@@ -1162,18 +1205,19 @@
                 input.value = jo;
                 listDiv.style.display = 'none';
 
-                // AUTO FILL ITEM NAME AND UNIT/CTN BASED ON MASTER DATA
                 let masterInfo = masterJobOrdersMap[jo];
                 let rowOrCard = container.closest('tr') || container.closest('.prod-card');
                 
                 if (rowOrCard.tagName === 'TR') {
                     rowOrCard.querySelector('.item-name').value = masterInfo.itemName;
                     rowOrCard.querySelector('.unit-ctn').value = masterInfo.unitCtn;
+                    rowOrCard.querySelector('.unit-type').value = masterInfo.unitType;
                     syncFields(rowOrCard.querySelector('.jo-name'));
                     calculateValues(rowOrCard.querySelector('.wf'));
                 } else {
                     rowOrCard.querySelector('.m-item-name').value = masterInfo.itemName;
                     rowOrCard.querySelector('.m-unit-ctn').value = masterInfo.unitCtn;
+                    rowOrCard.querySelector('.m-unit-type').value = masterInfo.unitType;
                     syncBackFromMobile(rowOrCard.querySelector('.m-jo-name'));
                     calculateValuesMobile(rowOrCard.querySelector('.m-wf'));
                 }
@@ -1230,10 +1274,15 @@
         card.querySelector('.m-line-val').value = tr.querySelector('.line-val').value;
         card.querySelector('.m-jo-name').value = tr.querySelector('.jo-name').value;
         card.querySelector('.m-item-name').value = tr.querySelector('.item-name').value;
+        card.querySelector('.m-smv').value = tr.querySelector('.smv').value;
+        card.querySelector('.m-unit-type').value = tr.querySelector('.unit-type').value;
+        card.querySelector('.m-unit-ctn').value = tr.querySelector('.unit-ctn').value;
+        card.querySelector('.m-order-qty').value = tr.querySelector('.order-qty').value;
+        card.querySelector('.m-ctn-demand').value = tr.querySelector('.ctn-demand').value;
+        card.querySelector('.m-as-of-ctn').value = tr.querySelector('.as-of-ctn').value;
+        card.querySelector('.m-due-ctn').value = tr.querySelector('.due-ctn').value;
         card.querySelector('.m-wf').value = tr.querySelector('.wf').value;
         card.querySelector('.m-wh').value = tr.querySelector('.wh').value;
-        card.querySelector('.m-smv').value = tr.querySelector('.smv').value;
-        card.querySelector('.m-unit-ctn').value = tr.querySelector('.unit-ctn').value;
         card.querySelector('.m-complete-set').value = tr.querySelector('.complete-set').value;
         card.querySelector('.m-complete-ctn').value = tr.querySelector('.complete-ctn').value;
         card.querySelector('.m-status-val').value = tr.querySelector('.status-val').value;
@@ -1248,10 +1297,15 @@
         tr.querySelector('.line-val').value = card.querySelector('.m-line-val').value;
         tr.querySelector('.jo-name').value = card.querySelector('.m-jo-name').value;
         tr.querySelector('.item-name').value = card.querySelector('.m-item-name').value;
+        tr.querySelector('.smv').value = card.querySelector('.m-smv').value;
+        tr.querySelector('.unit-type').value = card.querySelector('.m-unit-type').value;
+        tr.querySelector('.unit-ctn').value = card.querySelector('.m-unit-ctn').value;
+        tr.querySelector('.order-qty').value = card.querySelector('.m-order-qty').value;
+        tr.querySelector('.ctn-demand').value = card.querySelector('.m-ctn-demand').value;
+        tr.querySelector('.as-of-ctn').value = card.querySelector('.m-as-of-ctn').value;
+        tr.querySelector('.due-ctn').value = card.querySelector('.m-due-ctn').value;
         tr.querySelector('.wf').value = card.querySelector('.m-wf').value;
         tr.querySelector('.wh').value = card.querySelector('.m-wh').value;
-        tr.querySelector('.smv').value = card.querySelector('.m-smv').value;
-        tr.querySelector('.unit-ctn').value = card.querySelector('.m-unit-ctn').value;
         tr.querySelector('.complete-set').value = card.querySelector('.m-complete-set').value;
         tr.querySelector('.complete-ctn').value = card.querySelector('.m-complete-ctn').value;
         tr.querySelector('.status-val').value = card.querySelector('.m-status-val').value;
@@ -1411,10 +1465,15 @@
         rows.forEach(row => {
             let jo = row.querySelector('.jo-name').value.trim();
             let itemName = row.querySelector('.item-name').value.trim();
+            let smv = parseFloat(row.querySelector('.smv').value) || 0;
+            let unitType = row.querySelector('.unit-type').value;
+            let unitCtn = parseFloat(row.querySelector('.unit-ctn').value) || 0;
+            let orderQty = parseFloat(row.querySelector('.order-qty').value) || 0;
+            let ctnDemand = parseFloat(row.querySelector('.ctn-demand').value) || 0;
+            let asOfCtn = parseFloat(row.querySelector('.as-of-ctn').value) || 0;
+            let dueCtn = parseFloat(row.querySelector('.due-ctn').value) || 0;
             let wf = parseFloat(row.querySelector('.wf').value) || 0;
             let wh = parseFloat(row.querySelector('.wh').value) || 0;
-            let smv = parseFloat(row.querySelector('.smv').value) || 0;
-            let unitCtn = parseFloat(row.querySelector('.unit-ctn').value) || 0;
             let completeSet = parseFloat(row.querySelector('.complete-set').value) || 0;
             let completeCtn = parseFloat(row.querySelector('.complete-ctn').value) || 0;
 
@@ -1433,10 +1492,15 @@
                     line: row.querySelector('.line-val').value,
                     joName: jo,
                     itemName: itemName,
+                    smv: smv,
+                    unitType: unitType,
+                    unitCtn: unitCtn,
+                    orderQty: orderQty,
+                    ctnDemand: ctnDemand,
+                    asOfCtn: asOfCtn,
+                    dueCtn: dueCtn,
                     wf: wf,
                     wh: wh,
-                    smv: smv,
-                    unitCtn: unitCtn,
                     targetSet: parseFloat(row.querySelector('.target-set').value) || 0,
                     completeSet: completeSet,
                     targetCtn: parseFloat(row.querySelector('.target-ctn').value) || 0,
@@ -1666,7 +1730,7 @@
 
     function loadFirebaseData() {
         let reportBody = document.getElementById('report-table-body');
-        reportBody.innerHTML = `<tr><td colspan="22">Loading data...</td></tr>`;
+        reportBody.innerHTML = `<tr><td colspan="27">Loading data...</td></tr>`;
 
         let dbRef = db.ref('productions');
         dbRef.once('value', (snapshot) => {
@@ -1690,10 +1754,15 @@
                         <td>${data.line}</td>
                         <td>${data.joName}</td>
                         <td>${data.itemName}</td>
+                        <td>${data.smv}</td>
+                        <td>${data.unitType}</td>
+                        <td>${data.unitCtn}</td>
+                        <td>${data.orderQty || 0}</td>
+                        <td>${data.ctnDemand || 0}</td>
+                        <td>${data.asOfCtn || 0}</td>
+                        <td>${data.dueCtn || 0}</td>
                         <td>${data.wf}</td>
                         <td>${data.wh}</td>
-                        <td>${data.smv}</td>
-                        <td>${data.unitCtn}</td>
                         <td>${data.targetSet}</td>
                         <td>${data.completeSet}</td>
                         <td>${data.targetCtn}</td>
@@ -1732,7 +1801,7 @@
                 }
 
             } else {
-                reportBody.innerHTML = `<tr><td colspan="22">No data found.</td></tr>`;
+                reportBody.innerHTML = `<tr><td colspan="27">No data found.</td></tr>`;
                 document.getElementById('jo-summary-body').innerHTML = `<tr><td colspan="3">No data available.</td></tr>`;
             }
         });
@@ -1776,7 +1845,7 @@
                     document.getElementById('entry-table-body').innerHTML = '';
                     document.getElementById('mobile-cards-list').innerHTML = '';
                     
-                    addNewRow(data.line, data.joName, data.itemName, data.wf, data.wh, data.smv, data.unitCtn, data.completeSet, data.completeCtn, data.status);
+                    addNewRow(data.line, data.joName, data.itemName, data.smv, data.unitType, data.unitCtn, data.orderQty, data.ctnDemand, data.asOfCtn, data.wf, data.wh, data.completeSet, data.completeCtn, data.status);
                     
                     let firstRowInput = document.getElementById('entry-table-body').querySelector('.wf');
                     calculateValues(firstRowInput);
