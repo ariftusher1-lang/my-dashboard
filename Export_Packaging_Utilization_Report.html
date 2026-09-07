@@ -744,8 +744,8 @@
 
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
-    let uploadedJOList = []; // Synchronized with Firebase Realtime Database
-    let uploadedItemList = []; // Synchronized Items List
+    let uploadedJOList = []; 
+    let uploadedItemList = []; 
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -758,7 +758,6 @@
         initCloudItemListener();
     };
 
-    // Listen to Firebase Realtime Database for Shared JO List
     function initCloudJOListener() {
         db.ref('job_orders').on('value', (snapshot) => {
             uploadedJOList = [];
@@ -778,7 +777,6 @@
         });
     }
 
-    // Listen to Firebase Realtime Database for Shared Items List
     function initCloudItemListener() {
         db.ref('item_names').on('value', (snapshot) => {
             uploadedItemList = [];
@@ -798,7 +796,6 @@
         });
     }
 
-    // Excel Upload Handler for JO Names
     function handleExcelUpload(event) {
         let file = event.target.files[0];
         if (!file) return;
@@ -841,7 +838,6 @@
         reader.readAsArrayBuffer(file);
     }
 
-    // Manual JO Addition
     function addManualJOToList() {
         let manualInput = document.getElementById('manual-new-jo');
         let val = manualInput.value.trim();
@@ -874,7 +870,6 @@
         });
     }
 
-    // Manual Item Name Addition
     function addManualItemToList() {
         let manualInput = document.getElementById('manual-new-item');
         let val = manualInput.value.trim();
@@ -1063,11 +1058,11 @@
             <td><input type="number" class="wf" value="${wfVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="wh" value="${whVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" step="0.1" class="smv" value="${smvVal}" placeholder="" oninput="calculateValues(this)"></td>
-            <td><input type="number" class="unit-ctn" value="${unitVal}" placeholder="" oninput="calculateValues(this); checkCtnEntryAndAutoCreate(this)"></td>
+            <td><input type="number" class="unit-ctn" value="${unitVal}" placeholder="" oninput="calculateValues(this)"></td>
             <td><input type="number" class="target-set calculated-field" value="0" readonly></td>
             <td><input type="number" class="complete-set" value="${compSetVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="target-ctn calculated-field" value="0" readonly></td>
-            <td><input type="number" class="complete-ctn" value="${compCtnVal}" oninput="calculateValues(this)"></td>
+            <td><input type="number" class="complete-ctn" value="${compCtnVal}" oninput="calculateValues(this); checkCompleteCtnEntryAndAutoCreate(this)"></td>
             <td><input type="number" class="plan-mh calculated-field" value="0" readonly></td>
             <td><input type="number" step="0.01" class="actual-mh calculated-field" value="0" readonly></td>
             <td><input type="text" class="mh-util calculated-field" value="0%" readonly></td>
@@ -1129,11 +1124,11 @@
                 <div><label>WF:</label><input type="number" class="m-wf" value="${wfVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
                 <div><label>WH:</label><input type="number" class="m-wh" value="${whVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
                 <div><label>SMV:</label><input type="number" step="0.1" class="m-smv" value="${smvVal}" placeholder="" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
-                <div><label>Unit/CTN:</label><input type="number" class="m-unit-ctn" value="${unitVal}" placeholder="" oninput="syncBackFromMobile(this); calculateValuesMobile(this); checkCtnEntryAndAutoCreateMobile(this)"></div>
+                <div><label>Unit/CTN:</label><input type="number" class="m-unit-ctn" value="${unitVal}" placeholder="" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
             </div>
             <div class="card-grid-2 card-row">
                 <div><label>Complete Set:</label><input type="number" class="m-complete-set" value="${compSetVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
-                <div><label>Complete CTN:</label><input type="number" class="m-complete-ctn" value="${compCtnVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
+                <div><label>Complete CTN:</label><input type="number" class="m-complete-ctn" value="${compCtnVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this); checkCompleteCtnEntryAndAutoCreateMobile(this)"></div>
             </div>
             <div style="background: #e2e8f0; padding: 6px; border-radius: 4px; font-size: 11px; display: flex; justify-content: space-between; margin-top: 8px;">
                 <span>Target Set: <b class="m-target-set">0</b></span>
@@ -1145,42 +1140,42 @@
         calculateValues(tr.querySelector('.wf'));
     }
 
-    // --- CTN ETA (Unit/CTN) ENTRY AUTO 2ND LINE CREATE & HIDE ADD LINE BUTTON LOGIC ---
-    function checkCtnEntryAndAutoCreate(unitCtnInput) {
-        let tr = unitCtnInput.closest('tr');
+    // --- COMPLETE CTN ENTRY AUTO 2ND LINE CREATE & HIDE ADD LINE BUTTON LOGIC ---
+    let isAutoAdding = false;
+    function checkCompleteCtnEntryAndAutoCreate(completeCtnInput) {
+        let tr = completeCtnInput.closest('tr');
         let tbody = document.getElementById('entry-table-body');
         let lastRow = tbody.lastElementChild;
         let addLineBtn = document.getElementById('addLineBtn');
 
-        let val = unitCtnInput.value.trim();
+        let val = completeCtnInput.value.trim();
         if (val !== "" && parseFloat(val) > 0 && tr === lastRow && !isAutoAdding) {
             isAutoAdding = true;
             setTimeout(() => {
                 addNewRow();
-                if(addLineBtn) addLineBtn.style.display = 'none'; // ➕ Add Line button hide kore dewa holo
+                if(addLineBtn) addLineBtn.style.display = 'none'; // ➕ Add Line button hide করে দেওয়া হলো
                 isAutoAdding = false;
             }, 100);
         }
     }
 
-    function checkCtnEntryAndAutoCreateMobile(unitCtnInput) {
-        let card = unitCtnInput.closest('.prod-card');
+    function checkCompleteCtnEntryAndAutoCreateMobile(completeCtnInput) {
+        let card = completeCtnInput.closest('.prod-card');
         let list = document.getElementById('mobile-cards-list');
         let lastCard = list.lastElementChild;
         let addLineBtn = document.getElementById('addLineBtn');
 
-        let val = unitCtnInput.value.trim();
+        let val = completeCtnInput.value.trim();
         if (val !== "" && parseFloat(val) > 0 && card === lastCard && !isAutoAdding) {
             isAutoAdding = true;
             setTimeout(() => {
                 addNewRow();
-                if(addLineBtn) addLineBtn.style.display = 'none'; // ➕ Add Line button hide kore dewa holo
+                if(addLineBtn) addLineBtn.style.display = 'none'; // ➕ Add Line button hide করে দেওয়া হলো
                 isAutoAdding = false;
             }, 100);
         }
     }
 
-    // Autocomplete Logic for JO Name
     function showJODropdown(inputElem) {
         let container = inputElem.closest('.searchable-dropdown-container');
         let listDiv = container.querySelector('.jo-dropdown-list');
@@ -1234,7 +1229,6 @@
         });
     }
 
-    // Autocomplete Logic for Item Name
     function showItemDropdown(inputElem) {
         let container = inputElem.closest('.searchable-dropdown-container');
         let listDiv = container.querySelector('.item-dropdown-list');
@@ -1294,7 +1288,6 @@
         }
     });
 
-    let isAutoAdding = false;
     function checkLineStatusAndAutoAdd(statusElem) {
         let tr = statusElem.closest('tr');
         let tbody = document.getElementById('entry-table-body');
@@ -1373,7 +1366,7 @@
         if (tbody.rows.length > 1) {
             row.remove();
             if (card) card.remove();
-            if(addLineBtn) addLineBtn.style.display = 'inline-block'; // Row delete korle abar button show korte pare
+            if(addLineBtn) addLineBtn.style.display = 'inline-block'; 
             updateSummaryAndReport();
         } else {
             alert("At least one line is required!");
