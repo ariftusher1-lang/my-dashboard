@@ -423,11 +423,16 @@
                 </div>
             </div>
 
-            <!-- EXCEL UPLOAD FOR JO LIST -->
+            <!-- EXCEL UPLOAD & MANUAL JO ADDITION -->
             <div style="background: #e2e8f0; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                 <div>
-                    <strong style="font-size: 13px; color: #1e293b;">📁 Upload JO Excel File (For Dropdown List):</strong>
-                    <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" style="margin-left: 10px; font-size: 12px;">
+                    <strong style="font-size: 13px; color: #1e293b;">📁 Upload JO Excel File:</strong>
+                    <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" style="margin-left: 5px; font-size: 12px;">
+                </div>
+                <div>
+                    <strong style="font-size: 13px; color: #1e293b;">➕ Add Manual JO:</strong>
+                    <input type="text" id="manual-new-jo" placeholder="Enter Job Order Name" style="padding: 4px 8px; font-size: 12px; width: 150px; border: 1px solid #ccc; border-radius: 4px; display: inline-block;">
+                    <button type="button" onclick="addManualJOToList()" style="padding: 4px 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">Add JO</button>
                 </div>
                 <div style="font-size: 12px; color: #475569;">
                     Loaded JOs: <b id="uploaded-jo-count" style="color: #27ae60;">0 items</b>
@@ -453,7 +458,7 @@
                     <thead>
                         <tr>
                             <th>Line</th>
-                            <th>JO Name (Click for Dropdown / Manual)</th>
+                            <th>JO Name (Searchable / Manual)</th>
                             <th>Items Name</th>
                             <th>WF</th>
                             <th>WH</th>
@@ -686,7 +691,7 @@
 
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
-    let uploadedJOList = []; // Stores JO names from uploaded Excel
+    let uploadedJOList = []; // Stores JO names from uploaded Excel & Manual addition
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -710,19 +715,46 @@
             let worksheet = workbook.Sheets[firstSheetName];
             let json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-            uploadedJOList = [];
             json.forEach(row => {
                 if(row[0] && String(row[0]).trim() !== "") {
                     uploadedJOList.push(String(row[0]).trim());
                 }
             });
 
-            // Remove duplicates
             uploadedJOList = [...new Set(uploadedJOList)];
             document.getElementById('uploaded-jo-count').innerText = uploadedJOList.length + " items";
-            alert("✅ JO Excel File Successfully Uploaded! Now you can choose JO from Dropdown or Type Manually.");
+            refreshAllJOSelects();
+            alert("✅ JO Excel File Successfully Uploaded!");
         };
         reader.readAsArrayBuffer(file);
+    }
+
+    // Manual JO Addition from Input Box
+    function addManualJOToList() {
+        let manualInput = document.getElementById('manual-new-jo');
+        let val = manualInput.value.trim();
+        if(!val) {
+            alert("⚠️ দয়া করে সঠিক Job Order নাম লিখুন!");
+            return;
+        }
+
+        if(!uploadedJOList.includes(val)) {
+            uploadedJOList.push(val);
+            document.getElementById('uploaded-jo-count').innerText = uploadedJOList.length + " items";
+            refreshAllJOSelects();
+            manualInput.value = "";
+            alert("✅ নতুন JO সফলভাবে লিস্টে যোগ করা হয়েছে!");
+        } else {
+            alert("⚠️ এই JO টি ইতিমধ্যে লিস্টে রয়েছে!");
+        }
+    }
+
+    function refreshAllJOSelects() {
+        document.querySelectorAll('.jo-select-search').forEach(selectElem => {
+            let currentVal = selectElem.value;
+            selectElem.innerHTML = `<option value="">-- Select or Type JO --</option>` + 
+                uploadedJOList.map(jo => `<option value="${jo}" ${jo===currentVal?'selected':''}>${jo}</option>`).join('');
+        });
     }
 
     function handleLoginKeyPress(event) {
@@ -860,15 +892,13 @@
                 </select>
             </td>
             <td>
-                <div style="display: flex; gap: 4px;">
-                    <select class="jo-dropdown" style="display: ${uploadedJOList.length > 0 ? 'block' : 'none'};" onchange="selectJODropdown(this)">
-                        <option value="">-- Select JO --</option>
-                        ${uploadedJOList.map(jo => `<option value="${jo}" ${jo===joVal?'selected':''}>${jo}</option>`).join('')}
-                    </select>
-                    <input type="text" class="jo-name" value="${joVal}" placeholder="Type or Select JO" oninput="checkAndAutoAddRow(this); syncFields(this); updateReport();">
-                </div>
+                <select class="jo-select-search" onchange="selectJOFromDropdown(this)" style="width:100%;">
+                    <option value="">-- Select or Type JO --</option>
+                    ${uploadedJOList.map(jo => `<option value="${jo}" ${jo===joVal?'selected':''}>${jo}</option>`).join('')}
+                </select>
+                <input type="hidden" class="jo-name" value="${joVal}">
             </td>
-            <td><input type="text" class="item-name" value="${itemVal}" oninput="checkAndAutoAddRow(this); syncFields(this); updateReport();"></td>
+            <td><input type="text" class="item-name" value="${itemVal}" oninput="syncFields(this); updateReport();"></td>
             <td><input type="number" class="wf" value="${wfVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="wh" value="${whVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" step="0.1" class="smv" value="${smvVal}" oninput="calculateValues(this)"></td>
@@ -881,7 +911,7 @@
             <td><input type="number" step="0.01" class="actual-mh calculated-field" value="0" readonly></td>
             <td><input type="text" class="mh-util calculated-field" value="0%" readonly></td>
             <td>
-                <select class="status-val" onchange="syncFields(this)">
+                <select class="status-val" onchange="checkLineStatusAndAutoAdd(this); syncFields(this);">
                     <option value="Running" ${statusVal==='Running'?'selected':''}>Running</option>
                     <option value="Completed" ${statusVal==='Completed'?'selected':''}>Completed</option>
                     <option value="Hold" ${statusVal==='Hold'?'selected':''}>Hold</option>
@@ -913,7 +943,7 @@
                 </div>
                 <div>
                     <label>Status:</label>
-                    <select class="m-status-val" onchange="syncBackFromMobile(this)">
+                    <select class="m-status-val" onchange="checkLineStatusAndAutoAddMobile(this); syncBackFromMobile(this);">
                         <option value="Running" ${statusVal==='Running'?'selected':''}>Running</option>
                         <option value="Completed" ${statusVal==='Completed'?'selected':''}>Completed</option>
                         <option value="Hold" ${statusVal==='Hold'?'selected':''}>Hold</option>
@@ -921,18 +951,16 @@
                 </div>
             </div>
             <div class="card-row">
-                <label>JO Name (Dropdown / Manual):</label>
-                <div style="display: flex; gap: 4px;">
-                    <select class="m-jo-dropdown" style="display: ${uploadedJOList.length > 0 ? 'block' : 'none'}; width: 40%;" onchange="selectJODropdownMobile(this)">
-                        <option value="">-- Select --</option>
-                        ${uploadedJOList.map(jo => `<option value="${jo}" ${jo===joVal?'selected':''}>${jo}</option>`).join('')}
-                    </select>
-                    <input type="text" class="m-jo-name" value="${joVal}" placeholder="Type or Select JO" oninput="checkAndAutoAddRowMobile(this); syncBackFromMobile(this); updateReport();" style="width: 60%;">
-                </div>
+                <label>JO Name:</label>
+                <select class="m-jo-select-search" onchange="selectJOFromDropdownMobile(this)" style="width:100%;">
+                    <option value="">-- Select or Type JO --</option>
+                    ${uploadedJOList.map(jo => `<option value="${jo}" ${jo===joVal?'selected':''}>${jo}</option>`).join('')}
+                </select>
+                <input type="hidden" class="m-jo-name" value="${joVal}">
             </div>
             <div class="card-row">
                 <label>Items Name:</label>
-                <input type="text" class="m-item-name" value="${itemVal}" placeholder="Enter Item Name" oninput="checkAndAutoAddRowMobile(this); syncBackFromMobile(this); updateReport();">
+                <input type="text" class="m-item-name" value="${itemVal}" placeholder="Enter Item Name" oninput="syncBackFromMobile(this); updateReport();">
             </div>
             <div class="card-grid-4 card-row">
                 <div><label>WF:</label><input type="number" class="m-wf" value="${wfVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
@@ -954,52 +982,49 @@
         calculateValues(tr.querySelector('.wf'));
     }
 
-    function selectJODropdown(dropdownElem) {
-        let val = dropdownElem.value;
-        if(val) {
-            let td = dropdownElem.closest('td');
-            td.querySelector('.jo-name').value = val;
-            syncFields(td.querySelector('.jo-name'));
-            updateReport();
-        }
+    function selectJOFromDropdown(selectElem) {
+        let val = selectElem.value;
+        let td = selectElem.closest('td');
+        td.querySelector('.jo-name').value = val;
+        syncFields(selectElem);
+        updateReport();
     }
 
-    function selectJODropdownMobile(dropdownElem) {
-        let val = dropdownElem.value;
-        if(val) {
-            let card = dropdownElem.closest('.prod-card');
-            card.querySelector('.m-jo-name').value = val;
-            syncBackFromMobile(card.querySelector('.m-jo-name'));
-            updateReport();
-        }
+    function selectJOFromDropdownMobile(selectElem) {
+        let val = selectElem.value;
+        let card = selectElem.closest('.prod-card');
+        card.querySelector('.m-jo-name').value = val;
+        syncBackFromMobile(selectElem);
+        updateReport();
     }
 
-    let isAddingRow = false;
-    function checkAndAutoAddRow(element) {
-        let currentRow = element.closest('tr');
+    // Auto create next line when 1st line status is marked as 'Completed' or 'Hold' (or data entry done)
+    let isAutoAdding = false;
+    function checkLineStatusAndAutoAdd(statusElem) {
+        let tr = statusElem.closest('tr');
         let tbody = document.getElementById('entry-table-body');
         let lastRow = tbody.lastElementChild;
 
-        if (currentRow === lastRow && element.value.trim() !== "" && !isAddingRow) {
-            isAddingRow = true;
+        if (statusElem.value === "Completed" && tr === lastRow && !isAutoAdding) {
+            isAutoAdding = true;
             setTimeout(() => {
                 addNewRow();
-                isAddingRow = false;
-            }, 100);
+                isAutoAdding = false;
+            }, 200);
         }
     }
 
-    function checkAndAutoAddRowMobile(element) {
-        let currentCard = element.closest('.prod-card');
+    function checkLineStatusAndAutoAddMobile(statusElem) {
+        let card = statusElem.closest('.prod-card');
         let list = document.getElementById('mobile-cards-list');
         let lastCard = list.lastElementChild;
 
-        if (currentCard === lastCard && element.value.trim() !== "" && !isAddingRow) {
-            isAddingRow = true;
+        if (statusElem.value === "Completed" && card === lastCard && !isAutoAdding) {
+            isAutoAdding = true;
             setTimeout(() => {
                 addNewRow();
-                isAddingRow = false;
-            }, 100);
+                isAutoAdding = false;
+            }, 200);
         }
     }
 
@@ -1010,6 +1035,7 @@
         if (!card) return;
 
         card.querySelector('.m-line-val').value = tr.querySelector('.line-val').value;
+        card.querySelector('.m-jo-select-search').value = tr.querySelector('.jo-name').value;
         card.querySelector('.m-jo-name').value = tr.querySelector('.jo-name').value;
         card.querySelector('.m-item-name').value = tr.querySelector('.item-name').value;
         card.querySelector('.m-wf').value = tr.querySelector('.wf').value;
@@ -1028,6 +1054,7 @@
         if (!tr) return;
 
         tr.querySelector('.line-val').value = card.querySelector('.m-line-val').value;
+        tr.querySelector('.jo-select-search').value = card.querySelector('.m-jo-name').value;
         tr.querySelector('.jo-name').value = card.querySelector('.m-jo-name').value;
         tr.querySelector('.item-name').value = card.querySelector('.m-item-name').value;
         tr.querySelector('.wf').value = card.querySelector('.m-wf').value;
