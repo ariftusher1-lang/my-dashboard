@@ -226,7 +226,7 @@
             position: relative;
             width: 100%;
         }
-        .jo-search-input {
+        .jo-search-input, .item-search-input {
             width: 100%;
             padding: 6px;
             box-sizing: border-box;
@@ -236,7 +236,7 @@
             background: #fff;
             font-size: 13px;
         }
-        .jo-dropdown-list {
+        .jo-dropdown-list, .item-dropdown-list {
             position: absolute;
             top: 100%;
             left: 0;
@@ -251,13 +251,13 @@
             text-align: left;
             box-shadow: 0px 4px 8px rgba(0,0,0,0.15);
         }
-        .jo-dropdown-item {
+        .jo-dropdown-item, .item-dropdown-item {
             padding: 7px 10px;
             cursor: pointer;
             font-size: 13px;
             border-bottom: 1px solid #f1f5f9;
         }
-        .jo-dropdown-item:hover {
+        .jo-dropdown-item:hover, .item-dropdown-item:hover {
             background-color: #007bff;
             color: white;
         }
@@ -463,25 +463,32 @@
                 <div>
                     <label>Department Lead:</label>
                     <div id="lead-container" style="display: flex; align-items: center; gap: 6px; background: #fff; padding: 3px 8px; border: 1px solid #ccc; border-radius: 4px;">
-                        <img id="lead-avatar" src="rakib.jpg" alt="Rakib Photo" style="width: 26px; height: 26px; border-radius: 50%; object-fit: cover; display: none; border: 1px solid #ccc;" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'">
+                        <img id="lead-avatar" src="rakib.jpg" alt="Rakib Photo" style="width: 26px; height: 26px; border-radius: 50%; object-fit: cover; display: none; border: 1px solid #ccc;">
                         <span id="dept-name" style="color: #d9534f; font-weight: bold;">Mr. Rakib</span>
                     </div>
                 </div>
             </div>
 
-            <!-- EXCEL UPLOAD & MANUAL JO ADDITION -->
+            <!-- EXCEL UPLOAD & MANUAL JO / ITEM ADDITION -->
             <div style="background: #e2e8f0; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                 <div>
-                    <strong style="font-size: 13px; color: #1e293b;">📁 Upload JO Excel File:</strong>
+                    <strong style="font-size: 13px; color: #1e293b;">📁 Upload JO Excel:</strong>
                     <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" style="margin-left: 5px; font-size: 12px;">
                 </div>
-                <div>
-                    <strong style="font-size: 13px; color: #1e293b;">➕ Add Manual JO:</strong>
-                    <input type="text" id="manual-new-jo" placeholder="Enter Job Order Name" style="padding: 4px 8px; font-size: 12px; width: 150px; border: 1px solid #ccc; border-radius: 4px; display: inline-block;">
-                    <button type="button" onclick="addManualJOToList()" style="padding: 4px 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">Add JO</button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div>
+                        <strong style="font-size: 12px; color: #1e293b;">➕ Add Manual JO:</strong>
+                        <input type="text" id="manual-new-jo" placeholder="Job Order Name" style="padding: 4px 6px; font-size: 12px; width: 120px; border: 1px solid #ccc; border-radius: 4px; display: inline-block;">
+                        <button type="button" onclick="addManualJOToList()" style="padding: 4px 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">Add</button>
+                    </div>
+                    <div>
+                        <strong style="font-size: 12px; color: #1e293b;">➕ Add Manual Items Name:</strong>
+                        <input type="text" id="manual-new-item" placeholder="Item Name" style="padding: 4px 6px; font-size: 12px; width: 120px; border: 1px solid #ccc; border-radius: 4px; display: inline-block;">
+                        <button type="button" onclick="addManualItemToList()" style="padding: 4px 8px; background: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">Add</button>
+                    </div>
                 </div>
-                <div style="font-size: 12px; color: #475569;">
-                    Loaded JOs (Cloud): <b id="uploaded-jo-count" style="color: #27ae60;">0 items</b>
+                <div style="font-size: 11px; color: #475569;">
+                    JOs: <b id="uploaded-jo-count" style="color: #27ae60;">0</b> | Items: <b id="uploaded-item-count" style="color: #2980b9;">0</b>
                 </div>
             </div>
 
@@ -505,7 +512,7 @@
                         <tr>
                             <th>Line</th>
                             <th>JO Name (Searchable / Manual)</th>
-                            <th>Items Name</th>
+                            <th>Items Name (Searchable / Manual)</th>
                             <th>WF</th>
                             <th>WH</th>
                             <th>SMV</th>
@@ -735,16 +742,10 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ==========================================
-    // RAKIB'S PROFILE PHOTO SETUP
-    // ==========================================
-    // টিপস: আপনি যদি লোকাল ছবি ব্যবহার করতে চান, তবে আপনার HTML ফাইলটি যেখানে সেভ করা আছে ঠিক একই ফোল্ডারে ছবিটি রাখুন এবং নাম দিন "rakib.jpg"। 
-    // অথবা সরাসরি নিচে ছবির যেকোনো ডিরেক্ট লিংক বসিয়ে দিতে পারেন।
-    const customLeadPhoto = "rakib.jpg"; 
-
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
     let uploadedJOList = []; // Synchronized with Firebase Realtime Database
+    let uploadedItemList = []; // Synchronized Items List
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -754,9 +755,10 @@
             setLoggedInEnvironment(savedFloor, savedLead);
         }
         initCloudJOListener();
+        initCloudItemListener();
     };
 
-    // Listen to Firebase Realtime Database for Shared JO List across all devices
+    // Listen to Firebase Realtime Database for Shared JO List
     function initCloudJOListener() {
         db.ref('job_orders').on('value', (snapshot) => {
             uploadedJOList = [];
@@ -771,12 +773,32 @@
             uploadedJOList = [...new Set(uploadedJOList)];
             let countElem = document.getElementById('uploaded-jo-count');
             if(countElem) {
-                countElem.innerText = uploadedJOList.length + " items";
+                countElem.innerText = uploadedJOList.length;
             }
         });
     }
 
-    // Excel Upload Handler for JO Names (Saves permanently to Firebase Cloud)
+    // Listen to Firebase Realtime Database for Shared Items List
+    function initCloudItemListener() {
+        db.ref('item_names').on('value', (snapshot) => {
+            uploadedItemList = [];
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnap) => {
+                    let itemVal = childSnap.val();
+                    if (itemVal && typeof itemVal === 'string') {
+                        uploadedItemList.push(itemVal);
+                    }
+                });
+            }
+            uploadedItemList = [...new Set(uploadedItemList)];
+            let countElem = document.getElementById('uploaded-item-count');
+            if(countElem) {
+                countElem.innerText = uploadedItemList.length;
+            }
+        });
+    }
+
+    // Excel Upload Handler for JO Names
     function handleExcelUpload(event) {
         let file = event.target.files[0];
         if (!file) return;
@@ -811,7 +833,7 @@
                     });
 
                     joRef.set(updates).then(() => {
-                        alert("✅ JO Excel File successfully uploaded and synced to all devices!");
+                        alert("✅ JO Excel File successfully uploaded and synced!");
                     });
                 });
             }
@@ -819,7 +841,7 @@
         reader.readAsArrayBuffer(file);
     }
 
-    // Manual JO Addition (Saves permanently to Firebase Cloud)
+    // Manual JO Addition
     function addManualJOToList() {
         let manualInput = document.getElementById('manual-new-jo');
         let val = manualInput.value.trim();
@@ -844,10 +866,43 @@
 
                 joRef.set(updates).then(() => {
                     manualInput.value = "";
-                    alert("✅ নতুন JO সফলভাবে ক্লাউডে যোগ করা হয়েছে এবং সব ডিভাইসে সিনক হয়ে গেছে!");
+                    alert("✅ নতুন JO সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
                 });
             } else {
                 alert("⚠️ এই JO টি ইতিমধ্যে লিস্টে রয়েছে!");
+            }
+        });
+    }
+
+    // Manual Item Name Addition
+    function addManualItemToList() {
+        let manualInput = document.getElementById('manual-new-item');
+        let val = manualInput.value.trim();
+        if(!val) {
+            alert("⚠️ দয়া করে সঠিক Item Name লিখুন!");
+            return;
+        }
+
+        let itemRef = db.ref('item_names');
+        itemRef.once('value', (snap) => {
+            let existing = [];
+            if(snap.exists()) {
+                snap.forEach(c => existing.push(c.val()));
+            }
+
+            if(!existing.includes(val)) {
+                existing.push(val);
+                let updates = {};
+                existing.forEach((item, index) => {
+                    updates['item_' + index] = item;
+                });
+
+                itemRef.set(updates).then(() => {
+                    manualInput.value = "";
+                    alert("✅ নতুন Item Name সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
+                });
+            } else {
+                alert("⚠️ এই Item Name টি ইতিমধ্যে লিস্টে রয়েছে!");
             }
         });
     }
@@ -882,10 +937,8 @@
         document.getElementById('floor-display').innerText = floorName;
         document.getElementById('dept-name').innerText = leadName;
 
-        // Display Department Lead Picture (Mr. Rakib) on Plastic Packaging - 2
         let leadAvatar = document.getElementById('lead-avatar');
         if (floorName === "Plastic Packaging - 2") {
-            leadAvatar.src = customLeadPhoto;
             leadAvatar.style.display = "block";
         } else {
             leadAvatar.style.display = "none";
@@ -945,7 +998,7 @@
                 video.srcObject = stream;
             })
             .catch(err => {
-                alert("❌ ক্যামেরা চালু করা যায়নি বা পারমিশন দেওয়া হয়নি! সেলফি তোলা বাধ্যতামূলক।");
+                alert("❌ ক্যামেরা চালু করা যায়নি বা পারমিশন দেওয়া হয়নি!");
                 modal.style.display = 'none';
                 selectElem.value = ""; 
             });
@@ -1001,7 +1054,12 @@
                     <div class="jo-dropdown-list"></div>
                 </div>
             </td>
-            <td><input type="text" class="item-name" value="${itemVal}" oninput="syncFields(this); updateReport();"></td>
+            <td>
+                <div class="searchable-dropdown-container">
+                    <input type="text" class="item-search-input item-name" value="${itemVal}" placeholder="Search or Type Item" oninput="filterItemDropdown(this)" onfocus="showItemDropdown(this)" autocomplete="off">
+                    <div class="item-dropdown-list"></div>
+                </div>
+            </td>
             <td><input type="number" class="wf" value="${wfVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" class="wh" value="${whVal}" oninput="calculateValues(this)"></td>
             <td><input type="number" step="0.1" class="smv" value="${smvVal}" placeholder="" oninput="calculateValues(this)"></td>
@@ -1062,7 +1120,10 @@
             </div>
             <div class="card-row">
                 <label>Items Name:</label>
-                <input type="text" class="m-item-name" value="${itemVal}" placeholder="Enter Item Name" oninput="syncBackFromMobile(this); updateReport();">
+                <div class="searchable-dropdown-container">
+                    <input type="text" class="item-search-input m-item-name" value="${itemVal}" placeholder="Search or Type Item" oninput="filterItemDropdown(this)" onfocus="showItemDropdown(this)" autocomplete="off">
+                    <div class="item-dropdown-list"></div>
+                </div>
             </div>
             <div class="card-grid-4 card-row">
                 <div><label>WF:</label><input type="number" class="m-wf" value="${wfVal}" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
@@ -1084,7 +1145,7 @@
         calculateValues(tr.querySelector('.wf'));
     }
 
-    // Autocomplete & Search Logic for JO Name
+    // Autocomplete Logic for JO Name
     function showJODropdown(inputElem) {
         let container = inputElem.closest('.searchable-dropdown-container');
         let listDiv = container.querySelector('.jo-dropdown-list');
@@ -1112,7 +1173,7 @@
         let matches = uploadedJOList.filter(jo => jo.toLowerCase().includes(filter));
 
         if(matches.length === 0) {
-            listDiv.innerHTML = `<div class="jo-dropdown-item" style="color: #94a3b8; font-style: italic;">No matching JO found (Type custom)</div>`;
+            listDiv.innerHTML = `<div class="jo-dropdown-item" style="color: #94a3b8; font-style: italic;">No matching JO found</div>`;
             return;
         }
 
@@ -1138,9 +1199,63 @@
         });
     }
 
+    // Autocomplete Logic for Item Name
+    function showItemDropdown(inputElem) {
+        let container = inputElem.closest('.searchable-dropdown-container');
+        let listDiv = container.querySelector('.item-dropdown-list');
+        renderItemDropdownItems(listDiv, inputElem.value);
+        listDiv.style.display = 'block';
+    }
+
+    function filterItemDropdown(inputElem) {
+        let container = inputElem.closest('.searchable-dropdown-container');
+        let listDiv = container.querySelector('.item-dropdown-list');
+        renderItemDropdownItems(listDiv, inputElem.value);
+        listDiv.style.display = 'block';
+
+        if(inputElem.classList.contains('item-name')) {
+            syncFields(inputElem);
+        } else {
+            syncBackFromMobile(inputElem);
+        }
+        updateReport();
+    }
+
+    function renderItemDropdownItems(listDiv, filterText) {
+        listDiv.innerHTML = '';
+        let filter = filterText.toLowerCase();
+        let matches = uploadedItemList.filter(item => item.toLowerCase().includes(filter));
+
+        if(matches.length === 0) {
+            listDiv.innerHTML = `<div class="item-dropdown-item" style="color: #94a3b8; font-style: italic;">No matching item found</div>`;
+            return;
+        }
+
+        matches.forEach(itemName => {
+            let itemDiv = document.createElement('div');
+            itemDiv.className = 'item-dropdown-item';
+            itemDiv.innerText = itemName;
+            itemDiv.onmousedown = function(e) {
+                e.preventDefault(); 
+                let container = listDiv.closest('.searchable-dropdown-container');
+                let input = container.querySelector('.item-search-input');
+                input.value = itemName;
+                listDiv.style.display = 'none';
+
+                if(input.classList.contains('item-name')) {
+                    syncFields(input);
+                } else {
+                    syncBackFromMobile(input);
+                }
+                updateReport();
+            };
+            listDiv.appendChild(itemDiv);
+        });
+    }
+
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.searchable-dropdown-container')) {
-            document.querySelectorAll('.jo-dropdown-list').forEach(list => list.style.display = 'none');
+            document.querySelectorAll('.jo-dropdown-list, .item-dropdown-list').forEach(list => list.style.display = 'none');
         }
     });
 
@@ -1399,7 +1514,7 @@
         });
 
         if (hasIncompleteFields || entriesToSave.length === 0) {
-            alert("❌ সব ফিল্ড সঠিকভাবে পূরণ না করলে ডাটা সেভ করা যাবে না! দয়া করে JO Name, Items Name, WF, WH, SMV এবং Unit/CTN সঠিকভাবে পূরণ করুন।");
+            alert("❌ সব ফিল্ড সঠিকভাবে পূরণ না করলে ডাটা সেভ করা যাবে না!");
             return;
         }
 
@@ -1416,7 +1531,7 @@
             }
 
             if (isDuplicate) {
-                alert(`⚠️ ডুপ্লিকেট এন্ট্রি! Date: ${date} এবং Shift: (${shift})-এর জন্য ইতিমধ্যে এই ফ্লোরে ডাটা এন্ট্রি করা হয়েছে। একই শিফটে ১ বারের বেশি এন্ট্রি দেওয়া নিষেধ।`);
+                alert(`⚠️ ডুপ্লিকেট এন্ট্রি! Date: ${date} এবং Shift: (${shift})-এর জন্য ইতিমধ্যে এই ফ্লোরে ডাটা এন্ট্রি করা হয়েছে।`);
                 return;
             }
 
@@ -1730,7 +1845,7 @@
                     calculateValues(firstRowInput);
 
                     db.ref('productions/' + keyId).remove();
-                    alert("✏️ Record loaded into Data Entry form for editing. Click 'Save Entry Data' after modifying.");
+                    alert("✏️ Record loaded into Data Entry form for editing.");
                 }
             });
         } else if (pwd !== null) {
