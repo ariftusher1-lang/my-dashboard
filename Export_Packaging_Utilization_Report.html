@@ -19,7 +19,7 @@
             padding: 10px;
         }
         .container {
-            max-width: 1350px;
+            max-width: 1400px;
             background: #ffffff;
             padding: 15px;
             margin: auto;
@@ -94,7 +94,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
-            min-width: 900px;
+            min-width: 1000px;
         }
         th, td {
             border: 1px solid #ccc;
@@ -169,12 +169,27 @@
             background-color: #dc3545;
             color: white;
             border: none;
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 12px;
         }
         .btn-delete:hover {
             background-color: #c82333;
+        }
+        .btn-edit {
+            background-color: #ffc107;
+            color: #333;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 4px;
+            font-weight: bold;
+        }
+        .btn-edit:hover {
+            background-color: #e0a800;
         }
 
         /* Layout Grid for Reports */
@@ -245,6 +260,7 @@
                         <th>Plan MH</th>
                         <th>Actual MH</th>
                         <th>MH Utilization (%)</th>
+                        <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -266,6 +282,7 @@
                         <td id="sum-plan-mh">0</td>
                         <td id="sum-actual-mh">0</td>
                         <td id="sum-mh-util" style="color: #d9534f; font-weight: bold;">0%</td>
+                        <td>-</td>
                         <td>-</td>
                     </tr>
                 </tfoot>
@@ -309,6 +326,8 @@
                             <th>Plan MH</th>
                             <th>Actual MH</th>
                             <th>MH Utilization (%)</th>
+                            <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="report-table-body">
@@ -381,7 +400,7 @@
     }
 
     // Function to add a new row dynamically
-    function addNewRow(lineVal='A-1', joVal='', itemVal='', wfVal='', whVal='', smvVal=1.0, unitVal=24, compSetVal='', compCtnVal='') {
+    function addNewRow(lineVal='A-1', joVal='', itemVal='', wfVal='', whVal='', smvVal=1.0, unitVal=24, compSetVal='', compCtnVal='', statusVal='Running') {
         let tbody = document.getElementById('entry-table-body');
         let tr = document.createElement('tr');
         
@@ -409,7 +428,14 @@
             <td><input type="number" class="plan-mh calculated-field" value="0" readonly></td>
             <td><input type="number" step="0.01" class="actual-mh calculated-field" value="0" readonly></td>
             <td><input type="text" class="mh-util calculated-field" value="0%" readonly></td>
-            <td><button class="btn-delete" onclick="deleteRow(this)">X</button></td>
+            <td>
+                <select class="status-val">
+                    <option value="Running" ${statusVal==='Running'?'selected':''}>Running</option>
+                    <option value="Completed" ${statusVal==='Completed'?'selected':''}>Completed</option>
+                    <option value="Hold" ${statusVal==='Hold'?'selected':''}>Hold</option>
+                </select>
+            </td>
+            <td><button class="btn-delete" onclick="deleteLocalRow(this)">X</button></td>
         `;
         
         tbody.appendChild(tr);
@@ -431,7 +457,7 @@
         }
     }
 
-    function deleteRow(btn) {
+    function deleteLocalRow(btn) {
         let row = btn.closest('tr');
         let tbody = document.getElementById('entry-table-body');
         if (tbody.rows.length > 1) {
@@ -554,7 +580,8 @@
                     completeCtn: parseFloat(row.querySelector('.complete-ctn').value) || 0,
                     planMh: parseFloat(row.querySelector('.plan-mh').value) || 0,
                     actualMh: parseFloat(row.querySelector('.actual-mh').value) || 0,
-                    mhUtil: row.querySelector('.mh-util').value
+                    mhUtil: row.querySelector('.mh-util').value,
+                    status: row.querySelector('.status-val').value
                 };
                 entriesToSave.push(entryData);
             }
@@ -577,18 +604,19 @@
             });
     }
 
-    // Load Data from Firebase into Report Page
+    // Load Data from Firebase into Report Page with Edit/Delete Password protection
     function loadFirebaseData() {
         let reportBody = document.getElementById('report-table-body');
-        reportBody.innerHTML = `<tr><td colspan="18">Loading data...</td></tr>`;
+        reportBody.innerHTML = `<tr><td colspan="20">Loading data...</td></tr>`;
 
         let dbRef = db.ref('productions');
-        dbRef.once('value', (snapshot) => {
+        dbRef.on('value', (snapshot) => {
             reportBody.innerHTML = '';
             let joSummaryMap = {};
 
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
+                    let keyId = childSnapshot.key;
                     let data = childSnapshot.val();
                     
                     let tr = document.createElement('tr');
@@ -611,6 +639,11 @@
                         <td>${data.planMh}</td>
                         <td>${data.actualMh}</td>
                         <td>${data.mhUtil}</td>
+                        <td>${data.status || 'Running'}</td>
+                        <td>
+                            <button class="btn-edit" onclick="editRecord('${keyId}')">Edit</button>
+                            <button class="btn-delete" onclick="deleteRecord('${keyId}')">Delete</button>
+                        </td>
                     `;
                     reportBody.appendChild(tr);
 
@@ -638,10 +671,56 @@
                 }
 
             } else {
-                reportBody.innerHTML = `<tr><td colspan="18">No data found.</td></tr>`;
+                reportBody.innerHTML = `<tr><td colspan="20">No data found.</td></tr>`;
                 document.getElementById('jo-summary-body').innerHTML = `<tr><td colspan="3">No data available.</td></tr>`;
             }
         });
+    }
+
+    // Password Protected Delete Record
+    function deleteRecord(keyId) {
+        let pwd = prompt("Enter Password to Delete:");
+        if (pwd === "Rakib") {
+            if (confirm("Are you sure you want to delete this entry?")) {
+                db.ref('productions/' + keyId).remove()
+                    .then(() => alert("🗑️ Record deleted successfully!"))
+                    .catch(err => alert("Error deleting: " + err.message));
+            }
+        } else if (pwd !== null) {
+            alert("❌ Incorrect Password!");
+        }
+    }
+
+    // Password Protected Edit Record
+    function editRecord(keyId) {
+        let pwd = prompt("Enter Password to Edit:");
+        if (pwd === "Rakib") {
+            db.ref('productions/' + keyId).once('value', (snapshot) => {
+                let data = snapshot.val();
+                if (data) {
+                    // Switch back to Entry Tab & populate row
+                    switchTab('entry-page', document.querySelectorAll('.tab-btn')[0]);
+                    document.getElementById('prod-date').value = data.date;
+                    document.getElementById('shift-select').value = data.shift;
+                    document.getElementById('floor-select').value = data.floor;
+                    document.getElementById('dept-name').innerText = data.department;
+
+                    let tbody = document.getElementById('entry-table-body');
+                    tbody.innerHTML = ''; // clear first row
+                    addNewRow(data.line, data.joName, data.itemName, data.wf, data.wh, data.smv, data.unitCtn, data.completeSet, data.completeCtn, data.status);
+                    
+                    // Trigger calculation for the populated row
+                    let firstRowInput = tbody.querySelector('.wf');
+                    calculateValues(firstRowInput);
+
+                    // Remove old record so saving acts as update/replace
+                    db.ref('productions/' + keyId).remove();
+                    alert("✏️ Record loaded into Data Entry form for editing. Click 'Save Entry Data' after modifying.");
+                }
+            });
+        } else if (pwd !== null) {
+            alert("❌ Incorrect Password!");
+        }
     }
 
     function exportToExcel() {
