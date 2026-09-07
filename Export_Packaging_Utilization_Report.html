@@ -97,13 +97,15 @@
             background: #dc2626;
         }
 
-        /* --- MAIN APP STYLING --- */
+        /* --- MAIN APP STYLING (Laptop Full Width Support) --- */
         #app-container {
             display: none;
-            max-width: 1800px;
-            background: #ffffff;
-            padding: 15px;
+            width: 100%;
+            max-width: 100%; /* Laptop e left & right boro korar jonno full width */
+            padding: 15px 25px;
             margin: auto;
+            box-sizing: border-box;
+            background: #ffffff;
             border-radius: 8px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
@@ -224,10 +226,10 @@
 
         @media(max-width: 768px) {
             .table-responsive {
-                display: none; /* Hide Desktop Table on Mobile */
+                display: none;
             }
             #mobile-card-container {
-                display: block; /* Show Vertical Cards on Mobile */
+                display: block;
             }
         }
 
@@ -397,7 +399,7 @@
                 <!-- Concern Shift IC (Only Active for Plastic Packaging 2) -->
                 <div id="shift-ic-container" style="display: none;">
                     <label style="color: #c0392b;">Concern Shift IC:</label>
-                    <select id="shift-ic-select">
+                    <select id="shift-ic-select" onchange="checkAndCaptureICSelfie(this)">
                         <option value="">-- Select IC --</option>
                         <option value="Bithi">Bithi</option>
                         <option value="Riya">Riya</option>
@@ -418,6 +420,19 @@
                 <div>
                     <label>Department Lead:</label>
                     <span id="dept-name" style="color: #d9534f; background: #fff; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px;">Mr. Shawon</span>
+                </div>
+            </div>
+
+            <!-- CAMERA POPUP MODAL FOR IC SELFIES -->
+            <div id="cameraModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+                <div style="background: white; padding: 25px; border-radius: 10px; text-align: center; width: 360px; box-shadow: 0px 5px 15px rgba(0,0,0,0.3);">
+                    <h3 id="camModalTitle" style="margin-top: 0; color: #2c3e50;">📸 Take IC Selfie</h3>
+                    <video id="video" width="320" height="240" autoplay style="border-radius: 6px; background: #000;"></video><br>
+                    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                        <button type="button" id="captureBtn" class="action-btn" style="padding: 8px 15px;">Capture Selfie</button>
+                        <button type="button" id="closeCamBtn" class="btn-delete" style="padding: 8px 15px;">Cancel</button>
+                    </div>
+                    <canvas id="canvas" style="display:none;"></canvas>
                 </div>
             </div>
 
@@ -469,12 +484,9 @@
                 </table>
             </div>
 
-            <!-- MOBILE CARD VIEW (Vertical Clean Layout) -->
+            <!-- MOBILE CARD VIEW -->
             <div id="mobile-card-container">
-                <div id="mobile-cards-list">
-                    <!-- Dynamic Mobile Cards Will Go Here -->
-                </div>
-                <!-- Summary Card for Mobile -->
+                <div id="mobile-cards-list"></div>
                 <div style="background: #e2e8f0; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-top: 15px;">
                     <div>Shift Summary >></div>
                     <div style="display: flex; justify-content: space-between; margin-top: 5px;">
@@ -489,7 +501,7 @@
                 <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data</button>
             </div>
 
-            <!-- LIVE STREAM MONITORING SECTION ON ENTRY PAGE -->
+            <!-- LIVE STREAM MONITORING SECTION -->
             <div style="margin-top: 35px;">
                 <div class="report-title" style="color: #d9534f; margin-bottom: 10px;">🔴 Live Production Entry Stream (Real-Time Monitoring)</div>
                 <div class="table-responsive">
@@ -499,6 +511,7 @@
                                 <th>Date</th>
                                 <th>Shift</th>
                                 <th>Shift IC</th>
+                                <th>IC Photo</th>
                                 <th>Floor</th>
                                 <th>Line</th>
                                 <th>JO Name</th>
@@ -510,7 +523,7 @@
                             </tr>
                         </thead>
                         <tbody id="live-stream-tbody">
-                            <tr><td colspan="11">Waiting for live entries...</td></tr>
+                            <tr><td colspan="12">Waiting for live entries...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -525,7 +538,6 @@
             </div>
 
             <div class="report-grid">
-                <!-- Detailed Report Table -->
                 <div class="table-responsive">
                     <table id="report-table">
                         <thead>
@@ -533,6 +545,7 @@
                                 <th>Date</th>
                                 <th>Shift</th>
                                 <th>Shift IC</th>
+                                <th>IC Photo</th>
                                 <th>Floor</th>
                                 <th>Department</th>
                                 <th>Line</th>
@@ -553,15 +566,12 @@
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody id="report-table-body">
-                            <!-- Data will populate dynamically from Firebase -->
-                        </tbody>
+                        <tbody id="report-table-body"></tbody>
                     </table>
                 </div>
 
-                <!-- JO & Items Summary Report Section -->
                 <div>
-                    <div class="report-title" style="margin-bottom: 15px; font-size: 14px;">📋 JO Name & Items Name Summary (As of Complete CTN)</div>
+                    <div class="report-title" style="margin-bottom: 15px; font-size: 14px;">📋 JO Name & Items Name Summary</div>
                     <div class="table-responsive">
                         <table id="jo-summary-table" style="min-width: 300px;">
                             <thead>
@@ -571,9 +581,7 @@
                                     <th>As of Complete CTN</th>
                                 </tr>
                             </thead>
-                            <tbody id="jo-summary-body">
-                                <!-- Dynamic JO & Items Complete CTN Summary -->
-                            </tbody>
+                            <tbody id="jo-summary-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -611,6 +619,7 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Shift</th>
+                                <th>IC Photo</th>
                                 <th>Avg SMV</th>
                                 <th>Target Set</th>
                                 <th>Complete Set</th>
@@ -622,7 +631,7 @@
                             </tr>
                         </thead>
                         <tbody id="last-day-perf-tbody">
-                            <tr><td colspan="10">Please select a Shift IC above.</td></tr>
+                            <tr><td colspan="11">Please select a Shift IC above.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -636,6 +645,7 @@
                         <thead>
                             <tr>
                                 <th>Total Shifts Worked</th>
+                                <th>IC Photo</th>
                                 <th>Avg SMV</th>
                                 <th>Target Set</th>
                                 <th>Complete Set</th>
@@ -647,7 +657,7 @@
                             </tr>
                         </thead>
                         <tbody id="total-perf-tbody">
-                            <tr><td colspan="9">Please select a Shift IC above.</td></tr>
+                            <tr><td colspan="10">Please select a Shift IC above.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -679,7 +689,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Check Login State on Page Load
+    let temporaryCapturedPhoto = ""; // Temporarily hold base64 image before saving to DB
+    let mediaStream = null;
+
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
         let savedLead = localStorage.getItem('pran_lead');
@@ -689,7 +701,6 @@
         }
     };
 
-    // Department Login Handler
     function handleDepartmentLogin() {
         let dept = document.getElementById('login-dept').value;
         let pwd = document.getElementById('login-pwd').value;
@@ -739,6 +750,7 @@
         document.getElementById('login-pwd').value = '';
         document.getElementById('login-dept').value = '';
         document.getElementById('shift-ic-select').value = '';
+        temporaryCapturedPhoto = "";
     }
 
     function switchTab(pageId, btnElement) {
@@ -749,7 +761,55 @@
         btnElement.classList.add('active');
     }
 
-    // Function to add a new row & card dynamically
+    // Camera Popup Trigger on IC Select
+    function checkAndCaptureICSelfie(selectElem) {
+        let icName = selectElem.value;
+        if (icName === "") return;
+
+        document.getElementById('camModalTitle').innerText = "📸 Take Selfie for IC: " + icName;
+        let modal = document.getElementById('cameraModal');
+        modal.style.display = 'flex';
+
+        let video = document.getElementById('video');
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                mediaStream = stream;
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                alert("❌ ক্যামেরা চালু করা যায়নি বা পারমিশন দেওয়া হয়নি!");
+                modal.style.display = 'none';
+            });
+    }
+
+    // Capture Button Action
+    document.getElementById('captureBtn').addEventListener('click', function() {
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let context = canvas.getContext('2d');
+
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 240;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        temporaryCapturedPhoto = canvas.toDataURL('image/png'); // Save as Base64 string
+
+        closeCameraModal();
+        alert("✅ IC সেলফি সফলভাবে ক্যাপচার হয়েছে! এখন ডাটা সেভ করুন।");
+    });
+
+    document.getElementById('closeCamBtn').addEventListener('click', function() {
+        closeCameraModal();
+        document.getElementById('shift-ic-select').value = ""; // Reset dropdown if cancelled
+    });
+
+    function closeCameraModal() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+        }
+        document.getElementById('cameraModal').style.display = 'none';
+    }
+
     function addNewRow(lineVal='A-1', joVal='', itemVal='', wfVal='', whVal='', smvVal=1.0, unitVal=24, compSetVal='', compCtnVal='', statusVal='Running') {
         let tbody = document.getElementById('entry-table-body');
         let tr = document.createElement('tr');
@@ -789,7 +849,6 @@
         `;
         tbody.appendChild(tr);
 
-        // Add corresponding Mobile Card
         let mobileList = document.getElementById('mobile-cards-list');
         let cardDiv = document.createElement('div');
         cardDiv.className = 'prod-card';
@@ -844,8 +903,6 @@
             </div>
         `;
         mobileList.appendChild(cardDiv);
-
-        // Run calculation init for newly added row
         calculateValues(tr.querySelector('.wf'));
     }
 
@@ -878,7 +935,6 @@
         }
     }
 
-    // Synchronization between Desktop Table and Mobile Cards
     function syncFields(desktopElem) {
         let tr = desktopElem.closest('tr');
         let index = Array.from(document.querySelectorAll('#entry-table-body tr')).indexOf(tr);
@@ -993,7 +1049,6 @@
 
     function updateSummaryAndReport() {
         let rows = document.querySelectorAll('#entry-table-body tr');
-        
         let totalWf = 0, totalWh = 0;
         let totalTargetSet = 0, totalCompleteSet = 0;
         let totalTargetCtn = 0, totalCompleteCtn = 0;
@@ -1040,7 +1095,6 @@
 
     function updateReport() {}
 
-    // Save Data to Firebase Realtime Database
     function saveDataToFirebase() {
         let date = document.getElementById('prod-date').value;
         let shift = document.getElementById('shift-select').value;
@@ -1065,6 +1119,7 @@
                     date: date,
                     shift: shift,
                     shiftIc: shiftIc,
+                    icPhoto: temporaryCapturedPhoto || "", // Save IC Selfie Base64
                     floor: floor,
                     department: dept,
                     line: row.querySelector('.line-val').value,
@@ -1097,14 +1152,13 @@
 
         Promise.all(promises)
             .then(() => {
-                alert("✅ Data Successfully Saved!");
+                alert("✅ Data & IC Selfie Successfully Saved!");
             })
             .catch((error) => {
                 alert("❌ Error saving data: " + error.message);
             });
     }
 
-    // Real-Time Live Stream Listener for Data Entry Page
     function initLiveStream() {
         let liveStreamTbody = document.getElementById('live-stream-tbody');
         let dbRef = db.ref('productions');
@@ -1114,11 +1168,13 @@
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
                     let data = childSnapshot.val();
+                    let photoHtml = data.icPhoto ? `<img src="${data.icPhoto}" width="35" height="35" style="border-radius: 50%; object-fit: cover;">` : '-';
                     let tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${data.date}</td>
                         <td>${data.shift}</td>
                         <td style="font-weight: bold; color: #8e44ad;">${data.shiftIc || '-'}</td>
+                        <td>${photoHtml}</td>
                         <td>${data.floor}</td>
                         <td>${data.line}</td>
                         <td style="font-weight: bold; color: #007bff;">${data.joName}</td>
@@ -1131,17 +1187,14 @@
                     liveStreamTbody.appendChild(tr);
                 });
             } else {
-                liveStreamTbody.innerHTML = `<tr><td colspan="11">No live entries yet.</td></tr>`;
+                liveStreamTbody.innerHTML = `<tr><td colspan="12">No live entries yet.</td></tr>`;
             }
         });
     }
 
-    // IC Performance Logic & Chart Rendering
     let icChartInstance = null;
 
-    function initICPerformanceTab() {
-        // Can be initialized when tab is clicked
-    }
+    function initICPerformanceTab() {}
 
     function renderICPerformanceData() {
         let selectedIC = document.getElementById('perf-ic-select').value;
@@ -1149,8 +1202,8 @@
         let totalPerfTbody = document.getElementById('total-perf-tbody');
 
         if (!selectedIC) {
-            lastDayTbody.innerHTML = `<tr><td colspan="10">Please select a Shift IC.</td></tr>`;
-            totalPerfTbody.innerHTML = `<tr><td colspan="9">Please select a Shift IC.</td></tr>`;
+            lastDayTbody.innerHTML = `<tr><td colspan="11">Please select a Shift IC.</td></tr>`;
+            totalPerfTbody.innerHTML = `<tr><td colspan="10">Please select a Shift IC.</td></tr>`;
             if (icChartInstance) icChartInstance.destroy();
             return;
         }
@@ -1158,8 +1211,8 @@
         let dbRef = db.ref('productions');
         dbRef.once('value', (snapshot) => {
             if (!snapshot.exists()) {
-                lastDayTbody.innerHTML = `<tr><td colspan="10">No data found in database.</td></tr>`;
-                totalPerfTbody.innerHTML = `<tr><td colspan="9">No data found in database.</td></tr>`;
+                lastDayTbody.innerHTML = `<tr><td colspan="11">No data found in database.</td></tr>`;
+                totalPerfTbody.innerHTML = `<tr><td colspan="10">No data found in database.</td></tr>`;
                 return;
             }
 
@@ -1172,16 +1225,14 @@
             });
 
             if (icRecords.length === 0) {
-                lastDayTbody.innerHTML = `<tr><td colspan="10">No records found for ${selectedIC}.</td></tr>`;
-                totalPerfTbody.innerHTML = `<tr><td colspan="9">No records found for ${selectedIC}.</td></tr>`;
+                lastDayTbody.innerHTML = `<tr><td colspan="11">No records found for ${selectedIC}.</td></tr>`;
+                totalPerfTbody.innerHTML = `<tr><td colspan="10">No records found for ${selectedIC}.</td></tr>`;
                 if (icChartInstance) icChartInstance.destroy();
                 return;
             }
 
-            // Sort records by date ascending
             icRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            // Group by Date & Shift
             let dateShiftMap = {};
             icRecords.forEach(rec => {
                 let key = rec.date + "_" + rec.shift;
@@ -1189,6 +1240,7 @@
                     dateShiftMap[key] = {
                         date: rec.date,
                         shift: rec.shift,
+                        icPhoto: rec.icPhoto || "",
                         smvSum: 0,
                         smvCount: 0,
                         targetSet: 0,
@@ -1199,6 +1251,7 @@
                         actualMh: 0
                     };
                 }
+                if(rec.icPhoto) dateShiftMap[key].icPhoto = rec.icPhoto; // Keep latest photo if available
                 dateShiftMap[key].smvSum += Number(rec.smv) || 0;
                 dateShiftMap[key].smvCount += 1;
                 dateShiftMap[key].targetSet += Number(rec.targetSet) || 0;
@@ -1213,14 +1266,15 @@
             let lastGroupKey = sortedGroupKeys[sortedGroupKeys.length - 1];
             let lastDayData = dateShiftMap[lastGroupKey];
 
-            // Calculate Last Day Metrics
             let lastAvgSmv = lastDayData.smvCount > 0 ? (lastDayData.smvSum / lastDayData.smvCount).toFixed(2) : 0;
             let lastUtil = lastDayData.planMh > 0 ? Math.round((lastDayData.actualMh / lastDayData.planMh) * 100) : 0;
+            let lastPhotoHtml = lastDayData.icPhoto ? `<img src="${lastDayData.icPhoto}" width="40" height="40" style="border-radius: 50%; object-fit: cover;">` : '-';
 
             lastDayTbody.innerHTML = `
                 <tr>
                     <td>${lastDayData.date}</td>
                     <td>${lastDayData.shift}</td>
+                    <td>${lastPhotoHtml}</td>
                     <td>${lastAvgSmv}</td>
                     <td>${Math.round(lastDayData.targetSet)}</td>
                     <td style="color: #27ae60; font-weight: bold;">${Math.round(lastDayData.completeSet)}</td>
@@ -1232,12 +1286,12 @@
                 </tr>
             `;
 
-            // Calculate Cumulative Total Metrics
             let totalShifts = sortedGroupKeys.length;
             let totalSmvSum = 0, totalSmvCount = 0;
             let totalTargetSet = 0, totalCompleteSet = 0;
             let totalTargetCtn = 0, totalCompleteCtn = 0;
             let totalPlanMh = 0, totalActualMh = 0;
+            let latestAvailablePhoto = lastDayData.icPhoto ? `<img src="${lastDayData.icPhoto}" width="40" height="40" style="border-radius: 50%; object-fit: cover;">` : '-';
 
             sortedGroupKeys.forEach(k => {
                 let obj = dateShiftMap[k];
@@ -1257,6 +1311,7 @@
             totalPerfTbody.innerHTML = `
                 <tr>
                     <td style="font-weight: bold; color: #007bff;">${totalShifts} Shifts</td>
+                    <td>${latestAvailablePhoto}</td>
                     <td>${cumulativeAvgSmv}</td>
                     <td>${Math.round(totalTargetSet)}</td>
                     <td style="color: #27ae60; font-weight: bold;">${Math.round(totalCompleteSet)}</td>
@@ -1268,7 +1323,6 @@
                 </tr>
             `;
 
-            // Render Chart Data
             let chartLabels = [];
             let chartTargetSets = [];
             let chartCompleteSets = [];
@@ -1319,10 +1373,9 @@
         });
     }
 
-    // Load Data from Firebase into Report Page with Edit/Delete Password protection
     function loadFirebaseData() {
         let reportBody = document.getElementById('report-table-body');
-        reportBody.innerHTML = `<tr><td colspan="21">Loading data...</td></tr>`;
+        reportBody.innerHTML = `<tr><td colspan="22">Loading data...</td></tr>`;
 
         let dbRef = db.ref('productions');
         dbRef.once('value', (snapshot) => {
@@ -1333,12 +1386,14 @@
                 snapshot.forEach((childSnapshot) => {
                     let keyId = childSnapshot.key;
                     let data = childSnapshot.val();
+                    let photoHtml = data.icPhoto ? `<img src="${data.icPhoto}" width="35" height="35" style="border-radius: 50%; object-fit: cover;">` : '-';
                     
                     let tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${data.date}</td>
                         <td>${data.shift}</td>
                         <td>${data.shiftIc || '-'}</td>
+                        <td>${photoHtml}</td>
                         <td>${data.floor}</td>
                         <td>${data.department}</td>
                         <td>${data.line}</td>
@@ -1386,13 +1441,12 @@
                 }
 
             } else {
-                reportBody.innerHTML = `<tr><td colspan="21">No data found.</td></tr>`;
+                reportBody.innerHTML = `<tr><td colspan="22">No data found.</td></tr>`;
                 document.getElementById('jo-summary-body').innerHTML = `<tr><td colspan="3">No data available.</td></tr>`;
             }
         });
     }
 
-    // Password Protected Delete Record
     function deleteRecord(keyId) {
         let pwd = prompt("Enter Password to Delete:");
         if (pwd === "Rakib") {
@@ -1406,7 +1460,6 @@
         }
     }
 
-    // Password Protected Edit Record
     function editRecord(keyId) {
         let pwd = prompt("Enter Password to Edit:");
         if (pwd === "Rakib") {
@@ -1426,6 +1479,8 @@
                     } else {
                         shiftIcContainer.style.display = "none";
                     }
+
+                    temporaryCapturedPhoto = data.icPhoto || "";
 
                     document.getElementById('entry-table-body').innerHTML = '';
                     document.getElementById('mobile-cards-list').innerHTML = '';
