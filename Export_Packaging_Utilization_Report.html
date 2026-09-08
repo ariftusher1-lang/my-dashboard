@@ -523,8 +523,8 @@
                     <thead>
                         <tr>
                             <th>Line</th>
-                            <th>JO Name (Auto Select / Search)</th>
-                            <th>Items Name (Auto Filled)</th>
+                            <th>JO Name (Search / Select)</th>
+                            <th>Items Name (Multi-Item Dropdown)</th>
                             <th>SMV</th>
                             <th>Unit (Set/Piece)</th>
                             <th>Unit/CTN (Auto Filled)</th>
@@ -763,7 +763,7 @@
 
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
-    let masterJobOrdersMap = {}; // Maps JO Name -> { itemName, unitCtn, unitType, orderQty }
+    let masterJobOrdersMap = {}; // Stores array of items for each JO Name
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -778,27 +778,33 @@
     function initCloudMasterListener() {
         db.ref('job_master_data').on('value', (snapshot) => {
             masterJobOrdersMap = {};
+            let totalRecords = 0;
             if (snapshot.exists()) {
                 snapshot.forEach((childSnap) => {
                     let val = childSnap.val();
                     if (val && val.joName) {
-                        masterJobOrdersMap[val.joName] = {
+                        let jo = val.joName.trim();
+                        if (!masterJobOrdersMap[jo]) {
+                            masterJobOrdersMap[jo] = [];
+                        }
+                        masterJobOrdersMap[jo].push({
                             itemName: val.itemName || "Manual Entry Item",
-                            unitCtn: val.unitCtn || 0,
                             unitType: val.unitType || "Piece",
+                            unitCtn: val.unitCtn || 0,
                             orderQty: val.orderQty || 0
-                        };
+                        });
+                        totalRecords++;
                     }
                 });
             }
             let countElem = document.getElementById('uploaded-jo-count');
             if(countElem) {
-                countElem.innerText = Object.keys(masterJobOrdersMap).length;
+                countElem.innerText = totalRecords;
             }
         });
     }
 
-    // Handle Master Excel Upload with Job Order, Item Name and Unit/Ctn columns
+    // Handle Master Excel Upload supporting multi-items per JO Name
     function handleExcelUpload(event) {
         let file = event.target.files[0];
         if (!file) return;
@@ -822,8 +828,8 @@
                 let unitCtn = row[3] ? Number(row[3]) || 0 : 0;
                 let orderQty = row[4] ? Number(row[4]) || 0 : 0;
 
-                if (joName !== "") {
-                    let safeKey = "jo_" + count;
+                if (joName !== "" && itemName !== "") {
+                    let safeKey = "jo_rec_" + count;
                     masterDataUpdates[safeKey] = {
                         joName: joName,
                         itemName: itemName,
@@ -837,7 +843,7 @@
 
             if (count > 0) {
                 db.ref('job_master_data').set(masterDataUpdates).then(() => {
-                    alert(`✅ ${count} টি Job Order মাস্টার ডাটা সফলভাবে আপলোড ও সিঙ্ক হয়েছে!`);
+                    alert(`✅ ${count} টি রেকর্ড সফলভাবে মাস্টার ডাটা হিসেবে আপলোড ও সিঙ্ক হয়েছে!`);
                 });
             } else {
                 alert("⚠️ এক্সেল ফাইল থেকে সঠিক কলাম ডাটা পাওয়া যায়নি।");
@@ -864,31 +870,23 @@
 
         let ref = db.ref('job_master_data');
         ref.once('value', (snap) => {
-            let list = [];
             let maxIdx = 0;
             if(snap.exists()) {
-                snap.forEach(c => {
-                    list.push(c.val().joName);
-                    maxIdx++;
-                });
+                snap.forEach(() => { maxIdx++; });
             }
 
-            if(!list.includes(val)) {
-                db.ref('job_master_data/jo_' + maxIdx).set({
-                    joName: val,
-                    itemName: "Manual Entry Item",
-                    unitType: unitTypeVal,
-                    unitCtn: unitCtnVal,
-                    orderQty: orderQtyVal
-                }).then(() => {
-                    manualInput.value = "";
-                    unitCtnInput.value = "";
-                    orderQtyInput.value = "";
-                    alert("✅ নতুন JO এবং সংশ্লিষ্ট ডাটা সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
-                });
-            } else {
-                alert("⚠️ এই JO টি ইতিমধ্যে মাস্টার লিস্টে রয়েছে!");
-            }
+            db.ref('job_master_data/jo_rec_' + maxIdx).set({
+                joName: val,
+                itemName: "Manual Entry Item",
+                unitType: unitTypeVal,
+                unitCtn: unitCtnVal,
+                orderQty: orderQtyVal
+            }).then(() => {
+                manualInput.value = "";
+                unitCtnInput.value = "";
+                orderQtyInput.value = "";
+                alert("✅ নতুন JO এবং আইটেম সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
+            });
         });
     }
 
@@ -1055,7 +1053,10 @@
                 </div>
             </td>
             <td>
-                <input type="text" class="item-name" value="${itemVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly>
+                <div class="searchable-dropdown-container">
+                    <input type="text" class="item-search-input item-name" value="${itemVal}" placeholder="Select or Search Item" oninput="filterItemDropdown(this)" onfocus="showItemDropdown(this)" autocomplete="off">
+                    <div class="item-dropdown-list"></div>
+                </div>
             </td>
             <td><input type="number" step="0.1" class="smv" value="${smvVal}" placeholder="" oninput="calculateValues(this)"></td>
             <td>
@@ -1127,7 +1128,10 @@
             </div>
             <div class="card-row">
                 <label>Items Name:</label>
-                <input type="text" class="m-item-name" value="${itemVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly>
+                <div class="searchable-dropdown-container">
+                    <input type="text" class="item-search-input m-item-name" value="${itemVal}" placeholder="Select or Search Item" oninput="filterItemDropdown(this)" onfocus="showItemDropdown(this)" autocomplete="off">
+                    <div class="item-dropdown-list"></div>
+                </div>
             </div>
             <div class="card-grid-4 card-row">
                 <div><label>SMV:</label><input type="number" step="0.1" class="m-smv" value="${smvVal}" placeholder="" oninput="syncBackFromMobile(this); calculateValuesMobile(this)"></div>
@@ -1218,17 +1222,18 @@
         }
     }
 
+    // JO Name Dropdown Handlers
     function showJODropdown(inputElem) {
         let container = inputElem.closest('.searchable-dropdown-container');
         let listDiv = container.querySelector('.jo-dropdown-list');
-        renderDropdownItems(listDiv, inputElem.value);
+        renderJODropdownItems(listDiv, inputElem.value);
         listDiv.style.display = 'block';
     }
 
     function filterJODropdown(inputElem) {
         let container = inputElem.closest('.searchable-dropdown-container');
         let listDiv = container.querySelector('.jo-dropdown-list');
-        renderDropdownItems(listDiv, inputElem.value);
+        renderJODropdownItems(listDiv, inputElem.value);
         listDiv.style.display = 'block';
 
         if(inputElem.classList.contains('jo-name')) {
@@ -1239,7 +1244,7 @@
         updateReport();
     }
 
-    function renderDropdownItems(listDiv, filterText) {
+    function renderJODropdownItems(listDiv, filterText) {
         listDiv.innerHTML = '';
         let filter = filterText.toLowerCase();
         let allJOKeys = Object.keys(masterJobOrdersMap);
@@ -1261,33 +1266,15 @@
                 input.value = jo;
                 listDiv.style.display = 'none';
 
-                let masterInfo = masterJobOrdersMap[jo];
                 let rowOrCard = container.closest('tr') || container.closest('.prod-card');
                 
-                let orderQty = masterInfo.orderQty || 0;
-                let unitCtn = masterInfo.unitCtn || 0;
-                let ctnDemand = unitCtn > 0 ? Math.round(orderQty / unitCtn) : 0;
-
+                // Clear Item Name input and focus or open items dropdown for this JO
                 if (rowOrCard.tagName === 'TR') {
-                    rowOrCard.querySelector('.item-name').value = masterInfo.itemName;
-                    rowOrCard.querySelector('.unit-type').value = masterInfo.unitType;
-                    rowOrCard.querySelector('.unit-ctn').value = unitCtn;
-                    rowOrCard.querySelector('.order-qty').value = orderQty;
-                    rowOrCard.querySelector('.ctn-demand').value = ctnDemand;
-
+                    rowOrCard.querySelector('.item-name').value = "";
                     syncFields(rowOrCard.querySelector('.jo-name'));
-                    calculateDueCtn(rowOrCard.querySelector('.ctn-demand'));
-                    calculateValues(rowOrCard.querySelector('.wf'));
                 } else {
-                    rowOrCard.querySelector('.m-item-name').value = masterInfo.itemName;
-                    rowOrCard.querySelector('.m-unit-type').value = masterInfo.unitType;
-                    rowOrCard.querySelector('.m-unit-ctn').value = unitCtn;
-                    rowOrCard.querySelector('.m-order-qty').value = orderQty;
-                    rowOrCard.querySelector('.m-ctn-demand').value = ctnDemand;
-
+                    rowOrCard.querySelector('.m-item-name').value = "";
                     syncBackFromMobile(rowOrCard.querySelector('.m-jo-name'));
-                    calculateDueCtn(rowOrCard.querySelector('.m-ctn-demand'));
-                    calculateValuesMobile(rowOrCard.querySelector('.m-wf'));
                 }
                 updateReport();
             };
@@ -1295,9 +1282,94 @@
         });
     }
 
+    // Item Name Multi-Item Dropdown Handlers
+    function showItemDropdown(inputElem) {
+        let container = inputElem.closest('.searchable-dropdown-container');
+        let listDiv = container.querySelector('.item-dropdown-list');
+        let rowOrCard = container.closest('tr') || container.closest('.prod-card');
+        let joVal = rowOrCard.tagName === 'TR' ? rowOrCard.querySelector('.jo-name').value.trim() : rowOrCard.querySelector('.m-jo-name').value.trim();
+
+        renderItemDropdownItems(listDiv, joVal, inputElem.value);
+        listDiv.style.display = 'block';
+    }
+
+    function filterItemDropdown(inputElem) {
+        let container = inputElem.closest('.searchable-dropdown-container');
+        let listDiv = container.querySelector('.item-dropdown-list');
+        let rowOrCard = container.closest('tr') || container.closest('.prod-card');
+        let joVal = rowOrCard.tagName === 'TR' ? rowOrCard.querySelector('.jo-name').value.trim() : rowOrCard.querySelector('.m-jo-name').value.trim();
+
+        renderItemDropdownItems(listDiv, joVal, inputElem.value);
+        listDiv.style.display = 'block';
+
+        if(inputElem.classList.contains('item-name')) {
+            syncFields(inputElem);
+        } else {
+            syncBackFromMobile(inputElem);
+        }
+    }
+
+    function renderItemDropdownItems(listDiv, joName, filterText) {
+        listDiv.innerHTML = '';
+        let itemsList = masterJobOrdersMap[joName] || [];
+
+        if (itemsList.length === 0) {
+            listDiv.innerHTML = `<div class="item-dropdown-item" style="color: #e74c3c; font-style: italic;">⚠️ প্রথমে সঠিক JO Name সিলেক্ট করুন!</div>`;
+            return;
+        }
+
+        let filter = filterText.toLowerCase();
+        let matches = itemsList.filter(itemObj => itemObj.itemName.toLowerCase().includes(filter));
+
+        if (matches.length === 0) {
+            listDiv.innerHTML = `<div class="item-dropdown-item" style="color: #94a3b8; font-style: italic;">No matching item found</div>`;
+            return;
+        }
+
+        matches.forEach(itemObj => {
+            let div = document.createElement('div');
+            div.className = 'item-dropdown-item';
+            div.innerText = itemObj.itemName;
+            div.onmousedown = function(e) {
+                e.preventDefault();
+                let container = listDiv.closest('.searchable-dropdown-container');
+                let input = container.querySelector('.item-search-input');
+                input.value = itemObj.itemName;
+                listDiv.style.display = 'none';
+
+                let rowOrCard = container.closest('tr') || container.closest('.prod-card');
+                let orderQty = itemObj.orderQty || 0;
+                let unitCtn = itemObj.unitCtn || 0;
+                let ctnDemand = unitCtn > 0 ? Math.round(orderQty / unitCtn) : 0;
+
+                if (rowOrCard.tagName === 'TR') {
+                    rowOrCard.querySelector('.unit-type').value = itemObj.unitType;
+                    rowOrCard.querySelector('.unit-ctn').value = unitCtn;
+                    rowOrCard.querySelector('.order-qty').value = orderQty;
+                    rowOrCard.querySelector('.ctn-demand').value = ctnDemand;
+
+                    syncFields(rowOrCard.querySelector('.item-name'));
+                    calculateDueCtn(rowOrCard.querySelector('.ctn-demand'));
+                    calculateValues(rowOrCard.querySelector('.wf'));
+                } else {
+                    rowOrCard.querySelector('.m-unit-type').value = itemObj.unitType;
+                    rowOrCard.querySelector('.m-unit-ctn').value = unitCtn;
+                    rowOrCard.querySelector('.m-order-qty').value = orderQty;
+                    rowOrCard.querySelector('.m-ctn-demand').value = ctnDemand;
+
+                    syncBackFromMobile(rowOrCard.querySelector('.m-item-name'));
+                    calculateDueCtn(rowOrCard.querySelector('.m-ctn-demand'));
+                    calculateValuesMobile(rowOrCard.querySelector('.m-wf'));
+                }
+                updateReport();
+            };
+            listDiv.appendChild(div);
+        });
+    }
+
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.searchable-dropdown-container')) {
-            document.querySelectorAll('.jo-dropdown-list').forEach(list => list.style.display = 'none');
+            document.querySelectorAll('.jo-dropdown-list, .item-dropdown-list').forEach(list => list.style.display = 'none');
         }
     });
 
