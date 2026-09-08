@@ -498,8 +498,9 @@
                         <button type="button" onclick="addManualJOToList()" style="padding: 5px 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">Add to Master</button>
                     </div>
                 </div>
-                <div style="font-size: 11px; color: #475569;">
+                <div style="font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px;">
                     Master Records: <b id="uploaded-jo-count" style="color: #27ae60;">0</b>
+                    <button type="button" onclick="resetMasterRecords()" style="background: #e74c3c; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: bold;">Reset</button>
                 </div>
             </div>
 
@@ -815,11 +816,11 @@
 
             for (let i = 1; i < json.length; i++) {
                 let row = json[i];
-                let joName = row[1] ? String(row[1]).trim() : "";
-                let itemName = row[2] ? String(row[2]).trim() : "";
-                let unitType = row[3] ? String(row[3]).trim() : "Piece";
-                let unitCtn = row[4] ? Number(row[4]) || 0 : 0;
-                let orderQty = row[5] ? Number(row[5]) || 0 : 0;
+                let joName = row[0] ? String(row[0]).trim() : "";
+                let itemName = row[1] ? String(row[1]).trim() : "";
+                let unitType = row[2] ? String(row[2]).trim() : "Piece";
+                let unitCtn = row[3] ? Number(row[3]) || 0 : 0;
+                let orderQty = row[4] ? Number(row[4]) || 0 : 0;
 
                 if (joName !== "") {
                     let safeKey = "jo_" + count;
@@ -889,6 +890,21 @@
                 alert("⚠️ এই JO টি ইতিমধ্যে মাস্টার লিস্টে রয়েছে!");
             }
         });
+    }
+
+    function resetMasterRecords() {
+        let pwd = prompt("Enter Password to Reset Master Records:");
+        if (pwd === "Rakib" || pwd === "P12" || pwd === "P76") {
+            if (confirm("Are you sure you want to reset/delete all Master Job Order records?")) {
+                db.ref('job_master_data').remove().then(() => {
+                    alert("🗑️ All Master Records have been reset successfully!");
+                }).catch(err => {
+                    alert("❌ Error resetting: " + err.message);
+                });
+            }
+        } else if (pwd !== null) {
+            alert("❌ Incorrect Password!");
+        }
     }
 
     function handleLoginKeyPress(event) {
@@ -1049,7 +1065,7 @@
                 </select>
             </td>
             <td><input type="number" class="unit-ctn" value="${unitVal}" placeholder="Auto Filled" style="background:#f1f5f9;" readonly></td>
-            <td><input type="number" class="order-qty" value="${orderQtyVal}" placeholder="0"></td>
+            <td><input type="number" class="order-qty" value="${orderQtyVal}" placeholder="0" oninput="calculateCtnDemandFromOrder(this)"></td>
             <td><input type="number" class="ctn-demand" value="${ctnDemandVal}" placeholder="0" oninput="calculateDueCtn(this)"></td>
             <td><input type="number" class="as-of-ctn" value="${asOfCtnVal}" placeholder="0" oninput="calculateDueCtn(this)"></td>
             <td><input type="number" class="due-ctn calculated-field" value="0" readonly></td>
@@ -1148,6 +1164,16 @@
         calculateValues(tr.querySelector('.wf'));
     }
 
+    function calculateCtnDemandFromOrder(element) {
+        let row = element.closest('tr');
+        let orderQty = parseFloat(row.querySelector('.order-qty').value) || 0;
+        let unitCtn = parseFloat(row.querySelector('.unit-ctn').value) || 0;
+        let ctnDemand = unitCtn > 0 ? Math.round(orderQty / unitCtn) : 0;
+        row.querySelector('.ctn-demand').value = ctnDemand;
+        calculateDueCtn(row.querySelector('.ctn-demand'));
+        syncFields(element);
+    }
+
     function calculateDueCtn(element) {
         let row = element.closest('tr');
         let ctnDemand = parseFloat(row.querySelector('.ctn-demand').value) || 0;
@@ -1238,19 +1264,29 @@
                 let masterInfo = masterJobOrdersMap[jo];
                 let rowOrCard = container.closest('tr') || container.closest('.prod-card');
                 
+                let orderQty = masterInfo.orderQty || 0;
+                let unitCtn = masterInfo.unitCtn || 0;
+                let ctnDemand = unitCtn > 0 ? Math.round(orderQty / unitCtn) : 0;
+
                 if (rowOrCard.tagName === 'TR') {
                     rowOrCard.querySelector('.item-name').value = masterInfo.itemName;
                     rowOrCard.querySelector('.unit-type').value = masterInfo.unitType;
-                    rowOrCard.querySelector('.unit-ctn').value = masterInfo.unitCtn;
-                    rowOrCard.querySelector('.order-qty').value = masterInfo.orderQty;
+                    rowOrCard.querySelector('.unit-ctn').value = unitCtn;
+                    rowOrCard.querySelector('.order-qty').value = orderQty;
+                    rowOrCard.querySelector('.ctn-demand').value = ctnDemand;
+
                     syncFields(rowOrCard.querySelector('.jo-name'));
+                    calculateDueCtn(rowOrCard.querySelector('.ctn-demand'));
                     calculateValues(rowOrCard.querySelector('.wf'));
                 } else {
                     rowOrCard.querySelector('.m-item-name').value = masterInfo.itemName;
                     rowOrCard.querySelector('.m-unit-type').value = masterInfo.unitType;
-                    rowOrCard.querySelector('.m-unit-ctn').value = masterInfo.unitCtn;
-                    rowOrCard.querySelector('.m-order-qty').value = masterInfo.orderQty;
+                    rowOrCard.querySelector('.m-unit-ctn').value = unitCtn;
+                    rowOrCard.querySelector('.m-order-qty').value = orderQty;
+                    rowOrCard.querySelector('.m-ctn-demand').value = ctnDemand;
+
                     syncBackFromMobile(rowOrCard.querySelector('.m-jo-name'));
+                    calculateDueCtn(rowOrCard.querySelector('.m-ctn-demand'));
                     calculateValuesMobile(rowOrCard.querySelector('.m-wf'));
                 }
                 updateReport();
