@@ -469,21 +469,37 @@
                 </div>
             </div>
 
-            <!-- EXCEL UPLOAD & MANUAL JO / ITEM ADDITION -->
-            <div style="background: #e2e8f0; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <!-- EXCEL UPLOAD & MANUAL JO, UNIT, UNIT/CTN, ORDER QTY ADDITION -->
+            <div style="background: #e2e8f0; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                 <div>
-                    <strong style="font-size: 13px; color: #1e293b;">📁 Master Excel Upload (JO, Item & Unit):</strong>
+                    <strong style="font-size: 13px; color: #1e293b;">📁 Master Excel Upload:</strong>
                     <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" style="margin-left: 5px; font-size: 12px;">
                 </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                     <div>
-                        <strong style="font-size: 12px; color: #1e293b;">➕ Add Manual JO:</strong>
-                        <input type="text" id="manual-new-jo" placeholder="Job Order Name" style="padding: 4px 6px; font-size: 12px; width: 120px; border: 1px solid #ccc; border-radius: 4px; display: inline-block;">
-                        <button type="button" onclick="addManualJOToList()" style="padding: 4px 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">Add</button>
+                        <strong style="font-size: 12px; color: #1e293b;">➕ Manual Add:</strong>
+                    </div>
+                    <div>
+                        <input type="text" id="manual-new-jo" placeholder="JO Name" style="padding: 4px 6px; font-size: 12px; width: 100px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <select id="manual-new-unit-type" style="padding: 4px; font-size: 12px; width: 80px; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="Piece">Piece</option>
+                            <option value="Set">Set</option>
+                        </select>
+                    </div>
+                    <div>
+                        <input type="number" id="manual-new-unit-ctn" placeholder="Unit/Ctn" style="padding: 4px 6px; font-size: 12px; width: 75px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <input type="number" id="manual-new-order-qty" placeholder="Order QTY" style="padding: 4px 6px; font-size: 12px; width: 85px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <button type="button" onclick="addManualJOToList()" style="padding: 5px 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">Add to Master</button>
                     </div>
                 </div>
                 <div style="font-size: 11px; color: #475569;">
-                    Loaded Master Records: <b id="uploaded-jo-count" style="color: #27ae60;">0</b>
+                    Master Records: <b id="uploaded-jo-count" style="color: #27ae60;">0</b>
                 </div>
             </div>
 
@@ -746,7 +762,7 @@
 
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
-    let masterJobOrdersMap = {}; // Maps JO Name -> { itemName, unitCtn, unitType }
+    let masterJobOrdersMap = {}; // Maps JO Name -> { itemName, unitCtn, unitType, orderQty }
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -766,9 +782,10 @@
                     let val = childSnap.val();
                     if (val && val.joName) {
                         masterJobOrdersMap[val.joName] = {
-                            itemName: val.itemName || "",
+                            itemName: val.itemName || "Manual Entry Item",
                             unitCtn: val.unitCtn || 0,
-                            unitType: val.unitType || "Piece"
+                            unitType: val.unitType || "Piece",
+                            orderQty: val.orderQty || 0
                         };
                     }
                 });
@@ -800,16 +817,18 @@
                 let row = json[i];
                 let joName = row[1] ? String(row[1]).trim() : "";
                 let itemName = row[2] ? String(row[2]).trim() : "";
+                let unitType = row[3] ? String(row[3]).trim() : "Piece";
                 let unitCtn = row[4] ? Number(row[4]) || 0 : 0;
-                let unitType = "Piece";
+                let orderQty = row[5] ? Number(row[5]) || 0 : 0;
 
                 if (joName !== "") {
                     let safeKey = "jo_" + count;
                     masterDataUpdates[safeKey] = {
                         joName: joName,
                         itemName: itemName,
+                        unitType: unitType,
                         unitCtn: unitCtn,
-                        unitType: unitType
+                        orderQty: orderQty
                     };
                     count++;
                 }
@@ -828,7 +847,15 @@
 
     function addManualJOToList() {
         let manualInput = document.getElementById('manual-new-jo');
+        let unitTypeInput = document.getElementById('manual-new-unit-type');
+        let unitCtnInput = document.getElementById('manual-new-unit-ctn');
+        let orderQtyInput = document.getElementById('manual-new-order-qty');
+
         let val = manualInput.value.trim();
+        let unitTypeVal = unitTypeInput.value;
+        let unitCtnVal = parseFloat(unitCtnInput.value) || 0;
+        let orderQtyVal = parseFloat(orderQtyInput.value) || 0;
+
         if(!val) {
             alert("⚠️ দয়া করে সঠিক Job Order নাম লিখুন!");
             return;
@@ -849,11 +876,14 @@
                 db.ref('job_master_data/jo_' + maxIdx).set({
                     joName: val,
                     itemName: "Manual Entry Item",
-                    unitCtn: 1,
-                    unitType: "Piece"
+                    unitType: unitTypeVal,
+                    unitCtn: unitCtnVal,
+                    orderQty: orderQtyVal
                 }).then(() => {
                     manualInput.value = "";
-                    alert("✅ নতুন JO সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
+                    unitCtnInput.value = "";
+                    orderQtyInput.value = "";
+                    alert("✅ নতুন JO এবং সংশ্লিষ্ট ডাটা সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
                 });
             } else {
                 alert("⚠️ এই JO টি ইতিমধ্যে মাস্টার লিস্টে রয়েছে!");
@@ -1210,14 +1240,16 @@
                 
                 if (rowOrCard.tagName === 'TR') {
                     rowOrCard.querySelector('.item-name').value = masterInfo.itemName;
-                    rowOrCard.querySelector('.unit-ctn').value = masterInfo.unitCtn;
                     rowOrCard.querySelector('.unit-type').value = masterInfo.unitType;
+                    rowOrCard.querySelector('.unit-ctn').value = masterInfo.unitCtn;
+                    rowOrCard.querySelector('.order-qty').value = masterInfo.orderQty;
                     syncFields(rowOrCard.querySelector('.jo-name'));
                     calculateValues(rowOrCard.querySelector('.wf'));
                 } else {
                     rowOrCard.querySelector('.m-item-name').value = masterInfo.itemName;
-                    rowOrCard.querySelector('.m-unit-ctn').value = masterInfo.unitCtn;
                     rowOrCard.querySelector('.m-unit-type').value = masterInfo.unitType;
+                    rowOrCard.querySelector('.m-unit-ctn').value = masterInfo.unitCtn;
+                    rowOrCard.querySelector('.m-order-qty').value = masterInfo.orderQty;
                     syncBackFromMobile(rowOrCard.querySelector('.m-jo-name'));
                     calculateValuesMobile(rowOrCard.querySelector('.m-wf'));
                 }
