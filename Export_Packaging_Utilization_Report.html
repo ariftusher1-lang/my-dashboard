@@ -429,7 +429,7 @@
                 <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
                 <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
                 <button class="tab-btn" onclick="switchTab('ic-performance-page', this); renderICPerformanceData();">📈 IC Performance</button>
-                <button class="tab-btn" onclick="switchTab('last-day-pack-page', this); renderLastDayPackData();">📦 Last Day Pack Utilization</button>
+                <button class="tab-btn" onclick="switchTab('last-day-pack-page', this); initLastDayFilterAndRender();">📦 Last Day Pack Utilization</button>
             </div>
             <button class="logout-btn" onclick="handleLogout()">🚪 Log Out</button>
         </div>
@@ -817,13 +817,7 @@
                                 <th>Line</th>
                                 <th>JO Name</th>
                                 <th>Items Name</th>
-                                <th>WF</th>
-                                <th>WH</th>
-                                <th>SMV</th>
-                                <th>Unit/CTN</th>
-                                <th>Target Set</th>
                                 <th>Complete Set</th>
-                                <th>Target CTN</th>
                                 <th>Complete CTN</th>
                                 <th>Plan MH</th>
                                 <th>Actual MH</th>
@@ -876,14 +870,31 @@
         let todayStr = new Date().toISOString().split('T')[0];
         let prodDateElem = document.getElementById('prod-date');
         if(prodDateElem) prodDateElem.value = todayStr;
-
-        // 2. Last Day Pack Utilization Summary Date Filter: Default last date-er data show korbe (Yesterday)
-        let d = new Date();
-        d.setDate(d.getDate() - 1);
-        let lastDateStr = d.toISOString().split('T')[0];
-        let filterElem = document.getElementById('last-day-filter');
-        if(filterElem) filterElem.value = lastDateStr;
     };
+
+    // Auto-detect and set latest date in Last Day / Summary filter instead of static yesterday
+    function initLastDayFilterAndRender() {
+        let dbRef = db.ref('productions');
+        dbRef.once('value', (snapshot) => {
+            let latestDate = new Date().toISOString().split('T')[0]; // fallback today
+            if (snapshot.exists()) {
+                let dates = [];
+                snapshot.forEach((childSnap) => {
+                    let d = childSnap.val().date;
+                    if(d) dates.push(d);
+                });
+                if(dates.length > 0) {
+                    dates.sort();
+                    latestDate = dates[dates.length - 1]; // Pick most recent date in database
+                }
+            }
+            let filterElem = document.getElementById('last-day-filter');
+            if(filterElem) {
+                filterElem.value = latestDate;
+            }
+            renderLastDayPackData();
+        });
+    }
 
     function initCloudMasterListener() {
         db.ref('job_master_data').on('value', (snapshot) => {
@@ -2247,7 +2258,7 @@
                         <td>${data.mhUtil}</td>
                         <td>${data.status || 'Running'}</td>
                         <td>
-                            <button class="btn-edit" onclick="editRecord('${keyId}')">Edit</button>
+                            <button class="btn-edit" onclick="editRecord('${keyId}')">Edit/Update</button>
                             <button class="btn-delete" onclick="deleteRecord('${keyId}')">Delete</button>
                         </td>
                     `;
