@@ -7,6 +7,9 @@
     <!-- SheetJS Library for Excel Export & Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
+    <!-- html2canvas Library for Image Download (PNG/JPEG) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <!-- Chart.js Library for Graph Visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -346,6 +349,12 @@
         .btn-excel:hover {
             background-color: #138496;
         }
+        .btn-image {
+            background-color: #e67e22;
+        }
+        .btn-image:hover {
+            background-color: #d35400;
+        }
         .btn-delete {
             background-color: #dc3545;
             color: white;
@@ -431,13 +440,13 @@
             <div class="header-info">
                 <div>
                     <label>Date:</label>
-                    <input type="date" id="prod-date" value="2026-06-09" onchange="updateReport()">
+                    <input type="date" id="prod-date" onchange="updateReport()">
                 </div>
                 <div>
                     <label>Shift:</label>
                     <select id="shift-select" onchange="updateReport()">
-                        <option value="Shift-A (Day)" selected>Shift-A (Day)</option>
-                        <option value="Shift-B (Night)">Shift-B (Night)</option>
+                        <option value="Shift-A (Day)" selected>Shift-A (Day) [10:00 AM - 10:00 PM]</option>
+                        <option value="Shift-B (Night)">Shift-B (Night) [10:00 PM - 10:00 AM]</option>
                     </select>
                 </div>
                 <!-- Concern Shift IC -->
@@ -503,8 +512,33 @@
                     </div>
                 </div>
                 <div style="font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px;">
-                    Master Records: <b id="uploaded-jo-count" style="color: #27ae60;">0</b>
-                    <button type="button" onclick="resetMasterRecords()" style="background: #e74c3c; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: bold;">Reset</button>
+                    Master Records (117): <b id="uploaded-jo-count" style="color: #27ae60;">0</b>
+                    <button type="button" onclick="resetMasterRecords()" style="background: #e74c3c; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: bold;" title="Reset All Records">Reset All</button>
+                </div>
+            </div>
+
+            <!-- Master Records List & Single Reset Section Modal / Toggle -->
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleMasterListModal()">
+                    <span style="font-weight: bold; font-size: 13px; color: #2c3e50;">📋 Master Records Management & Single Reset List (<span id="master-count-span">0</span> items)</span>
+                    <span style="font-size: 12px; color: #007bff;">▼ Click to View / Manage Single Reset</span>
+                </div>
+                <div id="master-list-container" style="display: none; margin-top: 10px; max-height: 200px; overflow-y: auto;">
+                    <table style="min-width: 100%; font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th>JO Name</th>
+                                <th>Item Name</th>
+                                <th>Unit Type</th>
+                                <th>Unit/Ctn</th>
+                                <th>Order Qty</th>
+                                <th>Single Reset Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="master-records-tbody">
+                            <tr><td colspan="6">No master records found.</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -750,18 +784,30 @@
 
         <!-- PAGE 4: LAST DAY PACK UTILIZATION -->
         <div id="last-day-pack-page" class="page-section">
-            <div class="report-header">
+            <div class="report-header" style="flex-wrap: wrap; gap: 10px;">
                 <div class="report-title">📦 Last Day Pack Utilization Summary</div>
-                <div>
-                    <label style="font-weight: bold; font-size: 12px; margin-right: 5px;">Select Date Filter:</label>
-                    <input type="date" id="last-day-filter" onchange="renderLastDayPackData()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <label style="font-weight: bold; font-size: 12px; margin-right: 5px;">Select Date Filter:</label>
+                        <input type="date" id="last-day-filter" onchange="renderLastDayPackData()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                    </div>
+                    <div>
+                        <label style="font-weight: bold; font-size: 12px; margin-right: 5px;">Shift Filter:</label>
+                        <select id="last-day-shift-filter" onchange="renderLastDayPackData()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                            <option value="">All Shifts</option>
+                            <option value="Shift-A (Day)">Shift-A (Day)</option>
+                            <option value="Shift-B (Night)">Shift-B (Night)</option>
+                        </select>
+                    </div>
+                    <button class="action-btn btn-image" onclick="exportLastDaySummaryImage()">📸 Download Image (PNG)</button>
+                    <button class="action-btn btn-excel" onclick="exportLastDaySummaryExcel()">📥 Download Excel</button>
                 </div>
             </div>
 
-            <div style="margin-bottom: 25px;">
-                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 10px;">📌 Previous Day Production & Utilization Report</h3>
+            <div style="margin-bottom: 25px;" id="last-day-report-printable-area">
+                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 10px;">📌 Previous Day Production & Utilization Report Summary</h3>
                 <div class="table-responsive">
-                    <table>
+                    <table id="last-day-summary-table">
                         <thead>
                             <tr>
                                 <th>Date</th>
@@ -807,6 +853,7 @@
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
     let masterJobOrdersMap = {}; // Stores array of items for each JO Name
+    let masterRecordsRaw = {}; // Stores raw database keys and objects for single reset
     let historicalProductionData = []; // Stores all historical production records for As of CTN sum calculation
 
     window.onload = function() {
@@ -819,27 +866,36 @@
         initCloudMasterListener();
         initHistoricalProductionListener();
         
-        // Set default last day date filter to yesterday or today's date minus 1 day format
+        // 1. Entry Form Date: Default current date show korbe
+        let todayStr = new Date().toISOString().split('T')[0];
+        let prodDateElem = document.getElementById('prod-date');
+        if(prodDateElem) prodDateElem.value = todayStr;
+
+        // 2. Last Day Pack Utilization Summary Date Filter: Default last date-er data show korbe (Yesterday)
         let d = new Date();
         d.setDate(d.getDate() - 1);
-        let dateStr = d.toISOString().split('T')[0];
+        let lastDateStr = d.toISOString().split('T')[0];
         let filterElem = document.getElementById('last-day-filter');
-        if(filterElem) filterElem.value = dateStr;
+        if(filterElem) filterElem.value = lastDateStr;
     };
 
     function initCloudMasterListener() {
         db.ref('job_master_data').on('value', (snapshot) => {
             masterJobOrdersMap = {};
+            masterRecordsRaw = {};
             let totalRecords = 0;
             if (snapshot.exists()) {
                 snapshot.forEach((childSnap) => {
+                    let key = childSnap.key;
                     let val = childSnap.val();
                     if (val && val.joName) {
                         let jo = val.joName.trim();
+                        masterRecordsRaw[key] = val;
                         if (!masterJobOrdersMap[jo]) {
                             masterJobOrdersMap[jo] = [];
                         }
                         masterJobOrdersMap[jo].push({
+                            recordKey: key,
                             itemName: val.itemName || "Manual Entry Item",
                             unitType: val.unitType || "Piece",
                             unitCtn: val.unitCtn || 0,
@@ -850,10 +906,56 @@
                 });
             }
             let countElem = document.getElementById('uploaded-jo-count');
-            if(countElem) {
-                countElem.innerText = totalRecords;
-            }
+            let countSpan = document.getElementById('master-count-span');
+            if(countElem) countElem.innerText = totalRecords;
+            if(countSpan) countSpan.innerText = totalRecords;
+
+            renderMasterRecordsTable();
         });
+    }
+
+    function renderMasterRecordsTable() {
+        let tbody = document.getElementById('master-records-tbody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        let keys = Object.keys(masterRecordsRaw);
+        if(keys.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6">No master records found.</td></tr>`;
+            return;
+        }
+
+        keys.forEach(key => {
+            let val = masterRecordsRaw[key];
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight: bold; color: #007bff; text-align: left;">${val.joName || ''}</td>
+                <td style="text-align: left;">${val.itemName || ''}</td>
+                <td>${val.unitType || ''}</td>
+                <td>${val.unitCtn || 0}</td>
+                <td>${val.orderQty || 0}</td>
+                <td><button type="button" class="btn-delete" onclick="singleResetMasterRecord('${key}')" style="padding: 3px 8px; font-size: 11px;">Single Reset</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function toggleMasterListModal() {
+        let container = document.getElementById('master-list-container');
+        if(container.style.display === 'none') {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    function singleResetMasterRecord(recordKey) {
+        if(confirm("Are you sure you want to reset/delete this specific master record?")) {
+            db.ref('job_master_data/' + recordKey).remove().then(() => {
+                alert("🗑️ Specific Master Record reset successfully!");
+            }).catch(err => {
+                alert("❌ Error resetting record: " + err.message);
+            });
+        }
     }
 
     function initHistoricalProductionListener() {
@@ -867,7 +969,6 @@
                     }
                 });
             }
-            // Update As of CTN for any active rows if master/history updates
             updateAllAsOfCtnValues();
         });
     }
@@ -911,7 +1012,6 @@
         });
     }
 
-    // Handle Master Excel Upload supporting multi-items per JO Name
     function handleExcelUpload(event) {
         let file = event.target.files[0];
         if (!file) return;
@@ -936,7 +1036,7 @@
                 let orderQty = row[4] ? Number(row[4]) || 0 : 0;
 
                 if (joName !== "" && itemName !== "") {
-                    let safeKey = "jo_rec_" + count;
+                    let safeKey = "jo_rec_" + Date.now() + "_" + count;
                     masterDataUpdates[safeKey] = {
                         joName: joName,
                         itemName: itemName,
@@ -949,7 +1049,8 @@
             }
 
             if (count > 0) {
-                db.ref('job_master_data').set(masterDataUpdates).then(() => {
+                // Use update to append rather than overwrite completely, or set if preferred
+                db.ref('job_master_data').update(masterDataUpdates).then(() => {
                     alert(`✅ ${count} টি রেকর্ড সফলভাবে মাস্টার ডাটা হিসেবে আপলোড ও সিঙ্ক হয়েছে!`);
                 });
             } else {
@@ -977,35 +1078,28 @@
             return;
         }
         if(!itemNameVal) {
-            alert("⚠️ দয়া করে Items Name লিখুন!");
+            alert("⚠️ দaya করে Items Name লিখুন!");
             return;
         }
 
-        let ref = db.ref('job_master_data');
-        ref.once('value', (snap) => {
-            let maxIdx = 0;
-            if(snap.exists()) {
-                snap.forEach(() => { maxIdx++; });
-            }
-
-            db.ref('job_master_data/jo_rec_' + maxIdx).set({
-                joName: val,
-                itemName: itemNameVal,
-                unitType: unitTypeVal,
-                unitCtn: unitCtnVal,
-                orderQty: orderQtyVal
-            }).then(() => {
-                manualInput.value = "";
-                itemNameInput.value = "";
-                unitCtnInput.value = "";
-                orderQtyInput.value = "";
-                alert("✅ নতুন JO, Items Name এবং ডাটা সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
-            });
+        let newKey = db.ref('job_master_data').push().key;
+        db.ref('job_master_data/' + newKey).set({
+            joName: val,
+            itemName: itemNameVal,
+            unitType: unitTypeVal,
+            unitCtn: unitCtnVal,
+            orderQty: orderQtyVal
+        }).then(() => {
+            manualInput.value = "";
+            itemNameInput.value = "";
+            unitCtnInput.value = "";
+            orderQtyInput.value = "";
+            alert("✅ নতুন JO এবং Items Data সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
         });
     }
 
     function resetMasterRecords() {
-        let pwd = prompt("Enter Password to Reset Master Records:");
+        let pwd = prompt("Enter Password to Reset All Master Records:");
         if (pwd === "Rakib" || pwd === "P12" || pwd === "P76") {
             if (confirm("Are you sure you want to reset/delete all Master Job Order records?")) {
                 db.ref('job_master_data').remove().then(() => {
@@ -1336,7 +1430,6 @@
         }
     }
 
-    // JO Name Dropdown Handlers
     function showJODropdown(inputElem) {
         let container = inputElem.closest('.searchable-dropdown-container');
         let listDiv = container.querySelector('.jo-dropdown-list');
@@ -1382,7 +1475,6 @@
 
                 let rowOrCard = container.closest('tr') || container.closest('.prod-card');
                 
-                // Clear Item Name input and focus or open items dropdown for this JO
                 if (rowOrCard.tagName === 'TR') {
                     rowOrCard.querySelector('.item-name').value = "";
                     rowOrCard.querySelector('.as-of-ctn').value = 0;
@@ -1398,7 +1490,6 @@
         });
     }
 
-    // Item Name Multi-Item Dropdown Handlers
     function showItemDropdown(inputElem) {
         let container = inputElem.closest('.searchable-dropdown-container');
         let listDiv = container.querySelector('.item-dropdown-list');
@@ -1991,6 +2082,7 @@
 
     function renderLastDayPackData() {
         let selectedDate = document.getElementById('last-day-filter').value;
+        let selectedShift = document.getElementById('last-day-shift-filter').value;
         let lastDayTbody = document.getElementById('last-day-table-body');
         lastDayTbody.innerHTML = `<tr><td colspan="13">Loading data for ${selectedDate}...</td></tr>`;
 
@@ -2002,7 +2094,10 @@
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
                     let data = childSnapshot.val();
-                    if (!selectedDate || data.date === selectedDate) {
+                    let dateMatch = !selectedDate || data.date === selectedDate;
+                    let shiftMatch = !selectedShift || data.shift === selectedShift;
+
+                    if (dateMatch && shiftMatch) {
                         count++;
                         let tr = document.createElement('tr');
                         tr.innerHTML = `
@@ -2026,9 +2121,29 @@
             }
 
             if (count === 0) {
-                lastDayTbody.innerHTML = `<tr><td colspan="13">No records found for date: ${selectedDate}</td></tr>`;
+                lastDayTbody.innerHTML = `<tr><td colspan="13">No records found for date: ${selectedDate} ${selectedShift ? '('+selectedShift+')' : ''}</td></tr>`;
             }
         });
+    }
+
+    function exportLastDaySummaryImage() {
+        let printableArea = document.getElementById('last-day-report-printable-area');
+        html2canvas(printableArea, { scale: 2 }).then(canvas => {
+            let link = document.createElement('a');
+            link.download = 'Last_Day_Pack_Utilization_Summary.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(err => {
+            alert("❌ Image download failed: " + err.message);
+        });
+    }
+
+    function exportLastDaySummaryExcel() {
+        let table = document.getElementById("last-day-summary-table");
+        let wb = XLSX.utils.book_new();
+        let ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, "Last Day Utilization");
+        XLSX.writeFile(wb, "Last_Day_Pack_Utilization_Summary.xlsx");
     }
 
     function loadFirebaseData() {
