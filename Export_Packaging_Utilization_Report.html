@@ -520,8 +520,8 @@
             <!-- Master Records List & Single Reset Section Modal / Toggle -->
             <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleMasterListModal()">
-                    <span style="font-weight: bold; font-size: 13px; color: #2c3e50;">📋 Master Records Management & Single Reset List (<span id="master-count-span">0</span> items)</span>
-                    <span style="font-size: 12px; color: #007bff;">▼ Click to View / Manage Single Reset</span>
+                    <span style="font-weight: bold; font-size: 13px; color: #2c3e50;">📋 Master Records Management & Single Reset/Edit List (<span id="master-count-span">0</span> items)</span>
+                    <span style="font-size: 12px; color: #007bff;">▼ Click to View / Manage</span>
                 </div>
                 <div id="master-list-container" style="display: none; margin-top: 10px; max-height: 200px; overflow-y: auto;">
                     <table style="min-width: 100%; font-size: 12px;">
@@ -532,7 +532,7 @@
                                 <th>Unit Type</th>
                                 <th>Unit/Ctn</th>
                                 <th>Order Qty</th>
-                                <th>Single Reset Action</th>
+                                <th>Action (Edit / Single Reset)</th>
                             </tr>
                         </thead>
                         <tbody id="master-records-tbody">
@@ -853,7 +853,7 @@
     let temporaryCapturedPhoto = ""; 
     let mediaStream = null;
     let masterJobOrdersMap = {}; // Stores array of items for each JO Name
-    let masterRecordsRaw = {}; // Stores raw database keys and objects for single reset
+    let masterRecordsRaw = {}; // Stores raw database keys and objects for single reset/edit
     let historicalProductionData = []; // Stores all historical production records for As of CTN sum calculation
 
     window.onload = function() {
@@ -933,7 +933,10 @@
                 <td>${val.unitType || ''}</td>
                 <td>${val.unitCtn || 0}</td>
                 <td>${val.orderQty || 0}</td>
-                <td><button type="button" class="btn-delete" onclick="singleResetMasterRecord('${key}')" style="padding: 3px 8px; font-size: 11px;">Single Reset</button></td>
+                <td>
+                    <button type="button" class="btn-edit" onclick="editMasterRecord('${key}')" style="padding: 3px 8px; font-size: 11px;">Edit</button>
+                    <button type="button" class="btn-delete" onclick="singleResetMasterRecord('${key}')" style="padding: 3px 8px; font-size: 11px;">Single Reset</button>
+                </td>
             `;
             tbody.appendChild(tr);
         });
@@ -946,6 +949,34 @@
         } else {
             container.style.display = 'none';
         }
+    }
+
+    function editMasterRecord(recordKey) {
+        let val = masterRecordsRaw[recordKey];
+        if(!val) return;
+
+        let newJo = prompt("Edit JO Name:", val.joName || "");
+        if(newJo === null) return;
+        let newItem = prompt("Edit Item Name:", val.itemName || "");
+        if(newItem === null) return;
+        let newUnitType = prompt("Edit Unit Type (Piece/Set):", val.unitType || "Piece");
+        if(newUnitType === null) return;
+        let newUnitCtn = prompt("Edit Unit/Ctn:", val.unitCtn || 0);
+        if(newUnitCtn === null) return;
+        let newOrderQty = prompt("Edit Order Qty:", val.orderQty || 0);
+        if(newOrderQty === null) return;
+
+        db.ref('job_master_data/' + recordKey).update({
+            joName: newJo.trim(),
+            itemName: newItem.trim(),
+            unitType: newUnitType.trim(),
+            unitCtn: parseFloat(newUnitCtn) || 0,
+            orderQty: parseFloat(newOrderQty) || 0
+        }).then(() => {
+            alert("✅ Master record updated successfully!");
+        }).catch(err => {
+            alert("❌ Error updating master record: " + err.message);
+        });
     }
 
     function singleResetMasterRecord(recordKey) {
