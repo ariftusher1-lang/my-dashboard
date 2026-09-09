@@ -211,6 +211,12 @@
             font-weight: bold;
             color: #333;
         }
+        .summary-row td {
+            background-color: #f1f9ff !important;
+            font-weight: bold !important;
+            color: #1a3c5e !important;
+            border-top: 2px solid #007bff !important;
+        }
         input[type="text"], input[type="number"], select {
             width: 100%;
             min-width: 70px;
@@ -390,6 +396,16 @@
             .report-grid {
                 grid-template-columns: 1fr;
             }
+        }
+        .summary-label {
+            background-color: #007bff !important;
+            color: white !important;
+            font-weight: bold;
+        }
+        .summary-value {
+            background-color: #e8f4ff !important;
+            font-weight: bold;
+            color: #1a3c5e !important;
         }
     </style>
 </head>
@@ -834,6 +850,24 @@
                         <tbody id="last-day-table-body">
                             <tr><td colspan="19">Loading last day pack utilization data...</td></tr>
                         </tbody>
+                        <!-- Shift Summary Footer -->
+                        <tfoot id="last-day-summary-footer">
+                            <tr class="summary-row">
+                                <td colspan="7" style="text-align: right; font-weight: bold; background-color: #007bff; color: white;">📊 Shift Summary</td>
+                                <td id="lastday-sum-wf" style="background-color: #e8f4ff; font-weight: bold;">0</td>
+                                <td id="lastday-sum-wh" style="background-color: #e8f4ff; font-weight: bold;">0</td>
+                                <td id="lastday-sum-smv" style="background-color: #e8f4ff; font-weight: bold;">0</td>
+                                <td id="lastday-sum-unit-ctn" style="background-color: #e8f4ff; font-weight: bold;">0</td>
+                                <td id="lastday-sum-target-set" style="background-color: #e8f4ff; font-weight: bold;">0</td>
+                                <td id="lastday-sum-complete-set" style="background-color: #e8f4ff; font-weight: bold; color: #27ae60;">0</td>
+                                <td id="lastday-sum-target-ctn" style="background-color: #e8f4ff; font-weight: bold;">0</td>
+                                <td id="lastday-sum-complete-ctn" style="background-color: #e8f4ff; font-weight: bold; color: #27ae60;">0</td>
+                                <td id="lastday-sum-plan-mh" style="background-color: #e8f4ff; font-weight: bold;">0</td>
+                                <td id="lastday-sum-actual-mh" style="background-color: #e8f4ff; font-weight: bold;">0</td>
+                                <td id="lastday-sum-mh-util" style="background-color: #e8f4ff; font-weight: bold; color: #d9534f;">0%</td>
+                                <td style="background-color: #e8f4ff; font-weight: bold;">-</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -2164,6 +2198,14 @@
         dbRef.once('value', (snapshot) => {
             lastDayTbody.innerHTML = '';
             let count = 0;
+            
+            // Summary counters
+            let sumWF = 0, sumWH = 0, sumSMV = 0, sumUnitCTN = 0;
+            let sumTargetSet = 0, sumCompleteSet = 0;
+            let sumTargetCTN = 0, sumCompleteCTN = 0;
+            let sumPlanMH = 0, sumActualMH = 0;
+            let utilPercentSum = 0;
+            let utilCount = 0;
 
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
@@ -2173,6 +2215,25 @@
 
                     if (dateMatch && shiftMatch) {
                         count++;
+                        
+                        // Accumulate summary values
+                        sumWF += Number(data.wf) || 0;
+                        sumWH += Number(data.wh) || 0;
+                        sumSMV += Number(data.smv) || 0;
+                        sumUnitCTN += Number(data.unitCtn) || 0;
+                        sumTargetSet += Number(data.targetSet) || 0;
+                        sumCompleteSet += Number(data.completeSet) || 0;
+                        sumTargetCTN += Number(data.targetCtn) || 0;
+                        sumCompleteCTN += Number(data.completeCtn) || 0;
+                        sumPlanMH += Number(data.planMh) || 0;
+                        sumActualMH += Number(data.actualMh) || 0;
+                        
+                        let utilVal = parseFloat(String(data.mhUtil || '0%').replace('%', ''));
+                        if (!isNaN(utilVal)) {
+                            utilPercentSum += utilVal;
+                            utilCount++;
+                        }
+
                         let tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td>${data.date}</td>
@@ -2200,8 +2261,35 @@
                 });
             }
 
+            // Update Summary Footer
+            let avgUtil = utilCount > 0 ? Math.round(utilPercentSum / utilCount) : 0;
+            
+            document.getElementById('lastday-sum-wf').innerText = Math.round(sumWF);
+            document.getElementById('lastday-sum-wh').innerText = Math.round(sumWH);
+            document.getElementById('lastday-sum-smv').innerText = Math.round(sumSMV);
+            document.getElementById('lastday-sum-unit-ctn').innerText = Math.round(sumUnitCTN);
+            document.getElementById('lastday-sum-target-set').innerText = Math.round(sumTargetSet);
+            document.getElementById('lastday-sum-complete-set').innerText = Math.round(sumCompleteSet);
+            document.getElementById('lastday-sum-target-ctn').innerText = Math.round(sumTargetCTN);
+            document.getElementById('lastday-sum-complete-ctn').innerText = Math.round(sumCompleteCTN);
+            document.getElementById('lastday-sum-plan-mh').innerText = Math.round(sumPlanMH);
+            document.getElementById('lastday-sum-actual-mh').innerText = sumActualMH.toFixed(2);
+            document.getElementById('lastday-sum-mh-util').innerText = avgUtil + '%';
+
             if (count === 0) {
                 lastDayTbody.innerHTML = `<tr><td colspan="19">No records found for date: ${selectedDate} ${selectedShift ? '('+selectedShift+')' : ''}</td></tr>`;
+                // Reset summary when no data
+                document.getElementById('lastday-sum-wf').innerText = '0';
+                document.getElementById('lastday-sum-wh').innerText = '0';
+                document.getElementById('lastday-sum-smv').innerText = '0';
+                document.getElementById('lastday-sum-unit-ctn').innerText = '0';
+                document.getElementById('lastday-sum-target-set').innerText = '0';
+                document.getElementById('lastday-sum-complete-set').innerText = '0';
+                document.getElementById('lastday-sum-target-ctn').innerText = '0';
+                document.getElementById('lastday-sum-complete-ctn').innerText = '0';
+                document.getElementById('lastday-sum-plan-mh').innerText = '0';
+                document.getElementById('lastday-sum-actual-mh').innerText = '0';
+                document.getElementById('lastday-sum-mh-util').innerText = '0%';
             }
         });
     }
