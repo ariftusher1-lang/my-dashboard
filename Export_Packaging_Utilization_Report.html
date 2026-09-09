@@ -483,6 +483,47 @@
             margin-top: 8px;
             font-weight: bold;
         }
+
+        /* As of Packaging Report Styles */
+        .asof-section-title {
+            background: #1a3c5e;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 15px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .status-done {
+            background-color: #d4edda !important;
+            color: #155724 !important;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 4px;
+        }
+        .status-running {
+            background-color: #cce5ff !important;
+            color: #004085 !important;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 4px;
+        }
+        .status-hold {
+            background-color: #fff3cd !important;
+            color: #856404 !important;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 4px;
+        }
+        .master-count-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -806,6 +847,35 @@
                     </div>
                 </div>
             </div>
+
+            <!-- NEW SECTION: As of Packaging Report -->
+            <div style="margin-top: 30px;">
+                <div class="asof-section-title">
+                    📦 As of Packaging Report 
+                    <span class="master-count-badge" id="asof-master-count">0</span>
+                    <span style="font-size: 13px; font-weight: normal; margin-left: 5px;">Master JO & Items</span>
+                </div>
+                <div class="table-responsive">
+                    <table id="asof-packaging-table">
+                        <thead>
+                            <tr>
+                                <th>JO Name</th>
+                                <th>Items Name</th>
+                                <th>Unit (Set/Piece)</th>
+                                <th>Unit/Ctn</th>
+                                <th>Order (QTY)</th>
+                                <th>CTN Demand (QTY)</th>
+                                <th>As of Carton (QTY)</th>
+                                <th>Pending CTN (QTY)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="asof-packaging-body">
+                            <tr><td colspan="9">Loading As of Packaging Report...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- PAGE 3: IC PERFORMANCE MONITORING -->
@@ -947,7 +1017,7 @@
                     </table>
                 </div>
 
-                <!-- NEW SECTION: HR Breakdown & HT Transfer Summary -->
+                <!-- HR Breakdown & HT Transfer Summary -->
                 <div class="hr-section-title">📊 HR Breakdown & HT Transfer Summary</div>
                 <div class="hr-summary-grid" id="hr-summary-container">
                     <div class="hr-card">
@@ -1120,11 +1190,14 @@
             let countElem = document.getElementById('uploaded-jo-count');
             let countTotalElem = document.getElementById('uploaded-jo-count-total');
             let countSpan = document.getElementById('master-count-span');
+            let asofCount = document.getElementById('asof-master-count');
             if(countElem) countElem.innerText = totalRecords;
             if(countTotalElem) countTotalElem.innerText = totalRecords;
             if(countSpan) countSpan.innerText = totalRecords;
+            if(asofCount) asofCount.innerText = totalRecords;
 
             renderMasterRecordsTable();
+            renderAsofPackagingReport();
         });
     }
 
@@ -1151,6 +1224,68 @@
                     <button type="button" class="btn-edit" onclick="editMasterRecordStepByStep('${key}')" style="padding: 3px 8px; font-size: 11px;">Edit</button>
                     <button type="button" class="btn-delete" onclick="singleResetMasterRecord('${key}')" style="padding: 3px 8px; font-size: 11px;">Single Reset</button>
                 </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderAsofPackagingReport() {
+        let tbody = document.getElementById('asof-packaging-body');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+
+        let keys = Object.keys(masterRecordsRaw);
+        if(keys.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9">No master records found. Please upload or add JO/Items data.</td></tr>`;
+            return;
+        }
+
+        let sortedKeys = keys.sort((a, b) => {
+            let nameA = masterRecordsRaw[a].joName || '';
+            let nameB = masterRecordsRaw[b].joName || '';
+            return nameA.localeCompare(nameB);
+        });
+
+        sortedKeys.forEach(key => {
+            let val = masterRecordsRaw[key];
+            let joName = val.joName || '';
+            let itemName = val.itemName || '';
+            let unitType = val.unitType || 'Piece';
+            let unitCtn = val.unitCtn || 0;
+            let orderQty = val.orderQty || 0;
+            
+            // Calculate CTN Demand
+            let ctnDemand = unitCtn > 0 ? Math.round(orderQty / unitCtn) : 0;
+            
+            // Calculate As of Carton (Complete CTN from historical data)
+            let asOfCarton = calculateSumAsOfCtn(joName, itemName);
+            
+            // Calculate Pending CTN
+            let pendingCtn = Math.max(0, ctnDemand - asOfCarton);
+            
+            // Determine Status
+            let status = 'Running';
+            if (pendingCtn <= 0 && asOfCarton > 0) {
+                status = 'Done';
+            } else if (asOfCarton === 0 && ctnDemand === 0) {
+                status = 'Pending';
+            } else if (asOfCarton > 0 && pendingCtn > 0) {
+                status = 'Running';
+            }
+            
+            let statusClass = status === 'Done' ? 'status-done' : status === 'Running' ? 'status-running' : 'status-hold';
+            
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight: bold; color: #007bff; text-align: left; padding-left: 10px;">${joName}</td>
+                <td style="text-align: left; padding-left: 10px;">${itemName}</td>
+                <td>${unitType}</td>
+                <td>${unitCtn}</td>
+                <td>${orderQty}</td>
+                <td>${ctnDemand}</td>
+                <td style="font-weight: bold; color: #28a745;">${asOfCarton}</td>
+                <td style="font-weight: bold; color: ${pendingCtn > 0 ? '#d9534f' : '#28a745'};">${pendingCtn}</td>
+                <td><span class="${statusClass}">${status}</span></td>
             `;
             tbody.appendChild(tr);
         });
@@ -1234,6 +1369,7 @@
                 });
             }
             updateAllAsOfCtnValues();
+            renderAsofPackagingReport();
         });
     }
 
@@ -2702,13 +2838,16 @@
     function exportToExcel() {
         let reportTable = document.getElementById("report-table");
         let joTable = document.getElementById("jo-summary-table");
+        let asofTable = document.getElementById("asof-packaging-table");
 
         let wb = XLSX.utils.book_new();
         let ws1 = XLSX.utils.table_to_sheet(reportTable);
         let ws2 = XLSX.utils.table_to_sheet(joTable);
+        let ws3 = XLSX.utils.table_to_sheet(asofTable);
 
         XLSX.utils.book_append_sheet(wb, ws1, "Detailed Report");
         XLSX.utils.book_append_sheet(wb, ws2, "JO Summary Report");
+        XLSX.utils.book_append_sheet(wb, ws3, "As of Packaging Report");
 
         XLSX.writeFile(wb, "Export_Packaging_Utilization_Report.xlsx");
     }
