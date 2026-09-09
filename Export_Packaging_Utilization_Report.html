@@ -512,7 +512,7 @@
                     </div>
                 </div>
                 <div style="font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px;">
-                    Master Records (117): <b id="uploaded-jo-count" style="color: #27ae60;">0</b>
+                    Master Records (<span id="uploaded-jo-count" style="color: #27ae60;">0</span>): <b id="uploaded-jo-count-total" style="color: #27ae60;">0</b>
                     <button type="button" onclick="resetMasterRecords()" style="background: #e74c3c; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: bold;" title="Reset All Records">Reset All</button>
                 </div>
             </div>
@@ -906,8 +906,10 @@
                 });
             }
             let countElem = document.getElementById('uploaded-jo-count');
+            let countTotalElem = document.getElementById('uploaded-jo-count-total');
             let countSpan = document.getElementById('master-count-span');
             if(countElem) countElem.innerText = totalRecords;
+            if(countTotalElem) countTotalElem.innerText = totalRecords;
             if(countSpan) countSpan.innerText = totalRecords;
 
             renderMasterRecordsTable();
@@ -934,7 +936,7 @@
                 <td>${val.unitCtn || 0}</td>
                 <td>${val.orderQty || 0}</td>
                 <td>
-                    <button type="button" class="btn-edit" onclick="editMasterRecord('${key}')" style="padding: 3px 8px; font-size: 11px;">Edit</button>
+                    <button type="button" class="btn-edit" onclick="editMasterRecordStepByStep('${key}')" style="padding: 3px 8px; font-size: 11px;">Edit</button>
                     <button type="button" class="btn-delete" onclick="singleResetMasterRecord('${key}')" style="padding: 3px 8px; font-size: 11px;">Single Reset</button>
                 </td>
             `;
@@ -951,22 +953,47 @@
         }
     }
 
-    function editMasterRecord(recordKey) {
+    // Step-by-Step Edit Prompt Flow with Next Button & Skip functionality
+    function editMasterRecordStepByStep(recordKey) {
         let val = masterRecordsRaw[recordKey];
         if(!val) return;
 
-        let newUnitType = prompt("Edit Unit Type (Piece/Set):", val.unitType || "Piece");
-        if(newUnitType === null) return;
-        let newUnitCtn = prompt("Edit Unit/Ctn:", val.unitCtn || 0);
-        if(newUnitCtn === null) return;
-        let newOrderQty = prompt("Edit Order Qty:", val.orderQty || 0);
-        if(newOrderQty === null) return;
+        let updateData = {};
 
-        db.ref('job_master_data/' + recordKey).update({
-            unitType: newUnitType.trim(),
-            unitCtn: parseFloat(newUnitCtn) || 0,
-            orderQty: parseFloat(newOrderQty) || 0
-        }).then(() => {
+        // Step 1: JO Name
+        let newJo = prompt(`[1/4] Edit JO Name:\n(Leave unchanged or type new value, then click OK or Next)`, val.joName || "");
+        if (newJo !== null) {
+            updateData.joName = newJo.trim() !== "" ? newJo.trim() : val.joName;
+        } else {
+            return; // Cancelled completely
+        }
+
+        // Step 2: Unit Type
+        let newUnitType = prompt(`[2/4] Edit Unit Type (Piece / Set):\n(Current: ${val.unitType || 'Piece'})`, val.unitType || "Piece");
+        if (newUnitType !== null) {
+            updateData.unitType = newUnitType.trim() !== "" ? newUnitType.trim() : val.unitType;
+        } else {
+            return;
+        }
+
+        // Step 3: Unit/Ctn
+        let newUnitCtn = prompt(`[3/4] Edit Unit/Ctn:\n(Current: ${val.unitCtn || 0})`, val.unitCtn || 0);
+        if (newUnitCtn !== null) {
+            updateData.unitCtn = newUnitCtn.trim() !== "" ? (parseFloat(newUnitCtn) || 0) : val.unitCtn;
+        } else {
+            return;
+        }
+
+        // Step 4: Order Qty
+        let newOrderQty = prompt(`[4/4] Edit Order Qty:\n(Current: ${val.orderQty || 0})`, val.orderQty || 0);
+        if (newOrderQty !== null) {
+            updateData.orderQty = newOrderQty.trim() !== "" ? (parseFloat(newOrderQty) || 0) : val.orderQty;
+        } else {
+            return;
+        }
+
+        // Save to Firebase
+        db.ref('job_master_data/' + recordKey).update(updateData).then(() => {
             alert("✅ Master record updated successfully!");
         }).catch(err => {
             alert("❌ Error updating master record: " + err.message);
