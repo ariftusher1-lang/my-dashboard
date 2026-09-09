@@ -494,6 +494,27 @@
             font-size: 15px;
             margin-top: 30px;
             margin-bottom: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        .asof-section-title:hover {
+            background: #0f2a45;
+        }
+        .asof-section-title .toggle-icon {
+            font-size: 20px;
+            transition: transform 0.3s;
+        }
+        .asof-section-title .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+        .asof-content {
+            display: block;
+        }
+        .asof-content.hidden {
+            display: none;
         }
         .status-done {
             background-color: #d4edda !important;
@@ -509,7 +530,7 @@
             padding: 3px 10px;
             border-radius: 4px;
         }
-        .status-hold {
+        .status-pending {
             background-color: #fff3cd !important;
             color: #856404 !important;
             font-weight: bold;
@@ -523,6 +544,49 @@
             border-radius: 12px;
             font-size: 13px;
             margin-left: 10px;
+        }
+        .asof-search-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .asof-search-container input {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            min-width: 200px;
+        }
+        .asof-search-container input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0,123,255,0.3);
+        }
+        .asof-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn-asof-excel {
+            background-color: #17a2b8;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .btn-asof-excel:hover {
+            background-color: #138496;
+        }
+        .asof-count-info {
+            font-size: 13px;
+            color: #475569;
+            font-weight: normal;
         }
     </style>
 </head>
@@ -850,30 +914,43 @@
 
             <!-- NEW SECTION: As of Packaging Report -->
             <div style="margin-top: 30px;">
-                <div class="asof-section-title">
-                    📦 As of Packaging Report 
-                    <span class="master-count-badge" id="asof-master-count">0</span>
-                    <span style="font-size: 13px; font-weight: normal; margin-left: 5px;">Master JO & Items</span>
+                <div class="asof-section-title" onclick="toggleAsofReport()">
+                    <span>
+                        📦 As of Packaging Report 
+                        <span class="master-count-badge" id="asof-master-count">0</span>
+                        <span class="asof-count-info" id="asof-visible-count">(Showing 0 of 0)</span>
+                    </span>
+                    <span class="toggle-icon" id="asof-toggle-icon">▼</span>
                 </div>
-                <div class="table-responsive">
-                    <table id="asof-packaging-table">
-                        <thead>
-                            <tr>
-                                <th>JO Name</th>
-                                <th>Items Name</th>
-                                <th>Unit (Set/Piece)</th>
-                                <th>Unit/Ctn</th>
-                                <th>Order (QTY)</th>
-                                <th>CTN Demand (QTY)</th>
-                                <th>As of Carton (QTY)</th>
-                                <th>Pending CTN (QTY)</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="asof-packaging-body">
-                            <tr><td colspan="9">Loading As of Packaging Report...</td></tr>
-                        </tbody>
-                    </table>
+                <div class="asof-content" id="asof-content">
+                    <div class="asof-search-container">
+                        <input type="text" id="asof-search-jo" placeholder="🔍 Search JO Name..." oninput="filterAsofReport()">
+                        <input type="text" id="asof-search-item" placeholder="🔍 Search Items Name..." oninput="filterAsofReport()">
+                        <div class="asof-actions">
+                            <button class="btn-asof-excel" onclick="exportAsofToExcel()">📥 Download Excel</button>
+                            <span style="font-size: 12px; color: #475569;" id="asof-filter-count">Total: 0</span>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="asof-packaging-table">
+                            <thead>
+                                <tr>
+                                    <th>JO Name</th>
+                                    <th>Items Name</th>
+                                    <th>Unit (Set/Piece)</th>
+                                    <th>Unit/Ctn</th>
+                                    <th>Order (QTY)</th>
+                                    <th>CTN Demand (QTY)</th>
+                                    <th>As of Carton (QTY)</th>
+                                    <th>Pending CTN (QTY)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="asof-packaging-body">
+                                <tr><td colspan="9">Loading As of Packaging Report...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1120,6 +1197,8 @@
     let masterJobOrdersMap = {}; // Stores array of items for each JO Name
     let masterRecordsRaw = {}; // Stores raw database keys and objects for single reset/edit
     let historicalProductionData = []; // Stores all historical production records for As of CTN sum calculation
+    let asofReportData = []; // Stores filtered data for As of Packaging Report
+    let isAsofVisible = true;
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -1136,6 +1215,25 @@
         let prodDateElem = document.getElementById('prod-date');
         if(prodDateElem) prodDateElem.value = todayStr;
     };
+
+    // Toggle As of Packaging Report visibility
+    function toggleAsofReport() {
+        let content = document.getElementById('asof-content');
+        let icon = document.getElementById('asof-toggle-icon');
+        isAsofVisible = !isAsofVisible;
+        if (isAsofVisible) {
+            content.classList.remove('hidden');
+            icon.textContent = '▼';
+        } else {
+            content.classList.add('hidden');
+            icon.textContent = '▶';
+        }
+    }
+
+    // Filter As of Packaging Report
+    function filterAsofReport() {
+        renderAsofPackagingReport();
+    }
 
     // Auto-detect and set latest date in Last Day / Summary filter instead of static yesterday
     function initLastDayFilterAndRender() {
@@ -1232,11 +1330,15 @@
     function renderAsofPackagingReport() {
         let tbody = document.getElementById('asof-packaging-body');
         if(!tbody) return;
-        tbody.innerHTML = '';
+        
+        let searchJO = document.getElementById('asof-search-jo').value.toLowerCase().trim();
+        let searchItem = document.getElementById('asof-search-item').value.toLowerCase().trim();
 
         let keys = Object.keys(masterRecordsRaw);
         if(keys.length === 0) {
             tbody.innerHTML = `<tr><td colspan="9">No master records found. Please upload or add JO/Items data.</td></tr>`;
+            document.getElementById('asof-visible-count').textContent = '(Showing 0 of 0)';
+            document.getElementById('asof-filter-count').textContent = 'Total: 0';
             return;
         }
 
@@ -1246,49 +1348,85 @@
             return nameA.localeCompare(nameB);
         });
 
+        let filteredData = [];
+        let totalRecords = 0;
+
         sortedKeys.forEach(key => {
             let val = masterRecordsRaw[key];
             let joName = val.joName || '';
             let itemName = val.itemName || '';
-            let unitType = val.unitType || 'Piece';
-            let unitCtn = val.unitCtn || 0;
-            let orderQty = val.orderQty || 0;
             
-            // Calculate CTN Demand
-            let ctnDemand = unitCtn > 0 ? Math.round(orderQty / unitCtn) : 0;
+            // Apply filters
+            let matchJO = !searchJO || joName.toLowerCase().includes(searchJO);
+            let matchItem = !searchItem || itemName.toLowerCase().includes(searchItem);
             
-            // Calculate As of Carton (Complete CTN from historical data)
-            let asOfCarton = calculateSumAsOfCtn(joName, itemName);
-            
-            // Calculate Pending CTN
-            let pendingCtn = Math.max(0, ctnDemand - asOfCarton);
-            
-            // Determine Status
-            let status = 'Running';
-            if (pendingCtn <= 0 && asOfCarton > 0) {
-                status = 'Done';
-            } else if (asOfCarton === 0 && ctnDemand === 0) {
-                status = 'Pending';
-            } else if (asOfCarton > 0 && pendingCtn > 0) {
-                status = 'Running';
+            if (matchJO && matchItem) {
+                totalRecords++;
+                let unitType = val.unitType || 'Piece';
+                let unitCtn = val.unitCtn || 0;
+                let orderQty = val.orderQty || 0;
+                
+                // Calculate CTN Demand
+                let ctnDemand = unitCtn > 0 ? Math.round(orderQty / unitCtn) : 0;
+                
+                // Calculate As of Carton (Complete CTN from historical data)
+                let asOfCarton = calculateSumAsOfCtn(joName, itemName);
+                
+                // Calculate Pending CTN
+                let pendingCtn = Math.max(0, ctnDemand - asOfCarton);
+                
+                // Determine Status
+                let status = 'Pending';
+                if (pendingCtn <= 0 && asOfCarton > 0) {
+                    status = 'Done';
+                } else if (asOfCarton > 0 && pendingCtn > 0) {
+                    status = 'Running';
+                }
+                
+                filteredData.push({
+                    joName, itemName, unitType, unitCtn, orderQty, 
+                    ctnDemand, asOfCarton, pendingCtn, status
+                });
             }
-            
-            let statusClass = status === 'Done' ? 'status-done' : status === 'Running' ? 'status-running' : 'status-hold';
+        });
+
+        // Update count info
+        document.getElementById('asof-visible-count').textContent = `(Showing ${filteredData.length} of ${keys.length})`;
+        document.getElementById('asof-filter-count').textContent = `Total: ${filteredData.length}`;
+
+        if (filteredData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9">No records match your search criteria.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        filteredData.forEach(data => {
+            let statusClass = data.status === 'Done' ? 'status-done' : 
+                            data.status === 'Running' ? 'status-running' : 'status-pending';
             
             let tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="font-weight: bold; color: #007bff; text-align: left; padding-left: 10px;">${joName}</td>
-                <td style="text-align: left; padding-left: 10px;">${itemName}</td>
-                <td>${unitType}</td>
-                <td>${unitCtn}</td>
-                <td>${orderQty}</td>
-                <td>${ctnDemand}</td>
-                <td style="font-weight: bold; color: #28a745;">${asOfCarton}</td>
-                <td style="font-weight: bold; color: ${pendingCtn > 0 ? '#d9534f' : '#28a745'};">${pendingCtn}</td>
-                <td><span class="${statusClass}">${status}</span></td>
+                <td style="font-weight: bold; color: #007bff; text-align: left; padding-left: 10px;">${data.joName}</td>
+                <td style="text-align: left; padding-left: 10px;">${data.itemName}</td>
+                <td>${data.unitType}</td>
+                <td>${data.unitCtn}</td>
+                <td>${data.orderQty}</td>
+                <td>${data.ctnDemand}</td>
+                <td style="font-weight: bold; color: #28a745;">${data.asOfCarton}</td>
+                <td style="font-weight: bold; color: ${data.pendingCtn > 0 ? '#d9534f' : '#28a745'};">${data.pendingCtn}</td>
+                <td><span class="${statusClass}">${data.status}</span></td>
             `;
             tbody.appendChild(tr);
         });
+    }
+
+    // Export As of Packaging Report to Excel
+    function exportAsofToExcel() {
+        let table = document.getElementById("asof-packaging-table");
+        let wb = XLSX.utils.book_new();
+        let ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, "As of Packaging Report");
+        XLSX.writeFile(wb, "As_of_Packaging_Report.xlsx");
     }
 
     function toggleMasterListModal() {
