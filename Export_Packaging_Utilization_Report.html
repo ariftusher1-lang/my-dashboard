@@ -420,6 +420,7 @@
                 <button class="tab-btn active" onclick="switchTab('entry-page', this)">📝 Data Entry Form</button>
                 <button class="tab-btn" onclick="switchTab('report-page', this); loadFirebaseData();">📊 Packaging Report & Download</button>
                 <button class="tab-btn" onclick="switchTab('ic-performance-page', this); renderICPerformanceData();">📈 IC Performance</button>
+                <button class="tab-btn" onclick="switchTab('last-day-pack-page', this); renderLastDayPackData();">📦 Last Day Pack Utilization</button>
             </div>
             <button class="logout-btn" onclick="handleLogout()">🚪 Log Out</button>
         </div>
@@ -746,6 +747,45 @@
                 </div>
             </div>
         </div>
+
+        <!-- PAGE 4: LAST DAY PACK UTILIZATION -->
+        <div id="last-day-pack-page" class="page-section">
+            <div class="report-header">
+                <div class="report-title">📦 Last Day Pack Utilization Summary</div>
+                <div>
+                    <label style="font-weight: bold; font-size: 12px; margin-right: 5px;">Select Date Filter:</label>
+                    <input type="date" id="last-day-filter" onchange="renderLastDayPackData()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 10px;">📌 Previous Day Production & Utilization Report</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Shift</th>
+                                <th>Shift IC</th>
+                                <th>Floor</th>
+                                <th>Line</th>
+                                <th>JO Name</th>
+                                <th>Items Name</th>
+                                <th>Complete Set</th>
+                                <th>Complete CTN</th>
+                                <th>Plan MH</th>
+                                <th>Actual MH</th>
+                                <th>MH Utilization (%)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="last-day-table-body">
+                            <tr><td colspan="13">Loading last day pack utilization data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
 <script>
@@ -778,6 +818,13 @@
         }
         initCloudMasterListener();
         initHistoricalProductionListener();
+        
+        // Set default last day date filter to yesterday or today's date minus 1 day format
+        let d = new Date();
+        d.setDate(d.getDate() - 1);
+        let dateStr = d.toISOString().split('T')[0];
+        let filterElem = document.getElementById('last-day-filter');
+        if(filterElem) filterElem.value = dateStr;
     };
 
     function initCloudMasterListener() {
@@ -1939,6 +1986,48 @@
                     }
                 }
             });
+        });
+    }
+
+    function renderLastDayPackData() {
+        let selectedDate = document.getElementById('last-day-filter').value;
+        let lastDayTbody = document.getElementById('last-day-table-body');
+        lastDayTbody.innerHTML = `<tr><td colspan="13">Loading data for ${selectedDate}...</td></tr>`;
+
+        let dbRef = db.ref('productions');
+        dbRef.once('value', (snapshot) => {
+            lastDayTbody.innerHTML = '';
+            let count = 0;
+
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    let data = childSnapshot.val();
+                    if (!selectedDate || data.date === selectedDate) {
+                        count++;
+                        let tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${data.date}</td>
+                            <td>${data.shift}</td>
+                            <td style="font-weight: bold; color: #8e44ad;">${data.shiftIc || '-'}</td>
+                            <td>${data.floor}</td>
+                            <td>${data.line}</td>
+                            <td style="font-weight: bold; color: #007bff;">${data.joName}</td>
+                            <td>${data.itemName}</td>
+                            <td>${data.completeSet}</td>
+                            <td style="font-weight: bold; color: #28a745;">${data.completeCtn}</td>
+                            <td>${data.planMh}</td>
+                            <td>${data.actualMh}</td>
+                            <td style="color: #d9534f; font-weight: bold;">${data.mhUtil}</td>
+                            <td><span style="background: #e2f0d9; padding: 2px 6px; border-radius: 4px; color: #385723; font-weight: bold;">${data.status || 'Running'}</span></td>
+                        `;
+                        lastDayTbody.appendChild(tr);
+                    }
+                });
+            }
+
+            if (count === 0) {
+                lastDayTbody.innerHTML = `<tr><td colspan="13">No records found for date: ${selectedDate}</td></tr>`;
+            }
         });
     }
 
