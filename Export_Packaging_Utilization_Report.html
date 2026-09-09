@@ -588,6 +588,66 @@
             color: #475569;
             font-weight: normal;
         }
+
+        /* JO Summary Card */
+        .jo-summary-card {
+            background: #f8f9fa;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .jo-summary-card h4 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 14px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+        }
+        .jo-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+        }
+        .jo-summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 8px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            font-size: 12px;
+        }
+        .jo-summary-item .jo-name {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .jo-summary-item .item-count {
+            background: #28a745;
+            color: white;
+            padding: 0 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        .jo-total-stats {
+            display: flex;
+            gap: 20px;
+            padding: 10px 0;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 10px;
+        }
+        .jo-total-stats .stat {
+            font-size: 14px;
+        }
+        .jo-total-stats .stat strong {
+            color: #007bff;
+            font-size: 18px;
+        }
+        .jo-total-stats .stat .label {
+            color: #475569;
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
@@ -923,6 +983,15 @@
                     <span class="toggle-icon" id="asof-toggle-icon">▼</span>
                 </div>
                 <div class="asof-content" id="asof-content">
+                    
+                    <!-- JO Summary Card -->
+                    <div class="jo-summary-card" id="jo-summary-card">
+                        <h4>📋 JO Summary (Total JO: <span id="total-jo-count">0</span> | Total Items: <span id="total-item-count">0</span>)</h4>
+                        <div class="jo-summary-grid" id="jo-summary-grid">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+
                     <div class="asof-search-container">
                         <input type="text" id="asof-search-jo" placeholder="🔍 Search JO Name..." oninput="filterAsofReport()">
                         <input type="text" id="asof-search-item" placeholder="🔍 Search Items Name..." oninput="filterAsofReport()">
@@ -1197,7 +1266,6 @@
     let masterJobOrdersMap = {}; // Stores array of items for each JO Name
     let masterRecordsRaw = {}; // Stores raw database keys and objects for single reset/edit
     let historicalProductionData = []; // Stores all historical production records for As of CTN sum calculation
-    let asofReportData = []; // Stores filtered data for As of Packaging Report
     let isAsofVisible = true;
 
     window.onload = function() {
@@ -1339,9 +1407,46 @@
             tbody.innerHTML = `<tr><td colspan="9">No master records found. Please upload or add JO/Items data.</td></tr>`;
             document.getElementById('asof-visible-count').textContent = '(Showing 0 of 0)';
             document.getElementById('asof-filter-count').textContent = 'Total: 0';
+            document.getElementById('total-jo-count').textContent = '0';
+            document.getElementById('total-item-count').textContent = '0';
+            document.getElementById('jo-summary-grid').innerHTML = '<span style="color: #475569;">No JO data available.</span>';
             return;
         }
 
+        // Calculate JO-wise item count
+        let joItemCount = {};
+        let uniqueJOs = [];
+        keys.forEach(key => {
+            let val = masterRecordsRaw[key];
+            let joName = val.joName || '';
+            if (joName) {
+                if (!joItemCount[joName]) {
+                    joItemCount[joName] = 0;
+                    uniqueJOs.push(joName);
+                }
+                joItemCount[joName]++;
+            }
+        });
+
+        // Update JO Summary Card
+        let totalJO = uniqueJOs.length;
+        let totalItems = keys.length;
+        document.getElementById('total-jo-count').textContent = totalJO;
+        document.getElementById('total-item-count').textContent = totalItems;
+
+        let joSummaryGrid = document.getElementById('jo-summary-grid');
+        joSummaryGrid.innerHTML = '';
+        uniqueJOs.sort().forEach(jo => {
+            let div = document.createElement('div');
+            div.className = 'jo-summary-item';
+            div.innerHTML = `
+                <span class="jo-name">${jo}</span>
+                <span class="item-count">${joItemCount[jo]} Items</span>
+            `;
+            joSummaryGrid.appendChild(div);
+        });
+
+        // Sort keys by JO Name
         let sortedKeys = keys.sort((a, b) => {
             let nameA = masterRecordsRaw[a].joName || '';
             let nameB = masterRecordsRaw[b].joName || '';
@@ -1349,7 +1454,7 @@
         });
 
         let filteredData = [];
-        let totalRecords = 0;
+        let filteredCount = 0;
 
         sortedKeys.forEach(key => {
             let val = masterRecordsRaw[key];
@@ -1361,7 +1466,7 @@
             let matchItem = !searchItem || itemName.toLowerCase().includes(searchItem);
             
             if (matchJO && matchItem) {
-                totalRecords++;
+                filteredCount++;
                 let unitType = val.unitType || 'Piece';
                 let unitCtn = val.unitCtn || 0;
                 let orderQty = val.orderQty || 0;
