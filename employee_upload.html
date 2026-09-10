@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Master Report + Abnormalities</title>
+    <title>Employee Punch Report - History + Master Report</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -35,7 +35,6 @@
         .btn-red { background-color: #dc3545; }
         .btn-teal { background-color: #17a2b8; }
 
-        /* --- Hidden File Inputs --- */
         .hidden-input { display: none; }
 
         /* --- DAY SHIFT SUMMARY SECTION --- */
@@ -87,66 +86,54 @@
         .day-shift-stat-box.abnormal .value { color: #dc3545; }
         .day-shift-stat-box.normal .value { color: #2e9f46; }
 
-        /* --- TABLE STYLES (Smaller columns) --- */
+        /* --- TABLE STYLES --- */
         .table-responsive { overflow-x: auto; margin-top: 15px; display: none; max-height: 500px; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th, td { border: 1px solid #ddd; padding: 5px 6px; text-align: left; vertical-align: middle; white-space: nowrap; }
         th { background-color: #f8f9fa; font-weight: 600; color: #333; position: sticky; top: 0; z-index: 10; font-size: 11px; }
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
 
-        /* 🔥 Smaller columns for mobile */
-        #employeeTable th:nth-child(1), #employeeTable td:nth-child(1) { width: 40px; max-width: 40px; }  /* SL/No */
-        #employeeTable th:nth-child(2), #employeeTable td:nth-child(2) { width: 75px; max-width: 75px; font-size: 10px; } /* Date */
-        #employeeTable th:nth-child(3), #employeeTable td:nth-child(3) { width: 45px; max-width: 45px; } /* Shift */
-        #employeeTable th:nth-child(4), #employeeTable td:nth-child(4) { width: 70px; max-width: 70px; font-size: 10px; } /* I/C */
-        #employeeTable th:nth-child(5), #employeeTable td:nth-child(5) { width: 80px; max-width: 80px; font-size: 10px; } /* Staff ID */
-        #employeeTable th:nth-child(6), #employeeTable td:nth-child(6) { width: 110px; max-width: 110px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; } /* Name */
-        #employeeTable th:nth-child(7), #employeeTable td:nth-child(7) { width: 90px; max-width: 90px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; } /* Designation */
-        #employeeTable th:nth-child(8), #employeeTable td:nth-child(8) { width: 70px; max-width: 70px; font-size: 10px; } /* Punch Time */
-        #employeeTable th:nth-child(9), #employeeTable td:nth-child(9) { width: 90px; max-width: 90px; font-size: 9px; } /* Remarks */
-        #employeeTable th:nth-child(10), #employeeTable td:nth-child(10) { width: 70px; max-width: 70px; } /* Status */
+        /* Smaller columns */
+        #employeeTable th:nth-child(1), #employeeTable td:nth-child(1) { width: 40px; max-width: 40px; }
+        #employeeTable th:nth-child(2), #employeeTable td:nth-child(2) { width: 75px; max-width: 75px; font-size: 10px; }
+        #employeeTable th:nth-child(3), #employeeTable td:nth-child(3) { width: 45px; max-width: 45px; }
+        #employeeTable th:nth-child(4), #employeeTable td:nth-child(4) { width: 70px; max-width: 70px; font-size: 10px; }
+        #employeeTable th:nth-child(5), #employeeTable td:nth-child(5) { width: 80px; max-width: 80px; font-size: 10px; }
+        #employeeTable th:nth-child(6), #employeeTable td:nth-child(6) { width: 110px; max-width: 110px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
+        #employeeTable th:nth-child(7), #employeeTable td:nth-child(7) { width: 90px; max-width: 90px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
+        #employeeTable th:nth-child(8), #employeeTable td:nth-child(8) { width: 70px; max-width: 70px; font-size: 10px; }
+        #employeeTable th:nth-child(9), #employeeTable td:nth-child(9) { width: 90px; max-width: 90px; font-size: 9px; }
+        #employeeTable th:nth-child(10), #employeeTable td:nth-child(10) { width: 70px; max-width: 70px; }
 
-        /* Mobile e aro choto */
-        @media (max-width: 768px) {
-            table { font-size: 10px; }
-            th, td { padding: 4px 3px; }
-            #employeeTable th:nth-child(6), #employeeTable td:nth-child(6) { width: 90px; max-width: 90px; }
-            #employeeTable th:nth-child(9), #employeeTable td:nth-child(9) { width: 70px; max-width: 70px; }
-        }
-
-        /* 🔥 GREEN ROW HIGHLIGHT */
+        /* GREEN ROW */
         tr.row-present {
             background-color: #d4edda !important;
             border-left: 4px solid #28a745;
         }
-        tr.row-present td {
-            color: #155724 !important;
-            font-weight: 500;
-        }
-        tr.row-present:hover {
-            background-color: #c3e6cb !important;
-        }
+        tr.row-present td { color: #155724 !important; font-weight: 500; }
+        tr.row-present:hover { background-color: #c3e6cb !important; }
 
-        /* --- Present Status --- */
+        /* Status badges */
         .status-badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 10px; }
         .status-present { background-color: #28a745; color: #ffffff; border: 1px solid #1e7e34; }
         .status-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .green-dot { height: 6px; width: 6px; background-color: #ffffff; border-radius: 50%; display: inline-block; }
 
-        /* --- Remarks --- */
+        /* Remarks */
         .remarks-badge { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 600; font-size: 9px; }
         .remarks-late { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .remarks-ontime { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .remarks-nopunch { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 
-        /* --- Camera Section --- */
+        /* Camera Section */
         .punch-card-section { background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px; display: none; }
         .punch-card-section h2 { margin-bottom: 8px; color: #6f42c1; font-size: 14px; }
         .camera-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .btn-camera { background-color: #6f42c1; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .btn-camera:hover { background-color: #5a32a3; }
 
-        /* --- Master Report Section --- */
+        /* Master Report Section */
         .master-report-section {
             background-color: #f0f8ff;
             border: 2px solid #106cc8;
@@ -156,12 +143,7 @@
             display: none;
         }
         .master-report-section h2 { margin-bottom: 10px; color: #106cc8; font-size: 14px; }
-        .filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: flex-end;
-        }
+        .filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
         .filter-group { display: flex; flex-direction: column; gap: 3px; }
         .filter-group label { font-size: 11px; font-weight: 600; color: #555; }
         .filter-group input, .filter-group select {
@@ -183,9 +165,8 @@
             font-weight: 600;
             height: 32px;
         }
-        .btn-filter:hover { background-color: #0d55a0; }
 
-        /* --- Camera Modal --- */
+        /* Camera Modal */
         .camera-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
         .camera-modal-content { background: #fff; border-radius: 8px; padding: 15px; width: 90%; max-width: 500px; text-align: center; position: relative; }
         .video-container { position: relative; width: 100%; background: #000; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
@@ -197,18 +178,9 @@
         .btn-confirm { background-color: #106cc8; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: none; }
         .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; position: absolute; top: 8px; right: 8px; }
 
-        /* --- OCR --- */
+        /* OCR */
         .ocr-processing { display: none; margin-top: 12px; padding: 12px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeeba; color: #856404; font-weight: 600; font-size: 13px; }
-        .spinner-small {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #6f42c1;
-            border-radius: 50%;
-            width: 18px; height: 18px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 6px;
-        }
+        .spinner-small { border: 3px solid #f3f3f3; border-top: 3px solid #6f42c1; border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 6px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .staff-confirm-section { display: none; margin-top: 12px; padding: 12px; background: #eef4fb; border-radius: 4px; border: 1px solid #b8d4f0; }
@@ -219,14 +191,14 @@
         .ocr-result { display: none; margin-top: 12px; padding: 12px; background: #d4edda; border-radius: 4px; border: 1px solid #c3e6cb; color: #155724; font-weight: 600; font-size: 13px; }
         .ocr-debug { display: none; margin-top: 8px; padding: 8px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 11px; color: #333; max-height: 100px; overflow-y: auto; text-align: left; }
 
-        /* --- Info Message --- */
+        /* Info Message */
         .info-msg { margin-top: 8px; padding: 8px 12px; background: #eef4fb; border-left: 4px solid #106cc8; color: #333; font-size: 12px; display: none; border-radius: 4px; }
 
-        /* --- Loading --- */
+        /* Loading */
         .loading { display: none; text-align: center; padding: 15px; font-size: 13px; color: #555; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #6f42c1; border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; margin: 0 auto 8px; }
 
-        /* --- Filtered Result Section (Master Report) --- */
+        /* Master Report Result */
         .master-report-result {
             display: none;
             margin-top: 15px;
@@ -237,7 +209,7 @@
         }
         .master-report-result h3 { font-size: 14px; color: #333; margin-bottom: 10px; }
 
-        /* --- Abnormalities Box --- */
+        /* Abnormalities Box */
         .abnormalities-box {
             background: #fff5f5;
             border: 2px solid #dc3545;
@@ -258,12 +230,45 @@
         }
         .abnormalities-box h4.red { color: #dc3545; }
         .abnormalities-box h4.green { color: #28a745; }
-        .abnormalities-list {
-            font-size: 12px;
-            color: #333;
-        }
+        .abnormalities-list { font-size: 12px; color: #333; }
         .abnormalities-list ul { margin-left: 15px; margin-top: 5px; }
         .abnormalities-list li { margin-bottom: 3px; }
+
+        /* Report History List */
+        .report-history-list {
+            display: none;
+            margin-top: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .report-history-list h3 { font-size: 14px; color: #333; margin-bottom: 10px; }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .history-item:hover { background: #f0f8ff; }
+        .history-item:last-child { border-bottom: none; }
+        .history-item .date-shift { font-weight: 600; color: #333; }
+        .history-item .stats { color: #666; font-size: 11px; }
+        .history-item .btn-load {
+            background: #106cc8;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+        }
 
         @media (max-width: 768px) {
             .button-group { flex-direction: column; align-items: stretch; }
@@ -293,49 +298,51 @@
         
         <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo Upload (Individual)</button>
         
-        <!-- 🔥 New: Master Report Button -->
-        <button class="btn btn-teal" onclick="toggleMasterReportSection()" id="masterReportToggleBtn" style="display: none;">📊 Master Report (Date & Shift Filter)</button>
+        <button class="btn btn-teal" onclick="toggleMasterReportSection()" id="masterReportToggleBtn">📊 Master Report (History)</button>
     </div>
 
     <input type="file" id="masterListInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleMasterListUpload(this)">
     <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Day')">
     <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Night')">
 
-    <!-- ============================================== -->
-    <!-- PUNCH CARD CAMERA SECTION -->
-    <!-- ============================================== -->
+    <!-- Punch Card Camera Section -->
     <div class="punch-card-section" id="punchCardSection">
         <h2>📸 Punch Card Photo Upload (Individual)</h2>
         <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
             Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe.
         </p>
-        
         <div class="camera-controls">
             <button class="btn-camera" onclick="openCamera()">📷 Open Camera (Back)</button>
         </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- MASTER REPORT SECTION (Filter) -->
-    <!-- ============================================== -->
+    <!-- Master Report Section -->
     <div class="master-report-section" id="masterReportSection">
-        <h2>📊 Master Report - Date & Shift Filter</h2>
+        <h2>📊 Master Report - Saved Records History</h2>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+            Ei section e shob <strong>saved report</strong> thakbe. Date & Shift select kore <strong>Load</strong> korle shei diner data show korbe.
+        </p>
         <div class="filter-row">
             <div class="filter-group">
-                <label for="filterDate">Date</label>
+                <label for="filterDate">Date (Report Date)</label>
                 <input type="date" id="filterDate">
             </div>
             <div class="filter-group">
                 <label for="filterShift">Shift</label>
                 <select id="filterShift">
-                    <option value="">All Shifts</option>
                     <option value="Day">Day</option>
                     <option value="Night">Night</option>
                 </select>
             </div>
-            <button class="btn-filter" onclick="applyMasterFilter()">🔍 Filter</button>
-            <button class="btn-filter" style="background-color: #6c757d;" onclick="resetMasterFilter()">↻ Reset</button>
+            <button class="btn-filter" onclick="loadSavedReport()">📂 Load Saved Report</button>
+            <button class="btn-filter" style="background-color: #6c757d;" onclick="loadAllHistory()">📜 Show All History</button>
         </div>
+    </div>
+
+    <!-- Report History List -->
+    <div class="report-history-list" id="reportHistoryList">
+        <h3>📜 Saved Reports History</h3>
+        <div id="historyItems"></div>
     </div>
 
     <div class="info-msg" id="infoMsg"></div>
@@ -345,9 +352,7 @@
         Processing...
     </div>
 
-    <!-- ============================================== -->
     <!-- DAY SHIFT SUMMARY SECTION -->
-    <!-- ============================================== -->
     <div class="day-shift-summary" id="dayShiftSummary">
         <h3>📅 Day Shift Punch Record (As per Upload)</h3>
         <div class="day-shift-stats">
@@ -356,7 +361,7 @@
                 <div class="value" id="dsTotal">0</div>
             </div>
             <div class="day-shift-stat-box present">
-                <div class="label">✅ Present (Punch Card Uploaded)</div>
+                <div class="label">✅ Present (Card Uploaded)</div>
                 <div class="value" id="dsPresent">0</div>
             </div>
             <div class="day-shift-stat-box pending">
@@ -367,23 +372,20 @@
                 <div class="label">⚠️ Late Punch</div>
                 <div class="value" id="dsLate">0</div>
             </div>
-            <div class="day-shift-stat-box abnormal" id="dsAbnormalBox">
+            <div class="day-shift-stat-box abnormal">
                 <div class="label">🚨 Abnormalities</div>
                 <div class="value" id="dsAbnormal">0</div>
             </div>
-            <div class="day-shift-stat-box normal" id="dsNormalBox">
+            <div class="day-shift-stat-box normal">
                 <div class="label">✔️ No Abnormalities</div>
                 <div class="value" id="dsNormal">0</div>
             </div>
         </div>
 
-        <!-- Abnormalities Details Box -->
         <div id="abnormalitiesDetail" style="margin-top: 12px;"></div>
     </div>
 
-    <!-- ============================================== -->
     <!-- MAIN TABLE -->
-    <!-- ============================================== -->
     <div class="table-responsive" id="tableContainer">
         <table id="employeeTable">
             <thead>
@@ -404,9 +406,7 @@
         </table>
     </div>
 
-    <!-- ============================================== -->
-    <!-- MASTER REPORT RESULT TABLE (Filtered) -->
-    <!-- ============================================== -->
+    <!-- Master Report Result -->
     <div class="master-report-result" id="masterReportResult">
         <h3 id="masterReportTitle">📊 Filtered Result</h3>
         <div class="table-responsive" style="display: block; max-height: 400px;">
@@ -494,10 +494,11 @@
     let videoStream = null;
     let capturedImageData = null;
     let currentShiftType = 'Day';
-    let allPunchReportData = []; // Shob shift er data store kore rakhbo (Master Report er jonno)
+    let currentReportDate = ''; // Current report er date (YYYY-MM-DD format)
+    let currentReportShift = 'Day';
 
     // ====================================================
-    // 2A. BANGLA TO ENGLISH CONVERTER
+    // 2A. BANGLA TO ENGLISH
     // ====================================================
     const banglaToEnglishDigits = {
         '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
@@ -513,31 +514,16 @@
     // 3. PAGE INITIALIZATION
     // ====================================================
     window.onload = function() {
-        loadDataFromFirebase();
+        loadMasterListFromFirebase();
     };
 
-    function loadDataFromFirebase() {
-        const dataRef = database.ref('employeeData');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        
-        loadingSpinner.style.display = 'block';
-
-        dataRef.once('value', (snapshot) => {
+    function loadMasterListFromFirebase() {
+        database.ref('employeeData/masterList').once('value', (snapshot) => {
             const data = snapshot.val();
-            loadingSpinner.style.display = 'none';
-
-            if (data && data.masterList) {
-                masterListData = data.masterList;
+            if (data) {
+                masterListData = data;
+                console.log("✅ Master List loaded:", masterListData.length);
             }
-
-            if (data && data.currentTableData) {
-                currentTableData = data.currentTableData;
-                generateTable(currentTableData);
-                document.getElementById('masterReportToggleBtn').style.display = 'inline-block';
-            }
-        }).catch((error) => {
-            console.error("Firebase Load Error:", error);
-            loadingSpinner.style.display = 'none';
         });
     }
 
@@ -577,10 +563,8 @@
 
                 masterListData = masterList;
 
-                database.ref('employeeData').update({
-                    masterList: masterList,
-                    lastUpdated: new Date().toISOString()
-                }).then(() => {
+                database.ref('employeeData/masterList').set(masterList)
+                .then(() => {
                     loadingSpinner.style.display = 'none';
                     infoMsg.textContent = `✅ Master List saved! Total: ${masterList.length}`;
                     alert(`✅ Master List Uploaded!\nTotal: ${masterList.length}`);
@@ -597,7 +581,7 @@
     }
 
     // ====================================================
-    // 5. PUNCH REPORT UPLOAD
+    // 5. PUNCH REPORT UPLOAD (Save to Firebase with Date+Shift)
     // ====================================================
     function handlePunchReportUpload(input, shiftType) {
         if (!input.files || input.files.length === 0) return;
@@ -622,11 +606,18 @@
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                 const punchData = [];
+                let reportDate = '';
+
                 jsonData.slice(1).forEach(row => {
                     if (row[3]) {
+                        // Report date from first valid row
+                        if (!reportDate && row[0]) {
+                            reportDate = extractReportDate(row[0]);
+                        }
+
                         punchData.push({
                             date: row[0] ? formatDate(row[0]) : '',
-                            rawDate: row[0], // ISO date for filtering
+                            rawDate: row[0],
                             shift: row[1] ? String(row[1]).trim() : shiftType,
                             icName: row[2] ? String(row[2]).trim() : '',
                             staffId: convertBanglaToEnglish(String(row[3]).trim()),
@@ -639,17 +630,35 @@
                 });
 
                 currentTableData = punchData;
-                allPunchReportData = punchData; // Master Report er jonno save
+                currentReportDate = reportDate;
+                currentReportShift = shiftType;
 
                 loadingSpinner.style.display = 'none';
-                infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length}`;
+                infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length} | Date: ${reportDate} | Shift: ${shiftType}`;
 
                 generateTable(punchData);
-                document.getElementById('masterReportToggleBtn').style.display = 'inline-block';
 
-                database.ref('employeeData').update({
-                    currentTableData: punchData,
-                    lastUpdated: new Date().toISOString()
+                // 🔥 Firebase e save kori - ALADA node (reportHistory/date_shift)
+                const historyKey = `${reportDate}_${shiftType}`;
+                
+                database.ref('reportHistory/' + historyKey).set({
+                    reportDate: reportDate,
+                    shift: shiftType,
+                    punchData: punchData,
+                    uploadedAt: new Date().toISOString(),
+                    totalRecords: punchData.length
+                }).then(() => {
+                    console.log(`✅ Report saved to Firebase: ${historyKey}`);
+                }).catch((error) => {
+                    console.error("Save Error:", error);
+                });
+
+                // Current report (latest) o save kori
+                database.ref('currentReport').set({
+                    reportDate: reportDate,
+                    shift: shiftType,
+                    punchData: punchData,
+                    uploadedAt: new Date().toISOString()
                 });
 
             } catch (error) {
@@ -663,7 +672,34 @@
     }
 
     // ====================================================
-    // 6. GENERATE TABLE
+    // 6. EXTRACT REPORT DATE (YYYY-MM-DD format)
+    // ====================================================
+    function extractReportDate(dateVal) {
+        if (!dateVal) return '';
+        
+        if (typeof dateVal === 'number') {
+            const excelDate = XLSX.SSF.parse_date_code(dateVal);
+            if (excelDate) {
+                return `${excelDate.y}-${String(excelDate.m).padStart(2,'0')}-${String(excelDate.d).padStart(2,'0')}`;
+            }
+        }
+
+        const dateStr = String(dateVal).trim();
+        if (dateStr.includes(' ')) {
+            return dateStr.split(' ')[0]; // "2026-09-10"
+        } else if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3 && parts[0].length === 4) {
+                return dateStr; // Already YYYY-MM-DD
+            } else if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+        }
+        return dateStr;
+    }
+
+    // ====================================================
+    // 7. GENERATE TABLE
     // ====================================================
     function generateTable(data) {
         const tableBody = document.getElementById('tableBody');
@@ -722,14 +758,12 @@
         document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
         document.getElementById('punchCardSection').style.display = 'block';
 
-        // Initial summary update
         updateDayShiftSummary(data.length, 0, data.length, lateCount);
-
         loadStatusFromFirebase();
     }
 
     // ====================================================
-    // 7. UPDATE DAY SHIFT SUMMARY + ABNORMALITIES
+    // 8. UPDATE DAY SHIFT SUMMARY + ABNORMALITIES (NEW LOGIC)
     // ====================================================
     function updateDayShiftSummary(total, present, pending, late) {
         document.getElementById('dsTotal').textContent = total;
@@ -737,31 +771,25 @@
         document.getElementById('dsPending').textContent = pending;
         document.getElementById('dsLate').textContent = late;
 
-        // 🔥 Abnormalities Logic:
-        // Present & Late Punch mile gele → No Abnormalities
-        // Na mile → Abnormalities
-        const latePresent = Math.min(present, late);
-        const abnormalities = Math.abs(late - present);
-        const matched = Math.max(0, Math.min(present, late));
-
+        // 🔥 NEW Abnormalities Logic:
+        // Jodi Present == Total → No Abnormalities (0 abnormal)
+        // Jodi Present < Total → Abnormalities = Total - Present
+        // Abnormalities means: jara Present na (Pending + Late soho shob mismatch)
+        
         let abnormalCount = 0;
         let normalCount = 0;
 
-        if (present === 0 && late === 0) {
+        if (total === 0) {
             abnormalCount = 0;
             normalCount = 0;
-        } else if (late > present) {
-            // Late beshi, Present kom → Abnormalities
-            abnormalCount = late - present;
+        } else if (present === total) {
+            // 100% Present → No Abnormalities
+            abnormalCount = 0;
             normalCount = present;
-        } else if (present > late) {
-            // Present beshi, Late kom → Eita normal (je Late hoy ni se Present)
-            abnormalCount = 0;
-            normalCount = late;
         } else {
-            // Present == Late → No Abnormalities
-            abnormalCount = 0;
-            normalCount = late;
+            // Kichu employee Present na → Abnormalities
+            abnormalCount = total - present; // Pending + Late soho shob
+            normalCount = present;
         }
 
         document.getElementById('dsAbnormal').textContent = abnormalCount;
@@ -769,35 +797,43 @@
 
         // Abnormalities Details Box
         const detailBox = document.getElementById('abnormalitiesDetail');
-        if (abnormalCount === 0) {
+        if (abnormalCount === 0 && total > 0) {
             detailBox.innerHTML = `
                 <div class="abnormalities-box ok">
                     <h4 class="green">✔️ No Abnormalities</h4>
                     <div class="abnormalities-list">
-                        <p>Late Punch <strong>${late}</strong> & Present <strong>${present}</strong> — Sob match hoyeche. <strong>${normalCount}</strong> jon employee mile geche.</p>
-                    </div>
-                </div>
-            `;
-        } else {
-            detailBox.innerHTML = `
-                <div class="abnormalities-box">
-                    <h4 class="red">🚨 Abnormalities Detected</h4>
-                    <div class="abnormalities-list">
-                        <p><strong>${abnormalCount}</strong> jon employee er mismatch ache.</p>
+                        <p>Sob <strong>${total}</strong> jon employee er Punch Card upload hoyeche. <strong>Kono abnormalities nei.</strong></p>
                         <ul>
-                            <li>Late Punch: <strong>${late}</strong></li>
+                            <li>Total Employees: <strong>${total}</strong></li>
                             <li>Present (Card Uploaded): <strong>${present}</strong></li>
-                            <li>Matched: <strong>${normalCount}</strong></li>
-                            <li>Abnormal: <strong>${abnormalCount}</strong></li>
+                            <li>Match Rate: <strong>100%</strong></li>
                         </ul>
                     </div>
                 </div>
             `;
+        } else if (total > 0) {
+            detailBox.innerHTML = `
+                <div class="abnormalities-box">
+                    <h4 class="red">🚨 Abnormalities Detected</h4>
+                    <div class="abnormalities-list">
+                        <p><strong>${abnormalCount}</strong> jon employee er Punch Card upload hoyni. Ei jonno <strong>${abnormalCount}</strong> ta abnormalities.</p>
+                        <ul>
+                            <li>Total Employees: <strong>${total}</strong></li>
+                            <li>✅ Present (Card Uploaded): <strong>${present}</strong></li>
+                            <li>⏳ Pending: <strong>${pending}</strong></li>
+                            <li>⚠️ Late Punch / Shift Schedule Problem: <strong>${late}</strong></li>
+                            <li>🚨 Abnormalities: <strong>${abnormalCount}</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        } else {
+            detailBox.innerHTML = '';
         }
     }
 
     // ====================================================
-    // 8. REMARKS CALCULATION
+    // 9. REMARKS CALCULATION
     // ====================================================
     function calculateRemarks(punchTimeVal, shift) {
         if (punchTimeVal === null || punchTimeVal === undefined || punchTimeVal === '') {
@@ -811,7 +847,7 @@
         }
 
         if (punchMinutes > cutoff) {
-            return { text: 'Late Punch', isLate: true };
+            return { text: 'Late Punch / Shift Schedule Problem', isLate: true };
         } else {
             return { text: 'On Time', isLate: false };
         }
@@ -884,7 +920,7 @@
     }
 
     // ====================================================
-    // 9. LOAD PRESENT STATUS + GREEN ROW
+    // 10. LOAD PRESENT STATUS + GREEN ROW
     // ====================================================
     function loadStatusFromFirebase() {
         const statusRef = database.ref('punchStatus');
@@ -934,7 +970,7 @@
     }
 
     // ====================================================
-    // 10. CAMERA LOGIC
+    // 11. CAMERA LOGIC
     // ====================================================
     function togglePunchCardSection() {
         const section = document.getElementById('punchCardSection');
@@ -943,14 +979,7 @@
 
     function toggleMasterReportSection() {
         const section = document.getElementById('masterReportSection');
-        const isVisible = section.style.display === 'block';
-        section.style.display = isVisible ? 'none' : 'block';
-        
-        if (!isVisible) {
-            // Default date set kori (ajker date)
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('filterDate').value = today;
-        }
+        section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
     }
 
     async function openCamera() {
@@ -1021,7 +1050,7 @@
     function retakePhoto() { openCamera(); }
 
     // ====================================================
-    // 11. OCR + AUTO DETECT
+    // 12. OCR + AUTO DETECT
     // ====================================================
     async function processOCRAndUpload() {
         const ocrProcessing = document.getElementById('ocrProcessing');
@@ -1137,7 +1166,7 @@
     }
 
     // ====================================================
-    // 12. AUTO UPDATE STATUS (Green Row)
+    // 13. AUTO UPDATE STATUS (Green Row)
     // ====================================================
     async function autoUpdateStatus(staffId) {
         const statusCell = document.getElementById(`status_${staffId}`);
@@ -1147,8 +1176,14 @@
         }
 
         try {
-            await database.ref('punchStatus/' + staffId).set({
+            // Report-specific status key (date+shift+staffId)
+            const statusKey = `${currentReportDate}_${currentReportShift}_${staffId}`;
+            
+            await database.ref('punchStatus/' + statusKey).set({
+                staffId: staffId,
                 status: 'Present',
+                reportDate: currentReportDate,
+                shift: currentReportShift,
                 timestamp: new Date().toISOString(),
                 detectedBy: 'OCR'
             });
@@ -1177,8 +1212,13 @@
         const statusCell = document.getElementById(`status_${staffId}`);
         if (!statusCell) { alert(`Staff ID "${staffId}" not found.`); return; }
 
-        database.ref('punchStatus/' + staffId).set({
+        const statusKey = `${currentReportDate}_${currentReportShift}_${staffId}`;
+
+        database.ref('punchStatus/' + statusKey).set({
+            staffId: staffId,
             status: 'Present',
+            reportDate: currentReportDate,
+            shift: currentReportShift,
             timestamp: new Date().toISOString(),
             detectedBy: 'Manual'
         })
@@ -1217,141 +1257,154 @@
     }
 
     // ====================================================
-    // 13. MASTER REPORT - DATE & SHIFT FILTER
+    // 14. MASTER REPORT - LOAD SAVED REPORT (History)
     // ====================================================
-    function applyMasterFilter() {
-        const filterDate = document.getElementById('filterDate').value; // YYYY-MM-DD
+    function loadSavedReport() {
+        const filterDate = document.getElementById('filterDate').value;
         const filterShift = document.getElementById('filterShift').value;
 
-        if (!allPunchReportData || allPunchReportData.length === 0) {
-            alert("Kono data upload kora hoyni. Please upload Punch Report first.");
+        if (!filterDate) {
+            alert("Please select a date first.");
             return;
         }
 
-        // Filter kori
-        const filtered = allPunchReportData.filter(record => {
-            // Date match
-            let dateMatch = true;
-            if (filterDate && record.rawDate) {
-                let recordDate = '';
-                
-                // Excel date number convert
-                if (typeof record.rawDate === 'number') {
-                    const excelDate = XLSX.SSF.parse_date_code(record.rawDate);
-                    if (excelDate) {
-                        recordDate = `${excelDate.y}-${String(excelDate.m).padStart(2,'0')}-${String(excelDate.d).padStart(2,'0')}`;
-                    }
-                } else {
-                    // String date handle
-                    const dateStr = String(record.rawDate).trim();
-                    if (dateStr.includes(' ')) {
-                        recordDate = dateStr.split(' ')[0]; // "2026-09-10"
-                    } else if (dateStr.includes('-')) {
-                        const parts = dateStr.split('-');
-                        if (parts.length === 3) {
-                            recordDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                        }
-                    }
-                }
-                dateMatch = recordDate === filterDate;
+        const historyKey = `${filterDate}_${filterShift}`;
+
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        loadingSpinner.style.display = 'block';
+
+        database.ref('reportHistory/' + historyKey).once('value', (snapshot) => {
+            loadingSpinner.style.display = 'none';
+            const data = snapshot.val();
+
+            if (!data || !data.punchData) {
+                alert(`❌ Kono report paoa jayni!\n\nDate: ${filterDate}\nShift: ${filterShift}\n\nPlease check the date & shift.`);
+                return;
             }
 
-            // Shift match
-            let shiftMatch = true;
-            if (filterShift) {
-                shiftMatch = (record.shift || '').toLowerCase() === filterShift.toLowerCase();
-            }
-
-            return dateMatch && shiftMatch;
+            // Show saved report
+            displaySavedReport(data.punchData, data.reportDate, data.shift, data.uploadedAt);
         });
+    }
 
-        // Show result
+    function displaySavedReport(punchData, reportDate, shift, uploadedAt) {
         const resultSection = document.getElementById('masterReportResult');
         const resultBody = document.getElementById('masterReportBody');
         const resultTitle = document.getElementById('masterReportTitle');
 
-        if (filtered.length === 0) {
-            resultBody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px; color: #999;">Kono data paoa jayni ei filter e.</td></tr>`;
-            resultSection.style.display = 'block';
-            resultTitle.textContent = `📊 Filtered Result — 0 Records`;
-            return;
-        }
-
-        // Result table build
         const masterMap = {};
         masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
-        let html = '';
-        filtered.forEach((record, idx) => {
-            const masterInfo = masterMap[record.staffId];
-            const empName = record.empName || (masterInfo ? masterInfo.name : '-');
-            const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
-            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+        // Save kora status load kori
+        database.ref('punchStatus').once('value', (snapshot) => {
+            const statusData = snapshot.val() || {};
+            
+            let html = '';
+            let presentCount = 0;
+            let lateCount = 0;
 
-            html += `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td>${record.date || '-'}</td>
-                    <td>${record.shift || '-'}</td>
-                    <td><strong>${record.staffId}</strong></td>
-                    <td>${empName}</td>
-                    <td>${designation}</td>
-                    <td>${record.punchTime || '-'}</td>
-                    <td>
-                        <span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">
-                            ${remarks.text}
-                        </span>
-                    </td>
-                    <td class="status-cell" id="mr_status_${record.staffId}">
-                        <span class="status-badge status-pending">Pending</span>
-                    </td>
-                </tr>
-            `;
+            punchData.forEach((record, idx) => {
+                const masterInfo = masterMap[record.staffId];
+                const empName = record.empName || (masterInfo ? masterInfo.name : '-');
+                const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
+                const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+                if (remarks.isLate) lateCount++;
+
+                // Status check kori
+                const statusKey = `${reportDate}_${shift}_${record.staffId}`;
+                const isPresent = statusData[statusKey] && statusData[statusKey].status === 'Present';
+                if (isPresent) presentCount++;
+
+                const statusBadge = isPresent 
+                    ? `<span class="status-badge status-present"><span class="green-dot"></span> Present</span>`
+                    : `<span class="status-badge status-pending">Pending</span>`;
+
+                const rowClass = isPresent ? 'row-present' : '';
+
+                html += `
+                    <tr class="${rowClass}">
+                        <td>${idx + 1}</td>
+                        <td>${record.date || '-'}</td>
+                        <td>${record.shift || '-'}</td>
+                        <td><strong>${record.staffId}</strong></td>
+                        <td>${empName}</td>
+                        <td>${designation}</td>
+                        <td>${record.punchTime || '-'}</td>
+                        <td>
+                            <span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">
+                                ${remarks.text}
+                            </span>
+                        </td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `;
+            });
+
+            resultBody.innerHTML = html;
+            resultSection.style.display = 'block';
+            
+            const uploadedDate = new Date(uploadedAt).toLocaleString();
+            resultTitle.innerHTML = `📊 Saved Report — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong> | Late: <strong>${lateCount}</strong><br><small style="color:#666;">Uploaded: ${uploadedDate}</small>`;
         });
-
-        resultBody.innerHTML = html;
-        resultSection.style.display = 'block';
-        resultTitle.textContent = `📊 Filtered Result — ${filtered.length} Records (Date: ${filterDate || 'All'}, Shift: ${filterShift || 'All'})`;
-
-        // Load status for filtered result
-        loadStatusForMasterReport(filtered);
-    }
-
-    function loadStatusForMasterReport(filteredData) {
-        const statusRef = database.ref('punchStatus');
-        statusRef.once('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                for (const [staffId, status] of Object.entries(data)) {
-                    if (status.status === 'Present') {
-                        const statusCell = document.getElementById(`mr_status_${staffId}`);
-                        if (statusCell) {
-                            statusCell.innerHTML = `
-                                <span class="status-badge status-present">
-                                    <span class="green-dot"></span> Present
-                                </span>
-                            `;
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    function resetMasterFilter() {
-        document.getElementById('filterDate').value = '';
-        document.getElementById('filterShift').value = '';
-        document.getElementById('masterReportResult').style.display = 'none';
     }
 
     // ====================================================
-    // 14. CLEAR ALL DATA
+    // 15. SHOW ALL HISTORY
+    // ====================================================
+    function loadAllHistory() {
+        const historyList = document.getElementById('reportHistoryList');
+        const historyItems = document.getElementById('historyItems');
+        
+        historyList.style.display = 'block';
+        historyItems.innerHTML = '<p style="color:#666; font-size:12px;">Loading...</p>';
+
+        database.ref('reportHistory').once('value', (snapshot) => {
+            const data = snapshot.val();
+            
+            if (!data) {
+                historyItems.innerHTML = '<p style="color:#666; font-size:12px;">Kono saved report nei. Please upload Punch Report first.</p>';
+                return;
+            }
+
+            const entries = Object.entries(data).sort((a, b) => {
+                return new Date(b[1].uploadedAt) - new Date(a[1].uploadedAt);
+            });
+
+            let html = '';
+            entries.forEach(([key, report]) => {
+                const uploadedDate = new Date(report.uploadedAt).toLocaleString();
+                html += `
+                    <div class="history-item">
+                        <div>
+                            <div class="date-shift">📅 ${report.reportDate} — ${report.shift} Shift</div>
+                            <div class="stats">${report.totalRecords} records | Uploaded: ${uploadedDate}</div>
+                        </div>
+                        <button class="btn-load" onclick="quickLoadHistory('${report.reportDate}', '${report.shift}')">Load</button>
+                    </div>
+                `;
+            });
+
+            historyItems.innerHTML = html;
+        });
+    }
+
+    function quickLoadHistory(date, shift) {
+        document.getElementById('filterDate').value = date;
+        document.getElementById('filterShift').value = shift;
+        loadSavedReport();
+        document.getElementById('reportHistoryList').style.display = 'none';
+    }
+
+    // ====================================================
+    // 16. CLEAR ALL DATA
     // ====================================================
     function clearAllData() {
-        if (confirm("Apni ki shob data clear korte chan?")) {
+        if (confirm("Apni ki shob data clear korte chan? Firebase theke shob data muche jabe.")) {
             Promise.all([
                 database.ref('employeeData').remove(),
-                database.ref('punchStatus').remove()
+                database.ref('punchStatus').remove(),
+                database.ref('reportHistory').remove(),
+                database.ref('currentReport').remove()
             ]).then(() => {
                 alert("✅ All Data Cleared!");
                 location.reload();
