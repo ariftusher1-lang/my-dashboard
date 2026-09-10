@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Excel + OCR (Bangla Support)</title>
+    <title>Employee Punch Report - Excel + OCR + Green Row Highlight</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -12,7 +12,7 @@
     <!-- Tesseract.js OCR Library -->
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
-    <!-- SheetJS (xlsx) - Excel file read korar jonno -->
+    <!-- SheetJS (xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
@@ -37,6 +37,52 @@
         /* --- Hidden File Inputs --- */
         .hidden-input { display: none; }
 
+        /* --- DAY SHIFT SUMMARY SECTION (Red Marked Area) --- */
+        .day-shift-summary {
+            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+            border: 2px solid #2e9f46;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .day-shift-summary h3 {
+            font-size: 18px;
+            color: #1b5e20;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .day-shift-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+        .day-shift-stat-box {
+            background: #ffffff;
+            border-radius: 6px;
+            padding: 12px 15px;
+            border-left: 4px solid #2e9f46;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .day-shift-stat-box .label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .day-shift-stat-box .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1b5e20;
+        }
+        .day-shift-stat-box.present .value { color: #2e9f46; }
+        .day-shift-stat-box.pending .value { color: #d97d26; }
+        .day-shift-stat-box.late .value { color: #dc3545; }
+        .day-shift-stat-box.total-box .value { color: #106cc8; }
+
         /* --- Table Styles --- */
         .table-responsive { overflow-x: auto; margin-top: 20px; display: none; max-height: 600px; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -45,11 +91,24 @@
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
 
+        /* 🔥 GREEN ROW HIGHLIGHT (Present Status Green hole pura row green hobe) */
+        tr.row-present {
+            background-color: #d4edda !important;
+            border-left: 4px solid #28a745;
+        }
+        tr.row-present td {
+            color: #155724 !important;
+            font-weight: 500;
+        }
+        tr.row-present:hover {
+            background-color: #c3e6cb !important;
+        }
+
         /* --- Present Status Styling --- */
         .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
-        .status-present { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-present { background-color: #28a745; color: #ffffff; border: 1px solid #1e7e34; }
         .status-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .green-dot { height: 8px; width: 8px; background-color: #28a745; border-radius: 50%; display: inline-block; }
+        .green-dot { height: 8px; width: 8px; background-color: #ffffff; border-radius: 50%; display: inline-block; }
 
         /* --- Remarks Styling --- */
         .remarks-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }
@@ -144,11 +203,13 @@
     <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Day')">
     <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Night')">
 
+    <!-- ============================================== -->
     <!-- PUNCH CARD CAMERA SECTION -->
+    <!-- ============================================== -->
     <div class="punch-card-section" id="punchCardSection">
         <h2>📸 Punch Card Photo Upload (Individual)</h2>
         <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
-            Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe (Bangla/English dui tai) ebong <strong>Present Status</strong> Green hoye jabe.
+            Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe ebong <strong>Present Status</strong> Green hoye jabe.
         </p>
         
         <div class="camera-controls">
@@ -163,6 +224,32 @@
         Processing...
     </div>
 
+    <!-- ============================================== -->
+    <!-- 🔥 DAY SHIFT SUMMARY SECTION (Red Marked Area) -->
+    <!-- ============================================== -->
+    <div class="day-shift-summary" id="dayShiftSummary">
+        <h3>📅 Day Shift Punch Record (As per Upload)</h3>
+        <div class="day-shift-stats">
+            <div class="day-shift-stat-box total-box">
+                <div class="label">Total Employees</div>
+                <div class="value" id="dsTotal">0</div>
+            </div>
+            <div class="day-shift-stat-box present">
+                <div class="label">✅ Present (Punch Card Uploaded)</div>
+                <div class="value" id="dsPresent">0</div>
+            </div>
+            <div class="day-shift-stat-box pending">
+                <div class="label">⏳ Pending</div>
+                <div class="value" id="dsPending">0</div>
+            </div>
+            <div class="day-shift-stat-box late">
+                <div class="label">⚠️ Late Punch</div>
+                <div class="value" id="dsLate">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards (Top) -->
     <div class="summary-cards" id="summaryCards" style="display: none;">
         <div class="summary-card total">
             <div class="number" id="totalCount">0</div>
@@ -178,6 +265,7 @@
         </div>
     </div>
 
+    <!-- Main Table -->
     <div class="table-responsive" id="tableContainer">
         <table id="employeeTable">
             <thead>
@@ -224,7 +312,6 @@
             ✅ <strong>Staff ID Detected:</strong> <span id="detectedId"></span>
         </div>
 
-        <!-- OCR Debug (Ki text paoa geche dekhar jonno) -->
         <div class="ocr-debug" id="ocrDebug">
             <strong>OCR Detected Text:</strong><br>
             <pre id="ocrDebugText" style="white-space: pre-wrap; word-break: break-word;"></pre>
@@ -263,6 +350,7 @@
     let currentTableData = [];
     let videoStream = null;
     let capturedImageData = null;
+    let currentShiftType = 'Day'; // Default
 
     // ====================================================
     // 2A. BANGLA TO ENGLISH DIGIT CONVERTER
@@ -296,7 +384,7 @@
 
             if (data && data.masterList) {
                 masterListData = data.masterList;
-                console.log("✅ Master List loaded:", masterListData.length, "employees");
+                console.log("✅ Master List loaded:", masterListData.length);
             }
 
             if (data && data.currentTableData) {
@@ -329,14 +417,11 @@
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                 const masterList = [];
-                const rows = jsonData.slice(1);
-
-                rows.forEach(row => {
+                jsonData.slice(1).forEach(row => {
                     if (row[1]) {
                         masterList.push({
                             staffId: convertBanglaToEnglish(String(row[1]).trim()),
@@ -353,12 +438,11 @@
                     lastUpdated: new Date().toISOString()
                 }).then(() => {
                     loadingSpinner.style.display = 'none';
-                    infoMsg.textContent = `✅ Master List saved! Total: ${masterList.length} employees.`;
+                    infoMsg.textContent = `✅ Master List saved! Total: ${masterList.length}`;
                     alert(`✅ Master List Uploaded!\nTotal: ${masterList.length}`);
                 }).catch((error) => {
                     console.error("Save Error:", error);
                     loadingSpinner.style.display = 'none';
-                    alert("Firebase save error.");
                 });
 
             } catch (error) {
@@ -380,6 +464,8 @@
         const file = input.files[0];
         const infoMsg = document.getElementById('infoMsg');
         const loadingSpinner = document.getElementById('loadingSpinner');
+        
+        currentShiftType = shiftType;
 
         infoMsg.style.display = 'block';
         infoMsg.textContent = `📂 Reading Punch Report: ${file.name}...`;
@@ -391,14 +477,11 @@
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                 const punchData = [];
-                const rows = jsonData.slice(1);
-
-                rows.forEach(row => {
+                jsonData.slice(1).forEach(row => {
                     if (row[3]) {
                         punchData.push({
                             date: row[0] ? formatDate(row[0]) : '',
@@ -416,7 +499,7 @@
                 currentTableData = punchData;
 
                 loadingSpinner.style.display = 'none';
-                infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length} records.`;
+                infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length}`;
 
                 generateTable(punchData);
 
@@ -442,11 +525,13 @@
         const tableBody = document.getElementById('tableBody');
         const tableContainer = document.getElementById('tableContainer');
         const summaryCards = document.getElementById('summaryCards');
+        const dayShiftSummary = document.getElementById('dayShiftSummary');
         
         tableBody.innerHTML = '';
 
         if (!data || data.length === 0) {
             tableContainer.style.display = 'none';
+            dayShiftSummary.style.display = 'none';
             return;
         }
 
@@ -474,6 +559,7 @@
 
             const tr = document.createElement('tr');
             tr.id = `row_${record.staffId}`;
+            tr.setAttribute('data-staff-id', record.staffId);
             tr.innerHTML = `
                 <td>${slNo}</td>
                 <td>${record.date || '-'}</td>
@@ -502,14 +588,28 @@
 
         tableContainer.style.display = 'block';
         summaryCards.style.display = 'grid';
+        dayShiftSummary.style.display = 'block'; // 🔥 Day Shift Summary Section Show
         document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
         document.getElementById('punchCardSection').style.display = 'block';
+
+        // Update Day Shift Summary initial
+        updateDayShiftSummary(data.length, 0, data.length, lateCount);
 
         loadStatusFromFirebase();
     }
 
     // ====================================================
-    // 7. REMARKS CALCULATION
+    // 7. UPDATE DAY SHIFT SUMMARY
+    // ====================================================
+    function updateDayShiftSummary(total, present, pending, late) {
+        document.getElementById('dsTotal').textContent = total;
+        document.getElementById('dsPresent').textContent = present;
+        document.getElementById('dsPending').textContent = pending;
+        document.getElementById('dsLate').textContent = late;
+    }
+
+    // ====================================================
+    // 8. REMARKS CALCULATION
     // ====================================================
     function calculateRemarks(punchTimeVal, shift) {
         if (punchTimeVal === null || punchTimeVal === undefined || punchTimeVal === '') {
@@ -597,29 +697,64 @@
     }
 
     // ====================================================
-    // 8. LOAD PRESENT STATUS
+    // 9. LOAD PRESENT STATUS FROM FIREBASE & APPLY GREEN ROW
     // ====================================================
     function loadStatusFromFirebase() {
         const statusRef = database.ref('punchStatus');
         statusRef.on('value', (snapshot) => {
             const data = snapshot.val();
+            let presentCount = 0;
+            let pendingCount = 0;
+
+            // Prothome shob row ke pending reset kori
+            const allRows = document.querySelectorAll('#tableBody tr');
+            allRows.forEach(row => {
+                row.classList.remove('row-present');
+                const statusCell = row.querySelector('.status-cell');
+                if (statusCell) {
+                    statusCell.innerHTML = `<span class="status-badge status-pending">Pending</span>`;
+                }
+            });
+
+            // Firebase theke status load kore apply kori
             if (data) {
                 for (const [staffId, status] of Object.entries(data)) {
-                    const statusCell = document.getElementById(`status_${staffId}`);
-                    if (statusCell && status.status === 'Present') {
-                        statusCell.innerHTML = `
-                            <span class="status-badge status-present">
-                                <span class="green-dot"></span> Present
-                            </span>
-                        `;
+                    if (status.status === 'Present') {
+                        const row = document.getElementById(`row_${staffId}`);
+                        const statusCell = document.getElementById(`status_${staffId}`);
+                        
+                        if (row && statusCell) {
+                            // 🔥 PURA ROW GREEN KORE DI
+                            row.classList.add('row-present');
+                            
+                            statusCell.innerHTML = `
+                                <span class="status-badge status-present">
+                                    <span class="green-dot"></span> Present
+                                </span>
+                            `;
+                            presentCount++;
+                        }
                     }
                 }
             }
+
+            // Day Shift Summary update
+            const total = currentTableData.length;
+            pendingCount = total - presentCount;
+            
+            // Late count ber kori
+            let lateCount = 0;
+            currentTableData.forEach(record => {
+                const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+                if (remarks.isLate) lateCount++;
+            });
+
+            updateDayShiftSummary(total, presentCount, pendingCount, lateCount);
         });
     }
 
     // ====================================================
-    // 9. CAMERA LOGIC
+    // 10. CAMERA LOGIC
     // ====================================================
     function togglePunchCardSection() {
         const section = document.getElementById('punchCardSection');
@@ -696,7 +831,7 @@
     }
 
     // ====================================================
-    // 10. OCR + AUTO DETECT (Bangla Support)
+    // 11. OCR + AUTO DETECT (Bangla Support)
     // ====================================================
     async function processOCRAndUpload() {
         const ocrProcessing = document.getElementById('ocrProcessing');
@@ -714,11 +849,9 @@
         ocrDebug.style.display = 'none';
 
         try {
-            // 🔥 Tesseract.js - Bangla + English dui language e OCR chole
-            // 'eng' = English, 'ben' = Bangla
             const result = await Tesseract.recognize(
                 capturedImageData,
-                'eng+ben',  // Dui language support
+                'eng+ben',
                 { logger: m => console.log(m) }
             );
 
@@ -726,16 +859,13 @@
             console.log("=== RAW OCR TEXT ===");
             console.log(detectedText);
 
-            // 🔥 Bangla digit ke English digit e convert kori
             const englishText = convertBanglaToEnglish(detectedText);
             console.log("=== CONVERTED TO ENGLISH ===");
             console.log(englishText);
 
-            // Show debug info
             ocrDebugText.textContent = `Raw: ${detectedText}\n\nConverted: ${englishText}`;
             ocrDebug.style.display = 'block';
 
-            // Extract Staff ID
             const staffId = extractStaffId(englishText);
 
             ocrProcessing.style.display = 'none';
@@ -761,44 +891,37 @@
     }
 
     // ====================================================
-    // 11. EXTRACT STAFF ID (Smart Matching)
+    // 12. EXTRACT STAFF ID
     // ====================================================
     function extractStaffId(text) {
-        // Shob valid Staff ID collect kori
         const allStaffIds = new Set();
         masterListData.forEach(emp => allStaffIds.add(emp.staffId));
         currentTableData.forEach(row => allStaffIds.add(row.staffId));
         const validIds = Array.from(allStaffIds);
 
-        // Text clean kori
         const cleanText = text.replace(/\s+/g, ' ').toUpperCase().trim();
-        console.log("Cleaned Text:", cleanText);
 
-        // 🔥 Method 1: Exact match (Master List + Table er sathe)
+        // Method 1: Exact match
         for (const staffId of validIds) {
             const idUpper = staffId.toUpperCase();
-            // Word boundary diye check (jate partial match na hoy)
             const regex = new RegExp(`\\b${idUpper.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
             if (regex.test(cleanText)) {
-                console.log("✅ Exact match found:", staffId);
                 return staffId;
             }
         }
 
-        // 🔥 Method 2: "Staff ID", "ID", "Emp ID" er porer number pattern
+        // Method 2: Pattern match
         const patterns = [
             /(?:STAFF\s*ID|STAFF\s*NO|EMP\s*ID|EMPLOYEE\s*ID|ID\s*NO|CARD\s*NO)[\s:.\-]*([A-Z]?\d{4,})/i,
-            /\b([A-Z]\d{5,})\b/g,  // S12345 pattern
-            /\b(\d{5,})\b/g,        // Any number with 5+ digits
+            /\b([A-Z]\d{5,})\b/g,
+            /\b(\d{5,})\b/g,
         ];
 
         for (const pattern of patterns) {
             const matches = cleanText.match(pattern);
             if (matches) {
-                console.log("Pattern matches:", matches);
                 for (const match of matches) {
                     const cleanMatch = match.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-                    
                     const found = validIds.find(id => {
                         const idUp = id.toUpperCase();
                         return idUp === cleanMatch ||
@@ -807,61 +930,46 @@
                                idUp.includes(cleanMatch) ||
                                cleanMatch.includes(idUp);
                     });
-                    
-                    if (found) {
-                        console.log("✅ Pattern match found:", found);
-                        return found;
-                    }
+                    if (found) return found;
                 }
             }
         }
 
-        // 🔥 Method 3: Fuzzy match (OCR e typo thakle)
-        // Shob number ber kori text theke
+        // Method 3: Number match
         const allNumbers = cleanText.match(/\d{4,}/g);
         if (allNumbers) {
             for (const num of allNumbers) {
-                // Exact number match
                 const found = validIds.find(id => {
                     const idNum = id.replace(/[^0-9]/g, '');
                     return idNum === num || idNum.endsWith(num) || num.endsWith(idNum);
                 });
-                if (found) {
-                    console.log("✅ Number match found:", found);
-                    return found;
-                }
+                if (found) return found;
             }
         }
 
-        // 🔥 Method 4: Similarity match (Levenshtein-like)
-        // Jodi kono ID er 80% similar paoa jay
+        // Method 4: Fuzzy match
         if (allNumbers) {
             for (const num of allNumbers) {
                 for (const validId of validIds) {
                     const idNum = validId.replace(/[^0-9]/g, '');
                     if (idNum.length > 0 && num.length > 0) {
-                        // Koto character match kore check kori
                         let matches = 0;
                         const minLen = Math.min(idNum.length, num.length);
                         for (let i = 0; i < minLen; i++) {
                             if (idNum[i] === num[i]) matches++;
                         }
                         const similarity = matches / Math.max(idNum.length, num.length);
-                        if (similarity >= 0.8) {
-                            console.log(`✅ Similar match found: ${validId} (${Math.round(similarity * 100)}%)`);
-                            return validId;
-                        }
+                        if (similarity >= 0.8) return validId;
                     }
                 }
             }
         }
 
-        console.log("❌ No match found");
         return null;
     }
 
     // ====================================================
-    // 12. AUTO UPDATE STATUS
+    // 13. AUTO UPDATE STATUS (Row Green Kora)
     // ====================================================
     async function autoUpdateStatus(staffId) {
         const statusCell = document.getElementById(`status_${staffId}`);
@@ -878,18 +986,23 @@
                 detectedBy: 'OCR'
             });
 
+            // 🔥 PURA ROW GREEN KORE DI
+            const row = document.getElementById(`row_${staffId}`);
+            if (row) {
+                row.classList.add('row-present');
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Flash effect
+                setTimeout(() => {
+                    row.style.transition = 'background-color 0.3s';
+                }, 100);
+            }
+
             statusCell.innerHTML = `
                 <span class="status-badge status-present">
                     <span class="green-dot"></span> Present
                 </span>
             `;
-
-            const updatedRow = document.getElementById(`row_${staffId}`);
-            if (updatedRow) {
-                updatedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                updatedRow.style.backgroundColor = '#d4edda';
-                setTimeout(() => { updatedRow.style.backgroundColor = ''; }, 2000);
-            }
 
             console.log(`✅ Staff ID ${staffId} marked Present!`);
 
@@ -923,6 +1036,13 @@
         .then(() => {
             alert(`✅ Staff ID: ${staffId} marked as Present!`);
             
+            // 🔥 PURA ROW GREEN KORE DI
+            const row = document.getElementById(`row_${staffId}`);
+            if (row) {
+                row.classList.add('row-present');
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
             statusCell.innerHTML = `
                 <span class="status-badge status-present">
                     <span class="green-dot"></span> Present
@@ -930,17 +1050,9 @@
             `;
 
             closeCamera();
-
-            const updatedRow = document.getElementById(`row_${staffId}`);
-            if (updatedRow) {
-                updatedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                updatedRow.style.backgroundColor = '#d4edda';
-                setTimeout(() => { updatedRow.style.backgroundColor = ''; }, 2000);
-            }
         })
         .catch((error) => {
             console.error("Firebase Error:", error);
-            alert("Database save error.");
         });
     }
 
@@ -963,7 +1075,7 @@
     }
 
     // ====================================================
-    // 13. CLEAR ALL DATA
+    // 14. CLEAR ALL DATA
     // ====================================================
     function clearAllData() {
         if (confirm("Apni ki shob data clear korte chan?")) {
@@ -977,7 +1089,6 @@
             })
             .catch((error) => {
                 console.error("Error:", error);
-                alert("Clear error.");
             });
         }
     }
