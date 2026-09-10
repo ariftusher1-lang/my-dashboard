@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Login System</title>
+    <title>Employee Punch Report - QR Scanner</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -19,132 +19,81 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
+    <!-- 🔥 QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f4f4; padding: 15px; }
         
-        /* ============================================== */
         /* LOGIN PAGE */
-        /* ============================================== */
         .login-page {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; justify-content: center; align-items: center;
             min-height: 100vh;
             background: linear-gradient(135deg, #106cc8 0%, #17a2b8 100%);
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 9999;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9999; padding: 20px;
         }
         .login-box {
-            background: #fff;
-            border-radius: 12px;
-            padding: 35px 30px;
-            width: 100%;
-            max-width: 420px;
+            background: #fff; border-radius: 12px; padding: 35px 30px;
+            width: 100%; max-width: 420px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.25);
         }
         .login-box h1 {
-            text-align: center;
-            color: #106cc8;
-            margin-bottom: 8px;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            text-align: center; color: #106cc8; margin-bottom: 8px;
+            font-size: 24px; display: flex; align-items: center;
+            justify-content: center; gap: 10px;
         }
         .login-box .login-subtitle {
-            text-align: center;
-            color: #666;
-            font-size: 13px;
-            margin-bottom: 25px;
+            text-align: center; color: #666; font-size: 13px; margin-bottom: 25px;
         }
-        .login-group {
-            margin-bottom: 18px;
-        }
+        .login-group { margin-bottom: 18px; }
         .login-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 6px;
+            display: block; font-size: 13px; font-weight: 600;
+            color: #333; margin-bottom: 6px;
         }
-        .login-group select,
-        .login-group input {
-            width: 100%;
-            padding: 11px 14px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border 0.2s;
+        .login-group select, .login-group input {
+            width: 100%; padding: 11px 14px;
+            border: 2px solid #ddd; border-radius: 6px;
+            font-size: 14px; transition: border 0.2s;
         }
-        .login-group select:focus,
-        .login-group input:focus {
-            outline: none;
-            border-color: #106cc8;
+        .login-group select:focus, .login-group input:focus {
+            outline: none; border-color: #106cc8;
         }
         .btn-login {
-            width: 100%;
-            padding: 12px;
-            background: #106cc8;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 8px;
+            width: 100%; padding: 12px; background: #106cc8;
+            color: white; border: none; border-radius: 6px;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            transition: background 0.2s; margin-top: 8px;
         }
         .btn-login:hover { background: #0d55a0; }
         .login-error {
-            display: none;
-            margin-top: 12px;
-            padding: 10px;
-            background: #f8d7da;
-            color: #721c24;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 500;
-            text-align: center;
+            display: none; margin-top: 12px; padding: 10px;
+            background: #f8d7da; color: #721c24; border-radius: 4px;
+            font-size: 13px; font-weight: 500; text-align: center;
             border: 1px solid #f5c6cb;
         }
         .login-footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #999;
-            font-size: 11px;
+            text-align: center; margin-top: 20px;
+            color: #999; font-size: 11px;
         }
 
-        /* ============================================== */
         /* MAIN APP */
-        /* ============================================== */
         .main-app { display: none; }
         .container { background-color: #ffffff; max-width: 1500px; margin: 0 auto; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h1 { font-size: 22px; color: #111; margin-bottom: 15px; font-weight: 600; }
         h2 { font-size: 16px; color: #333; margin-bottom: 10px; font-weight: 600; }
         hr { border: 0; border-top: 1px solid #e0e0e0; margin-bottom: 15px; }
 
-        /* Top Bar with User Info */
         .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 8px; margin-bottom: 15px;
             padding: 10px 15px;
             background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
-            border-radius: 6px;
-            border-left: 4px solid #2e9f46;
+            border-radius: 6px; border-left: 4px solid #2e9f46;
         }
         .top-bar .user-info {
-            font-size: 13px;
-            color: #1b5e20;
-            font-weight: 600;
+            font-size: 13px; color: #1b5e20; font-weight: 600;
         }
         .top-bar .user-info span { color: #106cc8; }
 
@@ -160,6 +109,8 @@
         .btn-dark { background-color: #343a40; }
         .btn-print { background-color: #6c757d; }
         .btn-pdf { background-color: #e63946; }
+        .btn-qr { background-color: #00b894; }
+        .btn-qr:hover { background-color: #00a383; }
 
         .hidden-input { display: none; }
 
@@ -243,6 +194,7 @@
             font-size: 12px; font-weight: 600; height: 32px;
         }
 
+        /* Camera Modal */
         .camera-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
         .camera-modal-content { background: #fff; border-radius: 8px; padding: 15px; width: 90%; max-width: 550px; text-align: center; position: relative; max-height: 95vh; overflow-y: auto; }
         .video-container { position: relative; width: 100%; background: #000; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
@@ -252,7 +204,47 @@
         .btn-capture { background-color: #28a745; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
         .btn-retake { background-color: #ffc107; color: #333; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: none; }
         .btn-confirm { background-color: #106cc8; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: none; }
-        .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; position: absolute; top: 8px; right: 8px; }
+        .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; position: absolute; top: 8px; right: 8px; z-index: 10; }
+
+        /* 🔥 QR Scanner Modal */
+        .qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1200; justify-content: center; align-items: center; }
+        .qr-modal-content { background: #fff; border-radius: 8px; padding: 15px; width: 90%; max-width: 550px; text-align: center; position: relative; max-height: 95vh; overflow-y: auto; }
+        .qr-modal-content h3 { font-size: 16px; margin-bottom: 12px; color: #00b894; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .qr-scanner-container {
+            width: 100%;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            min-height: 300px;
+        }
+        #qrReader { width: 100%; }
+        #qrReader video { width: 100% !important; height: auto !important; border-radius: 8px; }
+        .qr-instruction {
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #1b5e20;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .qr-result {
+            display: none;
+            padding: 12px;
+            background: #d4edda;
+            border-radius: 4px;
+            color: #155724;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 10px;
+            border: 2px solid #28a745;
+        }
+        .qr-result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #dc3545;
+        }
 
         .manual-id-section {
             margin-top: 15px; padding: 12px; background: #fff3cd;
@@ -345,7 +337,7 @@
             .container { box-shadow: none; padding: 0; }
             .button-group, .punch-card-section, .master-report-section,
             .report-history-list, .pagination, .camera-modal,
-            .lineman-modal, .info-msg, .loading, .btn-red, .top-bar,
+            .lineman-modal, .qr-modal, .info-msg, .loading, .btn-red, .top-bar,
             .day-shift-stats, .action-taken-line { display: none !important; }
             .table-responsive { display: block !important; max-height: none !important; overflow: visible !important; }
             table { font-size: 10px; }
@@ -372,9 +364,7 @@
 </head>
 <body>
 
-<!-- ============================================== -->
 <!-- LOGIN PAGE -->
-<!-- ============================================== -->
 <div class="login-page" id="loginPage">
     <div class="login-box">
         <h1>🔐 Employee Login</h1>
@@ -409,12 +399,9 @@
     </div>
 </div>
 
-<!-- ============================================== -->
 <!-- MAIN APP -->
-<!-- ============================================== -->
 <div class="main-app" id="mainApp">
     <div class="container">
-        <!-- Top Bar with User Info -->
         <div class="top-bar">
             <div class="user-info">
                 👤 Logged in as: <span id="loggedInSection">-</span>
@@ -428,7 +415,6 @@
         <h1>Employee Punch Report</h1>
         <hr>
 
-        <!-- Print Header -->
         <div id="printHeader">
             <h2>Employee Punch Report</h2>
             <p id="printReportInfo"></p>
@@ -439,11 +425,14 @@
             <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Punch Report Day Shift</button>
             <button class="btn btn-blue" onclick="document.getElementById('nightShiftInput').click()">🌙 Upload Punch Report Night Shift</button>
             
-            <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo Upload</button>
+            <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo</button>
 
-            <button class="btn btn-print" onclick="printPreview()" id="printBtn" style="display: none;">🖨️ Print Preview</button>
-            <button class="btn btn-pdf" onclick="downloadPDF()" id="pdfBtn" style="display: none;">📄 Download PDF</button>
-            <button class="btn btn-dark" onclick="downloadExcel()" id="downloadExcelBtn" style="display: none;">⬇️ Download Excel</button>
+            <!-- 🔥 QR Scan Button -->
+            <button class="btn btn-qr" onclick="openQRScanner()" id="qrScanBtn" style="display: none;">📱 QR Scan (Punch Card)</button>
+
+            <button class="btn btn-print" onclick="printPreview()" id="printBtn" style="display: none;">🖨️ Print</button>
+            <button class="btn btn-pdf" onclick="downloadPDF()" id="pdfBtn" style="display: none;">📄 PDF</button>
+            <button class="btn btn-dark" onclick="downloadExcel()" id="downloadExcelBtn" style="display: none;">⬇️ Excel</button>
         </div>
 
         <input type="file" id="masterListInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleMasterListUpload(this)">
@@ -627,6 +616,26 @@
     </div>
 </div>
 
+<!-- 🔥 QR SCANNER MODAL -->
+<div class="qr-modal" id="qrModal">
+    <div class="qr-modal-content">
+        <button class="btn-close-modal" onclick="closeQRScanner()">✖</button>
+        <h3>📱 Scan Punch Card QR Code</h3>
+
+        <div class="qr-instruction">
+            📸 Punch Card er QR Code scan korun. Automatic Staff ID detect hobe.
+        </div>
+
+        <div class="qr-scanner-container">
+            <div id="qrReader"></div>
+        </div>
+
+        <div class="qr-result" id="qrResult">
+            ✅ <strong>Staff ID Detected:</strong> <span id="qrDetectedId"></span>
+        </div>
+    </div>
+</div>
+
 <!-- LINEMAN MODAL -->
 <div class="lineman-modal" id="linemanModal">
     <div class="lineman-modal-content">
@@ -760,7 +769,6 @@
 
     let loggedInSection = '';
 
-    // Check if already logged in (session)
     window.onload = function() {
         const savedSection = sessionStorage.getItem('loggedInSection');
         if (savedSection) {
@@ -781,7 +789,6 @@
         document.getElementById('mainApp').style.display = 'block';
         document.getElementById('loggedInSection').textContent = loggedInSection;
         
-        // Load data
         loadMasterListFromFirebase();
         loadCurrentReportFromFirebase();
     }
@@ -805,15 +812,11 @@
             return;
         }
 
-        // Check credentials
         if (LOGIN_CREDENTIALS[section] === password) {
             loggedInSection = section;
             sessionStorage.setItem('loggedInSection', section);
-            
-            // Clear form
             document.getElementById('loginSection').value = '';
             document.getElementById('loginPassword').value = '';
-            
             showMainApp();
         } else {
             errorDiv.textContent = '❌ Invalid section or password.';
@@ -830,7 +833,7 @@
     }
 
     // ====================================================
-    // FIREBASE CONFIGURATION
+    // FIREBASE
     // ====================================================
     const firebaseConfig = {
         apiKey: "AIzaSyB1nzUWS6WLDwA3xzLDkt1UYJMaISK1JR0",
@@ -860,6 +863,10 @@
     const rowsPerPage = 100;
     let pendingStaffId = null;
     let currentStatusData = {};
+    
+    // 🔥 QR Scanner variables
+    let qrScanner = null;
+    let qrScanning = false;
 
     // ====================================================
     // BANGLA TO ENGLISH
@@ -1082,6 +1089,7 @@
         document.getElementById('dayShiftSummary').style.display = 'block';
         document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
         document.getElementById('punchCardSection').style.display = 'block';
+        document.getElementById('qrScanBtn').style.display = 'inline-block'; // 🔥 Show QR Button
         document.getElementById('downloadExcelBtn').style.display = 'inline-block';
         document.getElementById('printBtn').style.display = 'inline-block';
         document.getElementById('pdfBtn').style.display = 'inline-block';
@@ -1280,6 +1288,204 @@
         const ampm = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
         return `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
+    }
+
+    // ====================================================
+    // 🔥 QR SCANNER
+    // ====================================================
+    function openQRScanner() {
+        if (!currentTableData || currentTableData.length === 0) {
+            alert("Please upload Punch Report first.");
+            return;
+        }
+
+        const modal = document.getElementById('qrModal');
+        modal.style.display = 'flex';
+        
+        const resultDiv = document.getElementById('qrResult');
+        resultDiv.style.display = 'none';
+        resultDiv.classList.remove('error');
+
+        qrScanning = true;
+
+        // Initialize QR Scanner
+        qrScanner = new Html5Qrcode("qrReader");
+        
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+
+        qrScanner.start(
+            { facingMode: "environment" },
+            config,
+            onQRCodeScanned,
+            onQRScanError
+        ).catch((err) => {
+            console.error("QR Scanner Error:", err);
+            alert("QR Scanner open korte somossa hoyeche. Please camera permission check korun.");
+            closeQRScanner();
+        });
+    }
+
+    function onQRCodeScanned(decodedText, decodedResult) {
+        if (!qrScanning) return;
+        qrScanning = false;
+
+        console.log("✅ QR Code Scanned:", decodedText);
+
+        // QR code theke Staff ID extract kori
+        const staffId = extractStaffIdFromQR(decodedText);
+
+        const resultDiv = document.getElementById('qrResult');
+        const detectedIdSpan = document.getElementById('qrDetectedId');
+
+        if (staffId) {
+            detectedIdSpan.textContent = staffId;
+            resultDiv.style.display = 'block';
+            resultDiv.classList.remove('error');
+
+            // Vibration (mobile)
+            if (navigator.vibrate) navigator.vibrate(200);
+
+            // Sound feedback
+            playBeepSound();
+
+            // 1.5 sec por Lineman Modal open
+            setTimeout(() => {
+                closeQRScanner();
+                openLinemanModal(staffId);
+            }, 1200);
+        } else {
+            detectedIdSpan.textContent = 'Not Found';
+            resultDiv.style.display = 'block';
+            resultDiv.classList.add('error');
+            resultDiv.innerHTML = `❌ <strong>QR Code Scanned but Staff ID Not Found</strong><br><small>Content: ${decodedText.substring(0, 50)}</small>`;
+            
+            // Restart scanning after 2 sec
+            setTimeout(() => {
+                qrScanning = true;
+                resultDiv.style.display = 'none';
+            }, 2000);
+        }
+    }
+
+    function extractStaffIdFromQR(qrText) {
+        if (!qrText) return null;
+        
+        const allStaffIds = new Set();
+        masterListData.forEach(emp => allStaffIds.add(emp.staffId));
+        currentTableData.forEach(row => allStaffIds.add(row.staffId));
+        const validIds = Array.from(allStaffIds);
+
+        const cleanQR = convertBanglaToEnglish(qrText.trim()).toUpperCase();
+        console.log("Cleaned QR:", cleanQR);
+
+        // Method 1: Direct Staff ID match
+        for (const staffId of validIds) {
+            const regex = new RegExp(`\\b${staffId.toUpperCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+            if (regex.test(cleanQR)) {
+                console.log("✅ Direct match:", staffId);
+                return staffId;
+            }
+        }
+
+        // Method 2: JSON format check (jodi QR code e JSON thake)
+        try {
+            const jsonData = JSON.parse(qrText);
+            if (jsonData.staffId && validIds.includes(jsonData.staffId)) {
+                return jsonData.staffId;
+            }
+            if (jsonData.id && validIds.includes(jsonData.id)) {
+                return jsonData.id;
+            }
+        } catch (e) {
+            // Not JSON, continue
+        }
+
+        // Method 3: Pattern match (ID: xxx, Staff: xxx)
+        const patterns = [
+            /(?:STAFF\s*ID|STAFF\s*NO|EMP\s*ID|ID)[\s:.\-]*([A-Z]?\d{4,})/i,
+            /\b([A-Z]\d{5,})\b/g,
+            /\b(\d{5,})\b/g,
+        ];
+
+        for (const pattern of patterns) {
+            const matches = cleanQR.match(pattern);
+            if (matches) {
+                for (const match of matches) {
+                    const cleanMatch = match.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                    const found = validIds.find(id => {
+                        const idUp = id.toUpperCase();
+                        return idUp === cleanMatch || idUp === cleanMatch.replace(/^S/, '') ||
+                               cleanMatch === idUp.replace(/^S/, '') ||
+                               idUp.includes(cleanMatch) || cleanMatch.includes(idUp);
+                    });
+                    if (found) {
+                        console.log("✅ Pattern match:", found);
+                        return found;
+                    }
+                }
+            }
+        }
+
+        // Method 4: Number match
+        const allNumbers = cleanQR.match(/\d{4,}/g);
+        if (allNumbers) {
+            for (const num of allNumbers) {
+                const found = validIds.find(id => {
+                    const idNum = id.replace(/[^0-9]/g, '');
+                    return idNum === num || idNum.endsWith(num) || num.endsWith(idNum);
+                });
+                if (found) {
+                    console.log("✅ Number match:", found);
+                    return found;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    function onQRScanError(errorMessage) {
+        // Silent — jodi scan fail hoy, kichu korar dorkar nei
+    }
+
+    function closeQRScanner() {
+        qrScanning = false;
+        if (qrScanner) {
+            qrScanner.stop().then(() => {
+                qrScanner.clear();
+                qrScanner = null;
+            }).catch((err) => {
+                console.error("QR Stop Error:", err);
+                qrScanner = null;
+            });
+        }
+        document.getElementById('qrModal').style.display = 'none';
+    }
+
+    function playBeepSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        } catch (e) {
+            // Audio not supported
+        }
     }
 
     // ====================================================
@@ -1511,7 +1717,7 @@
     }
 
     // ====================================================
-    // 🔥 LINEMAN MODAL - FIXED
+    // LINEMAN MODAL
     // ====================================================
     function openLinemanModal(staffId) {
         pendingStaffId = staffId;
@@ -1541,8 +1747,8 @@
         if (!mcNo) { alert("Please select MC No."); return; }
 
         try {
-            const statusKey = `${currentReportDate}_${currentReportShift}_${pendingStaffId}`;
-            const savedStaffId = pendingStaffId; // Store before reset
+            const savedStaffId = pendingStaffId;
+            const statusKey = `${currentReportDate}_${currentReportShift}_${savedStaffId}`;
             
             await database.ref('punchStatus/' + statusKey).set({
                 staffId: savedStaffId,
@@ -1552,11 +1758,10 @@
                 lineman: linemanName,
                 mcNo: mcNo,
                 timestamp: new Date().toISOString(),
-                detectedBy: 'OCR/Manual',
+                detectedBy: 'QR/OCR/Manual',
                 section: loggedInSection
             });
 
-            // 🔥 Direct DOM Update (Instant)
             const row = document.getElementById(`row_${savedStaffId}`);
             const statusCell = document.getElementById(`status_${savedStaffId}`);
             const linemanCell = document.getElementById(`lineman_${savedStaffId}`);
@@ -1576,7 +1781,6 @@
             if (linemanCell) linemanCell.innerHTML = `<strong>${linemanName}</strong>`;
             if (mcnoCell) mcnoCell.textContent = mcNo;
 
-            // Update global status data
             currentStatusData[statusKey] = {
                 staffId: savedStaffId,
                 status: 'Present',
@@ -1584,12 +1788,14 @@
                 mcNo: mcNo
             };
 
+            // Success sound
+            playBeepSound();
+
             alert(`✅ Staff ID: ${savedStaffId}\nLine Man: ${linemanName}\nMC No: ${mcNo}\n\nPresent mark hoyeche!`);
 
             closeLinemanModal();
             closeCamera();
 
-            // 🔥 Force re-render to update summary
             setTimeout(() => {
                 renderTablePage();
             }, 300);
@@ -1647,11 +1853,7 @@
         }
 
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({
-            orientation: 'landscape',
-            unit: 'mm',
-            format: 'a4'
-        });
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
         doc.setFontSize(14);
         doc.setFont(undefined, 'bold');
@@ -1862,7 +2064,6 @@
             resultBody.innerHTML = html;
             resultSection.style.display = 'block';
             
-            const uploadedDate = new Date(uploadedAt).toLocaleString();
             resultTitle.innerHTML = `📊 Saved Report — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong> | Late: <strong>${lateCount}</strong>`;
         });
     }
