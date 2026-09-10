@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Punch Report - Firebase</title>
+    
+    <!-- Firebase SDK (Compat version for simple script tag usage) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        /* --- General Styles --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #ffffff;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 26px;
+            color: #111;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+
+        /* --- Button Group --- */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: opacity 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+
+        .btn:hover { opacity: 0.9; }
+        .btn-green { background-color: #2e9f46; }
+        .btn-orange { background-color: #d97d26; }
+        .btn-blue { background-color: #106cc8; }
+        .btn-purple { background-color: #6f42c1; }
+
+        /* --- Hidden File Inputs --- */
+        .hidden-input { display: none; }
+
+        /* --- Table Styles --- */
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 20px;
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f1f1; }
+
+        /* --- Present Status Styling --- */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .status-present {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .green-dot {
+            height: 8px;
+            width: 8px;
+            background-color: #28a745;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* --- Camera Section --- */
+        .punch-card-section {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .punch-card-section h2 {
+            margin-bottom: 10px;
+            color: #6f42c1;
+        }
+
+        .camera-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn-camera {
+            background-color: #6f42c1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-camera:hover { background-color: #5a32a3; }
+
+        /* --- Camera Modal --- */
+        .camera-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .camera-modal-content {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        #cameraVideo {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        #capturedPhoto {
+            width: 100%;
+            height: auto;
+            display: none;
+            border-radius: 4px;
+        }
+
+        .camera-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-capture {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .btn-retake {
+            background-color: #ffc107;
+            color: #333;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .btn-confirm {
+            background-color: #106cc8;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .btn-close-modal {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            position: absolute;
+            top: 10px; right: 10px;
+        }
+
+        /* --- Staff Confirm Section --- */
+        .staff-confirm-section {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #eef4fb;
+            border-radius: 4px;
+            border: 1px solid #b8d4f0;
+        }
+
+        .staff-confirm-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .staff-confirm-section input {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 200px;
+            margin-right: 10px;
+        }
+
+        .btn-confirm-staff {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .info-msg {
+            margin-top: 10px;
+            color: #555;
+            font-style: italic;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .button-group { flex-direction: column; align-items: stretch; }
+            .btn { width: 100%; }
+            .camera-controls { flex-direction: column; align-items: stretch; }
+            .btn-camera { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Employee Master List Upload</h1>
+    <hr>
+
+    <div class="button-group">
+        <button class="btn btn-green" onclick="triggerUpload('Master List')">Upload List</button>
+        <button class="btn btn-orange" onclick="triggerUpload('Punch Report Day Shift')">Upload Punch Report Day Shift</button>
+        <button class="btn btn-blue" onclick="triggerUpload('Punch Report Night Shift')">Upload Punch Report Night Shift</button>
+        
+        <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo Upload (Individual)</button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- PUNCH CARD CAMERA SECTION -->
+    <!-- ============================================== -->
+    <div class="punch-card-section" id="punchCardSection">
+        <h2>📸 Punch Card Photo Upload (Individual)</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
+            Camera button e click korun, Punch Card er chobi tulun. Chobi tolar por Staff ID confirm korben, tokhon table e <strong>Present Status</strong> Green hoye jabe.
+        </p>
+        
+        <div class="camera-controls">
+            <button class="btn-camera" onclick="openCamera()">📷 Open Camera (Back)</button>
+        </div>
+    </div>
+
+    <div class="file-upload-section" style="margin-bottom: 15px;">
+        <input type="file" id="mainFileUpload" onchange="handleFileChange(this, 'Master List')">
+        <label for="mainFileUpload" style="font-weight: 500;">Employee Master List</label>
+    </div>
+
+    <div class="info-msg" id="infoMsg">File Uploaded Successfully! Generating Table...</div>
+
+    <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleFileChange(this, 'Day Shift')">
+    <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleFileChange(this, 'Night Shift')">
+
+    <div class="table-responsive" id="tableContainer">
+        <table id="employeeTable">
+            <thead>
+                <tr>
+                    <th>SL/No</th>
+                    <th>Staff ID</th>
+                    <th>Employee Name</th>
+                    <th>Designation</th>
+                    <th>In Punch Time</th>
+                    <th>Present Status</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Data will be inserted here dynamically -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- CAMERA MODAL (POPUP) -->
+<!-- ============================================== -->
+<div class="camera-modal" id="cameraModal">
+    <div class="camera-modal-content">
+        <button class="btn-close-modal" onclick="closeCamera()">✖</button>
+        <h3>📷 Punch Card Capture</h3>
+
+        <div class="video-container">
+            <video id="cameraVideo" autoplay playsinline></video>
+            <img id="capturedPhoto" alt="Captured Photo">
+        </div>
+
+        <div class="camera-buttons">
+            <button class="btn-capture" id="captureBtn" onclick="capturePhoto()">📸 Capture</button>
+            <button class="btn-retake" id="retakeBtn" onclick="retakePhoto()">🔄 Retake</button>
+            <button class="btn-confirm" id="confirmBtn" onclick="showStaffConfirm()">✅ Confirm & Upload</button>
+        </div>
+
+        <div class="staff-confirm-section" id="staffConfirmSection">
+            <label for="confirmStaffId">Staff ID (Confirm from Punch Card):</label>
+            <input type="text" id="confirmStaffId" placeholder="e.g. 64686">
+            <button class="btn-confirm-staff" onclick="finalizeUpload()">Submit</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ====================================================
+    // 1. FIREBASE CONFIGURATION (Apnar Screenshot theke neya)
+    // ====================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyB1nzUWS6WLDwA3xzLDkt1UYJMaISK1JR0",
+        authDomain: "phrasal-bivouac-459617-p3.firebaseapp.com",
+        databaseURL: "https://phrasal-bivouac-459617-p3-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "phrasal-bivouac-459617-p3",
+        storageBucket: "phrasal-bivouac-459617-p3.firebasestorage.app",
+        messagingSenderId: "906819374402",
+        appId: "1:906819374402:web:ff90b2149f3c88b6774cdb",
+        measurementId: "G-GYX32ENH1H"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // ====================================================
+    // 2. MOCK DATA (Apnar Excel file theke neya)
+    // ====================================================
+    const masterList = [
+        { staffId: "S147069", name: "Sisir Soren", designation: "General Worker" },
+        { staffId: "S231390", name: "Tushar Kumar Biswas", designation: "General Worker" },
+        { staffId: "S231391", name: "Sonjit Kumar Roy", designation: "General Worker" },
+        { staffId: "S222997", name: "Nitai Chandra Mohanta", designation: "General Worker" },
+        { staffId: "S203899", name: "Md Mofazzal Haque Sakib", designation: "General Worker" },
+        { staffId: "S171722", name: "Md Shahadat Hossain", designation: "General Worker" },
+        { staffId: "248070", name: "Runa Aktar", designation: "Assistant Operator" },
+        { staffId: "1020708986", name: "Sharifa Begum", designation: "Assistant Operator" },
+        { staffId: "1020711599", name: "Muslima Akter", designation: "Operator" },
+        { staffId: "1020720185", name: "Selina Munda", designation: "General Worker" },
+        { staffId: "1020723192", name: "Sonia Akter", designation: "General Worker" },
+        { staffId: "1020723681", name: "Jaeda Khatun", designation: "General Worker" },
+        { staffId: "1020723682", name: "Mst. Khadija Sarker", designation: "General Worker" },
+        { staffId: "1020727375", name: "Akhi Begum", designation: "General Worker" },
+        { staffId: "43649", name: "Md. Milon", designation: "Officer" },
+        { staffId: "51428", name: "Sirajul Islam", designation: "Officer" },
+        { staffId: "47632", name: "Gaiotri Rani Das", designation: "Assistant Officer" },
+        { staffId: "64686", name: "Md. Arifuzzaman", designation: "Senior Manager" },
+        { staffId: "64712", name: "Shaikh Md. Jakir Hossain (Razzak)", designation: "Officer" },
+        { staffId: "69449", name: "Khuki Khatun", designation: "Assistant Officer" },
+        { staffId: "72126", name: "Md. Belal Hossain", designation: "Officer" },
+        { staffId: "75487", name: "Prodip Chandra Roy", designation: "Assistant Officer" },
+        { staffId: "79449", name: "Abdul Aziz", designation: "Assistant Officer" },
+        { staffId: "79053", name: "Shikha", designation: "Assistant Officer" },
+        { staffId: "124489", name: "Md. Hazrat Ali", designation: "Assistant Officer" },
+        { staffId: "193215", name: "Afzal Hossain", designation: "Officer" },
+        { staffId: "1020704167", name: "Saiful Islam", designation: "Assistant Officer" },
+        { staffId: "1020704195", name: "Sharif Miah", designation: "Assistant Officer" },
+        { staffId: "1020707741", name: "Md. Nazmul Islam", designation: "Assistant Officer" },
+        { staffId: "1020708647", name: "Md. Mominul Islam", designation: "Assistant Officer" },
+        { staffId: "1020710660", name: "Md.Ahammed Ali Sheikh", designation: "Assistant Officer" },
+        { staffId: "1020710763", name: "Joynal Abedin", designation: "Assistant Officer" },
+        { staffId: "1020716201", name: "Daliya Akter", designation: "Assistant Officer" },
+        { staffId: "1020716396", name: "Rita Rani Roy", designation: "Assistant Officer" },
+        { staffId: "1020717921", name: "Sultana Razia", designation: "Assistant Operator" },
+        { staffId: "1020719764", name: "Narayan Chandra Barman", designation: "General Worker" },
+        { staffId: "1020720785", name: "Md. Tanjimul Islam", designation: "Assistant Officer" },
+        { staffId: "1020722708", name: "Md. Suruj Ali", designation: "Assistant Officer" },
+        { staffId: "1020723299", name: "Pobitro Mahato", designation: "General Worker" },
+        { staffId: "1020723518", name: "Md. Sumon Mia", designation: "General Worker" },
+        { staffId: "1020725201", name: "Md. Sajib Miah", designation: "General Worker" },
+        { staffId: "1020727689", name: "Zharna", designation: "General Worker" },
+        { staffId: "1020728600", name: "Md. Juwel Molla", designation: "General Worker" },
+        { staffId: "1020729603", name: "Mitu Rani Das", designation: "General Worker" },
+        { staffId: "1020729789", name: "Md. Nazmul Alam", designation: "General Worker" },
+        { staffId: "1020732079", name: "Md. Forhadul Raton", designation: "General Worker" },
+        { staffId: "1020732082", name: "Mithun Chandra Das", designation: "General Worker" },
+        { staffId: "1020735709", name: "Md. Hafizul Islam", designation: "General Worker" },
+        { staffId: "1020707072", name: "Rozi Akter", designation: "Service Assistant" },
+        { staffId: "1020736436", name: "Md.Mobarak Ali", designation: "General Worker" },
+        { staffId: "1020736507", name: "Dipu Miah", designation: "Assistant Operator" },
+        { staffId: "1020738783", name: "Sahana Akter Rekha", designation: "General Worker" },
+        { staffId: "1020734827", name: "Mst. Asma Khatun", designation: "General Worker" },
+        { staffId: "1020736685", name: "Uttama Rani Das", designation: "General Worker" },
+        { staffId: "1020737226", name: "Shahina", designation: "General Worker" },
+        { staffId: "177978", name: "Babul Mia", designation: "Assistant Manager" },
+        { staffId: "1020716854", name: "Tarek Mia", designation: "Assistant Operator" },
+        { staffId: "1020740218", name: "Azanta Rani Das", designation: "General Worker" },
+        { staffId: "56005", name: "Ferdousi Begum", designation: "Assistant Officer" },
+        { staffId: "1020740381", name: "Seuly Begum", designation: "General Worker" },
+        { staffId: "1020741007", name: "Choton Roy", designation: "General Worker" },
+        { staffId: "1020741065", name: "Md. Naieem Mia", designation: "General Worker" },
+        { staffId: "1020741552", name: "Mst. Mita Khatun", designation: "General Worker" },
+        { staffId: "1020741550", name: "Sweety Akter", designation: "General Worker" },
+        { staffId: "1020741628", name: "Mst. Alo Khatun", designation: "General Worker" },
+        { staffId: "1020741634", name: "Shawn Mia", designation: "General Worker" },
+        { staffId: "1020741891", name: "Soravita Akter", designation: "General Worker" },
+        { staffId: "1020742341", name: "Mst. Munni Khatun", designation: "General Worker" },
+        { staffId: "1020742446", name: "yesmin Akter", designation: "General Worker" },
+        { staffId: "1020742966", name: "Niranjon Roy", designation: "General Worker" },
+        { staffId: "333152", name: "Md. Bipul Sarker", designation: "Assistant Manager" },
+        { staffId: "1020707333", name: "Md. Akram Hossain", designation: "Assistant Officer" },
+        { staffId: "1020730785", name: "Amir Hossan", designation: "Assistant Operator" },
+        { staffId: "S106792", name: "MD. Monirul Islam", designation: "General Worker" },
+        { staffId: "S115177", name: "Mhoiminul Islam", designation: "General Worker" },
+        { staffId: "S115039", name: "Rupaly Khatun Sarabonti", designation: "General Worker" },
+        { staffId: "S121421", name: "Safiur Rahman", designation: "General Worker" },
+        { staffId: "S127172", name: "Mst. Nilufa Yeasmin", designation: "General Worker" },
+        { staffId: "S133197", name: "Md Azizul Hakim", designation: "General Worker" },
+        { staffId: "S135218", name: "Md.Milon Sarker", designation: "Assistant Operator" },
+        { staffId: "S137076", name: "Bithi Rani Sheel", designation: "General Worker" },
+        { staffId: "S138215", name: "Mst Reka Begum", designation: "General Worker" },
+        { staffId: "S138808", name: "Md.Abdullah Al Mamun", designation: "General Worker" },
+        { staffId: "S139961", name: "Beauti Begum", designation: "General Worker" },
+        { staffId: "S139963", name: "Mst.Sabia Begum Sweety", designation: "General Worker" },
+        { staffId: "S140589", name: "Joma Debnath", designation: "General Worker" },
+        { staffId: "S133949", name: "Ripon Chandro Haolader", designation: "General Worker" },
+        { staffId: "513951", name: "Md. Abdur Rahman Rony", designation: "Sub Assistant Engineer" },
+        { staffId: "S164338", name: "Sree Sajib Kumar", designation: "General Worker" },
+        { staffId: "S168206", name: "Pranto Kumar Roy", designation: "Assistant Officer" },
+        { staffId: "S132012", name: "FOKHRUL ISLAM KHANDAKAR", designation: "Operator" },
+        { staffId: "S168482", name: "Shujit Toppo", designation: "General Worker" },
+        { staffId: "S168637", name: "Mst Rumina Begum", designation: "General Worker" },
+        { staffId: "S169803", name: "Airin Akter", designation: "General Worker" },
+        { staffId: "S123401", name: "Mst Parven Begum", designation: "General Worker" },
+        { staffId: "S180569", name: "Mst Salma Begum", designation: "General Worker" },
+        { staffId: "S184615", name: "Anik Biswas", designation: "General Worker" },
+        { staffId: "S191601", name: "Md Sohel Rana", designation: "General Worker" },
+        { staffId: "S192446", name: "Md Alom Sheikh", designation: "General Worker" },
+        { staffId: "S197055", name: "Arifa Khatun", designation: "General Worker" },
+        { staffId: "S201113", name: "Rana Ahmed", designation: "General Worker" },
+        { staffId: "S201585", name: "Abdul Kader", designation: "General Worker" },
+        { staffId: "S201778", name: "MD REJAUL KORIM", designation: "General Worker" },
+        { staffId: "S203275", name: "Md Shah-Alam", designation: "General Worker" },
+        { staffId: "569596", name: "Syed Nazmus Sakib", designation: "Trainee Engineer" },
+        { staffId: "S205868", name: "Md Naim Mia", designation: "General Worker" },
+        { staffId: "S218069", name: "Anjila Hasda", designation: "General Worker" },
+        { staffId: "S217969", name: "Sajib Chandra Barmon", designation: "General Worker" },
+        { staffId: "S219025", name: "Swapan Chandra", designation: "General Worker" },
+        { staffId: "S210430", name: "Jannatul Ferdaus", designation: "General Worker" },
+        { staffId: "576882", name: "AL- AMIN ISLAM", designation: "Sub Assistant Engineer" },
+        { staffId: "S228406", name: "Tajemul Islam", designation: "General Worker" },
+        { staffId: "S228407", name: "Md. Samiul Islam", designation: "General Worker" },
+        { staffId: "S230019", name: "Narayon Kumar Ghosh", designation: "General Worker" },
+        { staffId: "S203829", name: "Md Piash Pramanik", designation: "General Worker" },
+        { staffId: "S231745", name: "Marzia Akter", designation: "General Worker" },
+        { staffId: "42079", name: "Md. Zakir Ali", designation: "Officer" },
+        { staffId: "R000225348", name: "Md.Mohon", designation: "Assistant Officer" },
+        { staffId: "580907", name: "Md Abdul Bashit Uddin", designation: "Trainee Engineer" },
+        { staffId: "S246066", name: "Sumita Tudu", designation: "General Worker" },
+        { staffId: "S246067", name: "Mahmudullah Hossain", designation: "General Worker" },
+        { staffId: "S246068", name: "Kamrunnahhar Begum", designation: "General Worker" },
+        { staffId: "S246069", name: "Nazmin Akter Sohana", designation: "General Worker" },
+        { staffId: "S246070", name: "Mirajul Islam Mahim", designation: "General Worker" },
+        { staffId: "S246071", name: "Mst Khadija Begum", designation: "General Worker" },
+        { staffId: "S246072", name: "MOST FARJANA AKTER", designation: "General Worker" },
+        { staffId: "S246583", name: "Md. Rakibul Hasan", designation: "General Worker" },
+        { staffId: "S247562", name: "Mst. Aklima Begum", designation: "General Worker" },
+        { staffId: "S247563", name: "Mst. Nafisha Khatun", designation: "General Worker" },
+        { staffId: "S248260", name: "Ononto Mankin", designation: "Assistant Operator" },
+        { staffId: "S248262", name: "Dharam Biswas", designation: "Assistant Operator" },
+        { staffId: "S248256", name: "Subas Tudu", designation: "Assistant Operator" },
+        { staffId: "S248263", name: "TAMANNA AKTER MIM", designation: "General Worker" },
+        { staffId: "S248573", name: "Chinta Tudu", designation: "Assistant Operator" },
+        { staffId: "S248251", name: "Dip Gain", designation: "Assistant Operator" },
+        { staffId: "S249221", name: "Babu Joy Das", designation: "Assistant Operator" },
+        { staffId: "S249237", name: "Mukim Islam Rimon", designation: "General Worker" },
+        { staffId: "S249256", name: "Likhon Miya", designation: "General Worker" },
+        { staffId: "S249259", name: "Sijib Miya", designation: "General Worker" },
+        { staffId: "S249270", name: "MSt Asma Khatun", designation: "General Worker" },
+        { staffId: "S249271", name: "Mst Parvin Khatun", designation: "General Worker" },
+        { staffId: "S249273", name: "AL AMIN IMRAN", designation: "General Worker" },
+        { staffId: "S249277", name: "KORNAL MURMU", designation: "General Worker" },
+        { staffId: "S250171", name: "Saina Khatun", designation: "General Worker" },
+        { staffId: "S250174", name: "Mst Raziya Khatun", designation: "General Worker" },
+        { staffId: "S250357", name: "Mst. Tonuja Khatun", designation: "General Worker" },
+        { staffId: "S250158", name: "MD. SHOHAN BABU", designation: "Assistant Operator" },
+        { staffId: "S250156", name: "Sohel Rana", designation: "General Worker" },
+        { staffId: "S250175", name: "Mst Sweety Khatun", designation: "General Worker" },
+        { staffId: "S249971", name: "Shoriful Islam", designation: "General Worker" },
+        { staffId: "S250173", name: "Miss Moyna Bibi", designation: "General Worker" },
+        { staffId: "S250170", name: "Nurnahar", designation: "General Worker" },
+        { staffId: "S250177", name: "Sabiha Khatun", designation: "General Worker" },
+        { staffId: "S250172", name: "Mst Rebeka Begum", designation: "General Worker" },
+        { staffId: "S250178", name: "Mst Tahmina Khatun Asha", designation: "Assistant Operator" },
+        { staffId: "S250886", name: "Shamoly Basra", designation: "General Worker" },
+        { staffId: "S250895", name: "MD SAMSUDDIN", designation: "General Worker" },
+        { staffId: "S250888", name: "Citta Kumar Mahata", designation: "General Worker" },
+        { staffId: "S250896", name: "Goutom Kumar Roy", designation: "Assistant Operator" },
+        { staffId: "S252776", name: "Bishnu Das", designation: "General Worker" },
+        { staffId: "S253664", name: "Md. Moshur Rahman", designation: "Assistant Operator" },
+        { staffId: "S253690", name: "Siyam Sorkar", designation: "Assistant Operator" },
+        { staffId: "S254090", name: "Bibi Rubina", designation: "General Worker" },
+        { staffId: "S253681", name: "Sifat Hasan", designation: "Assistant Operator" },
+        { staffId: "S253694", name: "Mohadeb Pahari", designation: "Assistant Operator" },
+        { staffId: "S254104", name: "Forhad Hossain", designation: "Assistant Operator" },
+        { staffId: "S253687", name: "Babu Mia", designation: "Assistant Operator" },
+        { staffId: "S253692", name: "Sadik Shek", designation: "Assistant Operator" },
+        { staffId: "S253686", name: "Sowrov Akondo", designation: "Assistant Operator" },
+        { staffId: "S253688", name: "Omor Faruk", designation: "Assistant Operator" },
+        { staffId: "S253994", name: "Rifat Mia", designation: "General Worker" },
+        { staffId: "S257257", name: "Shajalal", designation: "General Worker" },
+        { staffId: "S257383", name: "Mst. Shohida Akter", designation: "General Worker" },
+        { staffId: "S258129", name: "May Rong Ching Marma", designation: "Assistant Operator" },
+        { staffId: "S258130", name: "Sing May Ching Marma", designation: "Assistant Operator" },
+        { staffId: "S258131", name: "Samathui Marma", designation: "Assistant Operator" },
+        { staffId: "S258133", name: "Mahbub Hasan", designation: "General Worker" },
+        { staffId: "S258134", name: "SREEMOTI ADORI MURMU", designation: "General Worker" },
+        { staffId: "S258135", name: "Sadikul Islam", designation: "General Worker" },
+        { staffId: "S258137", name: "MAHFUZ AHMED", designation: "General Worker" },
+        { staffId: "S258138", name: "IMRAN HOSSEN", designation: "General Worker" },
+        { staffId: "S258139", name: "Refat Hossen", designation: "General Worker" },
+        { staffId: "S258312", name: "Shajib", designation: "General Worker" },
+        { staffId: "S258579", name: "Nayon biswas", designation: "General Worker" },
+        { staffId: "S258576", name: "Pronay Das", designation: "General Worker" },
+        { staffId: "S258472", name: "MOST. MATUARA KHATUN", designation: "General Worker" },
+        { staffId: "S260012", name: "Moni Khatun", designation: "General Worker" },
+        { staffId: "S260013", name: "MST. NAZMIN NAHAR", designation: "General Worker" },
+        { staffId: "S260014", name: "AFRIN AKTER", designation: "General Worker" },
+        { staffId: "S260015", name: "Narocy Aktar", designation: "General Worker" },
+        { staffId: "S260016", name: "Saiful Islam", designation: "General Worker" },
+        { staffId: "S260017", name: "Rifat Ali", designation: "General Worker" },
+        { staffId: "S258471", name: "MST AMENA KHATUN", designation: "General Worker" },
+        { staffId: "S258473", name: "Mst Nasrin Khatun", designation: "General Worker" },
+        { staffId: "S258575", name: "Samiul Ahmed Anik", designation: "General Worker" }
+    ];
+
+    const punchReportData = [
+        { staffId: "124489", punchTime: "07:52:00" },
+        { staffId: "1020707072", punchTime: "07:52:00" },
+        { staffId: "1020741550", punchTime: "07:52:00" },
+        { staffId: "1020741065", punchTime: "07:55:00" },
+        { staffId: "S127172", punchTime: "07:50:00" },
+        { staffId: "S171722", punchTime: "07:45:00" },
+        { staffId: "S246066", punchTime: "07:41:00" },
+        { staffId: "S250888", punchTime: "07:52:00" },
+        { staffId: "S253692", punchTime: "07:47:00" },
+        { staffId: "S258133", punchTime: "07:52:00" },
+        { staffId: "177978", punchTime: "07:56:00" },
+        { staffId: "576882", punchTime: "07:51:00" },
+        { staffId: "S180569", punchTime: "07:53:00" },
+        { staffId: "S248256", punchTime: "07:53:00" },
+        { staffId: "S246070", punchTime: "07:53:00" },
+        { staffId: "1020741552", punchTime: "07:52:00" },
+        { staffId: "1020738783", punchTime: "07:49:00" },
+        { staffId: "S139963", punchTime: "07:48:00" },
+        { staffId: "S201778", punchTime: "07:49:00" },
+        { staffId: "S248573", punchTime: "07:40:00" },
+        { staffId: "S248263", punchTime: "07:45:00" },
+        { staffId: "S258135", punchTime: "08:10:00" },
+        { staffId: "569596", punchTime: "07:56:00" },
+        { staffId: "69449", punchTime: "07:52:00" },
+        { staffId: "43649", punchTime: "07:53:00" },
+        { staffId: "1020736436", punchTime: "07:53:00" },
+        { staffId: "1020737226", punchTime: "07:50:00" },
+        { staffId: "S139961", punchTime: "07:48:00" },
+        { staffId: "S260012", punchTime: "07:45:00" },
+        { staffId: "580907", punchTime: "07:57:00" },
+        { staffId: "S168206", punchTime: "07:54:00" },
+        { staffId: "75487", punchTime: "07:45:00" },
+        { staffId: "42079", punchTime: "07:57:00" },
+        { staffId: "S253690", punchTime: "07:44:00" },
+        { staffId: "1020717921", punchTime: "07:51:00" },
+        { staffId: "1020716854", punchTime: "07:53:00" },
+        { staffId: "1020741628", punchTime: "07:45:00" },
+        { staffId: "1020741634", punchTime: "07:55:00" },
+        { staffId: "S249277", punchTime: "07:52:00" },
+        { staffId: "S250896", punchTime: "07:49:00" },
+        { staffId: "S115177", punchTime: "07:57:00" },
+        { staffId: "S249259", punchTime: "07:53:00" },
+        { staffId: "S249221", punchTime: "07:41:00" },
+        { staffId: "S246583", punchTime: "07:50:00" },
+        { staffId: "1020742341", punchTime: "07:52:00" },
+        { staffId: "S201585", punchTime: "07:43:00" },
+        { staffId: "1020704195", punchTime: "07:56:00" },
+        { staffId: "1020742446", punchTime: "07:49:00" },
+        { staffId: "S230019", punchTime: "07:53:00" },
+        { staffId: "S231745", punchTime: "07:54:00" },
+        { staffId: "S258137", punchTime: "07:51:00" },
+        { staffId: "64686", punchTime: "08:00:00" },
+        { staffId: "79053", punchTime: "07:50:00" },
+        { staffId: "1020741891", punchTime: "07:41:00" },
+        { staffId: "1020736507", punchTime: "07:53:00" },
+        { staffId: "S184615", punchTime: "07:43:00" },
+        { staffId: "56005", punchTime: "07:47:00" },
+        { staffId: "S203899", punchTime: "07:52:00" },
+        { staffId: "S231390", punchTime: "07:48:00" },
+        { staffId: "S137076", punchTime: "07:44:00" },
+        { staffId: "S250175", punchTime: "07:56:00" },
+        { staffId: "S250357", punchTime: "07:51:00" },
+        { staffId: "S254090", punchTime: "07:48:00" },
+        { staffId: "S260015", punchTime: "07:45:00" },
+        { staffId: "S260014", punchTime: "07:56:00" },
+        { staffId: "S260016", punchTime: "07:50:00" },
+        { staffId: "1020716396", punchTime: "07:49:00" },
+        { staffId: "1020740381", punchTime: "07:49:00" },
+        { staffId: "R000225348", punchTime: "07:47:00" },
+        { staffId: "1020722708", punchTime: "07:48:00" },
+        { staffId: "1020730785", punchTime: "07:39:00" },
+        { staffId: "1020723681", punchTime: "07:51:00" },
+        { staffId: "1020723682", punchTime: "07:48:00" },
+        { staffId: "1020723192", punchTime: "07:51:00" },
+        { staffId: "S132012", punchTime: "07:56:00" }
+    ];
+
+    // ====================================================
+    // 3. FUNCTIONALITY
+    // ====================================================
+    let videoStream = null;
+
+    function triggerUpload(type) {
+        if (type === 'Punch Report Day Shift') document.getElementById('dayShiftInput').click();
+        else if (type === 'Punch Report Night Shift') document.getElementById('nightShiftInput').click();
+        else if (type === 'Master List') document.getElementById('mainFileUpload').click();
+    }
+
+    function handleFileChange(input, type) {
+        if (input.files && input.files.length > 0) {
+            const fileName = input.files[0].name;
+            const infoMsg = document.getElementById('infoMsg');
+            infoMsg.style.display = 'block';
+            infoMsg.textContent = `File Selected: ${fileName} (${type}). Generating Table...`;
+
+            setTimeout(() => {
+                generateTable();
+                document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
+                document.getElementById('punchCardSection').style.display = 'block';
+                infoMsg.textContent = `Table Generated Successfully for ${type}! Please upload punch card photos below.`;
+            }, 800);
+        }
+    }
+
+    function togglePunchCardSection() {
+        const section = document.getElementById('punchCardSection');
+        section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
+    }
+
+    // Generate Table and Load Status from Firebase
+    function generateTable() {
+        const tableBody = document.getElementById('tableBody');
+        const tableContainer = document.getElementById('tableContainer');
+        
+        tableBody.innerHTML = ''; 
+
+        const masterMap = {};
+        masterList.forEach(emp => { masterMap[emp.staffId] = emp; });
+
+        let slNo = 1;
+
+        punchReportData.forEach(punch => {
+            const masterInfo = masterMap[punch.staffId];
+            if (masterInfo) {
+                const row = document.createElement('tr');
+                row.id = `row_${punch.staffId}`; 
+                
+                row.innerHTML = `
+                    <td>${slNo}</td>
+                    <td>${punch.staffId}</td>
+                    <td>${masterInfo.name}</td>
+                    <td>${masterInfo.designation}</td>
+                    <td>${punch.punchTime}</td>
+                    <td class="status-cell" id="status_${punch.staffId}">
+                        <span class="status-badge status-pending">Pending</span>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+                slNo++;
+            }
+        });
+
+        tableContainer.style.display = 'block';
+
+        // 🔥 Firebase theke status load kora
+        loadStatusFromFirebase();
+    }
+
+    // Load Present Status from Firebase Realtime Database
+    function loadStatusFromFirebase() {
+        const statusRef = database.ref('punchStatus');
+        statusRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                for (const [staffId, status] of Object.entries(data)) {
+                    const statusCell = document.getElementById(`status_${staffId}`);
+                    if (statusCell && status === 'Present') {
+                        statusCell.innerHTML = `
+                            <span class="status-badge status-present">
+                                <span class="green-dot"></span> Present
+                            </span>
+                        `;
+                    }
+                }
+            }
+        });
+    }
+
+    // ====================================================
+    // 4. CAMERA LOGIC
+    // ====================================================
+    async function openCamera() {
+        const modal = document.getElementById('cameraModal');
+        const video = document.getElementById('cameraVideo');
+        const capturedPhoto = document.getElementById('capturedPhoto');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const staffConfirmSection = document.getElementById('staffConfirmSection');
+
+        video.style.display = 'block';
+        capturedPhoto.style.display = 'none';
+        captureBtn.style.display = 'inline-block';
+        retakeBtn.style.display = 'none';
+        confirmBtn.style.display = 'none';
+        staffConfirmSection.style.display = 'none';
+        document.getElementById('confirmStaffId').value = '';
+
+        modal.style.display = 'flex';
+
+        try {
+            // Request Back Camera
+            videoStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: "environment" } }
+            });
+            video.srcObject = videoStream;
+        } catch (error) {
+            console.error("Camera access error:", error);
+            alert("Camera open korte somossa hoyeche. Please check your camera permission and try again.");
+            closeCamera();
+        }
+    }
+
+    function capturePhoto() {
+        const video = document.getElementById('cameraVideo');
+        const capturedPhoto = document.getElementById('capturedPhoto');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        capturedPhoto.src = canvas.toDataURL('image/png');
+        capturedPhoto.style.display = 'block';
+        video.style.display = 'none';
+
+        captureBtn.style.display = 'none';
+        retakeBtn.style.display = 'inline-block';
+        confirmBtn.style.display = 'inline-block';
+
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+    }
+
+    function retakePhoto() {
+        openCamera();
+    }
+
+    function showStaffConfirm() {
+        document.getElementById('staffConfirmSection').style.display = 'block';
+        document.getElementById('confirmBtn').style.display = 'none';
+    }
+
+    // ====================================================
+    // 5. FINALIZE UPLOAD & SAVE TO FIREBASE
+    // ====================================================
+    function finalizeUpload() {
+        const staffId = document.getElementById('confirmStaffId').value.trim();
+
+        if (!staffId) {
+            alert("Please enter the Staff ID from the Punch Card.");
+            return;
+        }
+
+        const statusCell = document.getElementById(`status_${staffId}`);
+        
+        if (!statusCell) {
+            alert(`Staff ID "${staffId}" not found in the current table. Please check the ID again.`);
+            return;
+        }
+
+        // 🔥 Firebase Realtime Database e save kora
+        database.ref('punchStatus/' + staffId).set({
+            status: 'Present',
+            timestamp: new Date().toISOString()
+        })
+        .then(() => {
+            alert(`✅ Punch Card Uploaded Successfully!\n\nStaff ID: ${staffId}\nStatus updated to "Present" in the Database.`);
+            
+            // Status Cell Update (Instant)
+            statusCell.innerHTML = `
+                <span class="status-badge status-present">
+                    <span class="green-dot"></span> Present
+                </span>
+            `;
+
+            closeCamera();
+
+            const updatedRow = document.getElementById(`row_${staffId}`);
+            if (updatedRow) {
+                updatedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                updatedRow.style.backgroundColor = '#d4edda';
+                setTimeout(() => { updatedRow.style.backgroundColor = ''; }, 2000);
+            }
+        })
+        .catch((error) => {
+            console.error("Firebase Error:", error);
+            alert("Database e save korte somossa hoyeche. Please check your internet connection and Firebase rules.");
+        });
+    }
+
+    function closeCamera() {
+        const modal = document.getElementById('cameraModal');
+        modal.style.display = 'none';
+
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+        const video = document.getElementById('cameraVideo');
+        video.srcObject = null;
+        video.style.display = 'block';
+        document.getElementById('capturedPhoto').style.display = 'none';
+    }
+</script>
+
+</body>
+</html>
