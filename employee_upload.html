@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Excel + OCR + Green Row Highlight</title>
+    <title>Employee Punch Report - Master Report + Abnormalities</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,63 +18,65 @@
     <style>
         /* --- General Styles --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f4f4f4; padding: 20px; }
-        .container { background-color: #ffffff; max-width: 1500px; margin: 0 auto; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { font-size: 26px; color: #111; margin-bottom: 20px; font-weight: 600; }
-        h2 { font-size: 18px; color: #333; margin-bottom: 12px; font-weight: 600; }
-        hr { border: 0; border-top: 1px solid #e0e0e0; margin-bottom: 20px; }
+        body { background-color: #f4f4f4; padding: 15px; }
+        .container { background-color: #ffffff; max-width: 1500px; margin: 0 auto; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { font-size: 22px; color: #111; margin-bottom: 15px; font-weight: 600; }
+        h2 { font-size: 16px; color: #333; margin-bottom: 10px; font-weight: 600; }
+        hr { border: 0; border-top: 1px solid #e0e0e0; margin-bottom: 15px; }
 
         /* --- Button Group --- */
-        .button-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
-        .btn { border: none; color: white; padding: 10px 20px; font-size: 15px; cursor: pointer; border-radius: 4px; transition: opacity 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
+        .btn { border: none; color: white; padding: 8px 15px; font-size: 13px; cursor: pointer; border-radius: 4px; transition: opacity 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap; }
         .btn:hover { opacity: 0.9; }
         .btn-green { background-color: #2e9f46; }
         .btn-orange { background-color: #d97d26; }
         .btn-blue { background-color: #106cc8; }
         .btn-purple { background-color: #6f42c1; }
         .btn-red { background-color: #dc3545; }
+        .btn-teal { background-color: #17a2b8; }
 
         /* --- Hidden File Inputs --- */
         .hidden-input { display: none; }
 
-        /* --- DAY SHIFT SUMMARY SECTION (Red Marked Area) --- */
+        /* --- DAY SHIFT SUMMARY SECTION --- */
         .day-shift-summary {
             background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
             border: 2px solid #2e9f46;
             border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            margin-bottom: 20px;
+            padding: 12px 15px;
+            margin-top: 15px;
+            margin-bottom: 15px;
             display: none;
         }
         .day-shift-summary h3 {
-            font-size: 18px;
+            font-size: 15px;
             color: #1b5e20;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         .day-shift-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 8px;
         }
         .day-shift-stat-box {
             background: #ffffff;
             border-radius: 6px;
-            padding: 12px 15px;
-            border-left: 4px solid #2e9f46;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 8px 10px;
+            border-left: 3px solid #2e9f46;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .day-shift-stat-box .label {
-            font-size: 12px;
+            font-size: 10px;
             color: #666;
             font-weight: 500;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
+            line-height: 1.2;
         }
         .day-shift-stat-box .value {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 700;
             color: #1b5e20;
         }
@@ -82,16 +84,38 @@
         .day-shift-stat-box.pending .value { color: #d97d26; }
         .day-shift-stat-box.late .value { color: #dc3545; }
         .day-shift-stat-box.total-box .value { color: #106cc8; }
+        .day-shift-stat-box.abnormal .value { color: #dc3545; }
+        .day-shift-stat-box.normal .value { color: #2e9f46; }
 
-        /* --- Table Styles --- */
-        .table-responsive { overflow-x: auto; margin-top: 20px; display: none; max-height: 600px; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: middle; white-space: nowrap; }
-        th { background-color: #f8f9fa; font-weight: 600; color: #333; position: sticky; top: 0; z-index: 10; }
+        /* --- TABLE STYLES (Smaller columns) --- */
+        .table-responsive { overflow-x: auto; margin-top: 15px; display: none; max-height: 500px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: auto; }
+        th, td { border: 1px solid #ddd; padding: 5px 6px; text-align: left; vertical-align: middle; white-space: nowrap; }
+        th { background-color: #f8f9fa; font-weight: 600; color: #333; position: sticky; top: 0; z-index: 10; font-size: 11px; }
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
 
-        /* 🔥 GREEN ROW HIGHLIGHT (Present Status Green hole pura row green hobe) */
+        /* 🔥 Smaller columns for mobile */
+        #employeeTable th:nth-child(1), #employeeTable td:nth-child(1) { width: 40px; max-width: 40px; }  /* SL/No */
+        #employeeTable th:nth-child(2), #employeeTable td:nth-child(2) { width: 75px; max-width: 75px; font-size: 10px; } /* Date */
+        #employeeTable th:nth-child(3), #employeeTable td:nth-child(3) { width: 45px; max-width: 45px; } /* Shift */
+        #employeeTable th:nth-child(4), #employeeTable td:nth-child(4) { width: 70px; max-width: 70px; font-size: 10px; } /* I/C */
+        #employeeTable th:nth-child(5), #employeeTable td:nth-child(5) { width: 80px; max-width: 80px; font-size: 10px; } /* Staff ID */
+        #employeeTable th:nth-child(6), #employeeTable td:nth-child(6) { width: 110px; max-width: 110px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; } /* Name */
+        #employeeTable th:nth-child(7), #employeeTable td:nth-child(7) { width: 90px; max-width: 90px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; } /* Designation */
+        #employeeTable th:nth-child(8), #employeeTable td:nth-child(8) { width: 70px; max-width: 70px; font-size: 10px; } /* Punch Time */
+        #employeeTable th:nth-child(9), #employeeTable td:nth-child(9) { width: 90px; max-width: 90px; font-size: 9px; } /* Remarks */
+        #employeeTable th:nth-child(10), #employeeTable td:nth-child(10) { width: 70px; max-width: 70px; } /* Status */
+
+        /* Mobile e aro choto */
+        @media (max-width: 768px) {
+            table { font-size: 10px; }
+            th, td { padding: 4px 3px; }
+            #employeeTable th:nth-child(6), #employeeTable td:nth-child(6) { width: 90px; max-width: 90px; }
+            #employeeTable th:nth-child(9), #employeeTable td:nth-child(9) { width: 70px; max-width: 70px; }
+        }
+
+        /* 🔥 GREEN ROW HIGHLIGHT */
         tr.row-present {
             background-color: #d4edda !important;
             border-left: 4px solid #28a745;
@@ -104,99 +128,173 @@
             background-color: #c3e6cb !important;
         }
 
-        /* --- Present Status Styling --- */
-        .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
+        /* --- Present Status --- */
+        .status-badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 10px; }
         .status-present { background-color: #28a745; color: #ffffff; border: 1px solid #1e7e34; }
         .status-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .green-dot { height: 8px; width: 8px; background-color: #ffffff; border-radius: 50%; display: inline-block; }
+        .green-dot { height: 6px; width: 6px; background-color: #ffffff; border-radius: 50%; display: inline-block; }
 
-        /* --- Remarks Styling --- */
-        .remarks-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }
+        /* --- Remarks --- */
+        .remarks-badge { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 600; font-size: 9px; }
         .remarks-late { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .remarks-ontime { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 
         /* --- Camera Section --- */
-        .punch-card-section { background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: none; }
-        .punch-card-section h2 { margin-bottom: 10px; color: #6f42c1; }
-        .camera-controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
-        .btn-camera { background-color: #6f42c1; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .punch-card-section { background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px; display: none; }
+        .punch-card-section h2 { margin-bottom: 8px; color: #6f42c1; font-size: 14px; }
+        .camera-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .btn-camera { background-color: #6f42c1; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .btn-camera:hover { background-color: #5a32a3; }
+
+        /* --- Master Report Section --- */
+        .master-report-section {
+            background-color: #f0f8ff;
+            border: 2px solid #106cc8;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .master-report-section h2 { margin-bottom: 10px; color: #106cc8; font-size: 14px; }
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .filter-group { display: flex; flex-direction: column; gap: 3px; }
+        .filter-group label { font-size: 11px; font-weight: 600; color: #555; }
+        .filter-group input, .filter-group select {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+            background: #fff;
+            min-width: 130px;
+        }
+        .btn-filter {
+            background-color: #106cc8;
+            color: white;
+            border: none;
+            padding: 7px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            height: 32px;
+        }
+        .btn-filter:hover { background-color: #0d55a0; }
 
         /* --- Camera Modal --- */
         .camera-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
-        .camera-modal-content { background: #fff; border-radius: 8px; padding: 20px; width: 90%; max-width: 600px; text-align: center; position: relative; }
-        .video-container { position: relative; width: 100%; background: #000; border-radius: 4px; overflow: hidden; margin-bottom: 15px; }
+        .camera-modal-content { background: #fff; border-radius: 8px; padding: 15px; width: 90%; max-width: 500px; text-align: center; position: relative; }
+        .video-container { position: relative; width: 100%; background: #000; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
         #cameraVideo { width: 100%; height: auto; display: block; }
         #capturedPhoto { width: 100%; height: auto; display: none; border-radius: 4px; }
-        .camera-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-        .btn-capture { background-color: #28a745; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; }
-        .btn-retake { background-color: #ffc107; color: #333; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; display: none; }
-        .btn-confirm { background-color: #106cc8; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; display: none; }
-        .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; position: absolute; top: 10px; right: 10px; }
+        .camera-buttons { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .btn-capture { background-color: #28a745; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-retake { background-color: #ffc107; color: #333; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: none; }
+        .btn-confirm { background-color: #106cc8; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: none; }
+        .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; position: absolute; top: 8px; right: 8px; }
 
-        /* --- OCR Processing --- */
-        .ocr-processing { display: none; margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeeba; color: #856404; font-weight: 600; }
+        /* --- OCR --- */
+        .ocr-processing { display: none; margin-top: 12px; padding: 12px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeeba; color: #856404; font-weight: 600; font-size: 13px; }
         .spinner-small {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #6f42c1;
             border-radius: 50%;
-            width: 20px; height: 20px;
+            width: 18px; height: 18px;
             animation: spin 1s linear infinite;
             display: inline-block;
             vertical-align: middle;
-            margin-right: 8px;
+            margin-right: 6px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- Staff Confirm Section --- */
-        .staff-confirm-section { display: none; margin-top: 15px; padding: 15px; background: #eef4fb; border-radius: 4px; border: 1px solid #b8d4f0; }
-        .staff-confirm-section label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
-        .staff-confirm-section input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; width: 200px; margin-right: 10px; }
-        .btn-confirm-staff { background-color: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .staff-confirm-section { display: none; margin-top: 12px; padding: 12px; background: #eef4fb; border-radius: 4px; border: 1px solid #b8d4f0; }
+        .staff-confirm-section label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; font-size: 12px; }
+        .staff-confirm-section input { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; width: 150px; margin-right: 8px; }
+        .btn-confirm-staff { background-color: #28a745; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
 
-        /* --- OCR Result --- */
-        .ocr-result { display: none; margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 4px; border: 1px solid #c3e6cb; color: #155724; font-weight: 600; }
-        .ocr-debug { display: none; margin-top: 10px; padding: 10px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 12px; color: #333; max-height: 150px; overflow-y: auto; text-align: left; }
+        .ocr-result { display: none; margin-top: 12px; padding: 12px; background: #d4edda; border-radius: 4px; border: 1px solid #c3e6cb; color: #155724; font-weight: 600; font-size: 13px; }
+        .ocr-debug { display: none; margin-top: 8px; padding: 8px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 11px; color: #333; max-height: 100px; overflow-y: auto; text-align: left; }
 
         /* --- Info Message --- */
-        .info-msg { margin-top: 10px; padding: 10px; background: #eef4fb; border-left: 4px solid #106cc8; color: #333; font-size: 14px; display: none; border-radius: 4px; }
+        .info-msg { margin-top: 8px; padding: 8px 12px; background: #eef4fb; border-left: 4px solid #106cc8; color: #333; font-size: 12px; display: none; border-radius: 4px; }
 
-        /* --- Loading Spinner --- */
-        .loading { display: none; text-align: center; padding: 20px; font-size: 16px; color: #555; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #6f42c1; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        /* --- Loading --- */
+        .loading { display: none; text-align: center; padding: 15px; font-size: 13px; color: #555; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #6f42c1; border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; margin: 0 auto 8px; }
 
-        /* --- Summary Cards --- */
-        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
-        .summary-card { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; text-align: center; }
-        .summary-card .number { font-size: 24px; font-weight: 700; margin-bottom: 5px; }
-        .summary-card .label { font-size: 13px; color: #666; font-weight: 500; }
-        .summary-card.total .number { color: #106cc8; }
-        .summary-card.present .number { color: #2e9f46; }
-        .summary-card.late .number { color: #dc3545; }
+        /* --- Filtered Result Section (Master Report) --- */
+        .master-report-result {
+            display: none;
+            margin-top: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .master-report-result h3 { font-size: 14px; color: #333; margin-bottom: 10px; }
+
+        /* --- Abnormalities Box --- */
+        .abnormalities-box {
+            background: #fff5f5;
+            border: 2px solid #dc3545;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-top: 10px;
+        }
+        .abnormalities-box.ok {
+            background: #f0fff4;
+            border-color: #28a745;
+        }
+        .abnormalities-box h4 {
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .abnormalities-box h4.red { color: #dc3545; }
+        .abnormalities-box h4.green { color: #28a745; }
+        .abnormalities-list {
+            font-size: 12px;
+            color: #333;
+        }
+        .abnormalities-list ul { margin-left: 15px; margin-top: 5px; }
+        .abnormalities-list li { margin-bottom: 3px; }
 
         @media (max-width: 768px) {
             .button-group { flex-direction: column; align-items: stretch; }
             .btn { width: 100%; }
             .camera-controls { flex-direction: column; align-items: stretch; }
             .btn-camera { width: 100%; justify-content: center; }
+            .filter-row { flex-direction: column; }
+            .filter-group { width: 100%; }
+            .filter-group input, .filter-group select { width: 100%; min-width: unset; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
         <h1>Employee Punch Report</h1>
         <button class="btn btn-red" onclick="clearAllData()">🗑️ Clear All Data</button>
     </div>
     <hr>
 
+    <!-- Button Group -->
     <div class="button-group">
         <button class="btn btn-green" onclick="document.getElementById('masterListInput').click()">📋 Upload Master List</button>
         <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Punch Report Day Shift</button>
         <button class="btn btn-blue" onclick="document.getElementById('nightShiftInput').click()">🌙 Upload Punch Report Night Shift</button>
         
         <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo Upload (Individual)</button>
+        
+        <!-- 🔥 New: Master Report Button -->
+        <button class="btn btn-teal" onclick="toggleMasterReportSection()" id="masterReportToggleBtn" style="display: none;">📊 Master Report (Date & Shift Filter)</button>
     </div>
 
     <input type="file" id="masterListInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleMasterListUpload(this)">
@@ -208,12 +306,35 @@
     <!-- ============================================== -->
     <div class="punch-card-section" id="punchCardSection">
         <h2>📸 Punch Card Photo Upload (Individual)</h2>
-        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
-            Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe ebong <strong>Present Status</strong> Green hoye jabe.
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+            Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe.
         </p>
         
         <div class="camera-controls">
             <button class="btn-camera" onclick="openCamera()">📷 Open Camera (Back)</button>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MASTER REPORT SECTION (Filter) -->
+    <!-- ============================================== -->
+    <div class="master-report-section" id="masterReportSection">
+        <h2>📊 Master Report - Date & Shift Filter</h2>
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="filterDate">Date</label>
+                <input type="date" id="filterDate">
+            </div>
+            <div class="filter-group">
+                <label for="filterShift">Shift</label>
+                <select id="filterShift">
+                    <option value="">All Shifts</option>
+                    <option value="Day">Day</option>
+                    <option value="Night">Night</option>
+                </select>
+            </div>
+            <button class="btn-filter" onclick="applyMasterFilter()">🔍 Filter</button>
+            <button class="btn-filter" style="background-color: #6c757d;" onclick="resetMasterFilter()">↻ Reset</button>
         </div>
     </div>
 
@@ -225,7 +346,7 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- 🔥 DAY SHIFT SUMMARY SECTION (Red Marked Area) -->
+    <!-- DAY SHIFT SUMMARY SECTION -->
     <!-- ============================================== -->
     <div class="day-shift-summary" id="dayShiftSummary">
         <h3>📅 Day Shift Punch Record (As per Upload)</h3>
@@ -246,26 +367,23 @@
                 <div class="label">⚠️ Late Punch</div>
                 <div class="value" id="dsLate">0</div>
             </div>
+            <div class="day-shift-stat-box abnormal" id="dsAbnormalBox">
+                <div class="label">🚨 Abnormalities</div>
+                <div class="value" id="dsAbnormal">0</div>
+            </div>
+            <div class="day-shift-stat-box normal" id="dsNormalBox">
+                <div class="label">✔️ No Abnormalities</div>
+                <div class="value" id="dsNormal">0</div>
+            </div>
         </div>
+
+        <!-- Abnormalities Details Box -->
+        <div id="abnormalitiesDetail" style="margin-top: 12px;"></div>
     </div>
 
-    <!-- Summary Cards (Top) -->
-    <div class="summary-cards" id="summaryCards" style="display: none;">
-        <div class="summary-card total">
-            <div class="number" id="totalCount">0</div>
-            <div class="label">Total Employees</div>
-        </div>
-        <div class="summary-card present">
-            <div class="number" id="ontimeCount">0</div>
-            <div class="label">On Time</div>
-        </div>
-        <div class="summary-card late">
-            <div class="number" id="lateCount">0</div>
-            <div class="label">Late Punch</div>
-        </div>
-    </div>
-
-    <!-- Main Table -->
+    <!-- ============================================== -->
+    <!-- MAIN TABLE -->
+    <!-- ============================================== -->
     <div class="table-responsive" id="tableContainer">
         <table id="employeeTable">
             <thead>
@@ -285,13 +403,38 @@
             <tbody id="tableBody"></tbody>
         </table>
     </div>
+
+    <!-- ============================================== -->
+    <!-- MASTER REPORT RESULT TABLE (Filtered) -->
+    <!-- ============================================== -->
+    <div class="master-report-result" id="masterReportResult">
+        <h3 id="masterReportTitle">📊 Filtered Result</h3>
+        <div class="table-responsive" style="display: block; max-height: 400px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>SL/No</th>
+                        <th>Date</th>
+                        <th>Shift</th>
+                        <th>Staff ID</th>
+                        <th>Employee Name</th>
+                        <th>Designation</th>
+                        <th>Punch Time</th>
+                        <th>Remarks</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="masterReportBody"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <!-- CAMERA MODAL -->
 <div class="camera-modal" id="cameraModal">
     <div class="camera-modal-content">
         <button class="btn-close-modal" onclick="closeCamera()">✖</button>
-        <h3>📷 Punch Card Capture</h3>
+        <h3 style="font-size: 15px; margin-bottom: 10px;">📷 Punch Card Capture</h3>
 
         <div class="video-container">
             <video id="cameraVideo" autoplay playsinline></video>
@@ -305,7 +448,7 @@
         </div>
 
         <div class="ocr-processing" id="ocrProcessing">
-            <span class="spinner-small"></span> Reading Punch Card... Please wait.
+            <span class="spinner-small"></span> Reading Punch Card...
         </div>
 
         <div class="ocr-result" id="ocrResult">
@@ -313,14 +456,14 @@
         </div>
 
         <div class="ocr-debug" id="ocrDebug">
-            <strong>OCR Detected Text:</strong><br>
-            <pre id="ocrDebugText" style="white-space: pre-wrap; word-break: break-word;"></pre>
+            <strong>OCR Text:</strong><br>
+            <pre id="ocrDebugText" style="white-space: pre-wrap; word-break: break-word; font-size: 10px;"></pre>
         </div>
 
         <div class="staff-confirm-section" id="staffConfirmSection">
-            <label for="confirmStaffId">⚠️ OCR Staff ID detect korte pareni. Please type manually:</label>
+            <label for="confirmStaffId">⚠️ OCR fail. Type manually:</label>
             <input type="text" id="confirmStaffId" placeholder="e.g. 64686">
-            <button class="btn-confirm-staff" onclick="finalizeUpload()">Submit Manually</button>
+            <button class="btn-confirm-staff" onclick="finalizeUpload()">Submit</button>
         </div>
     </div>
 </div>
@@ -350,10 +493,11 @@
     let currentTableData = [];
     let videoStream = null;
     let capturedImageData = null;
-    let currentShiftType = 'Day'; // Default
+    let currentShiftType = 'Day';
+    let allPunchReportData = []; // Shob shift er data store kore rakhbo (Master Report er jonno)
 
     // ====================================================
-    // 2A. BANGLA TO ENGLISH DIGIT CONVERTER
+    // 2A. BANGLA TO ENGLISH CONVERTER
     // ====================================================
     const banglaToEnglishDigits = {
         '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
@@ -384,12 +528,12 @@
 
             if (data && data.masterList) {
                 masterListData = data.masterList;
-                console.log("✅ Master List loaded:", masterListData.length);
             }
 
             if (data && data.currentTableData) {
                 currentTableData = data.currentTableData;
                 generateTable(currentTableData);
+                document.getElementById('masterReportToggleBtn').style.display = 'inline-block';
             }
         }).catch((error) => {
             console.error("Firebase Load Error:", error);
@@ -440,9 +584,6 @@
                     loadingSpinner.style.display = 'none';
                     infoMsg.textContent = `✅ Master List saved! Total: ${masterList.length}`;
                     alert(`✅ Master List Uploaded!\nTotal: ${masterList.length}`);
-                }).catch((error) => {
-                    console.error("Save Error:", error);
-                    loadingSpinner.style.display = 'none';
                 });
 
             } catch (error) {
@@ -485,6 +626,7 @@
                     if (row[3]) {
                         punchData.push({
                             date: row[0] ? formatDate(row[0]) : '',
+                            rawDate: row[0], // ISO date for filtering
                             shift: row[1] ? String(row[1]).trim() : shiftType,
                             icName: row[2] ? String(row[2]).trim() : '',
                             staffId: convertBanglaToEnglish(String(row[3]).trim()),
@@ -497,11 +639,13 @@
                 });
 
                 currentTableData = punchData;
+                allPunchReportData = punchData; // Master Report er jonno save
 
                 loadingSpinner.style.display = 'none';
                 infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length}`;
 
                 generateTable(punchData);
+                document.getElementById('masterReportToggleBtn').style.display = 'inline-block';
 
                 database.ref('employeeData').update({
                     currentTableData: punchData,
@@ -524,7 +668,6 @@
     function generateTable(data) {
         const tableBody = document.getElementById('tableBody');
         const tableContainer = document.getElementById('tableContainer');
-        const summaryCards = document.getElementById('summaryCards');
         const dayShiftSummary = document.getElementById('dayShiftSummary');
         
         tableBody.innerHTML = '';
@@ -536,12 +679,9 @@
         }
 
         const masterMap = {};
-        masterListData.forEach(emp => {
-            masterMap[emp.staffId] = emp;
-        });
+        masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
         let slNo = 1;
-        let ontimeCount = 0;
         let lateCount = 0;
 
         data.forEach(record => {
@@ -550,12 +690,7 @@
             const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
 
             const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
-
-            if (remarks.isLate) {
-                lateCount++;
-            } else {
-                ontimeCount++;
-            }
+            if (remarks.isLate) lateCount++;
 
             const tr = document.createElement('tr');
             tr.id = `row_${record.staffId}`;
@@ -582,30 +717,83 @@
             slNo++;
         });
 
-        document.getElementById('totalCount').textContent = data.length;
-        document.getElementById('ontimeCount').textContent = ontimeCount;
-        document.getElementById('lateCount').textContent = lateCount;
-
         tableContainer.style.display = 'block';
-        summaryCards.style.display = 'grid';
-        dayShiftSummary.style.display = 'block'; // 🔥 Day Shift Summary Section Show
+        dayShiftSummary.style.display = 'block';
         document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
         document.getElementById('punchCardSection').style.display = 'block';
 
-        // Update Day Shift Summary initial
+        // Initial summary update
         updateDayShiftSummary(data.length, 0, data.length, lateCount);
 
         loadStatusFromFirebase();
     }
 
     // ====================================================
-    // 7. UPDATE DAY SHIFT SUMMARY
+    // 7. UPDATE DAY SHIFT SUMMARY + ABNORMALITIES
     // ====================================================
     function updateDayShiftSummary(total, present, pending, late) {
         document.getElementById('dsTotal').textContent = total;
         document.getElementById('dsPresent').textContent = present;
         document.getElementById('dsPending').textContent = pending;
         document.getElementById('dsLate').textContent = late;
+
+        // 🔥 Abnormalities Logic:
+        // Present & Late Punch mile gele → No Abnormalities
+        // Na mile → Abnormalities
+        const latePresent = Math.min(present, late);
+        const abnormalities = Math.abs(late - present);
+        const matched = Math.max(0, Math.min(present, late));
+
+        let abnormalCount = 0;
+        let normalCount = 0;
+
+        if (present === 0 && late === 0) {
+            abnormalCount = 0;
+            normalCount = 0;
+        } else if (late > present) {
+            // Late beshi, Present kom → Abnormalities
+            abnormalCount = late - present;
+            normalCount = present;
+        } else if (present > late) {
+            // Present beshi, Late kom → Eita normal (je Late hoy ni se Present)
+            abnormalCount = 0;
+            normalCount = late;
+        } else {
+            // Present == Late → No Abnormalities
+            abnormalCount = 0;
+            normalCount = late;
+        }
+
+        document.getElementById('dsAbnormal').textContent = abnormalCount;
+        document.getElementById('dsNormal').textContent = normalCount;
+
+        // Abnormalities Details Box
+        const detailBox = document.getElementById('abnormalitiesDetail');
+        if (abnormalCount === 0) {
+            detailBox.innerHTML = `
+                <div class="abnormalities-box ok">
+                    <h4 class="green">✔️ No Abnormalities</h4>
+                    <div class="abnormalities-list">
+                        <p>Late Punch <strong>${late}</strong> & Present <strong>${present}</strong> — Sob match hoyeche. <strong>${normalCount}</strong> jon employee mile geche.</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            detailBox.innerHTML = `
+                <div class="abnormalities-box">
+                    <h4 class="red">🚨 Abnormalities Detected</h4>
+                    <div class="abnormalities-list">
+                        <p><strong>${abnormalCount}</strong> jon employee er mismatch ache.</p>
+                        <ul>
+                            <li>Late Punch: <strong>${late}</strong></li>
+                            <li>Present (Card Uploaded): <strong>${present}</strong></li>
+                            <li>Matched: <strong>${normalCount}</strong></li>
+                            <li>Abnormal: <strong>${abnormalCount}</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     // ====================================================
@@ -617,14 +805,13 @@
         }
 
         const punchMinutes = timeToMinutes(punchTimeVal);
-
         let cutoff = 8 * 60;
         if (shift && String(shift).toLowerCase().includes('night')) {
             cutoff = 20 * 60;
         }
 
         if (punchMinutes > cutoff) {
-            return { text: 'Late Punch / Shift Schedule Problem', isLate: true };
+            return { text: 'Late Punch', isLate: true };
         } else {
             return { text: 'On Time', isLate: false };
         }
@@ -697,16 +884,14 @@
     }
 
     // ====================================================
-    // 9. LOAD PRESENT STATUS FROM FIREBASE & APPLY GREEN ROW
+    // 9. LOAD PRESENT STATUS + GREEN ROW
     // ====================================================
     function loadStatusFromFirebase() {
         const statusRef = database.ref('punchStatus');
         statusRef.on('value', (snapshot) => {
             const data = snapshot.val();
             let presentCount = 0;
-            let pendingCount = 0;
 
-            // Prothome shob row ke pending reset kori
             const allRows = document.querySelectorAll('#tableBody tr');
             allRows.forEach(row => {
                 row.classList.remove('row-present');
@@ -716,7 +901,6 @@
                 }
             });
 
-            // Firebase theke status load kore apply kori
             if (data) {
                 for (const [staffId, status] of Object.entries(data)) {
                     if (status.status === 'Present') {
@@ -724,9 +908,7 @@
                         const statusCell = document.getElementById(`status_${staffId}`);
                         
                         if (row && statusCell) {
-                            // 🔥 PURA ROW GREEN KORE DI
                             row.classList.add('row-present');
-                            
                             statusCell.innerHTML = `
                                 <span class="status-badge status-present">
                                     <span class="green-dot"></span> Present
@@ -738,11 +920,9 @@
                 }
             }
 
-            // Day Shift Summary update
             const total = currentTableData.length;
-            pendingCount = total - presentCount;
+            const pendingCount = total - presentCount;
             
-            // Late count ber kori
             let lateCount = 0;
             currentTableData.forEach(record => {
                 const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
@@ -759,6 +939,18 @@
     function togglePunchCardSection() {
         const section = document.getElementById('punchCardSection');
         section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
+    }
+
+    function toggleMasterReportSection() {
+        const section = document.getElementById('masterReportSection');
+        const isVisible = section.style.display === 'block';
+        section.style.display = isVisible ? 'none' : 'block';
+        
+        if (!isVisible) {
+            // Default date set kori (ajker date)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filterDate').value = today;
+        }
     }
 
     async function openCamera() {
@@ -793,7 +985,7 @@
             video.srcObject = videoStream;
         } catch (error) {
             console.error("Camera access error:", error);
-            alert("Camera open korte somossa hoyeche.");
+            alert("Camera open error.");
             closeCamera();
         }
     }
@@ -826,12 +1018,10 @@
         }
     }
 
-    function retakePhoto() {
-        openCamera();
-    }
+    function retakePhoto() { openCamera(); }
 
     // ====================================================
-    // 11. OCR + AUTO DETECT (Bangla Support)
+    // 11. OCR + AUTO DETECT
     // ====================================================
     async function processOCRAndUpload() {
         const ocrProcessing = document.getElementById('ocrProcessing');
@@ -856,29 +1046,19 @@
             );
 
             const detectedText = result.data.text;
-            console.log("=== RAW OCR TEXT ===");
-            console.log(detectedText);
-
             const englishText = convertBanglaToEnglish(detectedText);
-            console.log("=== CONVERTED TO ENGLISH ===");
-            console.log(englishText);
 
             ocrDebugText.textContent = `Raw: ${detectedText}\n\nConverted: ${englishText}`;
             ocrDebug.style.display = 'block';
 
             const staffId = extractStaffId(englishText);
-
             ocrProcessing.style.display = 'none';
 
             if (staffId) {
                 detectedIdSpan.textContent = staffId;
                 ocrResult.style.display = 'block';
-
                 await autoUpdateStatus(staffId);
-                
-                setTimeout(() => {
-                    closeCamera();
-                }, 2500);
+                setTimeout(() => { closeCamera(); }, 2500);
             } else {
                 staffConfirmSection.style.display = 'block';
             }
@@ -890,27 +1070,19 @@
         }
     }
 
-    // ====================================================
-    // 12. EXTRACT STAFF ID
-    // ====================================================
     function extractStaffId(text) {
         const allStaffIds = new Set();
         masterListData.forEach(emp => allStaffIds.add(emp.staffId));
         currentTableData.forEach(row => allStaffIds.add(row.staffId));
         const validIds = Array.from(allStaffIds);
-
         const cleanText = text.replace(/\s+/g, ' ').toUpperCase().trim();
 
-        // Method 1: Exact match
         for (const staffId of validIds) {
             const idUpper = staffId.toUpperCase();
             const regex = new RegExp(`\\b${idUpper.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
-            if (regex.test(cleanText)) {
-                return staffId;
-            }
+            if (regex.test(cleanText)) return staffId;
         }
 
-        // Method 2: Pattern match
         const patterns = [
             /(?:STAFF\s*ID|STAFF\s*NO|EMP\s*ID|EMPLOYEE\s*ID|ID\s*NO|CARD\s*NO)[\s:.\-]*([A-Z]?\d{4,})/i,
             /\b([A-Z]\d{5,})\b/g,
@@ -924,18 +1096,15 @@
                     const cleanMatch = match.replace(/[^A-Z0-9]/gi, '').toUpperCase();
                     const found = validIds.find(id => {
                         const idUp = id.toUpperCase();
-                        return idUp === cleanMatch ||
-                               idUp === cleanMatch.replace(/^S/, '') ||
+                        return idUp === cleanMatch || idUp === cleanMatch.replace(/^S/, '') ||
                                cleanMatch === idUp.replace(/^S/, '') ||
-                               idUp.includes(cleanMatch) ||
-                               cleanMatch.includes(idUp);
+                               idUp.includes(cleanMatch) || cleanMatch.includes(idUp);
                     });
                     if (found) return found;
                 }
             }
         }
 
-        // Method 3: Number match
         const allNumbers = cleanText.match(/\d{4,}/g);
         if (allNumbers) {
             for (const num of allNumbers) {
@@ -947,7 +1116,6 @@
             }
         }
 
-        // Method 4: Fuzzy match
         if (allNumbers) {
             for (const num of allNumbers) {
                 for (const validId of validIds) {
@@ -969,11 +1137,10 @@
     }
 
     // ====================================================
-    // 13. AUTO UPDATE STATUS (Row Green Kora)
+    // 12. AUTO UPDATE STATUS (Green Row)
     // ====================================================
     async function autoUpdateStatus(staffId) {
         const statusCell = document.getElementById(`status_${staffId}`);
-        
         if (!statusCell) {
             alert(`Staff ID "${staffId}" detected kintu table e nei.`);
             return;
@@ -986,16 +1153,10 @@
                 detectedBy: 'OCR'
             });
 
-            // 🔥 PURA ROW GREEN KORE DI
             const row = document.getElementById(`row_${staffId}`);
             if (row) {
                 row.classList.add('row-present');
                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // Flash effect
-                setTimeout(() => {
-                    row.style.transition = 'background-color 0.3s';
-                }, 100);
             }
 
             statusCell.innerHTML = `
@@ -1004,29 +1165,17 @@
                 </span>
             `;
 
-            console.log(`✅ Staff ID ${staffId} marked Present!`);
-
         } catch (error) {
             console.error("Firebase Error:", error);
-            alert("Database save error.");
         }
     }
 
-    // Manual Submit
     function finalizeUpload() {
         const staffId = convertBanglaToEnglish(document.getElementById('confirmStaffId').value.trim());
-
-        if (!staffId) {
-            alert("Please enter the Staff ID.");
-            return;
-        }
+        if (!staffId) { alert("Enter Staff ID."); return; }
 
         const statusCell = document.getElementById(`status_${staffId}`);
-        
-        if (!statusCell) {
-            alert(`Staff ID "${staffId}" not found.`);
-            return;
-        }
+        if (!statusCell) { alert(`Staff ID "${staffId}" not found.`); return; }
 
         database.ref('punchStatus/' + staffId).set({
             status: 'Present',
@@ -1035,24 +1184,17 @@
         })
         .then(() => {
             alert(`✅ Staff ID: ${staffId} marked as Present!`);
-            
-            // 🔥 PURA ROW GREEN KORE DI
             const row = document.getElementById(`row_${staffId}`);
             if (row) {
                 row.classList.add('row-present');
                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-
             statusCell.innerHTML = `
                 <span class="status-badge status-present">
                     <span class="green-dot"></span> Present
                 </span>
             `;
-
             closeCamera();
-        })
-        .catch((error) => {
-            console.error("Firebase Error:", error);
         });
     }
 
@@ -1075,6 +1217,134 @@
     }
 
     // ====================================================
+    // 13. MASTER REPORT - DATE & SHIFT FILTER
+    // ====================================================
+    function applyMasterFilter() {
+        const filterDate = document.getElementById('filterDate').value; // YYYY-MM-DD
+        const filterShift = document.getElementById('filterShift').value;
+
+        if (!allPunchReportData || allPunchReportData.length === 0) {
+            alert("Kono data upload kora hoyni. Please upload Punch Report first.");
+            return;
+        }
+
+        // Filter kori
+        const filtered = allPunchReportData.filter(record => {
+            // Date match
+            let dateMatch = true;
+            if (filterDate && record.rawDate) {
+                let recordDate = '';
+                
+                // Excel date number convert
+                if (typeof record.rawDate === 'number') {
+                    const excelDate = XLSX.SSF.parse_date_code(record.rawDate);
+                    if (excelDate) {
+                        recordDate = `${excelDate.y}-${String(excelDate.m).padStart(2,'0')}-${String(excelDate.d).padStart(2,'0')}`;
+                    }
+                } else {
+                    // String date handle
+                    const dateStr = String(record.rawDate).trim();
+                    if (dateStr.includes(' ')) {
+                        recordDate = dateStr.split(' ')[0]; // "2026-09-10"
+                    } else if (dateStr.includes('-')) {
+                        const parts = dateStr.split('-');
+                        if (parts.length === 3) {
+                            recordDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                        }
+                    }
+                }
+                dateMatch = recordDate === filterDate;
+            }
+
+            // Shift match
+            let shiftMatch = true;
+            if (filterShift) {
+                shiftMatch = (record.shift || '').toLowerCase() === filterShift.toLowerCase();
+            }
+
+            return dateMatch && shiftMatch;
+        });
+
+        // Show result
+        const resultSection = document.getElementById('masterReportResult');
+        const resultBody = document.getElementById('masterReportBody');
+        const resultTitle = document.getElementById('masterReportTitle');
+
+        if (filtered.length === 0) {
+            resultBody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px; color: #999;">Kono data paoa jayni ei filter e.</td></tr>`;
+            resultSection.style.display = 'block';
+            resultTitle.textContent = `📊 Filtered Result — 0 Records`;
+            return;
+        }
+
+        // Result table build
+        const masterMap = {};
+        masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
+
+        let html = '';
+        filtered.forEach((record, idx) => {
+            const masterInfo = masterMap[record.staffId];
+            const empName = record.empName || (masterInfo ? masterInfo.name : '-');
+            const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
+            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+
+            html += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${record.date || '-'}</td>
+                    <td>${record.shift || '-'}</td>
+                    <td><strong>${record.staffId}</strong></td>
+                    <td>${empName}</td>
+                    <td>${designation}</td>
+                    <td>${record.punchTime || '-'}</td>
+                    <td>
+                        <span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">
+                            ${remarks.text}
+                        </span>
+                    </td>
+                    <td class="status-cell" id="mr_status_${record.staffId}">
+                        <span class="status-badge status-pending">Pending</span>
+                    </td>
+                </tr>
+            `;
+        });
+
+        resultBody.innerHTML = html;
+        resultSection.style.display = 'block';
+        resultTitle.textContent = `📊 Filtered Result — ${filtered.length} Records (Date: ${filterDate || 'All'}, Shift: ${filterShift || 'All'})`;
+
+        // Load status for filtered result
+        loadStatusForMasterReport(filtered);
+    }
+
+    function loadStatusForMasterReport(filteredData) {
+        const statusRef = database.ref('punchStatus');
+        statusRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                for (const [staffId, status] of Object.entries(data)) {
+                    if (status.status === 'Present') {
+                        const statusCell = document.getElementById(`mr_status_${staffId}`);
+                        if (statusCell) {
+                            statusCell.innerHTML = `
+                                <span class="status-badge status-present">
+                                    <span class="green-dot"></span> Present
+                                </span>
+                            `;
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function resetMasterFilter() {
+        document.getElementById('filterDate').value = '';
+        document.getElementById('filterShift').value = '';
+        document.getElementById('masterReportResult').style.display = 'none';
+    }
+
+    // ====================================================
     // 14. CLEAR ALL DATA
     // ====================================================
     function clearAllData() {
@@ -1082,13 +1352,9 @@
             Promise.all([
                 database.ref('employeeData').remove(),
                 database.ref('punchStatus').remove()
-            ])
-            .then(() => {
+            ]).then(() => {
                 alert("✅ All Data Cleared!");
                 location.reload();
-            })
-            .catch((error) => {
-                console.error("Error:", error);
             });
         }
     }
