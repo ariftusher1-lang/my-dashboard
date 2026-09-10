@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - QR Scanner</title>
+    <title>Employee Punch Report - QR Step Entry</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -12,21 +12,22 @@
     <!-- Tesseract.js OCR -->
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
-    <!-- SheetJS (xlsx) -->
+    <!-- SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- jsPDF + AutoTable -->
+    <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-    <!-- 🔥 QR Code Scanner Library -->
+    <!-- 🔥 QR Code Generator + Scanner -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f4f4; padding: 15px; }
         
-        /* LOGIN PAGE */
+        /* LOGIN */
         .login-page {
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh;
@@ -41,8 +42,7 @@
         }
         .login-box h1 {
             text-align: center; color: #106cc8; margin-bottom: 8px;
-            font-size: 24px; display: flex; align-items: center;
-            justify-content: center; gap: 10px;
+            font-size: 24px;
         }
         .login-box .login-subtitle {
             text-align: center; color: #666; font-size: 13px; margin-bottom: 25px;
@@ -55,7 +55,7 @@
         .login-group select, .login-group input {
             width: 100%; padding: 11px 14px;
             border: 2px solid #ddd; border-radius: 6px;
-            font-size: 14px; transition: border 0.2s;
+            font-size: 14px;
         }
         .login-group select:focus, .login-group input:focus {
             outline: none; border-color: #106cc8;
@@ -64,21 +64,15 @@
             width: 100%; padding: 12px; background: #106cc8;
             color: white; border: none; border-radius: 6px;
             font-size: 15px; font-weight: 600; cursor: pointer;
-            transition: background 0.2s; margin-top: 8px;
+            margin-top: 8px;
         }
-        .btn-login:hover { background: #0d55a0; }
         .login-error {
             display: none; margin-top: 12px; padding: 10px;
             background: #f8d7da; color: #721c24; border-radius: 4px;
-            font-size: 13px; font-weight: 500; text-align: center;
-            border: 1px solid #f5c6cb;
-        }
-        .login-footer {
-            text-align: center; margin-top: 20px;
-            color: #999; font-size: 11px;
+            font-size: 13px; text-align: center;
         }
 
-        /* MAIN APP */
+        /* MAIN */
         .main-app { display: none; }
         .container { background-color: #ffffff; max-width: 1500px; margin: 0 auto; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h1 { font-size: 22px; color: #111; margin-bottom: 15px; font-weight: 600; }
@@ -92,13 +86,11 @@
             background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
             border-radius: 6px; border-left: 4px solid #2e9f46;
         }
-        .top-bar .user-info {
-            font-size: 13px; color: #1b5e20; font-weight: 600;
-        }
+        .top-bar .user-info { font-size: 13px; color: #1b5e20; font-weight: 600; }
         .top-bar .user-info span { color: #106cc8; }
 
         .button-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
-        .btn { border: none; color: white; padding: 8px 15px; font-size: 13px; cursor: pointer; border-radius: 4px; transition: opacity 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap; }
+        .btn { border: none; color: white; padding: 8px 15px; font-size: 13px; cursor: pointer; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap; font-weight: 500; }
         .btn:hover { opacity: 0.9; }
         .btn-green { background-color: #2e9f46; }
         .btn-orange { background-color: #d97d26; }
@@ -107,21 +99,20 @@
         .btn-red { background-color: #dc3545; }
         .btn-teal { background-color: #17a2b8; }
         .btn-dark { background-color: #343a40; }
-        .btn-print { background-color: #6c757d; }
-        .btn-pdf { background-color: #e63946; }
         .btn-qr { background-color: #00b894; }
         .btn-qr:hover { background-color: #00a383; }
 
         .hidden-input { display: none; }
 
+        /* SUMMARY */
         .day-shift-summary {
             background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
             border: 2px solid #2e9f46; border-radius: 8px;
             padding: 12px 15px; margin-top: 15px; margin-bottom: 15px; display: none;
         }
-        .day-shift-summary h3 { font-size: 15px; color: #1b5e20; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .day-shift-summary h3 { font-size: 15px; color: #1b5e20; margin-bottom: 10px; }
         .day-shift-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
-        .day-shift-stat-box { background: #ffffff; border-radius: 6px; padding: 8px 10px; border-left: 3px solid #2e9f46; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .day-shift-stat-box { background: #fff; border-radius: 6px; padding: 8px 10px; border-left: 3px solid #2e9f46; }
         .day-shift-stat-box .label { font-size: 10px; color: #666; font-weight: 500; margin-bottom: 3px; line-height: 1.2; }
         .day-shift-stat-box .value { font-size: 18px; font-weight: 700; color: #1b5e20; }
         .day-shift-stat-box.present .value { color: #2e9f46; }
@@ -137,6 +128,7 @@
             font-size: 12px; color: #663c00; font-weight: 600;
         }
 
+        /* TABLE */
         .table-responsive { overflow-x: auto; margin-top: 15px; display: none; max-height: 500px; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th, td { border: 1px solid #ddd; padding: 5px 6px; text-align: left; vertical-align: middle; white-space: nowrap; }
@@ -159,7 +151,6 @@
 
         tr.row-present { background-color: #d4edda !important; border-left: 4px solid #28a745; }
         tr.row-present td { color: #155724 !important; font-weight: 500; }
-        tr.row-present:hover { background-color: #c3e6cb !important; }
 
         .status-badge { display: inline-flex; align-items: center; gap: 2px; padding: 2px 5px; border-radius: 8px; font-weight: 600; font-size: 9px; white-space: nowrap; }
         .status-present { background-color: #28a745; color: #ffffff; border: 1px solid #1e7e34; }
@@ -173,8 +164,7 @@
         .punch-card-section { background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px; display: none; }
         .punch-card-section h2 { margin-bottom: 8px; color: #6f42c1; font-size: 14px; }
         .camera-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .btn-camera { background-color: #6f42c1; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-        .btn-camera:hover { background-color: #5a32a3; }
+        .btn-camera { background-color: #6f42c1; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
 
         .master-report-section {
             background-color: #f0f8ff; border: 2px solid #106cc8;
@@ -194,105 +184,175 @@
             font-size: 12px; font-weight: 600; height: 32px;
         }
 
-        /* Camera Modal */
-        .camera-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
-        .camera-modal-content { background: #fff; border-radius: 8px; padding: 15px; width: 90%; max-width: 550px; text-align: center; position: relative; max-height: 95vh; overflow-y: auto; }
-        .video-container { position: relative; width: 100%; background: #000; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
+        /* MODAL GENERAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; padding: 15px; }
+        .modal-content { background: #fff; border-radius: 10px; padding: 20px; width: 100%; max-width: 650px; position: relative; max-height: 95vh; overflow-y: auto; }
+        .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; position: absolute; top: 10px; right: 10px; z-index: 10; }
+        .modal-content h3 { font-size: 17px; margin-bottom: 12px; color: #333; text-align: center; }
+
+        /* 🔥 QR SCANNER MODAL */
+        .qr-modal-content { max-width: 550px; text-align: center; }
+        .qr-scanner-container {
+            width: 100%; background: #000; border-radius: 8px;
+            overflow: hidden; margin-bottom: 12px; min-height: 280px;
+        }
+        #qrReader { width: 100%; }
+        #qrReader video { width: 100% !important; height: auto !important; }
+        .qr-instruction {
+            padding: 10px; background: #e8f5e9; border-radius: 4px;
+            font-size: 12px; color: #1b5e20; font-weight: 600; margin-bottom: 10px;
+        }
+        .qr-result {
+            display: none; padding: 12px; background: #d4edda;
+            border-radius: 4px; color: #155724; font-weight: 600; font-size: 14px;
+            margin-top: 10px; border: 2px solid #28a745;
+        }
+        .qr-result.error { background: #f8d7da; color: #721c24; border-color: #dc3545; }
+
+        /* 🔥 MANUAL ID MODAL (QR Scan er por ashbe) */
+        .manual-modal-content { max-width: 500px; }
+        .manual-box {
+            padding: 15px; background: #fff3cd;
+            border: 2px dashed #ffc107; border-radius: 8px;
+        }
+        .manual-box h4 {
+            font-size: 14px; color: #856404; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .manual-input-row {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+        }
+        .manual-input-row input {
+            flex: 1; min-width: 180px; padding: 10px 14px;
+            border: 2px solid #ffc107; border-radius: 6px;
+            font-size: 16px; font-weight: 700; text-align: center;
+            letter-spacing: 2px;
+        }
+        .manual-input-row input:focus { outline: none; border-color: #ff9800; background: #fffbf0; }
+        .btn-manual-submit {
+            background-color: #ff9800; color: white; border: none;
+            padding: 10px 22px; border-radius: 6px; cursor: pointer;
+            font-size: 14px; font-weight: 700;
+        }
+        .manual-live-detect {
+            padding: 10px; border-radius: 6px;
+            font-size: 13px; font-weight: 600; min-height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            background: #f8f9fa; border: 1px dashed #ddd;
+            margin-bottom: 10px;
+        }
+        .manual-live-detect.found { background: #d4edda; color: #155724; border-color: #28a745; }
+        .manual-live-detect.not-found { background: #f8d7da; color: #721c24; border-color: #dc3545; }
+        .manual-live-detect.idle { color: #666; }
+
+        /* 🔥 STEP-BY-STEP ENTRY */
+        .step-progress {
+            display: flex; gap: 5px; margin-bottom: 15px;
+            justify-content: center; flex-wrap: wrap;
+        }
+        .step-dot {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: #e0e0e0; color: #666; font-size: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; transition: all 0.3s;
+            border: 2px solid #ccc;
+        }
+        .step-dot.active {
+            background: #ff9800; color: white;
+            border-color: #ff9800; transform: scale(1.15);
+        }
+        .step-dot.done {
+            background: #28a745; color: white; border-color: #28a745;
+        }
+
+        .step-counter {
+            text-align: center; padding: 8px;
+            background: #fff3cd; border-radius: 6px;
+            font-size: 13px; font-weight: 600; color: #856404;
+            margin-bottom: 12px;
+        }
+
+        /* Entry List */
+        .entry-list {
+            margin-top: 15px; max-height: 200px; overflow-y: auto;
+            background: #f8f9fa; border-radius: 6px; padding: 10px;
+        }
+        .entry-list h5 { font-size: 12px; color: #333; margin-bottom: 8px; }
+        .entry-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 10px; background: #fff;
+            border-radius: 4px; margin-bottom: 5px;
+            font-size: 12px; border-left: 3px solid #28a745;
+        }
+        .entry-item .staff-info {
+            flex: 1;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .entry-item .staff-id {
+            font-weight: 700; color: #106cc8;
+        }
+        .entry-item .staff-name {
+            font-size: 11px; color: #666;
+        }
+        .entry-item .staff-lineman {
+            font-size: 10px; color: #d97d26; font-weight: 600;
+        }
+        .btn-remove-entry {
+            background: #dc3545; color: white; border: none;
+            width: 22px; height: 22px; border-radius: 50%;
+            cursor: pointer; font-size: 12px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .step-buttons {
+            display: flex; gap: 8px; margin-top: 15px;
+        }
+        .btn-step {
+            flex: 1; padding: 12px; border: none; border-radius: 6px;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+        }
+        .btn-save-final {
+            background-color: #28a745; color: white;
+        }
+        .btn-save-final:hover { background-color: #218838; }
+        .btn-save-final:disabled { background-color: #ccc; cursor: not-allowed; }
+        .btn-cancel-step {
+            background-color: #6c757d; color: white;
+        }
+
+        /* Old camera modal */
+        .camera-modal-content { max-width: 550px; text-align: center; }
+        .video-container { width: 100%; background: #000; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
         #cameraVideo { width: 100%; height: auto; display: block; }
         #capturedPhoto { width: 100%; height: auto; display: none; border-radius: 4px; }
         .camera-buttons { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
         .btn-capture { background-color: #28a745; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
         .btn-retake { background-color: #ffc107; color: #333; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: none; }
         .btn-confirm { background-color: #106cc8; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: none; }
-        .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; position: absolute; top: 8px; right: 8px; z-index: 10; }
-
-        /* 🔥 QR Scanner Modal */
-        .qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1200; justify-content: center; align-items: center; }
-        .qr-modal-content { background: #fff; border-radius: 8px; padding: 15px; width: 90%; max-width: 550px; text-align: center; position: relative; max-height: 95vh; overflow-y: auto; }
-        .qr-modal-content h3 { font-size: 16px; margin-bottom: 12px; color: #00b894; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .qr-scanner-container {
-            width: 100%;
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 12px;
-            min-height: 300px;
-        }
-        #qrReader { width: 100%; }
-        #qrReader video { width: 100% !important; height: auto !important; border-radius: 8px; }
-        .qr-instruction {
-            padding: 10px;
-            background: #e8f5e9;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #1b5e20;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        .qr-result {
-            display: none;
-            padding: 12px;
-            background: #d4edda;
-            border-radius: 4px;
-            color: #155724;
-            font-weight: 600;
-            font-size: 14px;
-            margin-top: 10px;
-            border: 2px solid #28a745;
-        }
-        .qr-result.error {
-            background: #f8d7da;
-            color: #721c24;
-            border-color: #dc3545;
-        }
-
-        .manual-id-section {
-            margin-top: 15px; padding: 12px; background: #fff3cd;
-            border: 2px dashed #ffc107; border-radius: 6px; text-align: left;
-        }
-        .manual-id-section h4 { font-size: 13px; color: #856404; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
-        .manual-id-input-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .manual-id-input-row input {
-            flex: 1; min-width: 150px; padding: 8px 12px;
-            border: 2px solid #ffc107; border-radius: 4px;
-            font-size: 14px; font-weight: 600; text-align: center;
-        }
-        .btn-manual-submit { background-color: #ff9800; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
-        .manual-live-detect { margin-top: 8px; font-size: 12px; font-weight: 600; min-height: 18px; }
-        .manual-live-detect.found { color: #28a745; }
-        .manual-live-detect.not-found { color: #dc3545; }
-
-        .lineman-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1100; justify-content: center; align-items: center; }
-        .lineman-modal-content { background: #fff; border-radius: 8px; padding: 20px; width: 90%; max-width: 450px; position: relative; }
-        .lineman-modal-content h3 { font-size: 16px; color: #333; margin-bottom: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .lineman-form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; }
-        .lineman-form-group label { font-size: 12px; font-weight: 600; color: #555; }
-        .lineman-form-group select { padding: 10px 12px; border: 2px solid #106cc8; border-radius: 4px; font-size: 14px; background: #fff; font-weight: 500; }
-        .lineman-info { padding: 8px 12px; background: #eef4fb; border-radius: 4px; font-size: 12px; color: #106cc8; margin-bottom: 15px; border-left: 4px solid #106cc8; }
-        .lineman-buttons { display: flex; gap: 10px; justify-content: center; }
-        .btn-lineman-submit { background-color: #28a745; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; flex: 1; }
-        .btn-lineman-cancel { background-color: #6c757d; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
 
         .ocr-processing { display: none; margin-top: 12px; padding: 12px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeeba; color: #856404; font-weight: 600; font-size: 13px; }
         .spinner-small { border: 3px solid #f3f3f3; border-top: 3px solid #6f42c1; border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 6px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .staff-confirm-section { display: none; margin-top: 12px; padding: 12px; background: #eef4fb; border-radius: 4px; border: 1px solid #b8d4f0; }
-        .staff-confirm-section label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; font-size: 12px; }
-        .staff-confirm-section input { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; width: 150px; margin-right: 8px; }
-        .btn-confirm-staff { background-color: #28a745; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
-
-        .ocr-result { display: none; margin-top: 12px; padding: 12px; background: #d4edda; border-radius: 4px; border: 1px solid #c3e6cb; color: #155724; font-weight: 600; font-size: 13px; }
-        .ocr-debug { display: none; margin-top: 8px; padding: 8px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 11px; color: #333; max-height: 100px; overflow-y: auto; text-align: left; }
+        /* Lineman Modal (compact inside step) */
+        .lineman-inline {
+            background: #eef4fb; padding: 12px; border-radius: 6px;
+            border-left: 4px solid #106cc8; margin-bottom: 10px;
+        }
+        .lineman-inline label { font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px; display: block; }
+        .lineman-inline select {
+            width: 100%; padding: 8px 10px; border: 2px solid #106cc8;
+            border-radius: 4px; font-size: 13px; background: #fff;
+            font-weight: 500; margin-bottom: 8px;
+        }
 
         .info-msg { margin-top: 8px; padding: 8px 12px; background: #eef4fb; border-left: 4px solid #106cc8; color: #333; font-size: 12px; display: none; border-radius: 4px; }
-
         .loading { display: none; text-align: center; padding: 15px; font-size: 13px; color: #555; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #6f42c1; border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; margin: 0 auto 8px; }
 
         .pagination {
             display: none; margin-top: 15px; padding: 10px;
-            background: #f8f9fa; border-radius: 6px; text-align: center;
+            background: #f8f9fa; border-radius: 6px;
             flex-wrap: wrap; gap: 5px; justify-content: center; align-items: center;
         }
         .pagination.active { display: flex; }
@@ -301,7 +361,6 @@
             padding: 5px 10px; border-radius: 4px; cursor: pointer;
             font-size: 12px; font-weight: 600; min-width: 32px;
         }
-        .pagination button:hover { background: #e9ecef; }
         .pagination button.active { background: #106cc8; color: white; border-color: #106cc8; }
         .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
         .pagination-info { font-size: 12px; color: #666; margin: 0 10px; }
@@ -321,10 +380,9 @@
         .history-item {
             display: flex; justify-content: space-between; align-items: center;
             padding: 8px 10px; border-bottom: 1px solid #eee;
-            font-size: 12px; cursor: pointer; transition: background 0.2s;
+            font-size: 12px; transition: background 0.2s;
         }
         .history-item:hover { background: #f0f8ff; }
-        .history-item:last-child { border-bottom: none; }
         .history-item .date-shift { font-weight: 600; color: #333; }
         .history-item .stats { color: #666; font-size: 11px; }
         .history-item .btn-load {
@@ -333,32 +391,16 @@
         }
 
         @media print {
-            body { background: white; padding: 0; }
-            .container { box-shadow: none; padding: 0; }
             .button-group, .punch-card-section, .master-report-section,
-            .report-history-list, .pagination, .camera-modal,
-            .lineman-modal, .qr-modal, .info-msg, .loading, .btn-red, .top-bar,
-            .day-shift-stats, .action-taken-line { display: none !important; }
-            .table-responsive { display: block !important; max-height: none !important; overflow: visible !important; }
-            table { font-size: 10px; }
-            th, td { padding: 3px 4px; border: 1px solid #333; }
-            th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            tr.row-present { background: #d4edda !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            #printHeader { display: block !important; }
+            .report-history-list, .pagination, .modal-overlay, .info-msg,
+            .loading, .top-bar, .day-shift-stats, .action-taken-line { display: none !important; }
+            .table-responsive { display: block !important; max-height: none !important; }
         }
-
-        #printHeader { display: none; text-align: center; margin-bottom: 15px; }
-        #printHeader h2 { font-size: 18px; margin-bottom: 5px; }
-        #printHeader p { font-size: 12px; color: #666; }
 
         @media (max-width: 768px) {
             .button-group { flex-direction: column; align-items: stretch; }
             .btn { width: 100%; }
-            .camera-controls { flex-direction: column; align-items: stretch; }
-            .btn-camera { width: 100%; justify-content: center; }
-            .filter-row { flex-direction: column; }
-            .filter-group { width: 100%; }
-            .filter-group input, .filter-group select { width: 100%; min-width: unset; }
+            .modal-content { padding: 15px; }
         }
     </style>
 </head>
@@ -395,7 +437,6 @@
 
         <button class="btn-login" onclick="doLogin()">🔓 Login</button>
         <div class="login-error" id="loginError"></div>
-        <div class="login-footer">© 2026 Employee Punch Report System</div>
     </div>
 </div>
 
@@ -407,7 +448,7 @@
                 👤 Logged in as: <span id="loggedInSection">-</span>
             </div>
             <div style="display: flex; gap: 8px;">
-                <button class="btn btn-teal" onclick="toggleMasterReportSection()" id="masterReportToggleBtn">📊 Master Report</button>
+                <button class="btn btn-teal" onclick="toggleMasterReportSection()">📊 Master Report</button>
                 <button class="btn btn-red" onclick="logout()">🚪 Logout</button>
             </div>
         </div>
@@ -415,45 +456,29 @@
         <h1>Employee Punch Report</h1>
         <hr>
 
-        <div id="printHeader">
-            <h2>Employee Punch Report</h2>
-            <p id="printReportInfo"></p>
-        </div>
-
         <div class="button-group">
             <button class="btn btn-green" onclick="document.getElementById('masterListInput').click()">📋 Upload Master List</button>
-            <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Punch Report Day Shift</button>
-            <button class="btn btn-blue" onclick="document.getElementById('nightShiftInput').click()">🌙 Upload Punch Report Night Shift</button>
+            <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Day Shift</button>
+            <button class="btn btn-blue" onclick="document.getElementById('nightShiftInput').click()">🌙 Upload Night Shift</button>
             
-            <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo</button>
+            <!-- 🔥 MAIN QR SCAN BUTTON -->
+            <button class="btn btn-qr" onclick="openQRScanner()" id="qrScanBtn" style="display: none;">📱 Start QR Entry (8 Person)</button>
 
-            <!-- 🔥 QR Scan Button -->
-            <button class="btn btn-qr" onclick="openQRScanner()" id="qrScanBtn" style="display: none;">📱 QR Scan (Punch Card)</button>
-
-            <button class="btn btn-print" onclick="printPreview()" id="printBtn" style="display: none;">🖨️ Print</button>
-            <button class="btn btn-pdf" onclick="downloadPDF()" id="pdfBtn" style="display: none;">📄 PDF</button>
+            <button class="btn btn-purple" onclick="openPunchCardCamera()" id="punchCardBtn" style="display: none;">📸 Camera OCR</button>
             <button class="btn btn-dark" onclick="downloadExcel()" id="downloadExcelBtn" style="display: none;">⬇️ Excel</button>
+            <button class="btn btn-dark" onclick="downloadPDF()" id="pdfBtn" style="display: none; background: #e63946;">📄 PDF</button>
+            <button class="btn btn-dark" onclick="printPreview()" id="printBtn" style="display: none; background: #6c757d;">🖨️ Print</button>
         </div>
 
         <input type="file" id="masterListInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleMasterListUpload(this)">
         <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Day')">
         <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Night')">
 
-        <div class="punch-card-section" id="punchCardSection">
-            <h2>📸 Punch Card Photo Upload (Individual)</h2>
-            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
-                Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe.
-            </p>
-            <div class="camera-controls">
-                <button class="btn-camera" onclick="openCamera()">📷 Open Camera (Back)</button>
-            </div>
-        </div>
-
         <div class="master-report-section" id="masterReportSection">
             <h2>📊 Master Report - Saved Records History</h2>
             <div class="filter-row">
                 <div class="filter-group">
-                    <label for="filterDate">Date (Report Date)</label>
+                    <label for="filterDate">Date</label>
                     <input type="date" id="filterDate">
                 </div>
                 <div class="filter-group">
@@ -463,8 +488,8 @@
                         <option value="Night">Night</option>
                     </select>
                 </div>
-                <button class="btn-filter" onclick="loadSavedReport()">📂 Load Saved Report</button>
-                <button class="btn-filter" style="background-color: #6c757d;" onclick="loadAllHistory()">📜 Show All History</button>
+                <button class="btn-filter" onclick="loadSavedReport()">📂 Load</button>
+                <button class="btn-filter" style="background-color: #6c757d;" onclick="loadAllHistory()">📜 History</button>
             </div>
         </div>
 
@@ -484,11 +509,11 @@
             <h3>📅 Day Shift Punch Record (As per Upload)</h3>
             <div class="day-shift-stats">
                 <div class="day-shift-stat-box total-box">
-                    <div class="label">Total Employees (Punch Report)</div>
+                    <div class="label">Total Employees</div>
                     <div class="value" id="dsTotal">0</div>
                 </div>
                 <div class="day-shift-stat-box present">
-                    <div class="label">✅ Present (Card Uploaded)</div>
+                    <div class="label">✅ Present</div>
                     <div class="value" id="dsPresent">0</div>
                 </div>
                 <div class="day-shift-stat-box pending">
@@ -508,8 +533,7 @@
                     <div class="value" id="dsNormal">0</div>
                 </div>
             </div>
-
-            <div class="action-taken-line" id="actionTakenLine">
+            <div class="action-taken-line">
                 🎯 <strong>Action Taken:</strong> Please Check Shift Schedule Employee & Solved it
             </div>
         </div>
@@ -569,11 +593,136 @@
     </div>
 </div>
 
-<!-- CAMERA MODAL -->
-<div class="camera-modal" id="cameraModal">
-    <div class="camera-modal-content">
+<!-- 🔥 QR SCANNER MODAL -->
+<div class="modal-overlay" id="qrModal">
+    <div class="modal-content qr-modal-content">
+        <button class="btn-close-modal" onclick="closeQRScanner()">✖</button>
+        <h3>📱 Scan QR Code to Start Entry</h3>
+
+        <div class="qr-instruction">
+            📸 Punch Card er QR Code scan korun. Manual ID Input box auto khule jabe.
+        </div>
+
+        <div class="qr-scanner-container">
+            <div id="qrReader"></div>
+        </div>
+
+        <div class="qr-result" id="qrResult">
+            ✅ QR Code Scanned! Manual Entry Opening...
+        </div>
+    </div>
+</div>
+
+<!-- 🔥 STEP-BY-STEP MANUAL ID ENTRY MODAL (8 PERSON) -->
+<div class="modal-overlay" id="stepEntryModal">
+    <div class="modal-content step-modal-content" style="max-width: 700px;">
+        <button class="btn-close-modal" onclick="closeStepEntry()">✖</button>
+        <h3>⌨️ Step-by-Step Entry (8 Person)</h3>
+
+        <!-- Progress Dots -->
+        <div class="step-progress" id="stepProgress"></div>
+
+        <div class="step-counter" id="stepCounter">
+            Step 1 of 8 — Enter Staff ID
+        </div>
+
+        <!-- Current Entry Box -->
+        <div class="manual-box">
+            <h4>⌨️ Staff ID Input</h4>
+
+            <div class="manual-input-row">
+                <input type="text" id="stepStaffIdInput" placeholder="Type Staff ID" 
+                       oninput="stepLiveDetect(this.value)"
+                       onkeypress="if(event.key==='Enter') addCurrentEntry()">
+                <button class="btn-manual-submit" onclick="addCurrentEntry()">✅ Add</button>
+            </div>
+
+            <div class="manual-live-detect idle" id="stepLiveDetect">
+                Waiting for Staff ID...
+            </div>
+
+            <!-- Lineman Select for Current Entry -->
+            <div class="lineman-inline">
+                <label>Line Man Name <span style="color: red;">*</span></label>
+                <select id="stepLinemanSelect">
+                    <option value="">-- Select Line Man --</option>
+                    <option value="Zakir">Zakir</option>
+                    <option value="Momin">Momin</option>
+                    <option value="Afjal">Afjal</option>
+                    <option value="Shorif">Shorif</option>
+                    <option value="Nazmul">Nazmul</option>
+                    <option value="Milon">Milon</option>
+                    <option value="Belal">Belal</option>
+                    <option value="Akram">Akram</option>
+                    <option value="Tuhin">Tuhin</option>
+                    <option value="Saiful">Saiful</option>
+                    <option value="Nitai">Nitai</option>
+                    <option value="Juwell">Juwell</option>
+                </select>
+
+                <label>MC No <span style="color: red;">*</span></label>
+                <select id="stepMcNoSelect">
+                    <option value="">-- Select MC No --</option>
+                    <optgroup label="A Line">
+                        <option>A1-160</option><option>A2-120</option><option>A3-120</option>
+                        <option>A4-120</option><option>A5-160</option><option>A6-160</option>
+                        <option>A7-160</option>
+                    </optgroup>
+                    <optgroup label="B Line">
+                        <option>B1-120</option><option>B2-120</option><option>B3-120</option>
+                        <option>B4-120</option><option>B5-90PC</option><option>B6-90PC</option>
+                        <option>B7-120PC</option><option>B8-120PC</option>
+                    </optgroup>
+                    <optgroup label="C Line">
+                        <option>C1-120</option><option>C2-160</option><option>C3-120</option>
+                        <option>C4-120PC</option><option>C5-90</option><option>C6-120</option>
+                        <option>C7-160</option>
+                    </optgroup>
+                    <optgroup label="Other Lines">
+                        <option>D1-160</option><option>D2-160</option><option>D3-160</option>
+                        <option>A1-280TC</option><option>A2-380</option><option>A3-380 (PC)</option>
+                        <option>A4-380</option><option>A5-HP-330</option>
+                        <option>B1-470</option><option>B2-380</option><option>B3-530</option>
+                        <option>B4-530</option><option>B5-530</option><option>B6-380</option>
+                        <option>C1-800-30</option><option>C2-800-31</option>
+                        <option>C3-270-1</option><option>C4-380-73</option>
+                        <option>C5-380-44</option><option>C6-280TC</option>
+                        <option>D1-280TC</option><option>D2-MA2-250</option>
+                        <option>D3-330-1</option><option>D4-HP-330-5</option>
+                        <option>D5-428-1</option><option>D6-HP-428-4</option>
+                        <option>D7-HP-330</option>
+                        <option>E1-380-90</option><option>E2-380-94</option>
+                        <option>E3-380-88</option><option>E4-380-76</option>
+                        <option>E5-380-62</option><option>E6-380-75</option>
+                        <option>F1-380-92</option><option>F2-380-93</option>
+                        <option>F3-380-98</option><option>F4-380-99</option>
+                        <option>F5-380-101</option><option>F6-380-100</option>
+                    </optgroup>
+                </select>
+            </div>
+        </div>
+
+        <!-- Added Entries List -->
+        <div class="entry-list" id="entryList" style="display: none;">
+            <h5>📋 Added Entries (<span id="entryCount">0</span>)</h5>
+            <div id="entryItems"></div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="step-buttons">
+            <button class="btn-step btn-cancel-step" onclick="closeStepEntry()">❌ Cancel</button>
+            <button class="btn-step btn-save-final" id="saveFinalBtn" onclick="saveAllEntries()" disabled>
+                💾 Save All (<span id="saveCount">0</span>/8)
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CAMERA OCR MODAL (Legacy) -->
+<div class="modal-overlay" id="cameraModal">
+    <div class="modal-content camera-modal-content">
         <button class="btn-close-modal" onclick="closeCamera()">✖</button>
-        <h3 style="font-size: 15px; margin-bottom: 10px;">📷 Punch Card Capture</h3>
+        <h3>📷 Punch Card Camera OCR</h3>
 
         <div class="video-container">
             <video id="cameraVideo" autoplay playsinline></video>
@@ -583,175 +732,18 @@
         <div class="camera-buttons">
             <button class="btn-capture" id="captureBtn" onclick="capturePhoto()">📸 Capture</button>
             <button class="btn-retake" id="retakeBtn" onclick="retakePhoto()">🔄 Retake</button>
-            <button class="btn-confirm" id="confirmBtn" onclick="processOCRAndUpload()">✅ Confirm & Auto Detect</button>
+            <button class="btn-confirm" id="confirmBtn" onclick="processOCRAndUpload()">✅ Confirm & Detect</button>
         </div>
 
         <div class="ocr-processing" id="ocrProcessing">
             <span class="spinner-small"></span> Reading Punch Card...
-        </div>
-
-        <div class="ocr-result" id="ocrResult">
-            ✅ <strong>Staff ID Detected:</strong> <span id="detectedId"></span>
-        </div>
-
-        <div class="ocr-debug" id="ocrDebug">
-            <strong>OCR Text:</strong><br>
-            <pre id="ocrDebugText" style="white-space: pre-wrap; word-break: break-word; font-size: 10px;"></pre>
-        </div>
-
-        <div class="manual-id-section">
-            <h4>⌨️ Manual ID Input (Live Detect)</h4>
-            <div class="manual-id-input-row">
-                <input type="text" id="manualIdInput" placeholder="Type Staff ID (e.g. 64686)" oninput="liveDetectStaffId(this.value)">
-                <button class="btn-manual-submit" onclick="submitManualId()">✅ Submit</button>
-            </div>
-            <div class="manual-live-detect" id="manualLiveDetect"></div>
-        </div>
-
-        <div class="staff-confirm-section" id="staffConfirmSection">
-            <label for="confirmStaffId">⚠️ OCR fail. Type manually:</label>
-            <input type="text" id="confirmStaffId" placeholder="e.g. 64686">
-            <button class="btn-confirm-staff" onclick="finalizeUpload()">Submit</button>
-        </div>
-    </div>
-</div>
-
-<!-- 🔥 QR SCANNER MODAL -->
-<div class="qr-modal" id="qrModal">
-    <div class="qr-modal-content">
-        <button class="btn-close-modal" onclick="closeQRScanner()">✖</button>
-        <h3>📱 Scan Punch Card QR Code</h3>
-
-        <div class="qr-instruction">
-            📸 Punch Card er QR Code scan korun. Automatic Staff ID detect hobe.
-        </div>
-
-        <div class="qr-scanner-container">
-            <div id="qrReader"></div>
-        </div>
-
-        <div class="qr-result" id="qrResult">
-            ✅ <strong>Staff ID Detected:</strong> <span id="qrDetectedId"></span>
-        </div>
-    </div>
-</div>
-
-<!-- LINEMAN MODAL -->
-<div class="lineman-modal" id="linemanModal">
-    <div class="lineman-modal-content">
-        <h3>👷 Line Man & MC No Select</h3>
-        
-        <div class="lineman-info">
-            Staff ID: <strong id="linemanStaffId"></strong> | Employee: <strong id="linemanEmpName"></strong>
-        </div>
-
-        <div class="lineman-form-group">
-            <label for="linemanNameSelect">Line Man Name <span style="color: red;">*</span></label>
-            <select id="linemanNameSelect">
-                <option value="">-- Select Line Man --</option>
-                <option value="Zakir">Zakir</option>
-                <option value="Momin">Momin</option>
-                <option value="Afjal">Afjal</option>
-                <option value="Shorif">Shorif</option>
-                <option value="Nazmul">Nazmul</option>
-                <option value="Milon">Milon</option>
-                <option value="Belal">Belal</option>
-                <option value="Akram">Akram</option>
-                <option value="Tuhin">Tuhin</option>
-                <option value="Saiful">Saiful</option>
-                <option value="Nitai">Nitai</option>
-                <option value="Juwell">Juwell</option>
-            </select>
-        </div>
-
-        <div class="lineman-form-group">
-            <label for="mcNoSelect">MC No <span style="color: red;">*</span></label>
-            <select id="mcNoSelect">
-                <option value="">-- Select MC No --</option>
-                <optgroup label="A Line">
-                    <option>A1-160</option>
-                    <option>A2-120</option>
-                    <option>A3-120</option>
-                    <option>A4-120</option>
-                    <option>A5-160</option>
-                    <option>A6-160</option>
-                    <option>A7-160</option>
-                </optgroup>
-                <optgroup label="B Line">
-                    <option>B1-120</option>
-                    <option>B2-120</option>
-                    <option>B3-120</option>
-                    <option>B4-120</option>
-                    <option>B5-90PC</option>
-                    <option>B6-90PC</option>
-                    <option>B7-120PC</option>
-                    <option>B8-120PC</option>
-                </optgroup>
-                <optgroup label="C Line">
-                    <option>C1-120</option>
-                    <option>C2-160</option>
-                    <option>C3-120</option>
-                    <option>C4-120PC</option>
-                    <option>C5-90</option>
-                    <option>C6-120</option>
-                    <option>C7-160</option>
-                </optgroup>
-                <optgroup label="D Line">
-                    <option>D1-160</option>
-                    <option>D2-160</option>
-                    <option>D3-160</option>
-                    <option>A1-280TC</option>
-                    <option>A2-380</option>
-                    <option>A3-380 (PC)</option>
-                    <option>A4-380</option>
-                    <option>A5-HP-330</option>
-                </optgroup>
-                <optgroup label="Other Lines">
-                    <option>B1-470</option>
-                    <option>B2-380</option>
-                    <option>B3-530</option>
-                    <option>B4-530</option>
-                    <option>B5-530</option>
-                    <option>B6-380</option>
-                    <option>C1-800-30</option>
-                    <option>C2-800-31</option>
-                    <option>C3-270-1</option>
-                    <option>C4-380-73</option>
-                    <option>C5-380-44</option>
-                    <option>C6-280TC</option>
-                    <option>D1-280TC</option>
-                    <option>D2-MA2-250</option>
-                    <option>D3-330-1</option>
-                    <option>D4-HP-330-5</option>
-                    <option>D5-428-1</option>
-                    <option>D6-HP-428-4</option>
-                    <option>D7-HP-330</option>
-                    <option>E1-380-90</option>
-                    <option>E2-380-94</option>
-                    <option>E3-380-88</option>
-                    <option>E4-380-76</option>
-                    <option>E5-380-62</option>
-                    <option>E6-380-75</option>
-                    <option>F1-380-92</option>
-                    <option>F2-380-93</option>
-                    <option>F3-380-98</option>
-                    <option>F4-380-99</option>
-                    <option>F5-380-101</option>
-                    <option>F6-380-100</option>
-                </optgroup>
-            </select>
-        </div>
-
-        <div class="lineman-buttons">
-            <button class="btn-lineman-cancel" onclick="closeLinemanModal()">Cancel</button>
-            <button class="btn-lineman-submit" onclick="submitLinemanDetails()">✅ Submit</button>
         </div>
     </div>
 </div>
 
 <script>
     // ====================================================
-    // LOGIN SYSTEM
+    // LOGIN
     // ====================================================
     const LOGIN_CREDENTIALS = {
         "Plastic Production-01": "P01",
@@ -788,7 +780,6 @@
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         document.getElementById('loggedInSection').textContent = loggedInSection;
-        
         loadMasterListFromFirebase();
         loadCurrentReportFromFirebase();
     }
@@ -800,14 +791,8 @@
 
         errorDiv.style.display = 'none';
 
-        if (!section) {
-            errorDiv.textContent = '❌ Please select a section.';
-            errorDiv.style.display = 'block';
-            return;
-        }
-
-        if (!password) {
-            errorDiv.textContent = '❌ Please enter password.';
+        if (!section || !password) {
+            errorDiv.textContent = '❌ Please fill all fields.';
             errorDiv.style.display = 'block';
             return;
         }
@@ -815,8 +800,6 @@
         if (LOGIN_CREDENTIALS[section] === password) {
             loggedInSection = section;
             sessionStorage.setItem('loggedInSection', section);
-            document.getElementById('loginSection').value = '';
-            document.getElementById('loginPassword').value = '';
             showMainApp();
         } else {
             errorDiv.textContent = '❌ Invalid section or password.';
@@ -825,9 +808,8 @@
     }
 
     function logout() {
-        if (confirm("Apni ki logout korte chan?")) {
+        if (confirm("Logout korte chan?")) {
             sessionStorage.removeItem('loggedInSection');
-            loggedInSection = '';
             location.reload();
         }
     }
@@ -842,8 +824,7 @@
         projectId: "phrasal-bivouac-459617-p3",
         storageBucket: "phrasal-bivouac-459617-p3.firebasestorage.app",
         messagingSenderId: "906819374402",
-        appId: "1:906819374402:web:ff90b2149f3c88b6774cdb",
-        measurementId: "G-GYX32ENH1H"
+        appId: "1:906819374402:web:ff90b2149f3c88b6774cdb"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -856,15 +837,17 @@
     let currentTableData = [];
     let videoStream = null;
     let capturedImageData = null;
-    let currentShiftType = 'Day';
     let currentReportDate = '';
     let currentReportShift = 'Day';
     let currentPage = 1;
     const rowsPerPage = 100;
-    let pendingStaffId = null;
     let currentStatusData = {};
     
-    // 🔥 QR Scanner variables
+    // 🔥 Step Entry Variables
+    let stepEntries = []; // [{staffId, lineman, mcNo, empName}]
+    const MAX_STEPS = 8;
+    
+    // QR Scanner
     let qrScanner = null;
     let qrScanning = false;
 
@@ -882,7 +865,7 @@
     }
 
     // ====================================================
-    // DATA LOADING
+    // LOAD DATA
     // ====================================================
     function loadMasterListFromFirebase() {
         database.ref('employeeData/masterList').once('value', (snapshot) => {
@@ -906,36 +889,28 @@
                 currentTableData = data.punchData;
                 currentReportDate = data.reportDate;
                 currentReportShift = data.shift;
-                
-                console.log(`✅ Previous Report loaded: ${data.punchData.length} records`);
                 generateTable(data.punchData);
                 
-                const infoMsg = document.getElementById('infoMsg');
-                infoMsg.style.display = 'block';
-                infoMsg.textContent = `✅ Previous Report loaded! Total: ${data.punchData.length} | Date: ${data.reportDate} | Shift: ${data.shift}`;
+                document.getElementById('infoMsg').style.display = 'block';
+                document.getElementById('infoMsg').textContent = `✅ Previous Report loaded! Total: ${data.punchData.length}`;
             }
-        }).catch((error) => {
-            console.error("Load Error:", error);
-            loadingSpinner.style.display = 'none';
         });
     }
 
     // ====================================================
-    // MASTER LIST UPLOAD
+    // UPLOADS
     // ====================================================
     function handleMasterListUpload(input) {
         if (!input.files || input.files.length === 0) return;
-
         const file = input.files[0];
         const infoMsg = document.getElementById('infoMsg');
         const loadingSpinner = document.getElementById('loadingSpinner');
 
         infoMsg.style.display = 'block';
-        infoMsg.textContent = `📂 Reading Master List: ${file.name}...`;
+        infoMsg.textContent = `📂 Reading Master List...`;
         loadingSpinner.style.display = 'block';
 
         const reader = new FileReader();
-
         reader.onload = function(e) {
             try {
                 const data = new Uint8Array(e.target.result);
@@ -955,42 +930,31 @@
                 });
 
                 masterListData = masterList;
-
                 database.ref('employeeData/masterList').set(masterList)
                 .then(() => {
                     loadingSpinner.style.display = 'none';
                     infoMsg.textContent = `✅ Master List saved! Total: ${masterList.length}`;
                     alert(`✅ Master List Uploaded!\nTotal: ${masterList.length}`);
                 });
-
             } catch (error) {
-                console.error("Excel Read Error:", error);
                 loadingSpinner.style.display = 'none';
                 alert("Excel read error.");
             }
         };
-
         reader.readAsArrayBuffer(file);
     }
 
-    // ====================================================
-    // PUNCH REPORT UPLOAD
-    // ====================================================
     function handlePunchReportUpload(input, shiftType) {
         if (!input.files || input.files.length === 0) return;
-
         const file = input.files[0];
         const infoMsg = document.getElementById('infoMsg');
         const loadingSpinner = document.getElementById('loadingSpinner');
-        
-        currentShiftType = shiftType;
 
         infoMsg.style.display = 'block';
-        infoMsg.textContent = `📂 Reading Punch Report: ${file.name}...`;
+        infoMsg.textContent = `📂 Reading Punch Report...`;
         loadingSpinner.style.display = 'block';
 
         const reader = new FileReader();
-
         reader.onload = function(e) {
             try {
                 const data = new Uint8Array(e.target.result);
@@ -1003,10 +967,7 @@
 
                 jsonData.slice(1).forEach(row => {
                     if (row[3]) {
-                        if (!reportDate && row[0]) {
-                            reportDate = extractReportDate(row[0]);
-                        }
-
+                        if (!reportDate && row[0]) reportDate = extractReportDate(row[0]);
                         punchData.push({
                             date: row[0] ? formatDate(row[0]) : '',
                             rawDate: row[0],
@@ -1026,36 +987,29 @@
                 currentReportShift = shiftType;
 
                 loadingSpinner.style.display = 'none';
-                infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length} | Date: ${reportDate} | Shift: ${shiftType}`;
+                infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length}`;
 
                 generateTable(punchData);
 
                 const historyKey = `${reportDate}_${shiftType}`;
-                
                 database.ref('reportHistory/' + historyKey).set({
-                    reportDate: reportDate,
-                    shift: shiftType,
-                    punchData: punchData,
+                    reportDate, shift: shiftType, punchData,
                     uploadedAt: new Date().toISOString(),
                     totalRecords: punchData.length,
                     section: loggedInSection
                 });
 
                 database.ref('currentReport').set({
-                    reportDate: reportDate,
-                    shift: shiftType,
-                    punchData: punchData,
+                    reportDate, shift: shiftType, punchData,
                     uploadedAt: new Date().toISOString(),
                     section: loggedInSection
                 });
 
             } catch (error) {
-                console.error("Excel Read Error:", error);
                 loadingSpinner.style.display = 'none';
                 alert("Excel read error.");
             }
         };
-
         reader.readAsArrayBuffer(file);
     }
 
@@ -1063,22 +1017,15 @@
         if (!dateVal) return '';
         if (typeof dateVal === 'number') {
             const excelDate = XLSX.SSF.parse_date_code(dateVal);
-            if (excelDate) {
-                return `${excelDate.y}-${String(excelDate.m).padStart(2,'0')}-${String(excelDate.d).padStart(2,'0')}`;
-            }
+            if (excelDate) return `${excelDate.y}-${String(excelDate.m).padStart(2,'0')}-${String(excelDate.d).padStart(2,'0')}`;
         }
         const dateStr = String(dateVal).trim();
         if (dateStr.includes(' ')) return dateStr.split(' ')[0];
-        else if (dateStr.includes('-')) {
-            const parts = dateStr.split('-');
-            if (parts.length === 3 && parts[0].length === 4) return dateStr;
-            else if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
         return dateStr;
     }
 
     // ====================================================
-    // GENERATE TABLE
+    // TABLE
     // ====================================================
     function generateTable(data) {
         currentTableData = data;
@@ -1087,12 +1034,11 @@
         
         document.getElementById('tableContainer').style.display = 'block';
         document.getElementById('dayShiftSummary').style.display = 'block';
-        document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
-        document.getElementById('punchCardSection').style.display = 'block';
-        document.getElementById('qrScanBtn').style.display = 'inline-block'; // 🔥 Show QR Button
+        document.getElementById('qrScanBtn').style.display = 'inline-block'; // 🔥 QR Button
+        document.getElementById('punchCardBtn').style.display = 'inline-block';
         document.getElementById('downloadExcelBtn').style.display = 'inline-block';
-        document.getElementById('printBtn').style.display = 'inline-block';
         document.getElementById('pdfBtn').style.display = 'inline-block';
+        document.getElementById('printBtn').style.display = 'inline-block';
     }
 
     function renderTablePage() {
@@ -1113,13 +1059,11 @@
         if (currentPage < 1) currentPage = 1;
 
         const startIdx = (currentPage - 1) * rowsPerPage;
-        const endIdx = startIdx + rowsPerPage;
-        const pageData = currentTableData.slice(startIdx, endIdx);
+        const pageData = currentTableData.slice(startIdx, startIdx + rowsPerPage);
 
         let lateCount = 0;
         currentTableData.forEach(record => {
-            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
-            if (remarks.isLate) lateCount++;
+            if (calculateRemarks(record.rawPunchTime || record.punchTime, record.shift).isLate) lateCount++;
         });
 
         database.ref('punchStatus').once('value', (snapshot) => {
@@ -1140,7 +1084,6 @@
 
                 const tr = document.createElement('tr');
                 tr.id = `row_${record.staffId}`;
-                tr.setAttribute('data-staff-id', record.staffId);
                 if (isPresent) tr.classList.add('row-present');
 
                 tr.innerHTML = `
@@ -1180,46 +1123,23 @@
 
     function renderPagination(totalPages) {
         const pagination = document.getElementById('pagination');
-        const pageInfo = document.getElementById('pageInfo');
-        const pageNumbers = document.getElementById('pageNumbers');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-
-        if (totalPages <= 1) {
-            pagination.classList.remove('active');
-            return;
-        }
-
+        if (totalPages <= 1) { pagination.classList.remove('active'); return; }
         pagination.classList.add('active');
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-        prevBtn.disabled = currentPage === 1;
-        nextBtn.disabled = currentPage === totalPages;
+        
+        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById('prevBtn').disabled = currentPage === 1;
+        document.getElementById('nextBtn').disabled = currentPage === totalPages;
 
         let html = '';
-        let startPage = Math.max(1, currentPage - 3);
-        let endPage = Math.min(totalPages, currentPage + 3);
-
-        if (startPage > 1) {
-            html += `<button onclick="changePage(1)">1</button>`;
-            if (startPage > 2) html += `<span style="padding: 5px;">...</span>`;
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
+        for (let i = Math.max(1, currentPage - 3); i <= Math.min(totalPages, currentPage + 3); i++) {
             html += `<button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
         }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) html += `<span style="padding: 5px;">...</span>`;
-            html += `<button onclick="changePage(${totalPages})">${totalPages}</button>`;
-        }
-
-        pageNumbers.innerHTML = html;
+        document.getElementById('pageNumbers').innerHTML = html;
     }
 
     function changePage(page) {
         currentPage = page;
         renderTablePage();
-        document.getElementById('tableContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function updateDayShiftSummary(total, present, pending, late) {
@@ -1227,12 +1147,8 @@
         document.getElementById('dsPresent').textContent = present;
         document.getElementById('dsPending').textContent = pending;
         document.getElementById('dsLate').textContent = late;
-
-        let abnormalCount = (total === present) ? 0 : (total - present);
-        let normalCount = present;
-
-        document.getElementById('dsAbnormal').textContent = abnormalCount;
-        document.getElementById('dsNormal').textContent = normalCount;
+        document.getElementById('dsAbnormal').textContent = (total === present) ? 0 : (total - present);
+        document.getElementById('dsNormal').textContent = present;
     }
 
     function calculateRemarks(punchTimeVal, shift) {
@@ -1242,8 +1158,7 @@
         const punchMinutes = timeToMinutes(punchTimeVal);
         let cutoff = 8 * 60;
         if (shift && String(shift).toLowerCase().includes('night')) cutoff = 20 * 60;
-
-        if (punchMinutes > cutoff) return { text: 'Late Punch / Shift Schedule Problem', isLate: true };
+        if (punchMinutes > cutoff) return { text: 'Late Punch', isLate: true };
         return { text: 'On Time', isLate: false };
     }
 
@@ -1259,16 +1174,9 @@
         if (!dateVal) return '';
         if (typeof dateVal === 'number') {
             const excelDate = XLSX.SSF.parse_date_code(dateVal);
-            if (excelDate) {
-                return `${String(excelDate.d).padStart(2, '0')}-${String(excelDate.m).padStart(2, '0')}-${excelDate.y}`;
-            }
+            if (excelDate) return `${String(excelDate.d).padStart(2, '0')}-${String(excelDate.m).padStart(2, '0')}-${excelDate.y}`;
         }
-        const dateStr = String(dateVal).trim();
-        if (dateStr.includes(' ')) {
-            const parts = dateStr.split(' ')[0].split('-');
-            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-        return dateStr;
+        return String(dateVal);
     }
 
     function formatTime(timeVal) {
@@ -1299,18 +1207,11 @@
             return;
         }
 
-        const modal = document.getElementById('qrModal');
-        modal.style.display = 'flex';
-        
-        const resultDiv = document.getElementById('qrResult');
-        resultDiv.style.display = 'none';
-        resultDiv.classList.remove('error');
-
+        document.getElementById('qrModal').style.display = 'flex';
+        document.getElementById('qrResult').style.display = 'none';
         qrScanning = true;
 
-        // Initialize QR Scanner
         qrScanner = new Html5Qrcode("qrReader");
-        
         const config = {
             fps: 10,
             qrbox: { width: 250, height: 250 },
@@ -1321,135 +1222,30 @@
             { facingMode: "environment" },
             config,
             onQRCodeScanned,
-            onQRScanError
+            () => {} // Silent error
         ).catch((err) => {
-            console.error("QR Scanner Error:", err);
-            alert("QR Scanner open korte somossa hoyeche. Please camera permission check korun.");
+            console.error("QR Error:", err);
+            alert("QR Scanner open error. Camera permission check korun.");
             closeQRScanner();
         });
     }
 
-    function onQRCodeScanned(decodedText, decodedResult) {
+    function onQRCodeScanned(decodedText) {
         if (!qrScanning) return;
         qrScanning = false;
 
-        console.log("✅ QR Code Scanned:", decodedText);
-
-        // QR code theke Staff ID extract kori
-        const staffId = extractStaffIdFromQR(decodedText);
+        // Vibration + Sound
+        if (navigator.vibrate) navigator.vibrate(150);
+        playBeepSound();
 
         const resultDiv = document.getElementById('qrResult');
-        const detectedIdSpan = document.getElementById('qrDetectedId');
+        resultDiv.style.display = 'block';
 
-        if (staffId) {
-            detectedIdSpan.textContent = staffId;
-            resultDiv.style.display = 'block';
-            resultDiv.classList.remove('error');
-
-            // Vibration (mobile)
-            if (navigator.vibrate) navigator.vibrate(200);
-
-            // Sound feedback
-            playBeepSound();
-
-            // 1.5 sec por Lineman Modal open
-            setTimeout(() => {
-                closeQRScanner();
-                openLinemanModal(staffId);
-            }, 1200);
-        } else {
-            detectedIdSpan.textContent = 'Not Found';
-            resultDiv.style.display = 'block';
-            resultDiv.classList.add('error');
-            resultDiv.innerHTML = `❌ <strong>QR Code Scanned but Staff ID Not Found</strong><br><small>Content: ${decodedText.substring(0, 50)}</small>`;
-            
-            // Restart scanning after 2 sec
-            setTimeout(() => {
-                qrScanning = true;
-                resultDiv.style.display = 'none';
-            }, 2000);
-        }
-    }
-
-    function extractStaffIdFromQR(qrText) {
-        if (!qrText) return null;
-        
-        const allStaffIds = new Set();
-        masterListData.forEach(emp => allStaffIds.add(emp.staffId));
-        currentTableData.forEach(row => allStaffIds.add(row.staffId));
-        const validIds = Array.from(allStaffIds);
-
-        const cleanQR = convertBanglaToEnglish(qrText.trim()).toUpperCase();
-        console.log("Cleaned QR:", cleanQR);
-
-        // Method 1: Direct Staff ID match
-        for (const staffId of validIds) {
-            const regex = new RegExp(`\\b${staffId.toUpperCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
-            if (regex.test(cleanQR)) {
-                console.log("✅ Direct match:", staffId);
-                return staffId;
-            }
-        }
-
-        // Method 2: JSON format check (jodi QR code e JSON thake)
-        try {
-            const jsonData = JSON.parse(qrText);
-            if (jsonData.staffId && validIds.includes(jsonData.staffId)) {
-                return jsonData.staffId;
-            }
-            if (jsonData.id && validIds.includes(jsonData.id)) {
-                return jsonData.id;
-            }
-        } catch (e) {
-            // Not JSON, continue
-        }
-
-        // Method 3: Pattern match (ID: xxx, Staff: xxx)
-        const patterns = [
-            /(?:STAFF\s*ID|STAFF\s*NO|EMP\s*ID|ID)[\s:.\-]*([A-Z]?\d{4,})/i,
-            /\b([A-Z]\d{5,})\b/g,
-            /\b(\d{5,})\b/g,
-        ];
-
-        for (const pattern of patterns) {
-            const matches = cleanQR.match(pattern);
-            if (matches) {
-                for (const match of matches) {
-                    const cleanMatch = match.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-                    const found = validIds.find(id => {
-                        const idUp = id.toUpperCase();
-                        return idUp === cleanMatch || idUp === cleanMatch.replace(/^S/, '') ||
-                               cleanMatch === idUp.replace(/^S/, '') ||
-                               idUp.includes(cleanMatch) || cleanMatch.includes(idUp);
-                    });
-                    if (found) {
-                        console.log("✅ Pattern match:", found);
-                        return found;
-                    }
-                }
-            }
-        }
-
-        // Method 4: Number match
-        const allNumbers = cleanQR.match(/\d{4,}/g);
-        if (allNumbers) {
-            for (const num of allNumbers) {
-                const found = validIds.find(id => {
-                    const idNum = id.replace(/[^0-9]/g, '');
-                    return idNum === num || idNum.endsWith(num) || num.endsWith(idNum);
-                });
-                if (found) {
-                    console.log("✅ Number match:", found);
-                    return found;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    function onQRScanError(errorMessage) {
-        // Silent — jodi scan fail hoy, kichu korar dorkar nei
+        // 1 sec por Step Entry Modal open
+        setTimeout(() => {
+            closeQRScanner();
+            openStepEntry();
+        }, 800);
     }
 
     function closeQRScanner() {
@@ -1458,10 +1254,7 @@
             qrScanner.stop().then(() => {
                 qrScanner.clear();
                 qrScanner = null;
-            }).catch((err) => {
-                console.error("QR Stop Error:", err);
-                qrScanner = null;
-            });
+            }).catch(() => { qrScanner = null; });
         }
         document.getElementById('qrModal').style.display = 'none';
     }
@@ -1471,114 +1264,72 @@
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = 800;
+            oscillator.frequency.value = 900;
             oscillator.type = 'sine';
-            
             gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-            
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
             oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.2);
-        } catch (e) {
-            // Audio not supported
+            oscillator.stop(audioContext.currentTime + 0.15);
+        } catch (e) {}
+    }
+
+    // ====================================================
+    // 🔥 STEP-BY-STEP ENTRY (8 PERSON)
+    // ====================================================
+    function openStepEntry() {
+        stepEntries = []; // Reset
+        document.getElementById('stepStaffIdInput').value = '';
+        document.getElementById('stepLinemanSelect').value = '';
+        document.getElementById('stepMcNoSelect').value = '';
+        document.getElementById('stepLiveDetect').textContent = 'Waiting for Staff ID...';
+        document.getElementById('stepLiveDetect').className = 'manual-live-detect idle';
+        document.getElementById('entryList').style.display = 'none';
+        document.getElementById('entryItems').innerHTML = '';
+        document.getElementById('entryCount').textContent = '0';
+        document.getElementById('saveCount').textContent = '0';
+        document.getElementById('saveFinalBtn').disabled = true;
+
+        renderStepProgress();
+        updateStepCounter();
+
+        document.getElementById('stepEntryModal').style.display = 'flex';
+        setTimeout(() => document.getElementById('stepStaffIdInput').focus(), 300);
+    }
+
+    function renderStepProgress() {
+        const progress = document.getElementById('stepProgress');
+        let html = '';
+        for (let i = 0; i < MAX_STEPS; i++) {
+            let cls = 'step-dot';
+            if (i < stepEntries.length) cls += ' done';
+            else if (i === stepEntries.length) cls += ' active';
+            html += `<div class="${cls}">${i < stepEntries.length ? '✓' : (i + 1)}</div>`;
+        }
+        progress.innerHTML = html;
+    }
+
+    function updateStepCounter() {
+        const currentStep = stepEntries.length + 1;
+        if (stepEntries.length >= MAX_STEPS) {
+            document.getElementById('stepCounter').textContent = `✅ All ${MAX_STEPS} entries added! Click "Save All"`;
+            document.getElementById('stepCounter').style.background = '#d4edda';
+            document.getElementById('stepCounter').style.color = '#155724';
+        } else {
+            document.getElementById('stepCounter').textContent = `Step ${currentStep} of ${MAX_STEPS} — Enter Staff ID`;
+            document.getElementById('stepCounter').style.background = '#fff3cd';
+            document.getElementById('stepCounter').style.color = '#856404';
         }
     }
 
-    // ====================================================
-    // CAMERA
-    // ====================================================
-    function togglePunchCardSection() {
-        const section = document.getElementById('punchCardSection');
-        section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
-    }
-
-    function toggleMasterReportSection() {
-        const section = document.getElementById('masterReportSection');
-        section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
-    }
-
-    async function openCamera() {
-        const modal = document.getElementById('cameraModal');
-        const video = document.getElementById('cameraVideo');
-        const capturedPhoto = document.getElementById('capturedPhoto');
-        const captureBtn = document.getElementById('captureBtn');
-        const retakeBtn = document.getElementById('retakeBtn');
-        const confirmBtn = document.getElementById('confirmBtn');
-        const staffConfirmSection = document.getElementById('staffConfirmSection');
-        const ocrProcessing = document.getElementById('ocrProcessing');
-        const ocrResult = document.getElementById('ocrResult');
-        const ocrDebug = document.getElementById('ocrDebug');
-
-        video.style.display = 'block';
-        capturedPhoto.style.display = 'none';
-        captureBtn.style.display = 'inline-block';
-        retakeBtn.style.display = 'none';
-        confirmBtn.style.display = 'none';
-        staffConfirmSection.style.display = 'none';
-        ocrProcessing.style.display = 'none';
-        ocrResult.style.display = 'none';
-        ocrDebug.style.display = 'none';
-        document.getElementById('confirmStaffId').value = '';
-        document.getElementById('manualIdInput').value = '';
-        document.getElementById('manualLiveDetect').textContent = '';
-
-        modal.style.display = 'flex';
-
-        try {
-            videoStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: "environment" } }
-            });
-            video.srcObject = videoStream;
-        } catch (error) {
-            console.error("Camera error:", error);
-            alert("Camera open error.");
-            closeCamera();
-        }
-    }
-
-    function capturePhoto() {
-        const video = document.getElementById('cameraVideo');
-        const capturedPhoto = document.getElementById('capturedPhoto');
-        const captureBtn = document.getElementById('captureBtn');
-        const retakeBtn = document.getElementById('retakeBtn');
-        const confirmBtn = document.getElementById('confirmBtn');
-
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-
-        capturedImageData = canvas.toDataURL('image/png');
-        capturedPhoto.src = capturedImageData;
-        capturedPhoto.style.display = 'block';
-        video.style.display = 'none';
-
-        captureBtn.style.display = 'none';
-        retakeBtn.style.display = 'inline-block';
-        confirmBtn.style.display = 'inline-block';
-
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-            videoStream = null;
-        }
-    }
-
-    function retakePhoto() { openCamera(); }
-
-    // ====================================================
-    // MANUAL ID
-    // ====================================================
-    function liveDetectStaffId(value) {
-        const detectDiv = document.getElementById('manualLiveDetect');
+    function stepLiveDetect(value) {
+        const detectDiv = document.getElementById('stepLiveDetect');
         const cleanedId = convertBanglaToEnglish(value.trim());
 
         if (!cleanedId) {
-            detectDiv.textContent = '';
-            detectDiv.className = 'manual-live-detect';
+            detectDiv.textContent = 'Waiting for Staff ID...';
+            detectDiv.className = 'manual-live-detect idle';
             return;
         }
 
@@ -1593,69 +1344,256 @@
         );
 
         if (found) {
-            const masterInfo = masterListData.find(emp => emp.staffId === found);
-            const name = masterInfo ? masterInfo.name : (currentTableData.find(r => r.staffId === found)?.empName || 'Unknown');
-            detectDiv.textContent = `✅ Found: ${found} — ${name}`;
-            detectDiv.className = 'manual-live-detect found';
+            // Check duplicate
+            if (stepEntries.find(e => e.staffId === found)) {
+                const masterInfo = masterListData.find(emp => emp.staffId === found);
+                const name = masterInfo ? masterInfo.name : 'Unknown';
+                detectDiv.textContent = `⚠️ Already added: ${found} — ${name}`;
+                detectDiv.className = 'manual-live-detect not-found';
+            } else {
+                const masterInfo = masterListData.find(emp => emp.staffId === found);
+                const name = masterInfo ? masterInfo.name : (currentTableData.find(r => r.staffId === found)?.empName || 'Unknown');
+                detectDiv.textContent = `✅ Found: ${found} — ${name}`;
+                detectDiv.className = 'manual-live-detect found';
+            }
         } else {
             detectDiv.textContent = `❌ Not Found: ${cleanedId}`;
             detectDiv.className = 'manual-live-detect not-found';
         }
     }
 
-    function submitManualId() {
-        const input = document.getElementById('manualIdInput');
+    function addCurrentEntry() {
+        if (stepEntries.length >= MAX_STEPS) {
+            alert(`Maximum ${MAX_STEPS} entries already added. Please save.`);
+            return;
+        }
+
+        const input = document.getElementById('stepStaffIdInput');
         const staffId = convertBanglaToEnglish(input.value.trim());
+        const lineman = document.getElementById('stepLinemanSelect').value;
+        const mcNo = document.getElementById('stepMcNoSelect').value;
 
-        if (!staffId) { alert("Please enter a Staff ID."); return; }
+        if (!staffId) { alert("Please enter Staff ID."); input.focus(); return; }
+        if (!lineman) { alert("Please select Line Man Name."); return; }
+        if (!mcNo) { alert("Please select MC No."); return; }
 
+        // Check if exists in table
         const statusCell = document.getElementById(`status_${staffId}`);
-        if (!statusCell) { alert(`Staff ID "${staffId}" table e nei.`); return; }
+        if (!statusCell) {
+            alert(`Staff ID "${staffId}" table e nei. Check korun.`);
+            return;
+        }
 
-        openLinemanModal(staffId);
+        // Check duplicate
+        if (stepEntries.find(e => e.staffId === staffId)) {
+            alert(`Staff ID "${staffId}" already added!`);
+            return;
+        }
+
+        const masterInfo = masterListData.find(emp => emp.staffId === staffId);
+        const empName = masterInfo ? masterInfo.name : (currentTableData.find(r => r.staffId === staffId)?.empName || 'Unknown');
+
+        stepEntries.push({ staffId, lineman, mcNo, empName });
+
+        // Reset input
+        input.value = '';
+        document.getElementById('stepLinemanSelect').value = '';
+        document.getElementById('stepMcNoSelect').value = '';
+        document.getElementById('stepLiveDetect').textContent = 'Waiting for Staff ID...';
+        document.getElementById('stepLiveDetect').className = 'manual-live-detect idle';
+
+        // Update UI
+        renderStepProgress();
+        updateStepCounter();
+        renderEntryList();
+        updateSaveButton();
+        input.focus();
+
+        // If 8 done, auto enable save
+        if (stepEntries.length >= MAX_STEPS) {
+            setTimeout(() => {
+                if (confirm(`${MAX_STEPS} entries added! Save now?`)) {
+                    saveAllEntries();
+                }
+            }, 500);
+        }
+    }
+
+    function renderEntryList() {
+        const listDiv = document.getElementById('entryList');
+        const itemsDiv = document.getElementById('entryItems');
+        
+        if (stepEntries.length === 0) {
+            listDiv.style.display = 'none';
+            return;
+        }
+
+        listDiv.style.display = 'block';
+        document.getElementById('entryCount').textContent = stepEntries.length;
+
+        let html = '';
+        stepEntries.forEach((entry, idx) => {
+            html += `
+                <div class="entry-item">
+                    <div class="staff-info">
+                        <div class="staff-id">#${idx + 1} — ${entry.staffId}</div>
+                        <div class="staff-name">${entry.empName}</div>
+                        <div class="staff-lineman">👷 ${entry.lineman} | MC: ${entry.mcNo}</div>
+                    </div>
+                    <button class="btn-remove-entry" onclick="removeEntry(${idx})">✖</button>
+                </div>
+            `;
+        });
+        itemsDiv.innerHTML = html;
+    }
+
+    function removeEntry(idx) {
+        if (confirm("Ei entry ta remove korte chan?")) {
+            stepEntries.splice(idx, 1);
+            renderStepProgress();
+            updateStepCounter();
+            renderEntryList();
+            updateSaveButton();
+        }
+    }
+
+    function updateSaveButton() {
+        const btn = document.getElementById('saveFinalBtn');
+        document.getElementById('saveCount').textContent = stepEntries.length;
+        
+        if (stepEntries.length > 0) {
+            btn.disabled = false;
+        } else {
+            btn.disabled = true;
+        }
+    }
+
+    async function saveAllEntries() {
+        if (stepEntries.length === 0) {
+            alert("Kono entry nei save korar jonno.");
+            return;
+        }
+
+        const btn = document.getElementById('saveFinalBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Saving...';
+
+        try {
+            const updates = {};
+            const timestamp = new Date().toISOString();
+
+            stepEntries.forEach(entry => {
+                const statusKey = `${currentReportDate}_${currentReportShift}_${entry.staffId}`;
+                updates[`punchStatus/${statusKey}`] = {
+                    staffId: entry.staffId,
+                    status: 'Present',
+                    reportDate: currentReportDate,
+                    shift: currentReportShift,
+                    lineman: entry.lineman,
+                    mcNo: entry.mcNo,
+                    timestamp: timestamp,
+                    detectedBy: 'QR-Step',
+                    section: loggedInSection
+                };
+            });
+
+            // Single atomic update
+            await database.ref().update(updates);
+
+            // Success sound
+            playBeepSound();
+
+            alert(`✅ ${stepEntries.length} entries saved!\n\nPresent mark hoyeche!`);
+
+            closeStepEntry();
+            
+            // Refresh table
+            setTimeout(() => {
+                renderTablePage();
+            }, 300);
+
+        } catch (error) {
+            console.error("Save Error:", error);
+            alert("Save error: " + error.message);
+            btn.disabled = false;
+            btn.innerHTML = `💾 Save All (<span id="saveCount">${stepEntries.length}</span>/${MAX_STEPS})`;
+        }
+    }
+
+    function closeStepEntry() {
+        document.getElementById('stepEntryModal').style.display = 'none';
+        stepEntries = [];
     }
 
     // ====================================================
-    // OCR
+    // CAMERA OCR (Legacy)
     // ====================================================
-    async function processOCRAndUpload() {
-        const ocrProcessing = document.getElementById('ocrProcessing');
-        const ocrResult = document.getElementById('ocrResult');
-        const detectedIdSpan = document.getElementById('detectedId');
-        const staffConfirmSection = document.getElementById('staffConfirmSection');
-        const confirmBtn = document.getElementById('confirmBtn');
-        const ocrDebug = document.getElementById('ocrDebug');
-        const ocrDebugText = document.getElementById('ocrDebugText');
+    function openPunchCardCamera() {
+        document.getElementById('cameraModal').style.display = 'flex';
+        document.getElementById('capturedPhoto').style.display = 'none';
+        document.getElementById('captureBtn').style.display = 'inline-block';
+        document.getElementById('retakeBtn').style.display = 'none';
+        document.getElementById('confirmBtn').style.display = 'none';
+        document.getElementById('ocrProcessing').style.display = 'none';
 
-        confirmBtn.style.display = 'none';
-        ocrProcessing.style.display = 'block';
-        ocrResult.style.display = 'none';
-        staffConfirmSection.style.display = 'none';
-        ocrDebug.style.display = 'none';
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                videoStream = stream;
+                document.getElementById('cameraVideo').srcObject = stream;
+            })
+            .catch(err => {
+                alert("Camera error: " + err.message);
+                closeCamera();
+            });
+    }
+
+    function capturePhoto() {
+        const video = document.getElementById('cameraVideo');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        capturedImageData = canvas.toDataURL('image/png');
+        
+        document.getElementById('capturedPhoto').src = capturedImageData;
+        document.getElementById('capturedPhoto').style.display = 'block';
+        document.getElementById('cameraVideo').style.display = 'none';
+        document.getElementById('captureBtn').style.display = 'none';
+        document.getElementById('retakeBtn').style.display = 'inline-block';
+        document.getElementById('confirmBtn').style.display = 'inline-block';
+
+        if (videoStream) {
+            videoStream.getTracks().forEach(t => t.stop());
+            videoStream = null;
+        }
+    }
+
+    function retakePhoto() { openPunchCardCamera(); }
+
+    async function processOCRAndUpload() {
+        document.getElementById('confirmBtn').style.display = 'none';
+        document.getElementById('ocrProcessing').style.display = 'block';
 
         try {
-            const result = await Tesseract.recognize(capturedImageData, 'eng+ben', { logger: m => console.log(m) });
-            const detectedText = result.data.text;
-            const englishText = convertBanglaToEnglish(detectedText);
-
-            ocrDebugText.textContent = `Raw: ${detectedText}\n\nConverted: ${englishText}`;
-            ocrDebug.style.display = 'block';
-
-            const staffId = extractStaffId(englishText);
-            ocrProcessing.style.display = 'none';
+            const result = await Tesseract.recognize(capturedImageData, 'eng+ben');
+            const detectedText = convertBanglaToEnglish(result.data.text);
+            const staffId = extractStaffId(detectedText);
+            document.getElementById('ocrProcessing').style.display = 'none';
 
             if (staffId) {
-                detectedIdSpan.textContent = staffId;
-                ocrResult.style.display = 'block';
-                openLinemanModal(staffId);
+                closeCamera();
+                // Add to step entry
+                openStepEntry();
+                setTimeout(() => {
+                    document.getElementById('stepStaffIdInput').value = staffId;
+                    stepLiveDetect(staffId);
+                }, 300);
             } else {
-                staffConfirmSection.style.display = 'block';
+                alert("Staff ID detect korte parlam na. Please try again.");
             }
-
         } catch (error) {
-            console.error("OCR Error:", error);
-            ocrProcessing.style.display = 'none';
-            staffConfirmSection.style.display = 'block';
+            document.getElementById('ocrProcessing').style.display = 'none';
+            alert("OCR Error");
         }
     }
 
@@ -1667,329 +1605,42 @@
         const cleanText = text.replace(/\s+/g, ' ').toUpperCase().trim();
 
         for (const staffId of validIds) {
-            const regex = new RegExp(`\\b${staffId.toUpperCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
-            if (regex.test(cleanText)) return staffId;
+            if (cleanText.includes(staffId.toUpperCase())) return staffId;
         }
 
-        const patterns = [
-            /(?:STAFF\s*ID|STAFF\s*NO|EMP\s*ID|EMPLOYEE\s*ID|ID\s*NO|CARD\s*NO)[\s:.\-]*([A-Z]?\d{4,})/i,
-            /\b([A-Z]\d{5,})\b/g,
-            /\b(\d{5,})\b/g,
-        ];
-
-        for (const pattern of patterns) {
-            const matches = cleanText.match(pattern);
-            if (matches) {
-                for (const match of matches) {
-                    const cleanMatch = match.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-                    const found = validIds.find(id => {
-                        const idUp = id.toUpperCase();
-                        return idUp === cleanMatch || idUp === cleanMatch.replace(/^S/, '') ||
-                               cleanMatch === idUp.replace(/^S/, '') ||
-                               idUp.includes(cleanMatch) || cleanMatch.includes(idUp);
-                    });
-                    if (found) return found;
-                }
-            }
-        }
-
-        const allNumbers = cleanText.match(/\d{4,}/g);
-        if (allNumbers) {
-            for (const num of allNumbers) {
-                const found = validIds.find(id => {
-                    const idNum = id.replace(/[^0-9]/g, '');
-                    return idNum === num || idNum.endsWith(num) || num.endsWith(idNum);
-                });
+        const numbers = cleanText.match(/\d{4,}/g);
+        if (numbers) {
+            for (const num of numbers) {
+                const found = validIds.find(id => id.replace(/[^0-9]/g, '').includes(num) || num.includes(id.replace(/[^0-9]/g, '')));
                 if (found) return found;
             }
         }
         return null;
     }
 
-    function finalizeUpload() {
-        const staffId = convertBanglaToEnglish(document.getElementById('confirmStaffId').value.trim());
-        if (!staffId) { alert("Enter Staff ID."); return; }
-
-        const statusCell = document.getElementById(`status_${staffId}`);
-        if (!statusCell) { alert(`Staff ID "${staffId}" not found.`); return; }
-
-        openLinemanModal(staffId);
-    }
-
-    // ====================================================
-    // LINEMAN MODAL
-    // ====================================================
-    function openLinemanModal(staffId) {
-        pendingStaffId = staffId;
-        const masterInfo = masterListData.find(emp => emp.staffId === staffId);
-        const empName = masterInfo ? masterInfo.name : (currentTableData.find(r => r.staffId === staffId)?.empName || 'Unknown');
-
-        document.getElementById('linemanStaffId').textContent = staffId;
-        document.getElementById('linemanEmpName').textContent = empName;
-        document.getElementById('linemanNameSelect').value = '';
-        document.getElementById('mcNoSelect').value = '';
-
-        document.getElementById('linemanModal').style.display = 'flex';
-    }
-
-    function closeLinemanModal() {
-        document.getElementById('linemanModal').style.display = 'none';
-        pendingStaffId = null;
-    }
-
-    async function submitLinemanDetails() {
-        if (!pendingStaffId) { alert("No Staff ID selected."); return; }
-
-        const linemanName = document.getElementById('linemanNameSelect').value;
-        const mcNo = document.getElementById('mcNoSelect').value;
-
-        if (!linemanName) { alert("Please select Line Man Name."); return; }
-        if (!mcNo) { alert("Please select MC No."); return; }
-
-        try {
-            const savedStaffId = pendingStaffId;
-            const statusKey = `${currentReportDate}_${currentReportShift}_${savedStaffId}`;
-            
-            await database.ref('punchStatus/' + statusKey).set({
-                staffId: savedStaffId,
-                status: 'Present',
-                reportDate: currentReportDate,
-                shift: currentReportShift,
-                lineman: linemanName,
-                mcNo: mcNo,
-                timestamp: new Date().toISOString(),
-                detectedBy: 'QR/OCR/Manual',
-                section: loggedInSection
-            });
-
-            const row = document.getElementById(`row_${savedStaffId}`);
-            const statusCell = document.getElementById(`status_${savedStaffId}`);
-            const linemanCell = document.getElementById(`lineman_${savedStaffId}`);
-            const mcnoCell = document.getElementById(`mcno_${savedStaffId}`);
-
-            if (row) {
-                row.classList.add('row-present');
-                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            if (statusCell) {
-                statusCell.innerHTML = `
-                    <span class="status-badge status-present">
-                        <span class="green-dot"></span> Present
-                    </span>
-                `;
-            }
-            if (linemanCell) linemanCell.innerHTML = `<strong>${linemanName}</strong>`;
-            if (mcnoCell) mcnoCell.textContent = mcNo;
-
-            currentStatusData[statusKey] = {
-                staffId: savedStaffId,
-                status: 'Present',
-                lineman: linemanName,
-                mcNo: mcNo
-            };
-
-            // Success sound
-            playBeepSound();
-
-            alert(`✅ Staff ID: ${savedStaffId}\nLine Man: ${linemanName}\nMC No: ${mcNo}\n\nPresent mark hoyeche!`);
-
-            closeLinemanModal();
-            closeCamera();
-
-            setTimeout(() => {
-                renderTablePage();
-            }, 300);
-
-        } catch (error) {
-            console.error("Firebase Error:", error);
-            alert("Save error.");
-        }
-    }
-
     function closeCamera() {
-        const modal = document.getElementById('cameraModal');
-        modal.style.display = 'none';
-
+        document.getElementById('cameraModal').style.display = 'none';
         if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
+            videoStream.getTracks().forEach(t => t.stop());
             videoStream = null;
         }
-        const video = document.getElementById('cameraVideo');
-        video.srcObject = null;
-        video.style.display = 'block';
+        document.getElementById('cameraVideo').style.display = 'block';
         document.getElementById('capturedPhoto').style.display = 'none';
-        document.getElementById('ocrProcessing').style.display = 'none';
-        document.getElementById('ocrResult').style.display = 'none';
-        document.getElementById('staffConfirmSection').style.display = 'none';
-        document.getElementById('ocrDebug').style.display = 'none';
-        document.getElementById('manualIdInput').value = '';
-        document.getElementById('manualLiveDetect').textContent = '';
-    }
-
-    // ====================================================
-    // PRINT PREVIEW
-    // ====================================================
-    function printPreview() {
-        if (!currentTableData || currentTableData.length === 0) {
-            alert("Kono data nei print korar jonno.");
-            return;
-        }
-
-        const printInfo = document.getElementById('printReportInfo');
-        if (printInfo) {
-            printInfo.textContent = `Section: ${loggedInSection} | Date: ${currentReportDate} | Shift: ${currentReportShift} | Total Employees: ${currentTableData.length}`;
-        }
-
-        window.print();
-    }
-
-    // ====================================================
-    // DOWNLOAD PDF
-    // ====================================================
-    function downloadPDF() {
-        if (!currentTableData || currentTableData.length === 0) {
-            alert("Kono data nei PDF download korar jonno.");
-            return;
-        }
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-        doc.setFontSize(14);
-        doc.setFont(undefined, 'bold');
-        doc.text('Employee Punch Report', doc.internal.pageSize.width / 2, 12, { align: 'center' });
-
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Section: ${loggedInSection} | Date: ${currentReportDate} | Shift: ${currentReportShift} | Total: ${currentTableData.length}`, doc.internal.pageSize.width / 2, 18, { align: 'center' });
-
-        const masterMap = {};
-        masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
-
-        const tableData = currentTableData.map((record, idx) => {
-            const masterInfo = masterMap[record.staffId];
-            const empName = record.empName || (masterInfo ? masterInfo.name : '-');
-            const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
-            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
-
-            const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
-            const statusObj = currentStatusData[statusKey];
-            const isPresent = statusObj && statusObj.status === 'Present';
-            const lineman = statusObj ? (statusObj.lineman || '-') : '-';
-            const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
-
-            return [
-                idx + 1, record.date || '-', record.shift || '-',
-                record.icName || '-', record.staffId || '-',
-                empName, designation, record.punchTime || '-',
-                remarks.isLate ? 'Late' : 'On Time', lineman, mcNo,
-                isPresent ? 'Present' : 'Pending'
-            ];
-        });
-
-        doc.autoTable({
-            head: [['SL', 'Date', 'Shift', 'I/C Name', 'Staff ID', 'Employee Name', 'Designation', 'Punch Time', 'Remarks', 'Line Man', 'MC No', 'Status']],
-            body: tableData,
-            startY: 22, theme: 'grid',
-            styles: { fontSize: 6, cellPadding: 1, overflow: 'linebreak' },
-            headStyles: { fillColor: [16, 108, 200], textColor: 255, fontStyle: 'bold', fontSize: 6 },
-            columnStyles: {
-                0: { cellWidth: 8 }, 1: { cellWidth: 18 }, 2: { cellWidth: 12 },
-                3: { cellWidth: 18 }, 4: { cellWidth: 20 }, 5: { cellWidth: 32 },
-                6: { cellWidth: 24 }, 7: { cellWidth: 15 }, 8: { cellWidth: 24 },
-                9: { cellWidth: 20 }, 10: { cellWidth: 20 }, 11: { cellWidth: 15 }
-            },
-            didParseCell: function(data) {
-                if (data.section === 'body') {
-                    const rowData = tableData[data.row.index];
-                    if (rowData && rowData[11] === 'Present') {
-                        data.cell.styles.fillColor = [212, 237, 218];
-                        data.cell.styles.textColor = [21, 87, 36];
-                    }
-                    if (rowData && rowData[8] === 'Late') {
-                        data.cell.styles.textColor = [220, 53, 69];
-                        data.cell.styles.fontStyle = 'bold';
-                    }
-                }
-            }
-        });
-
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.text(`Page ${i} of ${pageCount} | Generated: ${new Date().toLocaleString()}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 8, { align: 'center' });
-        }
-
-        doc.save(`Punch_Report_${currentReportDate}_${currentReportShift}.pdf`);
-    }
-
-    // ====================================================
-    // DOWNLOAD EXCEL
-    // ====================================================
-    function downloadExcel() {
-        if (!currentTableData || currentTableData.length === 0) {
-            alert("Kono data nei download korar jonno.");
-            return;
-        }
-
-        const masterMap = {};
-        masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
-
-        database.ref('punchStatus').once('value', (snapshot) => {
-            const statusData = snapshot.val() || {};
-
-            const excelData = currentTableData.map((record, idx) => {
-                const masterInfo = masterMap[record.staffId];
-                const empName = record.empName || (masterInfo ? masterInfo.name : '-');
-                const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
-                const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
-
-                const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
-                const statusObj = statusData[statusKey];
-                const isPresent = statusObj && statusObj.status === 'Present';
-                const lineman = statusObj ? (statusObj.lineman || '-') : '-';
-                const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
-
-                return {
-                    "SL/No": idx + 1,
-                    "Date": record.date || '-',
-                    "Shift": record.shift || '-',
-                    "I/C Name": record.icName || '-',
-                    "Staff ID": record.staffId || '-',
-                    "Employee Name": empName,
-                    "Designation": designation,
-                    "In Punch Time": record.punchTime || '-',
-                    "Remarks": remarks.text,
-                    "Line Man Name": lineman,
-                    "MC No": mcNo,
-                    "Present Status": isPresent ? 'Present' : 'Pending'
-                };
-            });
-
-            const ws = XLSX.utils.json_to_sheet(excelData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Punch Report');
-
-            ws['!cols'] = [
-                { wch: 6 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 14 },
-                { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 30 }, { wch: 15 },
-                { wch: 15 }, { wch: 14 }
-            ];
-
-            XLSX.writeFile(wb, `Punch_Report_${currentReportDate}_${currentReportShift}.xlsx`);
-        });
     }
 
     // ====================================================
     // MASTER REPORT
     // ====================================================
+    function toggleMasterReportSection() {
+        const s = document.getElementById('masterReportSection');
+        s.style.display = (s.style.display === 'none' || s.style.display === '') ? 'block' : 'none';
+    }
+
     function loadSavedReport() {
         const filterDate = document.getElementById('filterDate').value;
         const filterShift = document.getElementById('filterShift').value;
-
-        if (!filterDate) { alert("Please select a date first."); return; }
-
+        if (!filterDate) { alert("Select a date."); return; }
+        
         const historyKey = `${filterDate}_${filterShift}`;
         const loadingSpinner = document.getElementById('loadingSpinner');
         loadingSpinner.style.display = 'block';
@@ -1997,12 +1648,10 @@
         database.ref('reportHistory/' + historyKey).once('value', (snapshot) => {
             loadingSpinner.style.display = 'none';
             const data = snapshot.val();
-
             if (!data || !data.punchData) {
-                alert(`❌ Kono report paoa jayni!\n\nDate: ${filterDate}\nShift: ${filterShift}`);
+                alert(`❌ Report not found!\n\nDate: ${filterDate}\nShift: ${filterShift}`);
                 return;
             }
-
             displaySavedReport(data.punchData, data.reportDate, data.shift, data.uploadedAt);
         });
     }
@@ -2017,7 +1666,6 @@
 
         database.ref('punchStatus').once('value', (snapshot) => {
             const statusData = snapshot.val() || {};
-            
             let html = '';
             let presentCount = 0;
             let lateCount = 0;
@@ -2036,10 +1684,6 @@
                 const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
                 if (isPresent) presentCount++;
 
-                const statusBadge = isPresent 
-                    ? `<span class="status-badge status-present"><span class="green-dot"></span> Present</span>`
-                    : `<span class="status-badge status-pending">Pending</span>`;
-
                 html += `
                     <tr class="${isPresent ? 'row-present' : ''}">
                         <td>${idx + 1}</td>
@@ -2049,58 +1693,47 @@
                         <td>${empName}</td>
                         <td>${designation}</td>
                         <td>${record.punchTime || '-'}</td>
-                        <td>
-                            <span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">
-                                ${remarks.text}
-                            </span>
-                        </td>
+                        <td><span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">${remarks.text}</span></td>
                         <td><strong>${lineman}</strong></td>
                         <td>${mcNo}</td>
-                        <td>${statusBadge}</td>
+                        <td>${isPresent ? '<span class="status-badge status-present"><span class="green-dot"></span> Present</span>' : '<span class="status-badge status-pending">Pending</span>'}</td>
                     </tr>
                 `;
             });
 
             resultBody.innerHTML = html;
             resultSection.style.display = 'block';
-            
-            resultTitle.innerHTML = `📊 Saved Report — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong> | Late: <strong>${lateCount}</strong>`;
+            resultTitle.innerHTML = `📊 Saved Report — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong>`;
         });
     }
 
     function loadAllHistory() {
         const historyList = document.getElementById('reportHistoryList');
-        const historyItems = document.getElementById('historyItems');
-        
         historyList.style.display = 'block';
-        historyItems.innerHTML = '<p style="color:#666; font-size:12px;">Loading...</p>';
+        document.getElementById('historyItems').innerHTML = '<p style="color:#666; font-size:12px;">Loading...</p>';
 
         database.ref('reportHistory').once('value', (snapshot) => {
             const data = snapshot.val();
-            
             if (!data) {
-                historyItems.innerHTML = '<p style="color:#666; font-size:12px;">Kono saved report nei.</p>';
+                document.getElementById('historyItems').innerHTML = '<p style="color:#666; font-size:12px;">No saved reports.</p>';
                 return;
             }
 
             const entries = Object.entries(data).sort((a, b) => new Date(b[1].uploadedAt) - new Date(a[1].uploadedAt));
-
             let html = '';
             entries.forEach(([key, report]) => {
                 const uploadedDate = new Date(report.uploadedAt).toLocaleString();
-                const sectionInfo = report.section ? ` | Section: ${report.section}` : '';
                 html += `
                     <div class="history-item">
                         <div>
                             <div class="date-shift">📅 ${report.reportDate} — ${report.shift} Shift</div>
-                            <div class="stats">${report.totalRecords} records | Uploaded: ${uploadedDate}${sectionInfo}</div>
+                            <div class="stats">${report.totalRecords} records | ${uploadedDate}${report.section ? ' | ' + report.section : ''}</div>
                         </div>
                         <button class="btn-load" onclick="quickLoadHistory('${report.reportDate}', '${report.shift}')">Load</button>
                     </div>
                 `;
             });
-
-            historyItems.innerHTML = html;
+            document.getElementById('historyItems').innerHTML = html;
         });
     }
 
@@ -2111,18 +1744,93 @@
         document.getElementById('reportHistoryList').style.display = 'none';
     }
 
-    function clearAllData() {
-        if (confirm("Apni ki shob data clear korte chan?")) {
-            Promise.all([
-                database.ref('employeeData').remove(),
-                database.ref('punchStatus').remove(),
-                database.ref('reportHistory').remove(),
-                database.ref('currentReport').remove()
-            ]).then(() => {
-                alert("✅ All Data Cleared!");
-                location.reload();
+    // ====================================================
+    // EXPORT
+    // ====================================================
+    function printPreview() {
+        if (!currentTableData || currentTableData.length === 0) { alert("No data."); return; }
+        window.print();
+    }
+
+    function downloadPDF() {
+        if (!currentTableData || currentTableData.length === 0) { alert("No data."); return; }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+        doc.setFontSize(14);
+        doc.text('Employee Punch Report', doc.internal.pageSize.width / 2, 12, { align: 'center' });
+        doc.setFontSize(9);
+        doc.text(`Section: ${loggedInSection} | Date: ${currentReportDate} | Shift: ${currentReportShift}`, doc.internal.pageSize.width / 2, 18, { align: 'center' });
+
+        const masterMap = {};
+        masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
+
+        const tableData = currentTableData.map((record, idx) => {
+            const masterInfo = masterMap[record.staffId];
+            const empName = record.empName || (masterInfo ? masterInfo.name : '-');
+            const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
+            const statusObj = currentStatusData[statusKey];
+            const isPresent = statusObj && statusObj.status === 'Present';
+            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+
+            return [
+                idx + 1, record.date || '-', record.shift || '-',
+                record.icName || '-', record.staffId || '-', empName,
+                record.designation || '-', record.punchTime || '-',
+                remarks.isLate ? 'Late' : 'On Time',
+                statusObj?.lineman || '-', statusObj?.mcNo || '-',
+                isPresent ? 'Present' : 'Pending'
+            ];
+        });
+
+        doc.autoTable({
+            head: [['SL', 'Date', 'Shift', 'I/C', 'Staff ID', 'Name', 'Designation', 'Punch', 'Remarks', 'Lineman', 'MC No', 'Status']],
+            body: tableData,
+            startY: 22, theme: 'grid',
+            styles: { fontSize: 6, cellPadding: 1 },
+            headStyles: { fillColor: [16, 108, 200], fontSize: 6 }
+        });
+
+        doc.save(`Punch_Report_${currentReportDate}_${currentReportShift}.pdf`);
+    }
+
+    function downloadExcel() {
+        if (!currentTableData || currentTableData.length === 0) { alert("No data."); return; }
+        const masterMap = {};
+        masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
+
+        database.ref('punchStatus').once('value', (snapshot) => {
+            const statusData = snapshot.val() || {};
+
+            const excelData = currentTableData.map((record, idx) => {
+                const masterInfo = masterMap[record.staffId];
+                const empName = record.empName || (masterInfo ? masterInfo.name : '-');
+                const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+                const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
+                const statusObj = statusData[statusKey];
+                const isPresent = statusObj && statusObj.status === 'Present';
+
+                return {
+                    "SL/No": idx + 1,
+                    "Date": record.date || '-',
+                    "Shift": record.shift || '-',
+                    "I/C Name": record.icName || '-',
+                    "Staff ID": record.staffId || '-',
+                    "Employee Name": empName,
+                    "Designation": record.designation || '-',
+                    "In Punch Time": record.punchTime || '-',
+                    "Remarks": remarks.text,
+                    "Line Man Name": statusObj?.lineman || '-',
+                    "MC No": statusObj?.mcNo || '-',
+                    "Present Status": isPresent ? 'Present' : 'Pending'
+                };
             });
-        }
+
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Punch Report');
+            XLSX.writeFile(wb, `Punch_Report_${currentReportDate}_${currentReportShift}.xlsx`);
+        });
     }
 </script>
 
