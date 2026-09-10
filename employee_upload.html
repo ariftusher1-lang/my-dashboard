@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Firebase Multi-Device</title>
+    <title>Employee Punch Report - OCR Auto Detect</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <!-- Tesseract.js OCR Library -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <style>
         /* --- General Styles --- */
@@ -64,11 +67,33 @@
         .btn-confirm { background-color: #106cc8; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; display: none; }
         .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; position: absolute; top: 10px; right: 10px; }
 
-        /* --- Staff Confirm Section --- */
+        /* --- OCR Processing --- */
+        .ocr-processing { display: none; margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeeba; color: #856404; font-weight: 600; }
+        .spinner-small {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #6f42c1;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Staff Confirm Section (Fallback) --- */
         .staff-confirm-section { display: none; margin-top: 15px; padding: 15px; background: #eef4fb; border-radius: 4px; border: 1px solid #b8d4f0; }
         .staff-confirm-section label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
         .staff-confirm-section input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; width: 200px; margin-right: 10px; }
         .btn-confirm-staff { background-color: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+
+        /* --- OCR Result --- */
+        .ocr-result { display: none; margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 4px; border: 1px solid #c3e6cb; color: #155724; font-weight: 600; }
+
         .info-msg { margin-top: 10px; color: #555; font-style: italic; display: none; }
 
         /* --- Loading Spinner --- */
@@ -87,10 +112,6 @@
             height: 30px;
             animation: spin 1s linear infinite;
             margin: 0 auto 10px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
@@ -124,7 +145,7 @@
     <div class="punch-card-section" id="punchCardSection">
         <h2>📸 Punch Card Photo Upload (Individual)</h2>
         <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
-            Camera button e click korun, Punch Card er chobi tulun. Chobi tolar por Staff ID confirm korben, tokhon table e <strong>Present Status</strong> Green hoye jabe.
+            Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe ebong <strong>Present Status</strong> Green hoye jabe.
         </p>
         
         <div class="camera-controls">
@@ -183,13 +204,24 @@
         <div class="camera-buttons">
             <button class="btn-capture" id="captureBtn" onclick="capturePhoto()">📸 Capture</button>
             <button class="btn-retake" id="retakeBtn" onclick="retakePhoto()">🔄 Retake</button>
-            <button class="btn-confirm" id="confirmBtn" onclick="showStaffConfirm()">✅ Confirm & Upload</button>
+            <button class="btn-confirm" id="confirmBtn" onclick="processOCRAndUpload()">✅ Confirm & Auto Detect</button>
         </div>
 
+        <!-- OCR Processing Indicator -->
+        <div class="ocr-processing" id="ocrProcessing">
+            <span class="spinner-small"></span> Reading Punch Card... Please wait.
+        </div>
+
+        <!-- OCR Result -->
+        <div class="ocr-result" id="ocrResult">
+            ✅ <strong>Staff ID Detected:</strong> <span id="detectedId"></span>
+        </div>
+
+        <!-- Fallback: Manual Staff ID Input (Jodi OCR fail kore) -->
         <div class="staff-confirm-section" id="staffConfirmSection">
-            <label for="confirmStaffId">Staff ID (Confirm from Punch Card):</label>
+            <label for="confirmStaffId">⚠️ OCR Staff ID detect korte pareni. Please type manually:</label>
             <input type="text" id="confirmStaffId" placeholder="e.g. 64686">
-            <button class="btn-confirm-staff" onclick="finalizeUpload()">Submit</button>
+            <button class="btn-confirm-staff" onclick="finalizeUpload()">Submit Manually</button>
         </div>
     </div>
 </div>
@@ -213,7 +245,7 @@
     const database = firebase.database();
 
     // ====================================================
-    // 2. MOCK DATA (Shudhu demo, real data asbe file theke)
+    // 2. MOCK DATA
     // ====================================================
     const masterList = [
         { staffId: "S147069", name: "Sisir Soren", designation: "General Worker" },
@@ -492,20 +524,18 @@
     ];
 
     // ====================================================
-    // 3. INITIALIZATION & FIREBASE SYNC
+    // 3. INITIALIZATION
     // ====================================================
     let videoStream = null;
+    let capturedImageData = null; // Chobi store korar jonno
 
-    // 🔥 Page load howar somoy Firebase theke data load korbe
     window.onload = function() {
         loadDataFromFirebase();
     };
 
-    // Firebase theke data load kora
     function loadDataFromFirebase() {
         const dataRef = database.ref('employeeData');
         const loadingSpinner = document.getElementById('loadingSpinner');
-        const tableContainer = document.getElementById('tableContainer');
         
         loadingSpinner.style.display = 'block';
 
@@ -514,17 +544,14 @@
             loadingSpinner.style.display = 'none';
 
             if (data && data.masterList && data.punchReportData) {
-                // Data firebase e ache, table generate korbo
                 generateTableFromData(data.masterList, data.punchReportData);
             } else {
-                // Data nei, kintu demo data diye table generate korbo
-                console.log("No data in Firebase. Using demo data.");
                 generateTableFromData(masterList, punchReportData);
             }
         }).catch((error) => {
             console.error("Firebase Load Error:", error);
             loadingSpinner.style.display = 'none';
-            alert("Firebase theke data load korte somossa hoyeche. Please check your internet and rules.");
+            generateTableFromData(masterList, punchReportData);
         });
     }
 
@@ -534,7 +561,6 @@
         else if (type === 'Master List') document.getElementById('mainFileUpload').click();
     }
 
-    // 🔥 File select korle Firebase e save korbe
     function handleFileChange(input, type) {
         if (input.files && input.files.length > 0) {
             const fileName = input.files[0].name;
@@ -542,7 +568,6 @@
             infoMsg.style.display = 'block';
             infoMsg.textContent = `File Selected: ${fileName} (${type}). Saving to Firebase...`;
 
-            // 🔥 Firebase e data save korchi
             const dataToSave = {
                 masterList: masterList,
                 punchReportData: punchReportData,
@@ -551,12 +576,12 @@
 
             database.ref('employeeData').set(dataToSave)
                 .then(() => {
-                    infoMsg.textContent = `✅ Data Saved to Firebase! Generating Table...`;
+                    infoMsg.textContent = `✅ Data Saved to Firebase!`;
                     generateTableFromData(masterList, punchReportData);
                 })
                 .catch((error) => {
                     console.error("Firebase Save Error:", error);
-                    alert("Firebase e data save korte somossa hoyeche. Please check your Firebase rules.");
+                    alert("Firebase e data save korte somossa hoyeche.");
                 });
         }
     }
@@ -566,7 +591,6 @@
         section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
     }
 
-    // Generate Table
     function generateTableFromData(masterData, punchData) {
         const tableBody = document.getElementById('tableBody');
         const tableContainer = document.getElementById('tableContainer');
@@ -603,11 +627,9 @@
         document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
         document.getElementById('punchCardSection').style.display = 'block';
 
-        // 🔥 Firebase theke Present Status load kora
         loadStatusFromFirebase();
     }
 
-    // Load Present Status from Firebase
     function loadStatusFromFirebase() {
         const statusRef = database.ref('punchStatus');
         statusRef.on('value', (snapshot) => {
@@ -638,6 +660,8 @@
         const retakeBtn = document.getElementById('retakeBtn');
         const confirmBtn = document.getElementById('confirmBtn');
         const staffConfirmSection = document.getElementById('staffConfirmSection');
+        const ocrProcessing = document.getElementById('ocrProcessing');
+        const ocrResult = document.getElementById('ocrResult');
 
         video.style.display = 'block';
         capturedPhoto.style.display = 'none';
@@ -645,6 +669,8 @@
         retakeBtn.style.display = 'none';
         confirmBtn.style.display = 'none';
         staffConfirmSection.style.display = 'none';
+        ocrProcessing.style.display = 'none';
+        ocrResult.style.display = 'none';
         document.getElementById('confirmStaffId').value = '';
 
         modal.style.display = 'flex';
@@ -656,7 +682,7 @@
             video.srcObject = videoStream;
         } catch (error) {
             console.error("Camera access error:", error);
-            alert("Camera open korte somossa hoyeche. Please check your camera permission and try again.");
+            alert("Camera open korte somossa hoyeche.");
             closeCamera();
         }
     }
@@ -674,7 +700,8 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        capturedPhoto.src = canvas.toDataURL('image/png');
+        capturedImageData = canvas.toDataURL('image/png'); // Store chobi
+        capturedPhoto.src = capturedImageData;
         capturedPhoto.style.display = 'block';
         video.style.display = 'none';
 
@@ -692,36 +719,190 @@
         openCamera();
     }
 
-    function showStaffConfirm() {
-        document.getElementById('staffConfirmSection').style.display = 'block';
-        document.getElementById('confirmBtn').style.display = 'none';
+    // ====================================================
+    // 5. OCR + AUTO DETECT LOGIC
+    // ====================================================
+    async function processOCRAndUpload() {
+        const ocrProcessing = document.getElementById('ocrProcessing');
+        const ocrResult = document.getElementById('ocrResult');
+        const detectedIdSpan = document.getElementById('detectedId');
+        const staffConfirmSection = document.getElementById('staffConfirmSection');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        // Hide confirm button, show processing
+        confirmBtn.style.display = 'none';
+        ocrProcessing.style.display = 'block';
+        ocrResult.style.display = 'none';
+        staffConfirmSection.style.display = 'none';
+
+        try {
+            // 🔥 Tesseract.js diye OCR chole
+            const result = await Tesseract.recognize(
+                capturedImageData,
+                'eng',
+                { 
+                    logger: m => console.log(m) // Progress log
+                }
+            );
+
+            const detectedText = result.data.text;
+            console.log("OCR Detected Text:", detectedText);
+
+            // 🔥 Text theke Staff ID extract kora
+            const staffId = extractStaffId(detectedText);
+
+            ocrProcessing.style.display = 'none';
+
+            if (staffId) {
+                // ✅ ID pawa geche
+                detectedIdSpan.textContent = staffId;
+                ocrResult.style.display = 'block';
+
+                // Automatic Present Status update
+                await autoUpdateStatus(staffId);
+                
+                // 2 second por modal close
+                setTimeout(() => {
+                    closeCamera();
+                }, 2000);
+            } else {
+                // ❌ ID pawa jayni, manual input dekhaye
+                staffConfirmSection.style.display = 'block';
+            }
+
+        } catch (error) {
+            console.error("OCR Error:", error);
+            ocrProcessing.style.display = 'none';
+            staffConfirmSection.style.display = 'block';
+        }
     }
 
-    // ====================================================
-    // 5. FINALIZE UPLOAD & SAVE TO FIREBASE
-    // ====================================================
+    // 🔥 Text theke Staff ID extract korar function
+    function extractStaffId(text) {
+        // Master List theke shob Staff ID collect kori
+        const allStaffIds = masterList.map(emp => emp.staffId);
+        
+        // Text ta clean kori (space, newline remove)
+        const cleanText = text.replace(/\s+/g, ' ').toUpperCase();
+        console.log("Cleaned Text:", cleanText);
+
+        // 🔥 Method 1: Exact match kori (Master List er sathe)
+        for (const staffId of allStaffIds) {
+            const idUpper = staffId.toUpperCase();
+            if (cleanText.includes(idUpper)) {
+                console.log("Exact match found:", staffId);
+                return staffId;
+            }
+        }
+
+        // 🔥 Method 2: Regex diye number pattern ber kori
+        // "Staff ID", "ID", "Emp ID" er porer number ta khujbe
+        const patterns = [
+            /(?:STAFF\s*ID|ID|EMP\s*ID|EMPLOYEE\s*ID)[\s:]*([A-Z]?\d{4,})/i,
+            /\b([A-Z]?\d{4,})\b/g, // Any number with 4+ digits
+        ];
+
+        for (const pattern of patterns) {
+            const matches = cleanText.match(pattern);
+            if (matches) {
+                // Match gulo check kori Master List er sathe
+                for (const match of matches) {
+                    const cleanMatch = match.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                    
+                    // Number match kori
+                    const found = allStaffIds.find(id => 
+                        id.toUpperCase() === cleanMatch ||
+                        id.toUpperCase().includes(cleanMatch) ||
+                        cleanMatch.includes(id.toUpperCase())
+                    );
+                    
+                    if (found) {
+                        console.log("Pattern match found:", found);
+                        return found;
+                    }
+                }
+            }
+        }
+
+        // 🔥 Method 3: Fuzzy match (jodi OCR e typo thake)
+        // Choto number gulo match kori
+        const allNumbers = cleanText.match(/\d{4,}/g);
+        if (allNumbers) {
+            for (const num of allNumbers) {
+                const found = allStaffIds.find(id => id.includes(num) || num.includes(id.replace(/[A-Z]/g, '')));
+                if (found) {
+                    console.log("Fuzzy match found:", found);
+                    return found;
+                }
+            }
+        }
+
+        return null; // Kichui match korlo na
+    }
+
+    // 🔥 Auto Present Status update
+    async function autoUpdateStatus(staffId) {
+        const statusCell = document.getElementById(`status_${staffId}`);
+        
+        if (!statusCell) {
+            alert(`Staff ID "${staffId}" detected kintu table e nei. Please check manually.`);
+            return;
+        }
+
+        try {
+            // Firebase e save kori
+            await database.ref('punchStatus/' + staffId).set({
+                status: 'Present',
+                timestamp: new Date().toISOString(),
+                detectedBy: 'OCR'
+            });
+
+            // Green status dekhai
+            statusCell.innerHTML = `
+                <span class="status-badge status-present">
+                    <span class="green-dot"></span> Present
+                </span>
+            `;
+
+            // Row highlight kori
+            const updatedRow = document.getElementById(`row_${staffId}`);
+            if (updatedRow) {
+                updatedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                updatedRow.style.backgroundColor = '#d4edda';
+                setTimeout(() => { updatedRow.style.backgroundColor = ''; }, 2000);
+            }
+
+            console.log(`✅ Staff ID ${staffId} marked Present automatically!`);
+
+        } catch (error) {
+            console.error("Firebase Error:", error);
+            alert("Database e save korte somossa hoyeche.");
+        }
+    }
+
+    // Manual Submit (Jodi OCR fail kore)
     function finalizeUpload() {
         const staffId = document.getElementById('confirmStaffId').value.trim();
 
         if (!staffId) {
-            alert("Please enter the Staff ID from the Punch Card.");
+            alert("Please enter the Staff ID.");
             return;
         }
 
         const statusCell = document.getElementById(`status_${staffId}`);
         
         if (!statusCell) {
-            alert(`Staff ID "${staffId}" not found in the current table. Please check the ID again.`);
+            alert(`Staff ID "${staffId}" not found. Please check again.`);
             return;
         }
 
-        // 🔥 Firebase e Present Status save korchi
         database.ref('punchStatus/' + staffId).set({
             status: 'Present',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            detectedBy: 'Manual'
         })
         .then(() => {
-            alert(`✅ Punch Card Uploaded Successfully!\n\nStaff ID: ${staffId}\nStatus updated to "Present" in the Database.`);
+            alert(`✅ Staff ID: ${staffId} marked as Present!`);
             
             statusCell.innerHTML = `
                 <span class="status-badge status-present">
@@ -740,7 +921,7 @@
         })
         .catch((error) => {
             console.error("Firebase Error:", error);
-            alert("Database e save korte somossa hoyeche. Please check your internet connection and Firebase rules.");
+            alert("Database e save korte somossa hoyeche.");
         });
     }
 
@@ -756,20 +937,22 @@
         video.srcObject = null;
         video.style.display = 'block';
         document.getElementById('capturedPhoto').style.display = 'none';
+        document.getElementById('ocrProcessing').style.display = 'none';
+        document.getElementById('ocrResult').style.display = 'none';
+        document.getElementById('staffConfirmSection').style.display = 'none';
     }
 
     // ====================================================
-    // 6. CLEAR ALL DATA (Firebase theke)
+    // 6. CLEAR ALL DATA
     // ====================================================
     function clearAllData() {
-        if (confirm("Apni ki shob data clear korte chan? Ei kaj ta Firebase theke data muche felbe.")) {
-            // Firebase theke employeeData ebong punchStatus clear
+        if (confirm("Apni ki shob data clear korte chan?")) {
             Promise.all([
                 database.ref('employeeData').remove(),
                 database.ref('punchStatus').remove()
             ])
             .then(() => {
-                alert("✅ All Data Cleared Successfully from Firebase!");
+                alert("✅ All Data Cleared from Firebase!");
                 location.reload();
             })
             .catch((error) => {
