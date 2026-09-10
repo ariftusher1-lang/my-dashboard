@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Print/PDF/Excel</title>
+    <title>Employee Punch Report - Login System</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -15,17 +15,138 @@
     <!-- SheetJS (xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- 🔥 jsPDF + AutoTable for PDF Download -->
+    <!-- jsPDF + AutoTable -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f4f4; padding: 15px; }
+        
+        /* ============================================== */
+        /* LOGIN PAGE */
+        /* ============================================== */
+        .login-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #106cc8 0%, #17a2b8 100%);
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 9999;
+            padding: 20px;
+        }
+        .login-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 35px 30px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+        }
+        .login-box h1 {
+            text-align: center;
+            color: #106cc8;
+            margin-bottom: 8px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .login-box .login-subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 25px;
+        }
+        .login-group {
+            margin-bottom: 18px;
+        }
+        .login-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        .login-group select,
+        .login-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border 0.2s;
+        }
+        .login-group select:focus,
+        .login-group input:focus {
+            outline: none;
+            border-color: #106cc8;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: #106cc8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        .btn-login:hover { background: #0d55a0; }
+        .login-error {
+            display: none;
+            margin-top: 12px;
+            padding: 10px;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            border: 1px solid #f5c6cb;
+        }
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 11px;
+        }
+
+        /* ============================================== */
+        /* MAIN APP */
+        /* ============================================== */
+        .main-app { display: none; }
         .container { background-color: #ffffff; max-width: 1500px; margin: 0 auto; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h1 { font-size: 22px; color: #111; margin-bottom: 15px; font-weight: 600; }
         h2 { font-size: 16px; color: #333; margin-bottom: 10px; font-weight: 600; }
         hr { border: 0; border-top: 1px solid #e0e0e0; margin-bottom: 15px; }
+
+        /* Top Bar with User Info */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+            border-radius: 6px;
+            border-left: 4px solid #2e9f46;
+        }
+        .top-bar .user-info {
+            font-size: 13px;
+            color: #1b5e20;
+            font-weight: 600;
+        }
+        .top-bar .user-info span { color: #106cc8; }
 
         .button-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
         .btn { border: none; color: white; padding: 8px 15px; font-size: 13px; cursor: pointer; border-radius: 4px; transition: opacity 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap; }
@@ -83,29 +204,13 @@
         #employeeTable th:nth-child(9), #employeeTable td:nth-child(9) { width: 90px; max-width: 90px; font-size: 9px; }
         #employeeTable th:nth-child(10), #employeeTable td:nth-child(10) { width: 100px; max-width: 100px; font-size: 10px; }
         #employeeTable th:nth-child(11), #employeeTable td:nth-child(11) { width: 90px; max-width: 90px; font-size: 10px; }
-
-        /* 🔥 Present Status Column Choto Kora */
-        #employeeTable th:nth-child(12) {
-            width: 70px; max-width: 70px;
-            font-size: 9px; padding: 3px 4px;
-        }
-        #employeeTable td:nth-child(12) {
-            width: 70px; max-width: 70px;
-            font-size: 9px; padding: 2px 3px;
-            text-align: center;
-        }
+        #employeeTable th:nth-child(12), #employeeTable td:nth-child(12) { width: 70px; max-width: 70px; font-size: 9px; padding: 2px 3px; text-align: center; }
 
         tr.row-present { background-color: #d4edda !important; border-left: 4px solid #28a745; }
         tr.row-present td { color: #155724 !important; font-weight: 500; }
         tr.row-present:hover { background-color: #c3e6cb !important; }
 
-        /* 🔥 Present Status Badge Choto */
-        .status-badge {
-            display: inline-flex; align-items: center; gap: 2px;
-            padding: 2px 5px; border-radius: 8px;
-            font-weight: 600; font-size: 9px;
-            white-space: nowrap;
-        }
+        .status-badge { display: inline-flex; align-items: center; gap: 2px; padding: 2px 5px; border-radius: 8px; font-weight: 600; font-size: 9px; white-space: nowrap; }
         .status-present { background-color: #28a745; color: #ffffff; border: 1px solid #1e7e34; }
         .status-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .green-dot { height: 5px; width: 5px; background-color: #ffffff; border-radius: 50%; display: inline-block; }
@@ -161,7 +266,6 @@
             font-size: 14px; font-weight: 600; text-align: center;
         }
         .btn-manual-submit { background-color: #ff9800; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
-        .btn-manual-submit:hover { background-color: #e68900; }
         .manual-live-detect { margin-top: 8px; font-size: 12px; font-weight: 600; min-height: 18px; }
         .manual-live-detect.found { color: #28a745; }
         .manual-live-detect.not-found { color: #dc3545; }
@@ -236,36 +340,24 @@
             padding: 3px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;
         }
 
-        /* 🔥 Print Preview Styles */
         @media print {
             body { background: white; padding: 0; }
             .container { box-shadow: none; padding: 0; }
             .button-group, .punch-card-section, .master-report-section,
             .report-history-list, .pagination, .camera-modal,
-            .lineman-modal, .info-msg, .loading, .btn-red,
+            .lineman-modal, .info-msg, .loading, .btn-red, .top-bar,
             .day-shift-stats, .action-taken-line { display: none !important; }
             .table-responsive { display: block !important; max-height: none !important; overflow: visible !important; }
             table { font-size: 10px; }
             th, td { padding: 3px 4px; border: 1px solid #333; }
             th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             tr.row-present { background: #d4edda !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .day-shift-summary { display: block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            #printHeader { display: block !important; text-align: center; margin-bottom: 15px; }
+            #printHeader { display: block !important; }
         }
 
-        #printHeader {
-            display: none;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        #printHeader h2 {
-            font-size: 18px;
-            margin-bottom: 5px;
-        }
-        #printHeader p {
-            font-size: 12px;
-            color: #666;
-        }
+        #printHeader { display: none; text-align: center; margin-bottom: 15px; }
+        #printHeader h2 { font-size: 18px; margin-bottom: 5px; }
+        #printHeader p { font-size: 12px; color: #666; }
 
         @media (max-width: 768px) {
             .button-group { flex-direction: column; align-items: stretch; }
@@ -280,170 +372,210 @@
 </head>
 <body>
 
-<div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+<!-- ============================================== -->
+<!-- LOGIN PAGE -->
+<!-- ============================================== -->
+<div class="login-page" id="loginPage">
+    <div class="login-box">
+        <h1>🔐 Employee Login</h1>
+        <p class="login-subtitle">Employee Punch Report System</p>
+
+        <div class="login-group">
+            <label for="loginSection">Section / Department</label>
+            <select id="loginSection">
+                <option value="">-- Select Section --</option>
+                <option value="Plastic Production-01">Plastic Production-01</option>
+                <option value="Plastic Production-02">Plastic Production-02</option>
+                <option value="Plastic Production-03">Plastic Production-03</option>
+                <option value="Plastic Production-04">Plastic Production-04</option>
+                <option value="Plastic Production-05">Plastic Production-05</option>
+                <option value="Plastic Production-06">Plastic Production-06</option>
+                <option value="Plastic Production-07">Plastic Production-07</option>
+                <option value="Plastic Production-10">Plastic Production-10</option>
+                <option value="Plastic Packaging-01">Plastic Packaging-01</option>
+                <option value="Plastic Packaging-02">Plastic Packaging-02</option>
+                <option value="Silicon Project">Silicon Project</option>
+            </select>
+        </div>
+
+        <div class="login-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter password" onkeypress="if(event.key==='Enter') doLogin()">
+        </div>
+
+        <button class="btn-login" onclick="doLogin()">🔓 Login</button>
+        <div class="login-error" id="loginError"></div>
+        <div class="login-footer">© 2026 Employee Punch Report System</div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MAIN APP -->
+<!-- ============================================== -->
+<div class="main-app" id="mainApp">
+    <div class="container">
+        <!-- Top Bar with User Info -->
+        <div class="top-bar">
+            <div class="user-info">
+                👤 Logged in as: <span id="loggedInSection">-</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-teal" onclick="toggleMasterReportSection()" id="masterReportToggleBtn">📊 Master Report</button>
+                <button class="btn btn-red" onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+
         <h1>Employee Punch Report</h1>
-        <button class="btn btn-red" onclick="clearAllData()">🗑️ Clear All Data</button>
-    </div>
-    <hr>
+        <hr>
 
-    <!-- Print Header (Only Shows on Print) -->
-    <div id="printHeader">
-        <h2>Employee Punch Report</h2>
-        <p id="printReportInfo"></p>
-    </div>
-
-    <div class="button-group">
-        <button class="btn btn-green" onclick="document.getElementById('masterListInput').click()">📋 Upload Master List</button>
-        <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Punch Report Day Shift</button>
-        <button class="btn btn-blue" onclick="document.getElementById('nightShiftInput').click()">🌙 Upload Punch Report Night Shift</button>
-        
-        <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo Upload (Individual)</button>
-        
-        <button class="btn btn-teal" onclick="toggleMasterReportSection()" id="masterReportToggleBtn">📊 Master Report (History)</button>
-
-        <!-- 🔥 Print Preview Button -->
-        <button class="btn btn-print" onclick="printPreview()" id="printBtn" style="display: none;">🖨️ Print Preview</button>
-
-        <!-- 🔥 Download PDF Button -->
-        <button class="btn btn-pdf" onclick="downloadPDF()" id="pdfBtn" style="display: none;">📄 Download PDF</button>
-
-        <!-- Download Excel Button -->
-        <button class="btn btn-dark" onclick="downloadExcel()" id="downloadExcelBtn" style="display: none;">⬇️ Download Excel</button>
-    </div>
-
-    <input type="file" id="masterListInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleMasterListUpload(this)">
-    <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Day')">
-    <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Night')">
-
-    <div class="punch-card-section" id="punchCardSection">
-        <h2>📸 Punch Card Photo Upload (Individual)</h2>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
-            Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe. Camera Modal e Manual ID input o ache.
-        </p>
-        <div class="camera-controls">
-            <button class="btn-camera" onclick="openCamera()">📷 Open Camera (Back)</button>
+        <!-- Print Header -->
+        <div id="printHeader">
+            <h2>Employee Punch Report</h2>
+            <p id="printReportInfo"></p>
         </div>
-    </div>
 
-    <div class="master-report-section" id="masterReportSection">
-        <h2>📊 Master Report - Saved Records History</h2>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
-            Ei section e shob <strong>saved report</strong> thakbe. Date & Shift select kore <strong>Load</strong> korle shei diner data show korbe.
-        </p>
-        <div class="filter-row">
-            <div class="filter-group">
-                <label for="filterDate">Date (Report Date)</label>
-                <input type="date" id="filterDate">
-            </div>
-            <div class="filter-group">
-                <label for="filterShift">Shift</label>
-                <select id="filterShift">
-                    <option value="Day">Day</option>
-                    <option value="Night">Night</option>
-                </select>
-            </div>
-            <button class="btn-filter" onclick="loadSavedReport()">📂 Load Saved Report</button>
-            <button class="btn-filter" style="background-color: #6c757d;" onclick="loadAllHistory()">📜 Show All History</button>
+        <div class="button-group">
+            <button class="btn btn-green" onclick="document.getElementById('masterListInput').click()">📋 Upload Master List</button>
+            <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Punch Report Day Shift</button>
+            <button class="btn btn-blue" onclick="document.getElementById('nightShiftInput').click()">🌙 Upload Punch Report Night Shift</button>
+            
+            <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo Upload</button>
+
+            <button class="btn btn-print" onclick="printPreview()" id="printBtn" style="display: none;">🖨️ Print Preview</button>
+            <button class="btn btn-pdf" onclick="downloadPDF()" id="pdfBtn" style="display: none;">📄 Download PDF</button>
+            <button class="btn btn-dark" onclick="downloadExcel()" id="downloadExcelBtn" style="display: none;">⬇️ Download Excel</button>
         </div>
-    </div>
 
-    <div class="report-history-list" id="reportHistoryList">
-        <h3>📜 Saved Reports History</h3>
-        <div id="historyItems"></div>
-    </div>
+        <input type="file" id="masterListInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleMasterListUpload(this)">
+        <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Day')">
+        <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Night')">
 
-    <div class="info-msg" id="infoMsg"></div>
-
-    <div class="loading" id="loadingSpinner">
-        <div class="spinner"></div>
-        Processing...
-    </div>
-
-    <div class="day-shift-summary" id="dayShiftSummary">
-        <h3>📅 Day Shift Punch Record (As per Upload)</h3>
-        <div class="day-shift-stats">
-            <div class="day-shift-stat-box total-box">
-                <div class="label">Total Employees (Punch Report)</div>
-                <div class="value" id="dsTotal">0</div>
-            </div>
-            <div class="day-shift-stat-box present">
-                <div class="label">✅ Present (Card Uploaded)</div>
-                <div class="value" id="dsPresent">0</div>
-            </div>
-            <div class="day-shift-stat-box pending">
-                <div class="label">⏳ Pending</div>
-                <div class="value" id="dsPending">0</div>
-            </div>
-            <div class="day-shift-stat-box late">
-                <div class="label">⚠️ Late Punch</div>
-                <div class="value" id="dsLate">0</div>
-            </div>
-            <div class="day-shift-stat-box abnormal">
-                <div class="label">🚨 Abnormalities</div>
-                <div class="value" id="dsAbnormal">0</div>
-            </div>
-            <div class="day-shift-stat-box normal">
-                <div class="label">✔️ No Abnormalities</div>
-                <div class="value" id="dsNormal">0</div>
+        <div class="punch-card-section" id="punchCardSection">
+            <h2>📸 Punch Card Photo Upload (Individual)</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe.
+            </p>
+            <div class="camera-controls">
+                <button class="btn-camera" onclick="openCamera()">📷 Open Camera (Back)</button>
             </div>
         </div>
 
-        <div class="action-taken-line" id="actionTakenLine">
-            🎯 <strong>Action Taken:</strong> Please Check Shift Schedule Employee & Solved it
+        <div class="master-report-section" id="masterReportSection">
+            <h2>📊 Master Report - Saved Records History</h2>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="filterDate">Date (Report Date)</label>
+                    <input type="date" id="filterDate">
+                </div>
+                <div class="filter-group">
+                    <label for="filterShift">Shift</label>
+                    <select id="filterShift">
+                        <option value="Day">Day</option>
+                        <option value="Night">Night</option>
+                    </select>
+                </div>
+                <button class="btn-filter" onclick="loadSavedReport()">📂 Load Saved Report</button>
+                <button class="btn-filter" style="background-color: #6c757d;" onclick="loadAllHistory()">📜 Show All History</button>
+            </div>
         </div>
-    </div>
 
-    <div class="table-responsive" id="tableContainer">
-        <table id="employeeTable">
-            <thead>
-                <tr>
-                    <th>SL/No</th>
-                    <th>Date</th>
-                    <th>Shift</th>
-                    <th>I/C Name</th>
-                    <th>Staff ID</th>
-                    <th>Employee Name</th>
-                    <th>Designation</th>
-                    <th>In Punch Time</th>
-                    <th>Remarks</th>
-                    <th>Line Man Name</th>
-                    <th>MC No</th>
-                    <th>Present Status</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-        </table>
-    </div>
+        <div class="report-history-list" id="reportHistoryList">
+            <h3>📜 Saved Reports History</h3>
+            <div id="historyItems"></div>
+        </div>
 
-    <div class="pagination" id="pagination">
-        <button id="prevBtn" onclick="changePage(currentPage - 1)">« Prev</button>
-        <span class="pagination-info" id="pageInfo">Page 1 of 1</span>
-        <span id="pageNumbers"></span>
-        <button id="nextBtn" onclick="changePage(currentPage + 1)">Next »</button>
-    </div>
+        <div class="info-msg" id="infoMsg"></div>
 
-    <div class="master-report-result" id="masterReportResult">
-        <h3 id="masterReportTitle">📊 Filtered Result</h3>
-        <div class="table-responsive" style="display: block; max-height: 400px;">
-            <table>
+        <div class="loading" id="loadingSpinner">
+            <div class="spinner"></div>
+            Processing...
+        </div>
+
+        <div class="day-shift-summary" id="dayShiftSummary">
+            <h3>📅 Day Shift Punch Record (As per Upload)</h3>
+            <div class="day-shift-stats">
+                <div class="day-shift-stat-box total-box">
+                    <div class="label">Total Employees (Punch Report)</div>
+                    <div class="value" id="dsTotal">0</div>
+                </div>
+                <div class="day-shift-stat-box present">
+                    <div class="label">✅ Present (Card Uploaded)</div>
+                    <div class="value" id="dsPresent">0</div>
+                </div>
+                <div class="day-shift-stat-box pending">
+                    <div class="label">⏳ Pending</div>
+                    <div class="value" id="dsPending">0</div>
+                </div>
+                <div class="day-shift-stat-box late">
+                    <div class="label">⚠️ Late Punch</div>
+                    <div class="value" id="dsLate">0</div>
+                </div>
+                <div class="day-shift-stat-box abnormal">
+                    <div class="label">🚨 Abnormalities</div>
+                    <div class="value" id="dsAbnormal">0</div>
+                </div>
+                <div class="day-shift-stat-box normal">
+                    <div class="label">✔️ No Abnormalities</div>
+                    <div class="value" id="dsNormal">0</div>
+                </div>
+            </div>
+
+            <div class="action-taken-line" id="actionTakenLine">
+                🎯 <strong>Action Taken:</strong> Please Check Shift Schedule Employee & Solved it
+            </div>
+        </div>
+
+        <div class="table-responsive" id="tableContainer">
+            <table id="employeeTable">
                 <thead>
                     <tr>
                         <th>SL/No</th>
                         <th>Date</th>
                         <th>Shift</th>
+                        <th>I/C Name</th>
                         <th>Staff ID</th>
                         <th>Employee Name</th>
                         <th>Designation</th>
-                        <th>Punch Time</th>
+                        <th>In Punch Time</th>
                         <th>Remarks</th>
-                        <th>Line Man</th>
+                        <th>Line Man Name</th>
                         <th>MC No</th>
-                        <th>Status</th>
+                        <th>Present Status</th>
                     </tr>
                 </thead>
-                <tbody id="masterReportBody"></tbody>
+                <tbody id="tableBody"></tbody>
             </table>
+        </div>
+
+        <div class="pagination" id="pagination">
+            <button id="prevBtn" onclick="changePage(currentPage - 1)">« Prev</button>
+            <span class="pagination-info" id="pageInfo">Page 1 of 1</span>
+            <span id="pageNumbers"></span>
+            <button id="nextBtn" onclick="changePage(currentPage + 1)">Next »</button>
+        </div>
+
+        <div class="master-report-result" id="masterReportResult">
+            <h3 id="masterReportTitle">📊 Filtered Result</h3>
+            <div class="table-responsive" style="display: block; max-height: 400px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SL/No</th>
+                            <th>Date</th>
+                            <th>Shift</th>
+                            <th>Staff ID</th>
+                            <th>Employee Name</th>
+                            <th>Designation</th>
+                            <th>Punch Time</th>
+                            <th>Remarks</th>
+                            <th>Line Man</th>
+                            <th>MC No</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="masterReportBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -500,7 +632,7 @@
     <div class="lineman-modal-content">
         <h3>👷 Line Man & MC No Select</h3>
         
-        <div class="lineman-info" id="linemanInfo">
+        <div class="lineman-info">
             Staff ID: <strong id="linemanStaffId"></strong> | Employee: <strong id="linemanEmpName"></strong>
         </div>
 
@@ -610,7 +742,95 @@
 
 <script>
     // ====================================================
-    // 1. FIREBASE CONFIGURATION
+    // LOGIN SYSTEM
+    // ====================================================
+    const LOGIN_CREDENTIALS = {
+        "Plastic Production-01": "P01",
+        "Plastic Production-02": "P02",
+        "Plastic Production-03": "P03",
+        "Plastic Production-04": "P04",
+        "Plastic Production-05": "P05",
+        "Plastic Production-06": "P06",
+        "Plastic Production-07": "P07",
+        "Plastic Production-10": "P10",
+        "Plastic Packaging-01": "Pack1",
+        "Plastic Packaging-02": "Pack2",
+        "Silicon Project": "SP"
+    };
+
+    let loggedInSection = '';
+
+    // Check if already logged in (session)
+    window.onload = function() {
+        const savedSection = sessionStorage.getItem('loggedInSection');
+        if (savedSection) {
+            loggedInSection = savedSection;
+            showMainApp();
+        } else {
+            showLoginPage();
+        }
+    };
+
+    function showLoginPage() {
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('mainApp').style.display = 'none';
+    }
+
+    function showMainApp() {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        document.getElementById('loggedInSection').textContent = loggedInSection;
+        
+        // Load data
+        loadMasterListFromFirebase();
+        loadCurrentReportFromFirebase();
+    }
+
+    function doLogin() {
+        const section = document.getElementById('loginSection').value;
+        const password = document.getElementById('loginPassword').value.trim();
+        const errorDiv = document.getElementById('loginError');
+
+        errorDiv.style.display = 'none';
+
+        if (!section) {
+            errorDiv.textContent = '❌ Please select a section.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        if (!password) {
+            errorDiv.textContent = '❌ Please enter password.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Check credentials
+        if (LOGIN_CREDENTIALS[section] === password) {
+            loggedInSection = section;
+            sessionStorage.setItem('loggedInSection', section);
+            
+            // Clear form
+            document.getElementById('loginSection').value = '';
+            document.getElementById('loginPassword').value = '';
+            
+            showMainApp();
+        } else {
+            errorDiv.textContent = '❌ Invalid section or password.';
+            errorDiv.style.display = 'block';
+        }
+    }
+
+    function logout() {
+        if (confirm("Apni ki logout korte chan?")) {
+            sessionStorage.removeItem('loggedInSection');
+            loggedInSection = '';
+            location.reload();
+        }
+    }
+
+    // ====================================================
+    // FIREBASE CONFIGURATION
     // ====================================================
     const firebaseConfig = {
         apiKey: "AIzaSyB1nzUWS6WLDwA3xzLDkt1UYJMaISK1JR0",
@@ -627,7 +847,7 @@
     const database = firebase.database();
 
     // ====================================================
-    // 2. GLOBAL VARIABLES
+    // GLOBAL VARIABLES
     // ====================================================
     let masterListData = [];
     let currentTableData = [];
@@ -639,10 +859,10 @@
     let currentPage = 1;
     const rowsPerPage = 100;
     let pendingStaffId = null;
-    let currentStatusData = {}; // 🔥 Global status data for download
+    let currentStatusData = {};
 
     // ====================================================
-    // 2A. BANGLA TO ENGLISH
+    // BANGLA TO ENGLISH
     // ====================================================
     const banglaToEnglishDigits = {
         '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
@@ -655,13 +875,8 @@
     }
 
     // ====================================================
-    // 3. PAGE INITIALIZATION
+    // DATA LOADING
     // ====================================================
-    window.onload = function() {
-        loadMasterListFromFirebase();
-        loadCurrentReportFromFirebase();
-    };
-
     function loadMasterListFromFirebase() {
         database.ref('employeeData/masterList').once('value', (snapshot) => {
             const data = snapshot.val();
@@ -693,13 +908,13 @@
                 infoMsg.textContent = `✅ Previous Report loaded! Total: ${data.punchData.length} | Date: ${data.reportDate} | Shift: ${data.shift}`;
             }
         }).catch((error) => {
-            console.error("Load Current Report Error:", error);
+            console.error("Load Error:", error);
             loadingSpinner.style.display = 'none';
         });
     }
 
     // ====================================================
-    // 4. MASTER LIST UPLOAD
+    // MASTER LIST UPLOAD
     // ====================================================
     function handleMasterListUpload(input) {
         if (!input.files || input.files.length === 0) return;
@@ -752,7 +967,7 @@
     }
 
     // ====================================================
-    // 5. PUNCH REPORT UPLOAD
+    // PUNCH REPORT UPLOAD
     // ====================================================
     function handlePunchReportUpload(input, shiftType) {
         if (!input.files || input.files.length === 0) return;
@@ -815,14 +1030,16 @@
                     shift: shiftType,
                     punchData: punchData,
                     uploadedAt: new Date().toISOString(),
-                    totalRecords: punchData.length
+                    totalRecords: punchData.length,
+                    section: loggedInSection
                 });
 
                 database.ref('currentReport').set({
                     reportDate: reportDate,
                     shift: shiftType,
                     punchData: punchData,
-                    uploadedAt: new Date().toISOString()
+                    uploadedAt: new Date().toISOString(),
+                    section: loggedInSection
                 });
 
             } catch (error) {
@@ -837,14 +1054,12 @@
 
     function extractReportDate(dateVal) {
         if (!dateVal) return '';
-        
         if (typeof dateVal === 'number') {
             const excelDate = XLSX.SSF.parse_date_code(dateVal);
             if (excelDate) {
                 return `${excelDate.y}-${String(excelDate.m).padStart(2,'0')}-${String(excelDate.d).padStart(2,'0')}`;
             }
         }
-
         const dateStr = String(dateVal).trim();
         if (dateStr.includes(' ')) return dateStr.split(' ')[0];
         else if (dateStr.includes('-')) {
@@ -856,7 +1071,7 @@
     }
 
     // ====================================================
-    // 6. GENERATE TABLE
+    // GENERATE TABLE
     // ====================================================
     function generateTable(data) {
         currentTableData = data;
@@ -901,7 +1116,7 @@
 
         database.ref('punchStatus').once('value', (snapshot) => {
             const statusData = snapshot.val() || {};
-            currentStatusData = statusData; // 🔥 Global save
+            currentStatusData = statusData;
 
             pageData.forEach((record, idx) => {
                 const masterInfo = masterMap[record.staffId];
@@ -1006,7 +1221,7 @@
         document.getElementById('dsLate').textContent = late;
 
         let abnormalCount = (total === present) ? 0 : (total - present);
-        let normalCount = (total === present) ? present : present;
+        let normalCount = present;
 
         document.getElementById('dsAbnormal').textContent = abnormalCount;
         document.getElementById('dsNormal').textContent = normalCount;
@@ -1068,7 +1283,7 @@
     }
 
     // ====================================================
-    // 7. CAMERA
+    // CAMERA
     // ====================================================
     function togglePunchCardSection() {
         const section = document.getElementById('punchCardSection');
@@ -1149,7 +1364,7 @@
     function retakePhoto() { openCamera(); }
 
     // ====================================================
-    // 8. MANUAL ID
+    // MANUAL ID
     // ====================================================
     function liveDetectStaffId(value) {
         const detectDiv = document.getElementById('manualLiveDetect');
@@ -1195,7 +1410,7 @@
     }
 
     // ====================================================
-    // 9. OCR
+    // OCR
     // ====================================================
     async function processOCRAndUpload() {
         const ocrProcessing = document.getElementById('ocrProcessing');
@@ -1296,7 +1511,7 @@
     }
 
     // ====================================================
-    // 10. LINEMAN MODAL
+    // 🔥 LINEMAN MODAL - FIXED
     // ====================================================
     function openLinemanModal(staffId) {
         pendingStaffId = staffId;
@@ -1327,28 +1542,30 @@
 
         try {
             const statusKey = `${currentReportDate}_${currentReportShift}_${pendingStaffId}`;
+            const savedStaffId = pendingStaffId; // Store before reset
             
             await database.ref('punchStatus/' + statusKey).set({
-                staffId: pendingStaffId,
+                staffId: savedStaffId,
                 status: 'Present',
                 reportDate: currentReportDate,
                 shift: currentReportShift,
                 lineman: linemanName,
                 mcNo: mcNo,
                 timestamp: new Date().toISOString(),
-                detectedBy: 'OCR/Manual'
+                detectedBy: 'OCR/Manual',
+                section: loggedInSection
             });
 
-            const row = document.getElementById(`row_${pendingStaffId}`);
-            const statusCell = document.getElementById(`status_${pendingStaffId}`);
-            const linemanCell = document.getElementById(`lineman_${pendingStaffId}`);
-            const mcnoCell = document.getElementById(`mcno_${pendingStaffId}`);
+            // 🔥 Direct DOM Update (Instant)
+            const row = document.getElementById(`row_${savedStaffId}`);
+            const statusCell = document.getElementById(`status_${savedStaffId}`);
+            const linemanCell = document.getElementById(`lineman_${savedStaffId}`);
+            const mcnoCell = document.getElementById(`mcno_${savedStaffId}`);
 
             if (row) {
                 row.classList.add('row-present');
                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-
             if (statusCell) {
                 statusCell.innerHTML = `
                     <span class="status-badge status-present">
@@ -1359,12 +1576,23 @@
             if (linemanCell) linemanCell.innerHTML = `<strong>${linemanName}</strong>`;
             if (mcnoCell) mcnoCell.textContent = mcNo;
 
-            alert(`✅ Staff ID: ${pendingStaffId}\nLine Man: ${linemanName}\nMC No: ${mcNo}\n\nPresent mark hoyeche!`);
+            // Update global status data
+            currentStatusData[statusKey] = {
+                staffId: savedStaffId,
+                status: 'Present',
+                lineman: linemanName,
+                mcNo: mcNo
+            };
+
+            alert(`✅ Staff ID: ${savedStaffId}\nLine Man: ${linemanName}\nMC No: ${mcNo}\n\nPresent mark hoyeche!`);
 
             closeLinemanModal();
             closeCamera();
 
-            setTimeout(() => { renderTablePage(); }, 500);
+            // 🔥 Force re-render to update summary
+            setTimeout(() => {
+                renderTablePage();
+            }, 300);
 
         } catch (error) {
             console.error("Firebase Error:", error);
@@ -1393,7 +1621,7 @@
     }
 
     // ====================================================
-    // 11. 🖨️ PRINT PREVIEW
+    // PRINT PREVIEW
     // ====================================================
     function printPreview() {
         if (!currentTableData || currentTableData.length === 0) {
@@ -1401,18 +1629,16 @@
             return;
         }
 
-        // Print header info set kori
         const printInfo = document.getElementById('printReportInfo');
         if (printInfo) {
-            printInfo.textContent = `Date: ${currentReportDate} | Shift: ${currentReportShift} | Total Employees: ${currentTableData.length}`;
+            printInfo.textContent = `Section: ${loggedInSection} | Date: ${currentReportDate} | Shift: ${currentReportShift} | Total Employees: ${currentTableData.length}`;
         }
 
-        // Print window open kori
         window.print();
     }
 
     // ====================================================
-    // 12. 📄 DOWNLOAD PDF
+    // DOWNLOAD PDF
     // ====================================================
     function downloadPDF() {
         if (!currentTableData || currentTableData.length === 0) {
@@ -1421,24 +1647,20 @@
         }
 
         const { jsPDF } = window.jspdf;
-
-        // Landscape mode for wide table
         const doc = new jsPDF({
             orientation: 'landscape',
             unit: 'mm',
             format: 'a4'
         });
 
-        // Title
         doc.setFontSize(14);
         doc.setFont(undefined, 'bold');
         doc.text('Employee Punch Report', doc.internal.pageSize.width / 2, 12, { align: 'center' });
 
         doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
-        doc.text(`Date: ${currentReportDate} | Shift: ${currentReportShift} | Total Employees: ${currentTableData.length}`, doc.internal.pageSize.width / 2, 18, { align: 'center' });
+        doc.text(`Section: ${loggedInSection} | Date: ${currentReportDate} | Shift: ${currentReportShift} | Total: ${currentTableData.length}`, doc.internal.pageSize.width / 2, 18, { align: 'center' });
 
-        // Prepare table data
         const masterMap = {};
         masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
@@ -1455,58 +1677,27 @@
             const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
 
             return [
-                idx + 1,
-                record.date || '-',
-                record.shift || '-',
-                record.icName || '-',
-                record.staffId || '-',
-                empName,
-                designation,
-                record.punchTime || '-',
-                remarks.isLate ? 'Late' : 'On Time',
-                lineman,
-                mcNo,
+                idx + 1, record.date || '-', record.shift || '-',
+                record.icName || '-', record.staffId || '-',
+                empName, designation, record.punchTime || '-',
+                remarks.isLate ? 'Late' : 'On Time', lineman, mcNo,
                 isPresent ? 'Present' : 'Pending'
             ];
         });
 
-        // AutoTable
         doc.autoTable({
-            head: [[
-                'SL', 'Date', 'Shift', 'I/C Name', 'Staff ID',
-                'Employee Name', 'Designation', 'Punch Time', 'Remarks',
-                'Line Man', 'MC No', 'Status'
-            ]],
+            head: [['SL', 'Date', 'Shift', 'I/C Name', 'Staff ID', 'Employee Name', 'Designation', 'Punch Time', 'Remarks', 'Line Man', 'MC No', 'Status']],
             body: tableData,
-            startY: 22,
-            theme: 'grid',
-            styles: {
-                fontSize: 6,
-                cellPadding: 1,
-                overflow: 'linebreak'
-            },
-            headStyles: {
-                fillColor: [16, 108, 200],
-                textColor: 255,
-                fontStyle: 'bold',
-                fontSize: 6
-            },
+            startY: 22, theme: 'grid',
+            styles: { fontSize: 6, cellPadding: 1, overflow: 'linebreak' },
+            headStyles: { fillColor: [16, 108, 200], textColor: 255, fontStyle: 'bold', fontSize: 6 },
             columnStyles: {
-                0: { cellWidth: 8 },   // SL
-                1: { cellWidth: 18 },  // Date
-                2: { cellWidth: 12 },  // Shift
-                3: { cellWidth: 18 },  // I/C
-                4: { cellWidth: 20 },  // Staff ID
-                5: { cellWidth: 32 },  // Name
-                6: { cellWidth: 24 },  // Designation
-                7: { cellWidth: 15 },  // Punch
-                8: { cellWidth: 24 },  // Remarks
-                9: { cellWidth: 20 },  // Line Man
-                10: { cellWidth: 20 }, // MC No
-                11: { cellWidth: 15 }  // Status
+                0: { cellWidth: 8 }, 1: { cellWidth: 18 }, 2: { cellWidth: 12 },
+                3: { cellWidth: 18 }, 4: { cellWidth: 20 }, 5: { cellWidth: 32 },
+                6: { cellWidth: 24 }, 7: { cellWidth: 15 }, 8: { cellWidth: 24 },
+                9: { cellWidth: 20 }, 10: { cellWidth: 20 }, 11: { cellWidth: 15 }
             },
             didParseCell: function(data) {
-                // Present row green background
                 if (data.section === 'body') {
                     const rowData = tableData[data.row.index];
                     if (rowData && rowData[11] === 'Present') {
@@ -1521,26 +1712,18 @@
             }
         });
 
-        // Footer
         const pageCount = doc.internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
             doc.setFontSize(8);
-            doc.text(
-                `Page ${i} of ${pageCount} | Generated: ${new Date().toLocaleString()}`,
-                doc.internal.pageSize.width / 2,
-                doc.internal.pageSize.height - 8,
-                { align: 'center' }
-            );
+            doc.text(`Page ${i} of ${pageCount} | Generated: ${new Date().toLocaleString()}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 8, { align: 'center' });
         }
 
-        const fileName = `Punch_Report_${currentReportDate}_${currentReportShift}.pdf`;
-        doc.save(fileName);
-        console.log(`✅ PDF Downloaded: ${fileName}`);
+        doc.save(`Punch_Report_${currentReportDate}_${currentReportShift}.pdf`);
     }
 
     // ====================================================
-    // 13. ⬇️ DOWNLOAD EXCEL
+    // DOWNLOAD EXCEL
     // ====================================================
     function downloadExcel() {
         if (!currentTableData || currentTableData.length === 0) {
@@ -1592,13 +1775,12 @@
                 { wch: 15 }, { wch: 14 }
             ];
 
-            const fileName = `Punch_Report_${currentReportDate}_${currentReportShift}.xlsx`;
-            XLSX.writeFile(wb, fileName);
+            XLSX.writeFile(wb, `Punch_Report_${currentReportDate}_${currentReportShift}.xlsx`);
         });
     }
 
     // ====================================================
-    // 14. MASTER REPORT
+    // MASTER REPORT
     // ====================================================
     function loadSavedReport() {
         const filterDate = document.getElementById('filterDate').value;
@@ -1656,10 +1838,8 @@
                     ? `<span class="status-badge status-present"><span class="green-dot"></span> Present</span>`
                     : `<span class="status-badge status-pending">Pending</span>`;
 
-                const rowClass = isPresent ? 'row-present' : '';
-
                 html += `
-                    <tr class="${rowClass}">
+                    <tr class="${isPresent ? 'row-present' : ''}">
                         <td>${idx + 1}</td>
                         <td>${record.date || '-'}</td>
                         <td>${record.shift || '-'}</td>
@@ -1683,7 +1863,7 @@
             resultSection.style.display = 'block';
             
             const uploadedDate = new Date(uploadedAt).toLocaleString();
-            resultTitle.innerHTML = `📊 Saved Report — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong> | Late: <strong>${lateCount}</strong><br><small style="color:#666;">Uploaded: ${uploadedDate}</small>`;
+            resultTitle.innerHTML = `📊 Saved Report — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong> | Late: <strong>${lateCount}</strong>`;
         });
     }
 
@@ -1707,11 +1887,12 @@
             let html = '';
             entries.forEach(([key, report]) => {
                 const uploadedDate = new Date(report.uploadedAt).toLocaleString();
+                const sectionInfo = report.section ? ` | Section: ${report.section}` : '';
                 html += `
                     <div class="history-item">
                         <div>
                             <div class="date-shift">📅 ${report.reportDate} — ${report.shift} Shift</div>
-                            <div class="stats">${report.totalRecords} records | Uploaded: ${uploadedDate}</div>
+                            <div class="stats">${report.totalRecords} records | Uploaded: ${uploadedDate}${sectionInfo}</div>
                         </div>
                         <button class="btn-load" onclick="quickLoadHistory('${report.reportDate}', '${report.shift}')">Load</button>
                     </div>
