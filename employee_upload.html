@@ -860,6 +860,11 @@
 
     let loggedInSection = '';
 
+    // 🔥 Helper: Section name কে Firebase-safe key বানায়
+    function getSafeSection() {
+        return (loggedInSection || 'Unknown').replace(/[.#$\[\]/]/g, '_');
+    }
+
     window.onload = function() {
         const savedSection = sessionStorage.getItem('loggedInSection');
         if (savedSection) {
@@ -976,6 +981,7 @@
     // DATA LOADING
     // ====================================================
     function loadMasterListFromFirebase() {
+        // 🔥 Master List সব Section common
         database.ref('employeeData/masterList').once('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -986,10 +992,15 @@
     }
 
     function loadCurrentReportFromFirebase() {
+        if (!loggedInSection) return;
+
         const loadingSpinner = document.getElementById('loadingSpinner');
         loadingSpinner.style.display = 'block';
 
-        database.ref('currentReport').once('value', (snapshot) => {
+        // 🔥 শুধু নিজের Section এর Data
+        const safeSection = getSafeSection();
+        
+        database.ref(`currentReport/${safeSection}`).once('value', (snapshot) => {
             loadingSpinner.style.display = 'none';
             const data = snapshot.val();
             
@@ -998,12 +1009,19 @@
                 currentReportDate = data.reportDate;
                 currentReportShift = data.shift;
                 
-                console.log(`✅ Previous Report loaded: ${data.punchData.length} records`);
+                console.log(`✅ Previous Report loaded for ${loggedInSection}: ${data.punchData.length} records`);
                 generateTable(data.punchData);
                 
                 const infoMsg = document.getElementById('infoMsg');
                 infoMsg.style.display = 'block';
-                infoMsg.textContent = `✅ Previous Report loaded! Total: ${data.punchData.length} | Date: ${data.reportDate} | Shift: ${data.shift}`;
+                infoMsg.textContent = `✅ Previous Report loaded for ${loggedInSection}! Total: ${data.punchData.length} | Date: ${data.reportDate} | Shift: ${data.shift}`;
+            } else {
+                // 🔥 Data না থাকলে Table ফাঁকা
+                currentTableData = [];
+                document.getElementById('tableContainer').style.display = 'none';
+                document.getElementById('dayShiftSummary').style.display = 'none';
+                document.getElementById('summaryMessageSection').style.display = 'none';
+                document.getElementById('pagination').classList.remove('active');
             }
         }).catch((error) => {
             console.error("Load Error:", error);
@@ -1047,6 +1065,7 @@
 
                 masterListData = masterList;
 
+                // 🔥 Master List সব Section common
                 database.ref('employeeData/masterList').set(masterList)
                 .then(() => {
                     loadingSpinner.style.display = 'none';
@@ -1076,8 +1095,14 @@
         
         currentShiftType = shiftType;
 
+        // 🔥 Section না থাকলে Upload হবে না
+        if (!loggedInSection) {
+            alert("❌ Please login first!");
+            return;
+        }
+
         infoMsg.style.display = 'block';
-        infoMsg.textContent = `📂 Reading Punch Report: ${file.name}...`;
+        infoMsg.textContent = `📂 Reading Punch Report for ${loggedInSection}: ${file.name}...`;
         loadingSpinner.style.display = 'block';
 
         const reader = new FileReader();
@@ -1117,13 +1142,15 @@
                 currentReportShift = shiftType;
 
                 loadingSpinner.style.display = 'none';
-                infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length} | Date: ${reportDate} | Shift: ${shiftType}`;
+                infoMsg.textContent = `✅ Punch Report loaded for ${loggedInSection}! Total: ${punchData.length} | Date: ${reportDate} | Shift: ${shiftType}`;
 
                 generateTable(punchData);
 
+                // 🔥 Section অনুযায়ী আলাদা Path
+                const safeSection = getSafeSection();
                 const historyKey = `${reportDate}_${shiftType}`;
                 
-                database.ref('reportHistory/' + historyKey).set({
+                database.ref(`reportHistory/${safeSection}/${historyKey}`).set({
                     reportDate: reportDate,
                     shift: shiftType,
                     punchData: punchData,
@@ -1132,7 +1159,7 @@
                     section: loggedInSection
                 });
 
-                database.ref('currentReport').set({
+                database.ref(`currentReport/${safeSection}`).set({
                     reportDate: reportDate,
                     shift: shiftType,
                     punchData: punchData,
@@ -1214,7 +1241,10 @@
             if (remarks.isLate) lateCount++;
         });
 
-        database.ref('punchStatus').once('value', (snapshot) => {
+        // 🔥 Section অনুযায়ী punchStatus আলাদা
+        const safeSection = getSafeSection();
+        
+        database.ref(`punchStatus/${safeSection}`).once('value', (snapshot) => {
             const statusData = snapshot.val() || {};
             currentStatusData = statusData;
 
@@ -1291,8 +1321,6 @@
             });
 
             updateDayShiftSummary(currentTableData.length, presentCount, currentTableData.length - presentCount, lateCount);
-
-            // 🔥 Update Summary Message Box
             updateSummaryMessage();
         });
     }
@@ -1412,8 +1440,6 @@
         });
 
         // 🔥 Abnormalities Status — নতুন লজিক
-        // যদি Total Punch == Present → "No"
-        // যদি 1 জনও Pending থাকে → "Yes X Nos"
         let abnormalitiesText = '';
         if (totalPunch === presentCount) {
             abnormalitiesText = 'No';
@@ -1455,11 +1481,7 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         `.trim();
 
         document.getElementById('summaryMessageBody').innerHTML = messageHTML;
-
-        // 🔥 Show section
         document.getElementById('summaryMessageSection').style.display = 'block';
-
-        // 🔥 Timestamp
         document.getElementById('summaryTimestamp').textContent = '🕒 Generated: ' + new Date().toLocaleString();
     }
 
@@ -1508,16 +1530,14 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         document.body.removeChild(textarea);
     }
 
-    // 🔥 NEW: Summary Message Image Download
+    // 🔥 Summary Message Image Download
     function downloadSummaryImage() {
         const section = document.getElementById('summaryMessageSection');
         if (!section) return;
 
-        // Show section temporarily (jodi hide thake)
         const oldDisplay = section.style.display;
         section.style.display = 'block';
 
-        // 🔥 Timestamp + button hide for clean image
         const timestampEl = document.getElementById('summaryTimestamp');
         const footer = section.querySelector('.summary-message-footer');
         const header = section.querySelector('.summary-message-header');
@@ -1535,7 +1555,6 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             useCORS: true,
             logging: false
         }).then(canvas => {
-            // Restore UI
             if (footer) footer.style.display = oldFooterDisplay;
             if (header) header.style.display = oldHeaderDisplay;
             if (timestampEl) timestampEl.style.display = oldTimestampDisplay;
@@ -1544,7 +1563,8 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             const link = document.createElement('a');
             const dateStr = (currentReportDate || 'Report').replace(/[^0-9\-]/g, '');
             const shiftStr = (currentReportShift || 'Shift').replace(/[^A-Za-z]/g, '');
-            link.download = `Summary_Report_${dateStr}_${shiftStr}.png`;
+            const secStr = getSafeSection();
+            link.download = `Summary_${secStr}_${dateStr}_${shiftStr}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         }).catch(err => {
@@ -2061,7 +2081,10 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             const savedStaffId = pendingStaffId;
             const statusKey = `${currentReportDate}_${currentReportShift}_${savedStaffId}`;
             
-            await database.ref('punchStatus/' + statusKey).set({
+            // 🔥 Section অনুযায়ী আলাদা Path
+            const safeSection = getSafeSection();
+            
+            await database.ref(`punchStatus/${safeSection}/${statusKey}`).set({
                 staffId: savedStaffId,
                 status: 'Present',
                 reportDate: currentReportDate,
@@ -2235,7 +2258,7 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             doc.text(`Page ${i} of ${pageCount} | Generated: ${new Date().toLocaleString()}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 8, { align: 'center' });
         }
 
-        doc.save(`Punch_Report_${currentReportDate}_${currentReportShift}.pdf`);
+        doc.save(`Punch_Report_${getSafeSection()}_${currentReportDate}_${currentReportShift}.pdf`);
     }
 
     // ====================================================
@@ -2250,7 +2273,9 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         const masterMap = {};
         masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
-        database.ref('punchStatus').once('value', (snapshot) => {
+        const safeSection = getSafeSection();
+
+        database.ref(`punchStatus/${safeSection}`).once('value', (snapshot) => {
             const statusData = snapshot.val() || {};
 
             const excelData = currentTableData.map((record, idx) => {
@@ -2269,6 +2294,7 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
                     "SL/No": idx + 1,
                     "Date": record.date || '-',
                     "Shift": record.shift || '-',
+                    "Section": loggedInSection,
                     "I/C Name": record.icName || '-',
                     "Staff ID": record.staffId || '-',
                     "Employee Name": empName,
@@ -2286,12 +2312,12 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             XLSX.utils.book_append_sheet(wb, ws, 'Punch Report');
 
             ws['!cols'] = [
-                { wch: 6 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 14 },
+                { wch: 6 }, { wch: 12 }, { wch: 8 }, { wch: 18 }, { wch: 15 }, { wch: 14 },
                 { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 30 }, { wch: 15 },
                 { wch: 15 }, { wch: 14 }
             ];
 
-            XLSX.writeFile(wb, `Punch_Report_${currentReportDate}_${currentReportShift}.xlsx`);
+            XLSX.writeFile(wb, `Punch_Report_${safeSection}_${currentReportDate}_${currentReportShift}.xlsx`);
         });
     }
 
@@ -2304,16 +2330,17 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
 
         if (!filterDate) { alert("Please select a date first."); return; }
 
+        const safeSection = getSafeSection();
         const historyKey = `${filterDate}_${filterShift}`;
         const loadingSpinner = document.getElementById('loadingSpinner');
         loadingSpinner.style.display = 'block';
 
-        database.ref('reportHistory/' + historyKey).once('value', (snapshot) => {
+        database.ref(`reportHistory/${safeSection}/${historyKey}`).once('value', (snapshot) => {
             loadingSpinner.style.display = 'none';
             const data = snapshot.val();
 
             if (!data || !data.punchData) {
-                alert(`❌ Kono report paoa jayni!\n\nDate: ${filterDate}\nShift: ${filterShift}`);
+                alert(`❌ Kono report paoa jayni!\n\nSection: ${loggedInSection}\nDate: ${filterDate}\nShift: ${filterShift}`);
                 return;
             }
 
@@ -2329,7 +2356,9 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         const masterMap = {};
         masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
-        database.ref('punchStatus').once('value', (snapshot) => {
+        const safeSection = getSafeSection();
+
+        database.ref(`punchStatus/${safeSection}`).once('value', (snapshot) => {
             const statusData = snapshot.val() || {};
             
             const presentList = [];
@@ -2397,7 +2426,7 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             resultBody.innerHTML = html;
             resultSection.style.display = 'block';
             
-            resultTitle.innerHTML = `📊 Saved Report — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong> | Late: <strong>${lateCount}</strong>`;
+            resultTitle.innerHTML = `📊 Saved Report (${loggedInSection}) — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong> | Late: <strong>${lateCount}</strong>`;
         });
     }
 
@@ -2408,11 +2437,13 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         historyList.style.display = 'block';
         historyItems.innerHTML = '<p style="color:#666; font-size:12px;">Loading...</p>';
 
-        database.ref('reportHistory').once('value', (snapshot) => {
+        const safeSection = getSafeSection();
+
+        database.ref(`reportHistory/${safeSection}`).once('value', (snapshot) => {
             const data = snapshot.val();
             
             if (!data) {
-                historyItems.innerHTML = '<p style="color:#666; font-size:12px;">Kono saved report nei.</p>';
+                historyItems.innerHTML = `<p style="color:#666; font-size:12px;">${loggedInSection} এর kono saved report nei.</p>`;
                 return;
             }
 
@@ -2421,12 +2452,11 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             let html = '';
             entries.forEach(([key, report]) => {
                 const uploadedDate = new Date(report.uploadedAt).toLocaleString();
-                const sectionInfo = report.section ? ` | Section: ${report.section}` : '';
                 html += `
                     <div class="history-item">
                         <div>
                             <div class="date-shift">📅 ${report.reportDate} — ${report.shift} Shift</div>
-                            <div class="stats">${report.totalRecords} records | Uploaded: ${uploadedDate}${sectionInfo}</div>
+                            <div class="stats">${report.totalRecords} records | Uploaded: ${uploadedDate}</div>
                         </div>
                         <button class="btn-load" onclick="quickLoadHistory('${report.reportDate}', '${report.shift}')">Load</button>
                     </div>
@@ -2445,14 +2475,14 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
     }
 
     function clearAllData() {
-        if (confirm("Apni ki shob data clear korte chan?")) {
+        if (confirm(`${loggedInSection} এর shob data clear korte chan?`)) {
+            const safeSection = getSafeSection();
             Promise.all([
-                database.ref('employeeData').remove(),
-                database.ref('punchStatus').remove(),
-                database.ref('reportHistory').remove(),
-                database.ref('currentReport').remove()
+                database.ref(`currentReport/${safeSection}`).remove(),
+                database.ref(`reportHistory/${safeSection}`).remove(),
+                database.ref(`punchStatus/${safeSection}`).remove()
             ]).then(() => {
-                alert("✅ All Data Cleared!");
+                alert(`✅ ${loggedInSection} All Data Cleared!`);
                 location.reload();
             });
         }
