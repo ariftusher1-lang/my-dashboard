@@ -3,76 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Firebase</title>
+    <title>Employee Punch Report - Firebase + LocalStorage</title>
     
-    <!-- Firebase SDK (Compat version for simple script tag usage) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
         /* --- General Styles --- */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #f4f4f4;
-            padding: 20px;
-        }
-
-        .container {
-            background-color: #ffffff;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            font-size: 26px;
-            color: #111;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        h2 {
-            font-size: 18px;
-            color: #333;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        hr {
-            border: 0;
-            border-top: 1px solid #e0e0e0;
-            margin-bottom: 20px;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f4f4; padding: 20px; }
+        .container { background-color: #ffffff; max-width: 1200px; margin: 0 auto; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { font-size: 26px; color: #111; margin-bottom: 20px; font-weight: 600; }
+        h2 { font-size: 18px; color: #333; margin-bottom: 12px; font-weight: 600; }
+        hr { border: 0; border-top: 1px solid #e0e0e0; margin-bottom: 20px; }
 
         /* --- Button Group --- */
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-            align-items: center;
-        }
-
-        .btn {
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            font-size: 15px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: opacity 0.2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            white-space: nowrap;
-        }
-
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
+        .btn { border: none; color: white; padding: 10px 20px; font-size: 15px; cursor: pointer; border-radius: 4px; transition: opacity 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap; }
         .btn:hover { opacity: 0.9; }
         .btn-green { background-color: #2e9f46; }
         .btn-orange { background-color: #d97d26; }
@@ -83,243 +31,48 @@
         .hidden-input { display: none; }
 
         /* --- Table Styles --- */
-        .table-responsive {
-            overflow-x: auto;
-            margin-top: 20px;
-            display: none;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-            vertical-align: middle;
-        }
-
-        th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            color: #333;
-        }
-
+        .table-responsive { overflow-x: auto; margin-top: 20px; display: none; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: middle; }
+        th { background-color: #f8f9fa; font-weight: 600; color: #333; }
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
 
         /* --- Present Status Styling --- */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 12px;
-        }
-
-        .status-present {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
-        }
-
-        .green-dot {
-            height: 8px;
-            width: 8px;
-            background-color: #28a745;
-            border-radius: 50%;
-            display: inline-block;
-        }
+        .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
+        .status-present { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .green-dot { height: 8px; width: 8px; background-color: #28a745; border-radius: 50%; display: inline-block; }
 
         /* --- Camera Section --- */
-        .punch-card-section {
-            background-color: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .punch-card-section h2 {
-            margin-bottom: 10px;
-            color: #6f42c1;
-        }
-
-        .camera-controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .btn-camera {
-            background-color: #6f42c1;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
+        .punch-card-section { background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: none; }
+        .punch-card-section h2 { margin-bottom: 10px; color: #6f42c1; }
+        .camera-controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+        .btn-camera { background-color: #6f42c1; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .btn-camera:hover { background-color: #5a32a3; }
 
         /* --- Camera Modal --- */
-        .camera-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .camera-modal-content {
-            background: #fff;
-            border-radius: 8px;
-            padding: 20px;
-            width: 90%;
-            max-width: 600px;
-            text-align: center;
-            position: relative;
-        }
-
-        .video-container {
-            position: relative;
-            width: 100%;
-            background: #000;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
-
-        #cameraVideo {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        #capturedPhoto {
-            width: 100%;
-            height: auto;
-            display: none;
-            border-radius: 4px;
-        }
-
-        .camera-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn-capture {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        .btn-retake {
-            background-color: #ffc107;
-            color: #333;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            display: none;
-        }
-
-        .btn-confirm {
-            background-color: #106cc8;
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            display: none;
-        }
-
-        .btn-close-modal {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            position: absolute;
-            top: 10px; right: 10px;
-        }
+        .camera-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .camera-modal-content { background: #fff; border-radius: 8px; padding: 20px; width: 90%; max-width: 600px; text-align: center; position: relative; }
+        .video-container { position: relative; width: 100%; background: #000; border-radius: 4px; overflow: hidden; margin-bottom: 15px; }
+        #cameraVideo { width: 100%; height: auto; display: block; }
+        #capturedPhoto { width: 100%; height: auto; display: none; border-radius: 4px; }
+        .camera-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .btn-capture { background-color: #28a745; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; }
+        .btn-retake { background-color: #ffc107; color: #333; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; display: none; }
+        .btn-confirm { background-color: #106cc8; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; display: none; }
+        .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; position: absolute; top: 10px; right: 10px; }
 
         /* --- Staff Confirm Section --- */
-        .staff-confirm-section {
-            display: none;
-            margin-top: 15px;
-            padding: 15px;
-            background: #eef4fb;
-            border-radius: 4px;
-            border: 1px solid #b8d4f0;
-        }
+        .staff-confirm-section { display: none; margin-top: 15px; padding: 15px; background: #eef4fb; border-radius: 4px; border: 1px solid #b8d4f0; }
+        .staff-confirm-section label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
+        .staff-confirm-section input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; width: 200px; margin-right: 10px; }
+        .btn-confirm-staff { background-color: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .info-msg { margin-top: 10px; color: #555; font-style: italic; display: none; }
 
-        .staff-confirm-section label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #333;
-        }
-
-        .staff-confirm-section input {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
-            width: 200px;
-            margin-right: 10px;
-        }
-
-        .btn-confirm-staff {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .info-msg {
-            margin-top: 10px;
-            color: #555;
-            font-style: italic;
-            display: none;
+        /* --- Logout Button --- */
+        .logout-btn {
+            background-color: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600;
         }
 
         @media (max-width: 768px) {
@@ -327,13 +80,17 @@
             .btn { width: 100%; }
             .camera-controls { flex-direction: column; align-items: stretch; }
             .btn-camera { width: 100%; justify-content: center; }
+            .logout-btn { width: 100%; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Employee Master List Upload</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>Employee Master List Upload</h1>
+        <button class="logout-btn" onclick="clearAllData()">🗑️ Clear All Data</button>
+    </div>
     <hr>
 
     <div class="button-group">
@@ -416,7 +173,7 @@
 
 <script>
     // ====================================================
-    // 1. FIREBASE CONFIGURATION (Apnar Screenshot theke neya)
+    // 1. FIREBASE CONFIGURATION
     // ====================================================
     const firebaseConfig = {
         apiKey: "AIzaSyB1nzUWS6WLDwA3xzLDkt1UYJMaISK1JR0",
@@ -429,12 +186,11 @@
         measurementId: "G-GYX32ENH1H"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
     // ====================================================
-    // 2. MOCK DATA (Apnar Excel file theke neya)
+    // 2. MOCK DATA
     // ====================================================
     const masterList = [
         { staffId: "S147069", name: "Sisir Soren", designation: "General Worker" },
@@ -713,9 +469,17 @@
     ];
 
     // ====================================================
-    // 3. FUNCTIONALITY
+    // 3. FUNCTIONALITY WITH LOCALSTORAGE
     // ====================================================
     let videoStream = null;
+
+    // Page load howar somoy LocalStorage check korbe
+    window.onload = function() {
+        const savedData = localStorage.getItem('employeeData');
+        if (savedData) {
+            generateTable(); // Table generate korbe LocalStorage theke
+        }
+    };
 
     function triggerUpload(type) {
         if (type === 'Punch Report Day Shift') document.getElementById('dayShiftInput').click();
@@ -730,11 +494,18 @@
             infoMsg.style.display = 'block';
             infoMsg.textContent = `File Selected: ${fileName} (${type}). Generating Table...`;
 
+            // 🔥 LocalStorage e save kora (Refresh dileo thakbe)
+            const dataToSave = {
+                masterList: masterList,
+                punchReportData: punchReportData
+            };
+            localStorage.setItem('employeeData', JSON.stringify(dataToSave));
+
             setTimeout(() => {
                 generateTable();
                 document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
                 document.getElementById('punchCardSection').style.display = 'block';
-                infoMsg.textContent = `Table Generated Successfully for ${type}! Please upload punch card photos below.`;
+                infoMsg.textContent = `Table Generated Successfully for ${type}! Data saved to LocalStorage.`;
             }, 800);
         }
     }
@@ -744,19 +515,24 @@
         section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
     }
 
-    // Generate Table and Load Status from Firebase
+    // Generate Table (LocalStorage theke data niye)
     function generateTable() {
         const tableBody = document.getElementById('tableBody');
         const tableContainer = document.getElementById('tableContainer');
         
         tableBody.innerHTML = ''; 
 
+        // LocalStorage theke data load
+        const savedData = JSON.parse(localStorage.getItem('employeeData'));
+        const masterData = savedData ? savedData.masterList : masterList;
+        const punchData = savedData ? savedData.punchReportData : punchReportData;
+
         const masterMap = {};
-        masterList.forEach(emp => { masterMap[emp.staffId] = emp; });
+        masterData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
         let slNo = 1;
 
-        punchReportData.forEach(punch => {
+        punchData.forEach(punch => {
             const masterInfo = masterMap[punch.staffId];
             if (masterInfo) {
                 const row = document.createElement('tr');
@@ -778,12 +554,14 @@
         });
 
         tableContainer.style.display = 'block';
+        document.getElementById('punchCardToggleBtn').style.display = 'inline-block'; // Show button
+        document.getElementById('punchCardSection').style.display = 'block'; // Show section
 
         // 🔥 Firebase theke status load kora
         loadStatusFromFirebase();
     }
 
-    // Load Present Status from Firebase Realtime Database
+    // Load Present Status from Firebase
     function loadStatusFromFirebase() {
         const statusRef = database.ref('punchStatus');
         statusRef.on('value', (snapshot) => {
@@ -791,7 +569,7 @@
             if (data) {
                 for (const [staffId, status] of Object.entries(data)) {
                     const statusCell = document.getElementById(`status_${staffId}`);
-                    if (statusCell && status === 'Present') {
+                    if (statusCell && status.status === 'Present') {
                         statusCell.innerHTML = `
                             <span class="status-badge status-present">
                                 <span class="green-dot"></span> Present
@@ -826,7 +604,6 @@
         modal.style.display = 'flex';
 
         try {
-            // Request Back Camera
             videoStream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: { ideal: "environment" } }
             });
@@ -900,7 +677,6 @@
         .then(() => {
             alert(`✅ Punch Card Uploaded Successfully!\n\nStaff ID: ${staffId}\nStatus updated to "Present" in the Database.`);
             
-            // Status Cell Update (Instant)
             statusCell.innerHTML = `
                 <span class="status-badge status-present">
                     <span class="green-dot"></span> Present
@@ -934,6 +710,27 @@
         video.srcObject = null;
         video.style.display = 'block';
         document.getElementById('capturedPhoto').style.display = 'none';
+    }
+
+    // ====================================================
+    // 6. CLEAR ALL DATA (Logout er moto)
+    // ====================================================
+    function clearAllData() {
+        if (confirm("Apni ki shob data clear korte chan? Ei kaj ta Database thekeo data muche felbe.")) {
+            // LocalStorage clear
+            localStorage.removeItem('employeeData');
+
+            // Firebase theke data clear
+            database.ref('punchStatus').remove()
+                .then(() => {
+                    alert("✅ All Data Cleared Successfully!");
+                    location.reload(); // Page reload
+                })
+                .catch((error) => {
+                    console.error("Error clearing data:", error);
+                    alert("Data clear korte somossa hoyeche.");
+                });
+        }
     }
 </script>
 
