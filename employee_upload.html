@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Final</title>
+    <title>Employee Punch Report - Final with Lineman</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -16,7 +16,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
-        /* --- General Styles --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f4f4; padding: 15px; }
         .container { background-color: #ffffff; max-width: 1500px; margin: 0 auto; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -24,7 +23,6 @@
         h2 { font-size: 16px; color: #333; margin-bottom: 10px; font-weight: 600; }
         hr { border: 0; border-top: 1px solid #e0e0e0; margin-bottom: 15px; }
 
-        /* --- Button Group --- */
         .button-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
         .btn { border: none; color: white; padding: 8px 15px; font-size: 13px; cursor: pointer; border-radius: 4px; transition: opacity 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap; }
         .btn:hover { opacity: 0.9; }
@@ -38,7 +36,6 @@
 
         .hidden-input { display: none; }
 
-        /* --- DAY SHIFT SUMMARY SECTION --- */
         .day-shift-summary {
             background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
             border: 2px solid #2e9f46;
@@ -48,38 +45,11 @@
             margin-bottom: 15px;
             display: none;
         }
-        .day-shift-summary h3 {
-            font-size: 15px;
-            color: #1b5e20;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .day-shift-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-            gap: 8px;
-        }
-        .day-shift-stat-box {
-            background: #ffffff;
-            border-radius: 6px;
-            padding: 8px 10px;
-            border-left: 3px solid #2e9f46;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .day-shift-stat-box .label {
-            font-size: 10px;
-            color: #666;
-            font-weight: 500;
-            margin-bottom: 3px;
-            line-height: 1.2;
-        }
-        .day-shift-stat-box .value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1b5e20;
-        }
+        .day-shift-summary h3 { font-size: 15px; color: #1b5e20; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .day-shift-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+        .day-shift-stat-box { background: #ffffff; border-radius: 6px; padding: 8px 10px; border-left: 3px solid #2e9f46; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .day-shift-stat-box .label { font-size: 10px; color: #666; font-weight: 500; margin-bottom: 3px; line-height: 1.2; }
+        .day-shift-stat-box .value { font-size: 18px; font-weight: 700; color: #1b5e20; }
         .day-shift-stat-box.present .value { color: #2e9f46; }
         .day-shift-stat-box.pending .value { color: #d97d26; }
         .day-shift-stat-box.late .value { color: #dc3545; }
@@ -87,19 +57,12 @@
         .day-shift-stat-box.abnormal .value { color: #dc3545; }
         .day-shift-stat-box.normal .value { color: #2e9f46; }
 
-        /* --- Action Taken Line --- */
         .action-taken-line {
-            margin-top: 10px;
-            padding: 8px 12px;
-            background: #fff8e1;
-            border-left: 4px solid #ff9800;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #663c00;
-            font-weight: 600;
+            margin-top: 10px; padding: 8px 12px; background: #fff8e1;
+            border-left: 4px solid #ff9800; border-radius: 4px;
+            font-size: 12px; color: #663c00; font-weight: 600;
         }
 
-        /* --- TABLE STYLES --- */
         .table-responsive { overflow-x: auto; margin-top: 15px; display: none; max-height: 500px; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th, td { border: 1px solid #ddd; padding: 5px 6px; text-align: left; vertical-align: middle; white-space: nowrap; }
@@ -116,110 +79,46 @@
         #employeeTable th:nth-child(7), #employeeTable td:nth-child(7) { width: 90px; max-width: 90px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
         #employeeTable th:nth-child(8), #employeeTable td:nth-child(8) { width: 70px; max-width: 70px; font-size: 10px; }
         #employeeTable th:nth-child(9), #employeeTable td:nth-child(9) { width: 90px; max-width: 90px; font-size: 9px; }
-        #employeeTable th:nth-child(10), #employeeTable td:nth-child(10) { width: 70px; max-width: 70px; }
+        #employeeTable th:nth-child(10), #employeeTable td:nth-child(10) { width: 130px; max-width: 130px; font-size: 10px; }
+        #employeeTable th:nth-child(11), #employeeTable td:nth-child(11) { width: 120px; max-width: 120px; font-size: 10px; }
 
-        /* GREEN ROW */
-        tr.row-present {
-            background-color: #d4edda !important;
-            border-left: 4px solid #28a745;
-        }
+        tr.row-present { background-color: #d4edda !important; border-left: 4px solid #28a745; }
         tr.row-present td { color: #155724 !important; font-weight: 500; }
         tr.row-present:hover { background-color: #c3e6cb !important; }
 
-        /* Status badges */
         .status-badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 10px; }
         .status-present { background-color: #28a745; color: #ffffff; border: 1px solid #1e7e34; }
         .status-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .green-dot { height: 6px; width: 6px; background-color: #ffffff; border-radius: 50%; display: inline-block; }
 
-        /* Remarks */
         .remarks-badge { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 600; font-size: 9px; }
         .remarks-late { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .remarks-ontime { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .remarks-nopunch { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 
-        /* --- Pagination --- */
-        .pagination {
-            display: none;
-            margin-top: 15px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            text-align: center;
-            flex-wrap: wrap;
-            gap: 5px;
-            justify-content: center;
-            align-items: center;
-        }
-        .pagination.active { display: flex; }
-        .pagination button {
-            background: #fff;
-            border: 1px solid #ccc;
-            color: #333;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            min-width: 32px;
-        }
-        .pagination button:hover { background: #e9ecef; }
-        .pagination button.active {
-            background: #106cc8;
-            color: white;
-            border-color: #106cc8;
-        }
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .pagination-info {
-            font-size: 12px;
-            color: #666;
-            margin: 0 10px;
-        }
-
-        /* Camera Section */
         .punch-card-section { background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px; display: none; }
         .punch-card-section h2 { margin-bottom: 8px; color: #6f42c1; font-size: 14px; }
         .camera-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .btn-camera { background-color: #6f42c1; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .btn-camera:hover { background-color: #5a32a3; }
 
-        /* Master Report Section */
         .master-report-section {
-            background-color: #f0f8ff;
-            border: 2px solid #106cc8;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            display: none;
+            background-color: #f0f8ff; border: 2px solid #106cc8;
+            border-radius: 8px; padding: 12px 15px; margin-bottom: 15px; display: none;
         }
         .master-report-section h2 { margin-bottom: 10px; color: #106cc8; font-size: 14px; }
         .filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
         .filter-group { display: flex; flex-direction: column; gap: 3px; }
         .filter-group label { font-size: 11px; font-weight: 600; color: #555; }
         .filter-group input, .filter-group select {
-            padding: 6px 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 12px;
-            background: #fff;
-            min-width: 130px;
+            padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;
+            font-size: 12px; background: #fff; min-width: 130px;
         }
         .btn-filter {
-            background-color: #106cc8;
-            color: white;
-            border: none;
-            padding: 7px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            height: 32px;
+            background-color: #106cc8; color: white; border: none;
+            padding: 7px 15px; border-radius: 4px; cursor: pointer;
+            font-size: 12px; font-weight: 600; height: 32px;
         }
 
-        /* Camera Modal */
         .camera-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
         .camera-modal-content { background: #fff; border-radius: 8px; padding: 15px; width: 90%; max-width: 550px; text-align: center; position: relative; max-height: 95vh; overflow-y: auto; }
         .video-container { position: relative; width: 100%; background: #000; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
@@ -231,59 +130,70 @@
         .btn-confirm { background-color: #106cc8; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: none; }
         .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; position: absolute; top: 8px; right: 8px; }
 
-        /* Manual ID Section (Camera Modal er vitore) */
         .manual-id-section {
-            margin-top: 15px;
-            padding: 12px;
-            background: #fff3cd;
-            border: 2px dashed #ffc107;
-            border-radius: 6px;
-            text-align: left;
+            margin-top: 15px; padding: 12px; background: #fff3cd;
+            border: 2px dashed #ffc107; border-radius: 6px; text-align: left;
         }
         .manual-id-section h4 {
-            font-size: 13px;
-            color: #856404;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            font-size: 13px; color: #856404; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 5px;
         }
-        .manual-id-input-row {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .manual-id-input-row { display: flex; gap: 8px; flex-wrap: wrap; }
         .manual-id-input-row input {
-            flex: 1;
-            min-width: 150px;
-            padding: 8px 12px;
-            border: 2px solid #ffc107;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
+            flex: 1; min-width: 150px; padding: 8px 12px;
+            border: 2px solid #ffc107; border-radius: 4px;
+            font-size: 14px; font-weight: 600; text-align: center;
         }
         .btn-manual-submit {
-            background-color: #ff9800;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
+            background-color: #ff9800; color: white; border: none;
+            padding: 8px 20px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; font-weight: 600;
         }
         .btn-manual-submit:hover { background-color: #e68900; }
-        .manual-live-detect {
-            margin-top: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            min-height: 18px;
-        }
+        .manual-live-detect { margin-top: 8px; font-size: 12px; font-weight: 600; min-height: 18px; }
         .manual-live-detect.found { color: #28a745; }
         .manual-live-detect.not-found { color: #dc3545; }
 
-        /* OCR */
+        /* 🔥 Lineman Modal */
+        .lineman-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1100; justify-content: center; align-items: center; }
+        .lineman-modal-content {
+            background: #fff; border-radius: 8px; padding: 20px;
+            width: 90%; max-width: 450px; position: relative;
+        }
+        .lineman-modal-content h3 {
+            font-size: 16px; color: #333; margin-bottom: 15px;
+            text-align: center; display: flex; align-items: center;
+            justify-content: center; gap: 8px;
+        }
+        .lineman-form-group {
+            display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px;
+        }
+        .lineman-form-group label {
+            font-size: 12px; font-weight: 600; color: #555;
+        }
+        .lineman-form-group select {
+            padding: 10px 12px; border: 2px solid #106cc8; border-radius: 4px;
+            font-size: 14px; background: #fff; font-weight: 500;
+        }
+        .lineman-info {
+            padding: 8px 12px; background: #eef4fb; border-radius: 4px;
+            font-size: 12px; color: #106cc8; margin-bottom: 15px;
+            border-left: 4px solid #106cc8;
+        }
+        .lineman-buttons {
+            display: flex; gap: 10px; justify-content: center;
+        }
+        .btn-lineman-submit {
+            background-color: #28a745; color: white; border: none;
+            padding: 10px 25px; border-radius: 4px; cursor: pointer;
+            font-size: 14px; font-weight: 600; flex: 1;
+        }
+        .btn-lineman-cancel {
+            background-color: #6c757d; color: white; border: none;
+            padding: 10px 25px; border-radius: 4px; cursor: pointer;
+            font-size: 14px; font-weight: 600;
+        }
+
         .ocr-processing { display: none; margin-top: 12px; padding: 12px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeeba; color: #856404; font-weight: 600; font-size: 13px; }
         .spinner-small { border: 3px solid #f3f3f3; border-top: 3px solid #6f42c1; border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 6px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -296,58 +206,51 @@
         .ocr-result { display: none; margin-top: 12px; padding: 12px; background: #d4edda; border-radius: 4px; border: 1px solid #c3e6cb; color: #155724; font-weight: 600; font-size: 13px; }
         .ocr-debug { display: none; margin-top: 8px; padding: 8px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 11px; color: #333; max-height: 100px; overflow-y: auto; text-align: left; }
 
-        /* Info Message */
         .info-msg { margin-top: 8px; padding: 8px 12px; background: #eef4fb; border-left: 4px solid #106cc8; color: #333; font-size: 12px; display: none; border-radius: 4px; }
 
-        /* Loading */
         .loading { display: none; text-align: center; padding: 15px; font-size: 13px; color: #555; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #6f42c1; border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; margin: 0 auto 8px; }
 
-        /* Master Report Result */
+        .pagination {
+            display: none; margin-top: 15px; padding: 10px;
+            background: #f8f9fa; border-radius: 6px; text-align: center;
+            flex-wrap: wrap; gap: 5px; justify-content: center; align-items: center;
+        }
+        .pagination.active { display: flex; }
+        .pagination button {
+            background: #fff; border: 1px solid #ccc; color: #333;
+            padding: 5px 10px; border-radius: 4px; cursor: pointer;
+            font-size: 12px; font-weight: 600; min-width: 32px;
+        }
+        .pagination button:hover { background: #e9ecef; }
+        .pagination button.active { background: #106cc8; color: white; border-color: #106cc8; }
+        .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination-info { font-size: 12px; color: #666; margin: 0 10px; }
+
         .master-report-result {
-            display: none;
-            margin-top: 15px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 12px;
+            display: none; margin-top: 15px; background: #fff;
+            border: 1px solid #ddd; border-radius: 6px; padding: 12px;
         }
         .master-report-result h3 { font-size: 14px; color: #333; margin-bottom: 10px; }
 
-        /* Report History List */
         .report-history-list {
-            display: none;
-            margin-top: 15px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 12px;
-            max-height: 250px;
-            overflow-y: auto;
+            display: none; margin-top: 15px; background: #fff;
+            border: 1px solid #ddd; border-radius: 6px; padding: 12px;
+            max-height: 250px; overflow-y: auto;
         }
         .report-history-list h3 { font-size: 14px; color: #333; margin-bottom: 10px; }
         .history-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 10px;
-            border-bottom: 1px solid #eee;
-            font-size: 12px;
-            cursor: pointer;
-            transition: background 0.2s;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 10px; border-bottom: 1px solid #eee;
+            font-size: 12px; cursor: pointer; transition: background 0.2s;
         }
         .history-item:hover { background: #f0f8ff; }
         .history-item:last-child { border-bottom: none; }
         .history-item .date-shift { font-weight: 600; color: #333; }
         .history-item .stats { color: #666; font-size: 11px; }
         .history-item .btn-load {
-            background: #106cc8;
-            color: white;
-            border: none;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 10px;
-            cursor: pointer;
+            background: #106cc8; color: white; border: none;
+            padding: 3px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;
         }
 
         @media (max-width: 768px) {
@@ -370,7 +273,6 @@
     </div>
     <hr>
 
-    <!-- Button Group -->
     <div class="button-group">
         <button class="btn btn-green" onclick="document.getElementById('masterListInput').click()">📋 Upload Master List</button>
         <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Punch Report Day Shift</button>
@@ -380,7 +282,6 @@
         
         <button class="btn btn-teal" onclick="toggleMasterReportSection()" id="masterReportToggleBtn">📊 Master Report (History)</button>
 
-        <!-- 🔥 New: Download Excel Button -->
         <button class="btn btn-dark" onclick="downloadExcel()" id="downloadExcelBtn" style="display: none;">⬇️ Download Excel</button>
     </div>
 
@@ -388,7 +289,6 @@
     <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Day')">
     <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Night')">
 
-    <!-- Punch Card Camera Section -->
     <div class="punch-card-section" id="punchCardSection">
         <h2>📸 Punch Card Photo Upload (Individual)</h2>
         <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
@@ -399,7 +299,6 @@
         </div>
     </div>
 
-    <!-- Master Report Section -->
     <div class="master-report-section" id="masterReportSection">
         <h2>📊 Master Report - Saved Records History</h2>
         <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
@@ -422,7 +321,6 @@
         </div>
     </div>
 
-    <!-- Report History List -->
     <div class="report-history-list" id="reportHistoryList">
         <h3>📜 Saved Reports History</h3>
         <div id="historyItems"></div>
@@ -435,7 +333,6 @@
         Processing...
     </div>
 
-    <!-- DAY SHIFT SUMMARY SECTION -->
     <div class="day-shift-summary" id="dayShiftSummary">
         <h3>📅 Day Shift Punch Record (As per Upload)</h3>
         <div class="day-shift-stats">
@@ -465,13 +362,11 @@
             </div>
         </div>
 
-        <!-- Action Taken Line -->
         <div class="action-taken-line" id="actionTakenLine">
             🎯 <strong>Action Taken:</strong> Please Check Shift Schedule Employee & Solved it
         </div>
     </div>
 
-    <!-- MAIN TABLE -->
     <div class="table-responsive" id="tableContainer">
         <table id="employeeTable">
             <thead>
@@ -485,6 +380,8 @@
                     <th>Designation</th>
                     <th>In Punch Time</th>
                     <th>Remarks</th>
+                    <th>Line Man Name</th>
+                    <th>MC No</th>
                     <th>Present Status</th>
                 </tr>
             </thead>
@@ -492,7 +389,6 @@
         </table>
     </div>
 
-    <!-- 🔥 Pagination -->
     <div class="pagination" id="pagination">
         <button id="prevBtn" onclick="changePage(currentPage - 1)">« Prev</button>
         <span class="pagination-info" id="pageInfo">Page 1 of 1</span>
@@ -500,7 +396,6 @@
         <button id="nextBtn" onclick="changePage(currentPage + 1)">Next »</button>
     </div>
 
-    <!-- Master Report Result -->
     <div class="master-report-result" id="masterReportResult">
         <h3 id="masterReportTitle">📊 Filtered Result</h3>
         <div class="table-responsive" style="display: block; max-height: 400px;">
@@ -515,6 +410,8 @@
                         <th>Designation</th>
                         <th>Punch Time</th>
                         <th>Remarks</th>
+                        <th>Line Man</th>
+                        <th>MC No</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -554,7 +451,6 @@
             <pre id="ocrDebugText" style="white-space: pre-wrap; word-break: break-word; font-size: 10px;"></pre>
         </div>
 
-        <!-- 🔥 MANUAL ID INPUT (Camera Modal er vitore) -->
         <div class="manual-id-section">
             <h4>⌨️ Manual ID Input (Live Detect)</h4>
             <div class="manual-id-input-row">
@@ -572,6 +468,119 @@
     </div>
 </div>
 
+<!-- 🔥 LINEMAN MODAL -->
+<div class="lineman-modal" id="linemanModal">
+    <div class="lineman-modal-content">
+        <h3>👷 Line Man & MC No Select</h3>
+        
+        <div class="lineman-info" id="linemanInfo">
+            Staff ID: <strong id="linemanStaffId"></strong> | Employee: <strong id="linemanEmpName"></strong>
+        </div>
+
+        <div class="lineman-form-group">
+            <label for="linemanNameSelect">Line Man Name <span style="color: red;">*</span></label>
+            <select id="linemanNameSelect">
+                <option value="">-- Select Line Man --</option>
+                <option value="Zakir">Zakir</option>
+                <option value="Momin">Momin</option>
+                <option value="Afjal">Afjal</option>
+                <option value="Shorif">Shorif</option>
+                <option value="Nazmul">Nazmul</option>
+                <option value="Milon">Milon</option>
+                <option value="Belal">Belal</option>
+                <option value="Akram">Akram</option>
+                <option value="Tuhin">Tuhin</option>
+                <option value="Saiful">Saiful</option>
+                <option value="Nitai">Nitai</option>
+                <option value="Juwell">Juwell</option>
+            </select>
+        </div>
+
+        <div class="lineman-form-group">
+            <label for="mcNoSelect">MC No <span style="color: red;">*</span></label>
+            <select id="mcNoSelect">
+                <option value="">-- Select MC No --</option>
+                <optgroup label="A Line">
+                    <option>A1-160</option>
+                    <option>A2-120</option>
+                    <option>A3-120</option>
+                    <option>A4-120</option>
+                    <option>A5-160</option>
+                    <option>A6-160</option>
+                    <option>A7-160</option>
+                </optgroup>
+                <optgroup label="B Line">
+                    <option>B1-120</option>
+                    <option>B2-120</option>
+                    <option>B3-120</option>
+                    <option>B4-120</option>
+                    <option>B5-90PC</option>
+                    <option>B6-90PC</option>
+                    <option>B7-120PC</option>
+                    <option>B8-120PC</option>
+                </optgroup>
+                <optgroup label="C Line">
+                    <option>C1-120</option>
+                    <option>C2-160</option>
+                    <option>C3-120</option>
+                    <option>C4-120PC</option>
+                    <option>C5-90</option>
+                    <option>C6-120</option>
+                    <option>C7-160</option>
+                </optgroup>
+                <optgroup label="D Line">
+                    <option>D1-160</option>
+                    <option>D2-160</option>
+                    <option>D3-160</option>
+                    <option>A1-280TC</option>
+                    <option>A2-380</option>
+                    <option>A3-380 (PC)</option>
+                    <option>A4-380</option>
+                    <option>A5-HP-330</option>
+                </optgroup>
+                <optgroup label="Other Lines">
+                    <option>B1-470</option>
+                    <option>B2-380</option>
+                    <option>B3-530</option>
+                    <option>B4-530</option>
+                    <option>B5-530</option>
+                    <option>B6-380</option>
+                    <option>C1-800-30</option>
+                    <option>C2-800-31</option>
+                    <option>C3-270-1</option>
+                    <option>C4-380-73</option>
+                    <option>C5-380-44</option>
+                    <option>C6-280TC</option>
+                    <option>D1-280TC</option>
+                    <option>D2-MA2-250</option>
+                    <option>D3-330-1</option>
+                    <option>D4-HP-330-5</option>
+                    <option>D5-428-1</option>
+                    <option>D6-HP-428-4</option>
+                    <option>D7-HP-330</option>
+                    <option>E1-380-90</option>
+                    <option>E2-380-94</option>
+                    <option>E3-380-88</option>
+                    <option>E4-380-76</option>
+                    <option>E5-380-62</option>
+                    <option>E6-380-75</option>
+                    <option>F1-380-92</option>
+                    <option>F2-380-93</option>
+                    <option>F3-380-98</option>
+                    <option>F4-380-99</option>
+                    <option>F5-380-101</option>
+                    <option>F6-380-100</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="lineman-buttons">
+            <button class="btn-lineman-cancel" onclick="closeLinemanModal()">Cancel</button>
+            <button class="btn-lineman-submit" onclick="submitLinemanDetails()">✅ Submit</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // ====================================================
     // 1. FIREBASE CONFIGURATION
@@ -584,7 +593,7 @@
         storageBucket: "phrasal-bivouac-459617-p3.firebasestorage.app",
         messagingSenderId: "906819374402",
         appId: "1:906819374402:web:ff90b2149f3c88b6774cdb",
-        measurementGId: "G-GYX32ENH1H"
+        measurementId: "G-GYX32ENH1H"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -600,10 +609,9 @@
     let currentShiftType = 'Day';
     let currentReportDate = '';
     let currentReportShift = 'Day';
-
-    // 🔥 Pagination
     let currentPage = 1;
     const rowsPerPage = 100;
+    let pendingStaffId = null; // Lineman modal er jonno
 
     // ====================================================
     // 2A. BANGLA TO ENGLISH
@@ -650,7 +658,6 @@
                 currentReportShift = data.shift;
                 
                 console.log(`✅ Previous Report loaded: ${data.punchData.length} records`);
-                
                 generateTable(data.punchData);
                 
                 const infoMsg = document.getElementById('infoMsg');
@@ -781,8 +788,6 @@
                     punchData: punchData,
                     uploadedAt: new Date().toISOString(),
                     totalRecords: punchData.length
-                }).then(() => {
-                    console.log(`✅ Report saved to history: ${historyKey}`);
                 });
 
                 database.ref('currentReport').set({
@@ -790,8 +795,6 @@
                     shift: shiftType,
                     punchData: punchData,
                     uploadedAt: new Date().toISOString()
-                }).then(() => {
-                    console.log("✅ Current Report saved");
                 });
 
             } catch (error) {
@@ -804,9 +807,6 @@
         reader.readAsArrayBuffer(file);
     }
 
-    // ====================================================
-    // 6. EXTRACT REPORT DATE
-    // ====================================================
     function extractReportDate(dateVal) {
         if (!dateVal) return '';
         
@@ -832,11 +832,11 @@
     }
 
     // ====================================================
-    // 7. GENERATE TABLE (With Pagination)
+    // 6. GENERATE TABLE
     // ====================================================
     function generateTable(data) {
-        currentTableData = data; // Global e save
-        currentPage = 1; // Reset page
+        currentTableData = data;
+        currentPage = 1;
         renderTablePage();
         
         document.getElementById('tableContainer').style.display = 'block';
@@ -873,42 +873,62 @@
             if (remarks.isLate) lateCount++;
         });
 
-        pageData.forEach((record, idx) => {
-            const masterInfo = masterMap[record.staffId];
-            const empName = record.empName || (masterInfo ? masterInfo.name : '-');
-            const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
+        // Lineman data load kori
+        database.ref('punchStatus').once('value', (snapshot) => {
+            const statusData = snapshot.val() || {};
 
-            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+            pageData.forEach((record, idx) => {
+                const masterInfo = masterMap[record.staffId];
+                const empName = record.empName || (masterInfo ? masterInfo.name : '-');
+                const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
+                const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
 
-            const tr = document.createElement('tr');
-            tr.id = `row_${record.staffId}`;
-            tr.setAttribute('data-staff-id', record.staffId);
-            tr.innerHTML = `
-                <td>${startIdx + idx + 1}</td>
-                <td>${record.date || '-'}</td>
-                <td>${record.shift || '-'}</td>
-                <td>${record.icName || '-'}</td>
-                <td><strong>${record.staffId}</strong></td>
-                <td>${empName}</td>
-                <td>${designation}</td>
-                <td>${record.punchTime || '-'}</td>
-                <td>
-                    <span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">
-                        ${remarks.text}
-                    </span>
-                </td>
-                <td class="status-cell" id="status_${record.staffId}">
-                    <span class="status-badge status-pending">Pending</span>
-                </td>
-            `;
-            tableBody.appendChild(tr);
+                // Status check
+                const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
+                const statusObj = statusData[statusKey];
+                const isPresent = statusObj && statusObj.status === 'Present';
+                const lineman = statusObj ? (statusObj.lineman || '-') : '-';
+                const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
+
+                const tr = document.createElement('tr');
+                tr.id = `row_${record.staffId}`;
+                tr.setAttribute('data-staff-id', record.staffId);
+                if (isPresent) tr.classList.add('row-present');
+
+                tr.innerHTML = `
+                    <td>${startIdx + idx + 1}</td>
+                    <td>${record.date || '-'}</td>
+                    <td>${record.shift || '-'}</td>
+                    <td>${record.icName || '-'}</td>
+                    <td><strong>${record.staffId}</strong></td>
+                    <td>${empName}</td>
+                    <td>${designation}</td>
+                    <td>${record.punchTime || '-'}</td>
+                    <td>
+                        <span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">
+                            ${remarks.text}
+                        </span>
+                    </td>
+                    <td id="lineman_${record.staffId}"><strong>${lineman}</strong></td>
+                    <td id="mcno_${record.staffId}">${mcNo}</td>
+                    <td class="status-cell" id="status_${record.staffId}">
+                        ${isPresent ? '<span class="status-badge status-present"><span class="green-dot"></span> Present</span>' : '<span class="status-badge status-pending">Pending</span>'}
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            renderPagination(totalPages);
+
+            // Present count
+            let presentCount = 0;
+            currentTableData.forEach(record => {
+                const sk = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
+                if (statusData[sk] && statusData[sk].status === 'Present') presentCount++;
+            });
+
+            updateDayShiftSummary(currentTableData.length, presentCount, currentTableData.length - presentCount, lateCount);
         });
-
-        // Pagination render
-        renderPagination(totalPages);
-
-        updateDayShiftSummary(currentTableData.length, 0, currentTableData.length, lateCount);
-        loadStatusFromFirebase();
     }
 
     function renderPagination(totalPages) {
@@ -928,7 +948,6 @@
         prevBtn.disabled = currentPage === 1;
         nextBtn.disabled = currentPage === totalPages;
 
-        // Page numbers (max 7 ta dekhabo)
         let html = '';
         let startPage = Math.max(1, currentPage - 3);
         let endPage = Math.min(totalPages, currentPage + 3);
@@ -953,185 +972,79 @@
     function changePage(page) {
         currentPage = page;
         renderTablePage();
-        // Scroll to top of table
         document.getElementById('tableContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // ====================================================
-    // 8. UPDATE DAY SHIFT SUMMARY
-    // ====================================================
     function updateDayShiftSummary(total, present, pending, late) {
         document.getElementById('dsTotal').textContent = total;
         document.getElementById('dsPresent').textContent = present;
         document.getElementById('dsPending').textContent = pending;
         document.getElementById('dsLate').textContent = late;
 
-        let abnormalCount = 0;
-        let normalCount = 0;
-
-        if (total === 0) {
-            abnormalCount = 0;
-            normalCount = 0;
-        } else if (present === total) {
-            abnormalCount = 0;
-            normalCount = present;
-        } else {
-            abnormalCount = total - present;
-            normalCount = present;
-        }
+        let abnormalCount = (total === present) ? 0 : (total - present);
+        let normalCount = (total === present) ? present : present;
 
         document.getElementById('dsAbnormal').textContent = abnormalCount;
         document.getElementById('dsNormal').textContent = normalCount;
     }
 
-    // ====================================================
-    // 9. REMARKS CALCULATION
-    // ====================================================
     function calculateRemarks(punchTimeVal, shift) {
         if (punchTimeVal === null || punchTimeVal === undefined || punchTimeVal === '') {
             return { text: 'No Punch', isLate: true };
         }
-
         const punchMinutes = timeToMinutes(punchTimeVal);
         let cutoff = 8 * 60;
-        if (shift && String(shift).toLowerCase().includes('night')) {
-            cutoff = 20 * 60;
-        }
+        if (shift && String(shift).toLowerCase().includes('night')) cutoff = 20 * 60;
 
-        if (punchMinutes > cutoff) {
-            return { text: 'Late Punch / Shift Schedule Problem', isLate: true };
-        } else {
-            return { text: 'On Time', isLate: false };
-        }
+        if (punchMinutes > cutoff) return { text: 'Late Punch / Shift Schedule Problem', isLate: true };
+        return { text: 'On Time', isLate: false };
     }
 
     function timeToMinutes(timeVal) {
         if (timeVal === null || timeVal === undefined) return 0;
-        
-        if (typeof timeVal === 'number' && timeVal < 1) {
-            return Math.round(timeVal * 24 * 60);
-        }
-
-        const timeStr = String(timeVal).trim();
-        const parts = timeStr.split(':');
-        if (parts.length >= 2) {
-            const hours = parseInt(parts[0]) || 0;
-            const minutes = parseInt(parts[1]) || 0;
-            return hours * 60 + minutes;
-        }
+        if (typeof timeVal === 'number' && timeVal < 1) return Math.round(timeVal * 24 * 60);
+        const parts = String(timeVal).trim().split(':');
+        if (parts.length >= 2) return (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
         return 0;
     }
 
     function formatDate(dateVal) {
         if (!dateVal) return '';
-        
         if (typeof dateVal === 'number') {
             const excelDate = XLSX.SSF.parse_date_code(dateVal);
             if (excelDate) {
-                const d = String(excelDate.d).padStart(2, '0');
-                const m = String(excelDate.m).padStart(2, '0');
-                const y = excelDate.y;
-                return `${d}-${m}-${y}`;
+                return `${String(excelDate.d).padStart(2, '0')}-${String(excelDate.m).padStart(2, '0')}-${excelDate.y}`;
             }
         }
-
         const dateStr = String(dateVal).trim();
         if (dateStr.includes(' ')) {
-            const datePart = dateStr.split(' ')[0];
-            const parts = datePart.split('-');
-            if (parts.length === 3) {
-                return `${parts[2]}-${parts[1]}-${parts[0]}`;
-            }
+            const parts = dateStr.split(' ')[0].split('-');
+            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
         return dateStr;
     }
 
     function formatTime(timeVal) {
         if (timeVal === null || timeVal === undefined || timeVal === '') return '-';
-        
         let hours = 0, minutes = 0;
-
         if (typeof timeVal === 'number' && timeVal < 1) {
             const totalMinutes = Math.round(timeVal * 24 * 60);
             hours = Math.floor(totalMinutes / 60);
             minutes = totalMinutes % 60;
         } else {
-            const timeStr = String(timeVal).trim();
-            const parts = timeStr.split(':');
+            const parts = String(timeVal).trim().split(':');
             if (parts.length >= 2) {
                 hours = parseInt(parts[0]) || 0;
                 minutes = parseInt(parts[1]) || 0;
-            } else {
-                return timeStr;
-            }
+            } else return String(timeVal);
         }
-
         const ampm = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
         return `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
     }
 
     // ====================================================
-    // 10. LOAD PRESENT STATUS
-    // ====================================================
-    function loadStatusFromFirebase() {
-        const statusRef = database.ref('punchStatus');
-        statusRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            let presentCount = 0;
-
-            const allRows = document.querySelectorAll('#tableBody tr');
-            allRows.forEach(row => {
-                row.classList.remove('row-present');
-                const statusCell = row.querySelector('.status-cell');
-                if (statusCell) {
-                    statusCell.innerHTML = `<span class="status-badge status-pending">Pending</span>`;
-                }
-            });
-
-            if (data) {
-                for (const [statusKey, status] of Object.entries(data)) {
-                    if (status.status === 'Present' && status.staffId) {
-                        if (status.reportDate === currentReportDate && status.shift === currentReportShift) {
-                            const row = document.getElementById(`row_${status.staffId}`);
-                            const statusCell = document.getElementById(`status_${status.staffId}`);
-                            
-                            if (row && statusCell) {
-                                row.classList.add('row-present');
-                                statusCell.innerHTML = `
-                                    <span class="status-badge status-present">
-                                        <span class="green-dot"></span> Present
-                                    </span>
-                                `;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Present count ber kori shob data theke
-            currentTableData.forEach(record => {
-                const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
-                if (data && data[statusKey] && data[statusKey].status === 'Present') {
-                    presentCount++;
-                }
-            });
-
-            const total = currentTableData.length;
-            const pendingCount = total - presentCount;
-            
-            let lateCount = 0;
-            currentTableData.forEach(record => {
-                const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
-                if (remarks.isLate) lateCount++;
-            });
-
-            updateDayShiftSummary(total, presentCount, pendingCount, lateCount);
-        });
-    }
-
-    // ====================================================
-    // 11. CAMERA LOGIC
+    // 7. CAMERA
     // ====================================================
     function togglePunchCardSection() {
         const section = document.getElementById('punchCardSection');
@@ -1176,7 +1089,7 @@
             });
             video.srcObject = videoStream;
         } catch (error) {
-            console.error("Camera access error:", error);
+            console.error("Camera error:", error);
             alert("Camera open error.");
             closeCamera();
         }
@@ -1192,8 +1105,7 @@
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.getContext('2d').drawImage(video, 0, 0);
 
         capturedImageData = canvas.toDataURL('image/png');
         capturedPhoto.src = capturedImageData;
@@ -1213,7 +1125,7 @@
     function retakePhoto() { openCamera(); }
 
     // ====================================================
-    // 11A. 🔥 MANUAL ID LIVE DETECT
+    // 8. MANUAL ID LIVE DETECT
     // ====================================================
     function liveDetectStaffId(value) {
         const detectDiv = document.getElementById('manualLiveDetect');
@@ -1225,23 +1137,19 @@
             return;
         }
 
-        // Master List + Current Table theke valid IDs
         const allStaffIds = new Set();
         masterListData.forEach(emp => allStaffIds.add(emp.staffId));
         currentTableData.forEach(row => allStaffIds.add(row.staffId));
         const validIds = Array.from(allStaffIds);
 
-        // Search kori
         const found = validIds.find(id => 
             id.toUpperCase() === cleanedId.toUpperCase() ||
             id.toUpperCase().includes(cleanedId.toUpperCase())
         );
 
         if (found) {
-            // Name ber kori
             const masterInfo = masterListData.find(emp => emp.staffId === found);
             const name = masterInfo ? masterInfo.name : (currentTableData.find(r => r.staffId === found)?.empName || 'Unknown');
-            
             detectDiv.textContent = `✅ Found: ${found} — ${name}`;
             detectDiv.className = 'manual-live-detect found';
         } else {
@@ -1254,30 +1162,17 @@
         const input = document.getElementById('manualIdInput');
         const staffId = convertBanglaToEnglish(input.value.trim());
 
-        if (!staffId) {
-            alert("Please enter a Staff ID.");
-            return;
-        }
+        if (!staffId) { alert("Please enter a Staff ID."); return; }
 
         const statusCell = document.getElementById(`status_${staffId}`);
-        if (!statusCell) {
-            alert(`Staff ID "${staffId}" table e nei. Please check again.`);
-            return;
-        }
+        if (!statusCell) { alert(`Staff ID "${staffId}" table e nei.`); return; }
 
-        // Direct auto-update kori
-        autoUpdateStatus(staffId).then(() => {
-            alert(`✅ Staff ID: ${staffId} marked as Present!`);
-            input.value = '';
-            document.getElementById('manualLiveDetect').textContent = '';
-            
-            // 1.5 sec por camera close
-            setTimeout(() => { closeCamera(); }, 1500);
-        });
+        // 🔥 Lineman Modal open kori
+        openLinemanModal(staffId);
     }
 
     // ====================================================
-    // 12. OCR + AUTO DETECT
+    // 9. OCR
     // ====================================================
     async function processOCRAndUpload() {
         const ocrProcessing = document.getElementById('ocrProcessing');
@@ -1295,12 +1190,7 @@
         ocrDebug.style.display = 'none';
 
         try {
-            const result = await Tesseract.recognize(
-                capturedImageData,
-                'eng+ben',
-                { logger: m => console.log(m) }
-            );
-
+            const result = await Tesseract.recognize(capturedImageData, 'eng+ben', { logger: m => console.log(m) });
             const detectedText = result.data.text;
             const englishText = convertBanglaToEnglish(detectedText);
 
@@ -1313,8 +1203,9 @@
             if (staffId) {
                 detectedIdSpan.textContent = staffId;
                 ocrResult.style.display = 'block';
-                await autoUpdateStatus(staffId);
-                setTimeout(() => { closeCamera(); }, 2500);
+                
+                // 🔥 Lineman Modal open kori
+                openLinemanModal(staffId);
             } else {
                 staffConfirmSection.style.display = 'block';
             }
@@ -1334,8 +1225,7 @@
         const cleanText = text.replace(/\s+/g, ' ').toUpperCase().trim();
 
         for (const staffId of validIds) {
-            const idUpper = staffId.toUpperCase();
-            const regex = new RegExp(`\\b${idUpper.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+            const regex = new RegExp(`\\b${staffId.toUpperCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
             if (regex.test(cleanText)) return staffId;
         }
 
@@ -1372,63 +1262,7 @@
             }
         }
 
-        if (allNumbers) {
-            for (const num of allNumbers) {
-                for (const validId of validIds) {
-                    const idNum = validId.replace(/[^0-9]/g, '');
-                    if (idNum.length > 0 && num.length > 0) {
-                        let matches = 0;
-                        const minLen = Math.min(idNum.length, num.length);
-                        for (let i = 0; i < minLen; i++) {
-                            if (idNum[i] === num[i]) matches++;
-                        }
-                        const similarity = matches / Math.max(idNum.length, num.length);
-                        if (similarity >= 0.8) return validId;
-                    }
-                }
-            }
-        }
-
         return null;
-    }
-
-    // ====================================================
-    // 13. AUTO UPDATE STATUS
-    // ====================================================
-    async function autoUpdateStatus(staffId) {
-        const statusCell = document.getElementById(`status_${staffId}`);
-        if (!statusCell) {
-            alert(`Staff ID "${staffId}" detected kintu table e nei.`);
-            return;
-        }
-
-        try {
-            const statusKey = `${currentReportDate}_${currentReportShift}_${staffId}`;
-            
-            await database.ref('punchStatus/' + statusKey).set({
-                staffId: staffId,
-                status: 'Present',
-                reportDate: currentReportDate,
-                shift: currentReportShift,
-                timestamp: new Date().toISOString(),
-                detectedBy: 'OCR/Manual'
-            });
-
-            const row = document.getElementById(`row_${staffId}`);
-            if (row) {
-                row.classList.add('row-present');
-                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-
-            statusCell.innerHTML = `
-                <span class="status-badge status-present">
-                    <span class="green-dot"></span> Present
-                </span>
-            `;
-
-        } catch (error) {
-            console.error("Firebase Error:", error);
-        }
     }
 
     function finalizeUpload() {
@@ -1438,30 +1272,90 @@
         const statusCell = document.getElementById(`status_${staffId}`);
         if (!statusCell) { alert(`Staff ID "${staffId}" not found.`); return; }
 
-        const statusKey = `${currentReportDate}_${currentReportShift}_${staffId}`;
+        // 🔥 Lineman Modal open kori
+        openLinemanModal(staffId);
+    }
 
-        database.ref('punchStatus/' + statusKey).set({
-            staffId: staffId,
-            status: 'Present',
-            reportDate: currentReportDate,
-            shift: currentReportShift,
-            timestamp: new Date().toISOString(),
-            detectedBy: 'Manual'
-        })
-        .then(() => {
-            alert(`✅ Staff ID: ${staffId} marked as Present!`);
-            const row = document.getElementById(`row_${staffId}`);
+    // ====================================================
+    // 10. 🔥 LINEMAN MODAL
+    // ====================================================
+    function openLinemanModal(staffId) {
+        pendingStaffId = staffId;
+
+        // Employee name ber kori
+        const masterInfo = masterListData.find(emp => emp.staffId === staffId);
+        const empName = masterInfo ? masterInfo.name : (currentTableData.find(r => r.staffId === staffId)?.empName || 'Unknown');
+
+        document.getElementById('linemanStaffId').textContent = staffId;
+        document.getElementById('linemanEmpName').textContent = empName;
+        document.getElementById('linemanNameSelect').value = '';
+        document.getElementById('mcNoSelect').value = '';
+
+        document.getElementById('linemanModal').style.display = 'flex';
+    }
+
+    function closeLinemanModal() {
+        document.getElementById('linemanModal').style.display = 'none';
+        pendingStaffId = null;
+    }
+
+    async function submitLinemanDetails() {
+        if (!pendingStaffId) { alert("No Staff ID selected."); return; }
+
+        const linemanName = document.getElementById('linemanNameSelect').value;
+        const mcNo = document.getElementById('mcNoSelect').value;
+
+        if (!linemanName) { alert("Please select Line Man Name."); return; }
+        if (!mcNo) { alert("Please select MC No."); return; }
+
+        try {
+            const statusKey = `${currentReportDate}_${currentReportShift}_${pendingStaffId}`;
+            
+            await database.ref('punchStatus/' + statusKey).set({
+                staffId: pendingStaffId,
+                status: 'Present',
+                reportDate: currentReportDate,
+                shift: currentReportShift,
+                lineman: linemanName,
+                mcNo: mcNo,
+                timestamp: new Date().toISOString(),
+                detectedBy: 'OCR/Manual'
+            });
+
+            // UI Update
+            const row = document.getElementById(`row_${pendingStaffId}`);
+            const statusCell = document.getElementById(`status_${pendingStaffId}`);
+            const linemanCell = document.getElementById(`lineman_${pendingStaffId}`);
+            const mcnoCell = document.getElementById(`mcno_${pendingStaffId}`);
+
             if (row) {
                 row.classList.add('row-present');
                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-            statusCell.innerHTML = `
-                <span class="status-badge status-present">
-                    <span class="green-dot"></span> Present
-                </span>
-            `;
+
+            if (statusCell) {
+                statusCell.innerHTML = `
+                    <span class="status-badge status-present">
+                        <span class="green-dot"></span> Present
+                    </span>
+                `;
+            }
+
+            if (linemanCell) linemanCell.innerHTML = `<strong>${linemanName}</strong>`;
+            if (mcnoCell) mcnoCell.textContent = mcNo;
+
+            alert(`✅ Staff ID: ${pendingStaffId}\nLine Man: ${linemanName}\nMC No: ${mcNo}\n\nPresent mark hoyeche!`);
+
+            closeLinemanModal();
             closeCamera();
-        });
+
+            // Summary update
+            setTimeout(() => { renderTablePage(); }, 500);
+
+        } catch (error) {
+            console.error("Firebase Error:", error);
+            alert("Save error.");
+        }
     }
 
     function closeCamera() {
@@ -1485,7 +1379,7 @@
     }
 
     // ====================================================
-    // 14. 🔥 DOWNLOAD EXCEL
+    // 11. DOWNLOAD EXCEL
     // ====================================================
     function downloadExcel() {
         if (!currentTableData || currentTableData.length === 0) {
@@ -1496,69 +1390,60 @@
         const masterMap = {};
         masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
-        // Prepare data for Excel
-        const excelData = currentTableData.map((record, idx) => {
-            const masterInfo = masterMap[record.staffId];
-            const empName = record.empName || (masterInfo ? masterInfo.name : '-');
-            const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
-            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+        database.ref('punchStatus').once('value', (snapshot) => {
+            const statusData = snapshot.val() || {};
 
-            // Status check
-            const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
-            const statusCell = document.getElementById(`status_${record.staffId}`);
-            const isPresent = statusCell && statusCell.querySelector('.status-present');
+            const excelData = currentTableData.map((record, idx) => {
+                const masterInfo = masterMap[record.staffId];
+                const empName = record.empName || (masterInfo ? masterInfo.name : '-');
+                const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
+                const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
 
-            return {
-                "SL/No": idx + 1,
-                "Date": record.date || '-',
-                "Shift": record.shift || '-',
-                "I/C Name": record.icName || '-',
-                "Staff ID": record.staffId || '-',
-                "Employee Name": empName,
-                "Designation": designation,
-                "In Punch Time": record.punchTime || '-',
-                "Remarks": remarks.text,
-                "Present Status": isPresent ? 'Present' : 'Pending'
-            };
+                const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
+                const statusObj = statusData[statusKey];
+                const isPresent = statusObj && statusObj.status === 'Present';
+                const lineman = statusObj ? (statusObj.lineman || '-') : '-';
+                const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
+
+                return {
+                    "SL/No": idx + 1,
+                    "Date": record.date || '-',
+                    "Shift": record.shift || '-',
+                    "I/C Name": record.icName || '-',
+                    "Staff ID": record.staffId || '-',
+                    "Employee Name": empName,
+                    "Designation": designation,
+                    "In Punch Time": record.punchTime || '-',
+                    "Remarks": remarks.text,
+                    "Line Man Name": lineman,
+                    "MC No": mcNo,
+                    "Present Status": isPresent ? 'Present' : 'Pending'
+                };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Punch Report');
+
+            ws['!cols'] = [
+                { wch: 6 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 14 },
+                { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 30 }, { wch: 15 },
+                { wch: 15 }, { wch: 14 }
+            ];
+
+            const fileName = `Punch_Report_${currentReportDate}_${currentReportShift}.xlsx`;
+            XLSX.writeFile(wb, fileName);
         });
-
-        // Create workbook
-        const ws = XLSX.utils.json_to_sheet(excelData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Punch Report');
-
-        // Column widths set kori
-        ws['!cols'] = [
-            { wch: 6 },  // SL/No
-            { wch: 12 }, // Date
-            { wch: 8 },  // Shift
-            { wch: 15 }, // I/C Name
-            { wch: 14 }, // Staff ID
-            { wch: 25 }, // Employee Name
-            { wch: 20 }, // Designation
-            { wch: 12 }, // In Punch Time
-            { wch: 30 }, // Remarks
-            { wch: 14 }  // Present Status
-        ];
-
-        // Filename
-        const fileName = `Punch_Report_${currentReportDate}_${currentReportShift}.xlsx`;
-        XLSX.writeFile(wb, fileName);
-
-        console.log(`✅ Downloaded: ${fileName}`);
     }
 
     // ====================================================
-    // 15. MASTER REPORT - LOAD SAVED REPORT
+    // 12. MASTER REPORT
     // ====================================================
     function loadSavedReport() {
         const filterDate = document.getElementById('filterDate').value;
         const filterShift = document.getElementById('filterShift').value;
 
-        if (!filterDate) {
-            alert("Please select a date first.");
-            return;
-        }
+        if (!filterDate) { alert("Please select a date first."); return; }
 
         const historyKey = `${filterDate}_${filterShift}`;
         const loadingSpinner = document.getElementById('loadingSpinner');
@@ -1600,7 +1485,10 @@
                 if (remarks.isLate) lateCount++;
 
                 const statusKey = `${reportDate}_${shift}_${record.staffId}`;
-                const isPresent = statusData[statusKey] && statusData[statusKey].status === 'Present';
+                const statusObj = statusData[statusKey];
+                const isPresent = statusObj && statusObj.status === 'Present';
+                const lineman = statusObj ? (statusObj.lineman || '-') : '-';
+                const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
                 if (isPresent) presentCount++;
 
                 const statusBadge = isPresent 
@@ -1623,6 +1511,8 @@
                                 ${remarks.text}
                             </span>
                         </td>
+                        <td><strong>${lineman}</strong></td>
+                        <td>${mcNo}</td>
                         <td>${statusBadge}</td>
                     </tr>
                 `;
@@ -1636,9 +1526,6 @@
         });
     }
 
-    // ====================================================
-    // 16. SHOW ALL HISTORY
-    // ====================================================
     function loadAllHistory() {
         const historyList = document.getElementById('reportHistoryList');
         const historyItems = document.getElementById('historyItems');
@@ -1654,9 +1541,7 @@
                 return;
             }
 
-            const entries = Object.entries(data).sort((a, b) => {
-                return new Date(b[1].uploadedAt) - new Date(a[1].uploadedAt);
-            });
+            const entries = Object.entries(data).sort((a, b) => new Date(b[1].uploadedAt) - new Date(a[1].uploadedAt));
 
             let html = '';
             entries.forEach(([key, report]) => {
@@ -1683,11 +1568,8 @@
         document.getElementById('reportHistoryList').style.display = 'none';
     }
 
-    // ====================================================
-    // 17. CLEAR ALL DATA
-    // ====================================================
     function clearAllData() {
-        if (confirm("Apni ki shob data clear korte chan? Firebase theke shob data muche jabe.")) {
+        if (confirm("Apni ki shob data clear korte chan?")) {
             Promise.all([
                 database.ref('employeeData').remove(),
                 database.ref('punchStatus').remove(),
