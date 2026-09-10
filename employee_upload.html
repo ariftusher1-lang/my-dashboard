@@ -25,6 +25,9 @@
     <!-- 🖼️ html2canvas for Summary Image Download -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
+    <!-- 📊 Chart.js for Pie Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f4f4; padding: 15px; }
@@ -144,7 +147,7 @@
             font-size: 12px; color: #663c00; font-weight: 600;
         }
 
-        /* 🔥 SUMMARY MESSAGE BOX */
+        /* 🔥 SUMMARY MESSAGE BOX WITH PIE CHART */
         .summary-message-section {
             display: none;
             margin-top: 18px;
@@ -168,6 +171,12 @@
             flex-wrap: wrap;
             gap: 8px;
         }
+        .summary-message-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            align-items: stretch;
+        }
         .summary-message-body {
             padding: 18px 20px;
             font-size: 13.5px;
@@ -178,6 +187,40 @@
             white-space: pre-wrap;
             word-break: break-word;
         }
+        .summary-chart-box {
+            padding: 15px;
+            background: #ffffff;
+            border-left: 2px dashed #106cc8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .summary-chart-box h4 {
+            font-size: 12px;
+            color: #106cc8;
+            font-weight: 700;
+            margin-bottom: 3px;
+            text-align: center;
+        }
+        .summary-chart-wrapper {
+            width: 100%;
+            max-width: 220px;
+            height: 220px;
+            position: relative;
+        }
+        .summary-chart-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 11px;
+            font-weight: 600;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .summary-chart-stats .cs-present { color: #2e9f46; }
+        .summary-chart-stats .cs-pending { color: #dc3545; }
+
         .summary-message-body strong { color: #106cc8; }
         .summary-message-body .line-title { font-weight: 700; color: #0d3d75; }
         .summary-message-body .line-present { color: #1b7a35; font-weight: 700; }
@@ -199,6 +242,85 @@
             gap: 8px;
         }
 
+        /* 🔥 NEW: AS-OF STATUS REPORT SECTION */
+        .asof-report-section {
+            display: none;
+            margin-top: 18px;
+            margin-bottom: 18px;
+            background: #ffffff;
+            border: 2px solid #6f42c1;
+            border-radius: 10px;
+            padding: 0;
+            box-shadow: 0 4px 12px rgba(111, 66, 193, 0.15);
+            overflow: hidden;
+        }
+        .asof-report-header {
+            background: linear-gradient(135deg, #6f42c1 0%, #8e44ad 100%);
+            color: #ffffff;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .asof-report-body {
+            padding: 15px;
+            background: #faf7ff;
+            overflow-x: auto;
+        }
+        .asof-report-body table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: #ffffff;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .asof-report-body table th {
+            background: #6f42c1;
+            color: #ffffff;
+            padding: 10px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid #5a32a3;
+            position: static;
+        }
+        .asof-report-body table td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #e0d4f5;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .asof-report-body table tbody tr:nth-child(even) {
+            background: #f8f4ff;
+        }
+        .asof-report-body table tbody tr:hover {
+            background: #ece0ff;
+        }
+        .asof-report-body table tfoot td {
+            background: #2c3e50;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 12px 8px;
+            border: 1px solid #1a252f;
+        }
+        .asof-status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .asof-status-ok { background: #d4edda; color: #155724; border: 1px solid #28a745; }
+        .asof-status-abnormal { background: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
+
         .table-responsive { overflow-x: auto; margin-top: 15px; display: none; max-height: 500px; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th, td { border: 1px solid #ddd; padding: 5px 6px; text-align: left; vertical-align: middle; white-space: nowrap; }
@@ -219,12 +341,10 @@
         #employeeTable th:nth-child(11), #employeeTable td:nth-child(11) { width: 90px; max-width: 90px; font-size: 10px; }
         #employeeTable th:nth-child(12), #employeeTable td:nth-child(12) { width: 70px; max-width: 70px; font-size: 9px; padding: 2px 3px; text-align: center; }
 
-        /* ✅ PRESENT ROW — GREEN */
         tr.row-present { background-color: #d4edda !important; border-left: 4px solid #28a745; }
         tr.row-present td { color: #155724 !important; font-weight: 500; }
         tr.row-present:hover { background-color: #c3e6cb !important; }
 
-        /* 🔴 PENDING ROW — RED (NICHE SHOW KORBE) */
         tr.row-pending { background-color: #f8d7da !important; border-left: 4px solid #dc3545; }
         tr.row-pending td { color: #721c24 !important; font-weight: 500; }
         tr.row-pending:hover { background-color: #f5c6cb !important; }
@@ -263,7 +383,6 @@
             font-size: 12px; font-weight: 600; height: 32px;
         }
 
-        /* Camera Modal */
         .camera-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
         .camera-modal-content { background: #fff; border-radius: 8px; padding: 15px; width: 90%; max-width: 550px; text-align: center; position: relative; max-height: 95vh; overflow-y: auto; }
         .video-container { position: relative; width: 100%; background: #000; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
@@ -275,7 +394,6 @@
         .btn-confirm { background-color: #106cc8; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: none; }
         .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; position: absolute; top: 8px; right: 8px; z-index: 10; }
 
-        /* 🔥 QR Scanner Modal */
         .qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1200; justify-content: center; align-items: center; }
         .qr-modal-content { background: #fff; border-radius: 8px; padding: 15px; width: 90%; max-width: 550px; text-align: center; position: relative; max-height: 95vh; overflow-y: auto; }
         .qr-modal-content h3 { font-size: 16px; margin-bottom: 12px; color: #00b894; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -419,11 +537,23 @@
             .summary-message-section { display: block !important; box-shadow: none; }
             .summary-message-footer { display: none !important; }
             .summary-message-header { display: none !important; }
+            .asof-report-section { display: block !important; box-shadow: none; }
+            .asof-report-header { display: none !important; }
         }
 
         #printHeader { display: none; text-align: center; margin-bottom: 15px; }
         #printHeader h2 { font-size: 18px; margin-bottom: 5px; }
         #printHeader p { font-size: 12px; color: #666; }
+
+        @media (max-width: 900px) {
+            .summary-message-content {
+                grid-template-columns: 1fr;
+            }
+            .summary-chart-box {
+                border-left: none;
+                border-top: 2px dashed #106cc8;
+            }
+        }
 
         @media (max-width: 768px) {
             .button-group { flex-direction: column; align-items: stretch; }
@@ -588,7 +718,7 @@
             </div>
         </div>
 
-        <!-- 🔥 SUMMARY MESSAGE BOX (Dear Sir Format) -->
+        <!-- 🔥 SUMMARY MESSAGE BOX WITH PIE CHART -->
         <div class="summary-message-section" id="summaryMessageSection">
             <div class="summary-message-header">
                 <span>📩 Summary Message Report (Copy & Send)</span>
@@ -598,10 +728,48 @@
                     <button class="btn btn-teal" onclick="toggleSummaryMessage()" style="padding: 5px 12px; font-size: 12px;">▲ Hide</button>
                 </div>
             </div>
-            <div class="summary-message-body" id="summaryMessageBody"></div>
+            <div class="summary-message-content" id="summaryMessageContent">
+                <div class="summary-message-body" id="summaryMessageBody"></div>
+                <div class="summary-chart-box">
+                    <h4>📊 Present vs Pending</h4>
+                    <div class="summary-chart-wrapper">
+                        <canvas id="summaryPieChart"></canvas>
+                    </div>
+                    <div class="summary-chart-stats">
+                        <span class="cs-present">✅ Present: <b id="piePresentVal">0</b></span>
+                        <span class="cs-pending">⏳ Pending: <b id="piePendingVal">0</b></span>
+                    </div>
+                </div>
+            </div>
             <div class="summary-message-footer">
                 <span>📌 Auto-generated summary — WhatsApp / Messenger এ পাঠানোর জন্য Copy করুন।</span>
                 <span id="summaryTimestamp"></span>
+            </div>
+        </div>
+
+        <!-- 🔥 NEW: AS-OF STATUS REPORT SECTION (Table) -->
+        <div class="asof-report-section" id="asofReportSection">
+            <div class="asof-report-header">
+                <span>📊 As of Status Report — Date Wise Summary</span>
+                <span style="font-size: 11px;">Section: <b id="asofSectionName">-</b></span>
+            </div>
+            <div class="asof-report-body">
+                <table id="asofReportTable">
+                    <thead>
+                        <tr>
+                            <th>SL/No</th>
+                            <th>Date</th>
+                            <th>Shift</th>
+                            <th>Total Punch</th>
+                            <th>Total Present</th>
+                            <th>Pending / Not Found</th>
+                            <th>Abnormalities QTY</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="asofReportBody"></tbody>
+                    <tfoot id="asofReportFoot"></tfoot>
+                </table>
             </div>
         </div>
 
@@ -736,7 +904,6 @@
             Staff ID: <strong id="linemanStaffId"></strong> | Employee: <strong id="linemanEmpName"></strong>
         </div>
 
-        <!-- 🔥 Line Man Field (Hide হবে Staff Category সিলেক্ট করলে) -->
         <div class="lineman-form-group" id="linemanFormGroup">
             <label for="linemanNameSelect">Line Man Name <span style="color: red;">*</span></label>
             <select id="linemanNameSelect">
@@ -831,7 +998,6 @@
                     <option>F5-380-101</option>
                     <option>F6-380-100</option>
                 </optgroup>
-                <!-- 🔥 NEW: Staff Category (Line Man লাগবে না) -->
                 <optgroup label="Staff Category (No Line Man Required)">
                     <option>Pack</option>
                     <option>Mold Change</option>
@@ -873,15 +1039,14 @@
         "Silicon Project": "SP"
     };
 
-    // 🔥 No Line Man Required Categories
     const NO_LINEMAN_CATEGORIES = [
         'Pack', 'Mold Change', 'Mixture', 'Store', 'ERP', 'IC', 
         'Sharp Tool', 'TE', 'Floor Manager', 'Senior OP', 'Cleaner'
     ];
 
     let loggedInSection = '';
+    let summaryPieChartInstance = null;
 
-    // 🔥 Helper: Section name কে Firebase-safe key বানায়
     function getSafeSection() {
         return (loggedInSection || 'Unknown').replace(/[.#$\[\]/]/g, '_');
     }
@@ -905,9 +1070,11 @@
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         document.getElementById('loggedInSection').textContent = loggedInSection;
+        document.getElementById('asofSectionName').textContent = loggedInSection;
         
         loadMasterListFromFirebase();
         loadCurrentReportFromFirebase();
+        loadAsOfStatusReport();
     }
 
     function doLogin() {
@@ -981,7 +1148,6 @@
     let pendingStaffId = null;
     let currentStatusData = {};
     
-    // 🔥 QR Scanner variables
     let qrScanner = null;
     let qrScanning = false;
 
@@ -1002,7 +1168,6 @@
     // DATA LOADING
     // ====================================================
     function loadMasterListFromFirebase() {
-        // 🔥 Master List সব Section common
         database.ref('employeeData/masterList').once('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -1018,7 +1183,6 @@
         const loadingSpinner = document.getElementById('loadingSpinner');
         loadingSpinner.style.display = 'block';
 
-        // 🔥 শুধু নিজের Section এর Data
         const safeSection = getSafeSection();
         
         database.ref(`currentReport/${safeSection}`).once('value', (snapshot) => {
@@ -1037,7 +1201,6 @@
                 infoMsg.style.display = 'block';
                 infoMsg.textContent = `✅ Previous Report loaded for ${loggedInSection}! Total: ${data.punchData.length} | Date: ${data.reportDate} | Shift: ${data.shift}`;
             } else {
-                // 🔥 Data না থাকলে Table ফাঁকা
                 currentTableData = [];
                 document.getElementById('tableContainer').style.display = 'none';
                 document.getElementById('dayShiftSummary').style.display = 'none';
@@ -1086,7 +1249,6 @@
 
                 masterListData = masterList;
 
-                // 🔥 Master List সব Section common
                 database.ref('employeeData/masterList').set(masterList)
                 .then(() => {
                     loadingSpinner.style.display = 'none';
@@ -1116,7 +1278,6 @@
         
         currentShiftType = shiftType;
 
-        // 🔥 Section না থাকলে Upload হবে না
         if (!loggedInSection) {
             alert("❌ Please login first!");
             return;
@@ -1167,10 +1328,10 @@
 
                 generateTable(punchData);
 
-                // 🔥 Section অনুযায়ী আলাদা Path
                 const safeSection = getSafeSection();
                 const historyKey = `${reportDate}_${shiftType}`;
                 
+                // 🔥 Save reportHistory (with punchStatusSnapshot)
                 database.ref(`reportHistory/${safeSection}/${historyKey}`).set({
                     reportDate: reportDate,
                     shift: shiftType,
@@ -1187,6 +1348,9 @@
                     uploadedAt: new Date().toISOString(),
                     section: loggedInSection
                 });
+
+                // 🔥 Load As-of Status Report
+                loadAsOfStatusReport();
 
             } catch (error) {
                 console.error("Excel Read Error:", error);
@@ -1234,7 +1398,6 @@
         document.getElementById('pdfBtn').style.display = 'inline-block';
     }
 
-    // ✅ Present উপরে, Pending নিচে + Pending Red color
     function renderTablePage() {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
@@ -1262,7 +1425,6 @@
             if (remarks.isLate) lateCount++;
         });
 
-        // 🔥 Section অনুযায়ী punchStatus আলাদা
         const safeSection = getSafeSection();
         
         database.ref(`punchStatus/${safeSection}`).once('value', (snapshot) => {
@@ -1404,7 +1566,7 @@
     }
 
     // ====================================================
-    // 🔥 SUMMARY MESSAGE (Dear Sir Format)
+    // 🔥 SUMMARY MESSAGE (Dear Sir Format) + PIE CHART
     // ====================================================
     function updateSummaryMessage() {
         if (!currentTableData || currentTableData.length === 0) {
@@ -1414,12 +1576,10 @@
 
         const statusData = currentStatusData || {};
 
-        // 🔥 সব Unique I/C Name বের করি (FIX: "Mr. Mr." double problem)
         const icNameSet = new Set();
         currentTableData.forEach(record => {
             if (record.icName && record.icName.trim() !== '') {
                 let rawIc = record.icName.trim();
-                // ❌ Remove starting "Mr." / "Mr" / "MR." / "MR" from raw
                 rawIc = rawIc.replace(/^(Mr\.?\s*|MR\.?\s*)+/i, '').trim();
                 if (rawIc !== '') {
                     icNameSet.add(rawIc);
@@ -1436,7 +1596,6 @@
             icDisplayText = icNameList.map(n => 'Mr. ' + n).join(', ');
         }
 
-        // 🔥 Counts
         const totalPunch = currentTableData.length;
 
         let presentCount = 0;
@@ -1457,7 +1616,6 @@
             if (remarks.isLate) lateCount++;
         });
 
-        // 🔥 Abnormalities Status — নতুন লজিক
         let abnormalitiesText = '';
         if (totalPunch === presentCount) {
             abnormalitiesText = 'No';
@@ -1467,7 +1625,6 @@
 
         const problemCount = lateCount;
 
-        // 🔥 Shift Display
         let shiftDisplay = currentReportShift;
         if (String(currentReportShift).toLowerCase().includes('night')) {
             shiftDisplay = 'Night';
@@ -1475,16 +1632,10 @@
             shiftDisplay = 'Day';
         }
 
-        // 🔥 Date Display
         const dateDisplay = currentReportDate || '-';
-
-        // 🔥 Department Display
         const deptDisplay = loggedInSection || '-';
-
-        // 🔥 Abnormalities color — "No" হলে সবুজ, "Yes" হলে লাল
         const abnormalClass = (totalPunch === presentCount) ? 'line-normal' : 'line-problem';
 
-        // 🔥 Message Build
         const messageHTML = `
 <span class="line-title">Dear Sir,</span>
 Please See the Below Summery Report For Punch Report Vs Physically HR
@@ -1501,16 +1652,72 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         document.getElementById('summaryMessageBody').innerHTML = messageHTML;
         document.getElementById('summaryMessageSection').style.display = 'block';
         document.getElementById('summaryTimestamp').textContent = '🕒 Generated: ' + new Date().toLocaleString();
+
+        // 🔥 Update Pie Chart
+        document.getElementById('piePresentVal').textContent = presentCount;
+        document.getElementById('piePendingVal').textContent = pendingCount;
+        renderSummaryPieChart(presentCount, pendingCount);
+    }
+
+    // 🔥 Render Pie Chart
+    function renderSummaryPieChart(presentCount, pendingCount) {
+        const ctx = document.getElementById('summaryPieChart');
+        if (!ctx) return;
+
+        if (summaryPieChartInstance) {
+            summaryPieChartInstance.destroy();
+        }
+
+        // যদি দুইটাই 0 হয়, খালি দেখাবো না
+        const total = presentCount + pendingCount;
+        if (total === 0) return;
+
+        summaryPieChartInstance = new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Present (Card Uploaded)', 'Pending / Not Found'],
+                datasets: [{
+                    data: [presentCount, pendingCount],
+                    backgroundColor: [
+                        '#2e9f46',  // Green for Present
+                        '#dc3545'   // Red for Pending
+                    ],
+                    borderColor: ['#ffffff', '#ffffff'],
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '55%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const totalVal = context.dataset.data.reduce((a,b) => a+b, 0);
+                                const val = context.parsed;
+                                const pct = totalVal > 0 ? ((val/totalVal)*100).toFixed(1) : 0;
+                                return `${context.label}: ${val} (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     function toggleSummaryMessage() {
-        const body = document.getElementById('summaryMessageBody');
+        const content = document.getElementById('summaryMessageContent');
         const btn = event ? event.target : null;
-        if (body.style.display === 'none') {
-            body.style.display = 'block';
+        if (content.style.display === 'none') {
+            content.style.display = 'grid';
             if (btn) btn.textContent = '▲ Hide';
         } else {
-            body.style.display = 'none';
+            content.style.display = 'none';
             if (btn) btn.textContent = '▼ Show';
         }
     }
@@ -1548,7 +1755,6 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         document.body.removeChild(textarea);
     }
 
-    // 🔥 Summary Message Image Download
     function downloadSummaryImage() {
         const section = document.getElementById('summaryMessageSection');
         if (!section) return;
@@ -1648,6 +1854,122 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         const ampm = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
         return `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
+    }
+
+    // ====================================================
+    // 🔥 AS-OF STATUS REPORT (Table)
+    // ====================================================
+    function loadAsOfStatusReport() {
+        if (!loggedInSection) return;
+
+        const safeSection = getSafeSection();
+        const asofBody = document.getElementById('asofReportBody');
+        const asofFoot = document.getElementById('asofReportFoot');
+
+        database.ref(`reportHistory/${safeSection}`).once('value', (snapshot) => {
+            const data = snapshot.val();
+
+            if (!data) {
+                asofBody.innerHTML = '<tr><td colspan="8" style="padding: 20px; color: #999;">No report found for this section yet.</td></tr>';
+                asofFoot.innerHTML = '';
+                document.getElementById('asofReportSection').style.display = 'block';
+                return;
+            }
+
+            // 🔥 প্রতি Date_Shift এর জন্য statistics
+            const entries = [];
+            Object.keys(data).forEach(key => {
+                const report = data[key];
+                if (!report.punchData || !report.reportDate) return;
+
+                const total = report.punchData.length;
+                let present = 0;
+                let pending = 0;
+                let late = 0;
+
+                report.punchData.forEach(rec => {
+                    const sk = `${report.reportDate}_${report.shift}_${rec.staffId}`;
+                    // 🔥 report এর নিজের punchStatusSnapshot ব্যবহার করি (যদি থাকে)
+                    const statusObj = (report.punchStatusSnapshot && report.punchStatusSnapshot[sk]) || null;
+                    if (statusObj && statusObj.status === 'Present') {
+                        present++;
+                    } else {
+                        pending++;
+                    }
+                    const remarks = calculateRemarks(rec.rawPunchTime || rec.punchTime, rec.shift);
+                    if (remarks.isLate) late++;
+                });
+
+                // 🔥 Abnormalities = Pending count (Not Present)
+                const abnormalities = pending;
+
+                entries.push({
+                    reportDate: report.reportDate,
+                    shift: report.shift,
+                    total: total,
+                    present: present,
+                    pending: pending,
+                    abnormalities: abnormalities,
+                    status: (abnormalities === 0) ? 'OK' : 'ABNORMAL'
+                });
+            });
+
+            // 🔥 Sort by Date DESC, then Shift
+            entries.sort((a, b) => {
+                if (a.reportDate !== b.reportDate) return b.reportDate.localeCompare(a.reportDate);
+                return a.shift.localeCompare(b.shift);
+            });
+
+            if (entries.length === 0) {
+                asofBody.innerHTML = '<tr><td colspan="8" style="padding: 20px; color: #999;">No report data found.</td></tr>';
+                asofFoot.innerHTML = '';
+                document.getElementById('asofReportSection').style.display = 'block';
+                return;
+            }
+
+            let html = '';
+            let sumTotal = 0, sumPresent = 0, sumPending = 0, sumAbnormal = 0;
+
+            entries.forEach((e, idx) => {
+                sumTotal += e.total;
+                sumPresent += e.present;
+                sumPending += e.pending;
+                sumAbnormal += e.abnormalities;
+
+                const statusBadge = (e.abnormalities === 0)
+                    ? `<span class="asof-status-badge asof-status-ok">OK</span>`
+                    : `<span class="asof-status-badge asof-status-abnormal">ABNORMAL</span>`;
+
+                html += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td><b>${e.reportDate}</b></td>
+                        <td>${e.shift}</td>
+                        <td style="color: #106cc8; font-weight: 700;">${e.total}</td>
+                        <td style="color: #2e9f46; font-weight: 700;">${e.present}</td>
+                        <td style="color: #dc3545; font-weight: 700;">${e.pending}</td>
+                        <td style="color: #dc3545; font-weight: 700;">${e.abnormalities}</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `;
+            });
+
+            asofBody.innerHTML = html;
+
+            // 🔥 Footer Total
+            asofFoot.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL SUMMARY >></td>
+                    <td>${sumTotal}</td>
+                    <td>${sumPresent}</td>
+                    <td>${sumPending}</td>
+                    <td>${sumAbnormal}</td>
+                    <td>${sumAbnormal === 0 ? '✅ OK' : '⚠️ ABNORMAL'}</td>
+                </tr>
+            `;
+
+            document.getElementById('asofReportSection').style.display = 'block';
+        });
     }
 
     // ====================================================
@@ -2065,20 +2387,15 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         openLinemanModal(staffId);
     }
 
-    // ====================================================
-    // 🔥 MC NO CHANGE HANDLER (Line Man Hide/Show)
-    // ====================================================
     function handleMCNoChange(selectElem) {
         const selectedValue = selectElem.value;
         const linemanGroup = document.getElementById('linemanFormGroup');
         const linemanSelect = document.getElementById('linemanNameSelect');
         
         if (NO_LINEMAN_CATEGORIES.includes(selectedValue)) {
-            // 🔥 Line Man Hide
             linemanGroup.style.display = 'none';
-            linemanSelect.value = ''; // Reset
+            linemanSelect.value = '';
         } else {
-            // 🔥 Line Man Show
             linemanGroup.style.display = 'flex';
         }
     }
@@ -2096,7 +2413,6 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         document.getElementById('linemanNameSelect').value = '';
         document.getElementById('mcNoSelect').value = '';
         
-        // 🔥 Modal খোলার সময় Line Man Field আবার Show করি
         const linemanGroup = document.getElementById('linemanFormGroup');
         if (linemanGroup) linemanGroup.style.display = 'flex';
 
@@ -2116,11 +2432,9 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
 
         if (!mcNo) { alert("Please select MC No."); return; }
 
-        // 🔥 MC No যদি Staff Category হয়, Line Man লাগবে না
         const isNoLineManCategory = NO_LINEMAN_CATEGORIES.includes(mcNo);
         
         if (!isNoLineManCategory) {
-            // সাধারণ লাইন এর জন্য Line Man বাধ্যতামূলক
             if (!linemanName) { alert("Please select Line Man Name."); return; }
         }
 
@@ -2128,13 +2442,10 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             const savedStaffId = pendingStaffId;
             const statusKey = `${currentReportDate}_${currentReportShift}_${savedStaffId}`;
             
-            // 🔥 Section অনুযায়ী আলাদা Path
             const safeSection = getSafeSection();
-            
-            // 🔥 Staff Category হলে lineman = "N/A"
             const finalLineman = isNoLineManCategory ? 'N/A' : linemanName;
             
-            await database.ref(`punchStatus/${safeSection}/${statusKey}`).set({
+            const statusObj = {
                 staffId: savedStaffId,
                 status: 'Present',
                 reportDate: currentReportDate,
@@ -2144,7 +2455,14 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
                 timestamp: new Date().toISOString(),
                 detectedBy: 'QR/OCR/Manual',
                 section: loggedInSection
-            });
+            };
+
+            // 🔥 Save to punchStatus
+            await database.ref(`punchStatus/${safeSection}/${statusKey}`).set(statusObj);
+
+            // 🔥 Save snapshot to reportHistory (for as-of status)
+            const historyKey = `${currentReportDate}_${currentReportShift}`;
+            await database.ref(`reportHistory/${safeSection}/${historyKey}/punchStatusSnapshot/${statusKey}`).set(statusObj);
 
             const row = document.getElementById(`row_${savedStaffId}`);
             const statusCell = document.getElementById(`status_${savedStaffId}`);
@@ -2166,12 +2484,7 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             if (linemanCell) linemanCell.innerHTML = `<strong>${finalLineman}</strong>`;
             if (mcnoCell) mcnoCell.textContent = mcNo;
 
-            currentStatusData[statusKey] = {
-                staffId: savedStaffId,
-                status: 'Present',
-                lineman: finalLineman,
-                mcNo: mcNo
-            };
+            currentStatusData[statusKey] = statusObj;
 
             playBeepSound();
 
@@ -2182,6 +2495,7 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
 
             setTimeout(() => {
                 renderTablePage();
+                loadAsOfStatusReport();
             }, 300);
 
         } catch (error) {
@@ -2372,7 +2686,7 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
     }
 
     // ====================================================
-    // MASTER REPORT
+    // 🔥 MASTER REPORT (FIXED - uses report's own punchStatusSnapshot)
     // ====================================================
     function loadSavedReport() {
         const filterDate = document.getElementById('filterDate').value;
@@ -2394,11 +2708,11 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
                 return;
             }
 
-            displaySavedReport(data.punchData, data.reportDate, data.shift, data.uploadedAt);
+            displaySavedReport(data.punchData, data.reportDate, data.shift, data.uploadedAt, data.punchStatusSnapshot || null);
         });
     }
 
-    function displaySavedReport(punchData, reportDate, shift, uploadedAt) {
+    function displaySavedReport(punchData, reportDate, shift, uploadedAt, punchStatusSnapshot) {
         const resultSection = document.getElementById('masterReportResult');
         const resultBody = document.getElementById('masterReportBody');
         const resultTitle = document.getElementById('masterReportTitle');
@@ -2406,78 +2720,75 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         const masterMap = {};
         masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
-        const safeSection = getSafeSection();
+        // 🔥 Use snapshot from this report (not global live punchStatus)
+        const statusData = punchStatusSnapshot || {};
 
-        database.ref(`punchStatus/${safeSection}`).once('value', (snapshot) => {
-            const statusData = snapshot.val() || {};
-            
-            const presentList = [];
-            const pendingList = [];
+        const presentList = [];
+        const pendingList = [];
 
-            punchData.forEach((record) => {
-                const statusKey = `${reportDate}_${shift}_${record.staffId}`;
-                const statusObj = statusData[statusKey];
-                const isPresent = statusObj && statusObj.status === 'Present';
-                if (isPresent) {
-                    presentList.push({ record, statusObj });
-                } else {
-                    pendingList.push({ record, statusObj: null });
-                }
-            });
-
-            const orderedList = [...presentList, ...pendingList];
-
-            let html = '';
-            let presentCount = 0;
-            let lateCount = 0;
-
-            orderedList.forEach((item, idx) => {
-                const record = item.record;
-                const statusObj = item.statusObj;
-                const isPresent = !!statusObj;
-
-                const masterInfo = masterMap[record.staffId];
-                const empName = record.empName || (masterInfo ? masterInfo.name : '-');
-                const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
-                const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
-                if (remarks.isLate) lateCount++;
-
-                const lineman = statusObj ? (statusObj.lineman || '-') : '-';
-                const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
-                if (isPresent) presentCount++;
-
-                const statusBadge = isPresent 
-                    ? `<span class="status-badge status-present"><span class="green-dot"></span> Present</span>`
-                    : `<span class="status-badge status-pending-red"><span class="green-dot"></span> Pending</span>`;
-
-                const rowClass = isPresent ? 'row-present' : 'row-pending';
-
-                html += `
-                    <tr class="${rowClass}">
-                        <td>${idx + 1}</td>
-                        <td>${record.date || '-'}</td>
-                        <td>${record.shift || '-'}</td>
-                        <td><strong>${record.staffId}</strong></td>
-                        <td>${empName}</td>
-                        <td>${designation}</td>
-                        <td>${record.punchTime || '-'}</td>
-                        <td>
-                            <span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">
-                                ${remarks.text}
-                            </span>
-                        </td>
-                        <td><strong>${lineman}</strong></td>
-                        <td>${mcNo}</td>
-                        <td>${statusBadge}</td>
-                    </tr>
-                `;
-            });
-
-            resultBody.innerHTML = html;
-            resultSection.style.display = 'block';
-            
-            resultTitle.innerHTML = `📊 Saved Report (${loggedInSection}) — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong> | Late: <strong>${lateCount}</strong>`;
+        punchData.forEach((record) => {
+            const statusKey = `${reportDate}_${shift}_${record.staffId}`;
+            const statusObj = statusData[statusKey];
+            const isPresent = statusObj && statusObj.status === 'Present';
+            if (isPresent) {
+                presentList.push({ record, statusObj });
+            } else {
+                pendingList.push({ record, statusObj: null });
+            }
         });
+
+        const orderedList = [...presentList, ...pendingList];
+
+        let html = '';
+        let presentCount = 0;
+        let lateCount = 0;
+
+        orderedList.forEach((item, idx) => {
+            const record = item.record;
+            const statusObj = item.statusObj;
+            const isPresent = !!statusObj;
+
+            const masterInfo = masterMap[record.staffId];
+            const empName = record.empName || (masterInfo ? masterInfo.name : '-');
+            const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
+            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+            if (remarks.isLate) lateCount++;
+
+            const lineman = statusObj ? (statusObj.lineman || '-') : '-';
+            const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
+            if (isPresent) presentCount++;
+
+            const statusBadge = isPresent 
+                ? `<span class="status-badge status-present"><span class="green-dot"></span> Present</span>`
+                : `<span class="status-badge status-pending-red"><span class="green-dot"></span> Pending</span>`;
+
+            const rowClass = isPresent ? 'row-present' : 'row-pending';
+
+            html += `
+                <tr class="${rowClass}">
+                    <td>${idx + 1}</td>
+                    <td>${record.date || '-'}</td>
+                    <td>${record.shift || '-'}</td>
+                    <td><strong>${record.staffId}</strong></td>
+                    <td>${empName}</td>
+                    <td>${designation}</td>
+                    <td>${record.punchTime || '-'}</td>
+                    <td>
+                        <span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">
+                            ${remarks.text}
+                        </span>
+                    </td>
+                    <td><strong>${lineman}</strong></td>
+                    <td>${mcNo}</td>
+                    <td>${statusBadge}</td>
+                </tr>
+            `;
+        });
+
+        resultBody.innerHTML = html;
+        resultSection.style.display = 'block';
+        
+        resultTitle.innerHTML = `📊 Saved Report (${loggedInSection}) — Date: <strong>${reportDate}</strong> | Shift: <strong>${shift}</strong> | Total: <strong>${punchData.length}</strong> | Present: <strong>${presentCount}</strong> | Late: <strong>${lateCount}</strong>`;
     }
 
     function loadAllHistory() {
