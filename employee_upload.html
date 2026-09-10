@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Final with Lineman</title>
+    <title>Employee Punch Report - Print/PDF/Excel</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
-    <!-- Tesseract.js OCR Library -->
+    <!-- Tesseract.js OCR -->
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <!-- SheetJS (xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- 🔥 jsPDF + AutoTable for PDF Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -33,17 +37,15 @@
         .btn-red { background-color: #dc3545; }
         .btn-teal { background-color: #17a2b8; }
         .btn-dark { background-color: #343a40; }
+        .btn-print { background-color: #6c757d; }
+        .btn-pdf { background-color: #e63946; }
 
         .hidden-input { display: none; }
 
         .day-shift-summary {
             background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
-            border: 2px solid #2e9f46;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-top: 15px;
-            margin-bottom: 15px;
-            display: none;
+            border: 2px solid #2e9f46; border-radius: 8px;
+            padding: 12px 15px; margin-top: 15px; margin-bottom: 15px; display: none;
         }
         .day-shift-summary h3 { font-size: 15px; color: #1b5e20; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
         .day-shift-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
@@ -79,17 +81,34 @@
         #employeeTable th:nth-child(7), #employeeTable td:nth-child(7) { width: 90px; max-width: 90px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
         #employeeTable th:nth-child(8), #employeeTable td:nth-child(8) { width: 70px; max-width: 70px; font-size: 10px; }
         #employeeTable th:nth-child(9), #employeeTable td:nth-child(9) { width: 90px; max-width: 90px; font-size: 9px; }
-        #employeeTable th:nth-child(10), #employeeTable td:nth-child(10) { width: 130px; max-width: 130px; font-size: 10px; }
-        #employeeTable th:nth-child(11), #employeeTable td:nth-child(11) { width: 120px; max-width: 120px; font-size: 10px; }
+        #employeeTable th:nth-child(10), #employeeTable td:nth-child(10) { width: 100px; max-width: 100px; font-size: 10px; }
+        #employeeTable th:nth-child(11), #employeeTable td:nth-child(11) { width: 90px; max-width: 90px; font-size: 10px; }
+
+        /* 🔥 Present Status Column Choto Kora */
+        #employeeTable th:nth-child(12) {
+            width: 70px; max-width: 70px;
+            font-size: 9px; padding: 3px 4px;
+        }
+        #employeeTable td:nth-child(12) {
+            width: 70px; max-width: 70px;
+            font-size: 9px; padding: 2px 3px;
+            text-align: center;
+        }
 
         tr.row-present { background-color: #d4edda !important; border-left: 4px solid #28a745; }
         tr.row-present td { color: #155724 !important; font-weight: 500; }
         tr.row-present:hover { background-color: #c3e6cb !important; }
 
-        .status-badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 10px; }
+        /* 🔥 Present Status Badge Choto */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 2px;
+            padding: 2px 5px; border-radius: 8px;
+            font-weight: 600; font-size: 9px;
+            white-space: nowrap;
+        }
         .status-present { background-color: #28a745; color: #ffffff; border: 1px solid #1e7e34; }
         .status-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .green-dot { height: 6px; width: 6px; background-color: #ffffff; border-radius: 50%; display: inline-block; }
+        .green-dot { height: 5px; width: 5px; background-color: #ffffff; border-radius: 50%; display: inline-block; }
 
         .remarks-badge { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 600; font-size: 9px; }
         .remarks-late { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -134,65 +153,29 @@
             margin-top: 15px; padding: 12px; background: #fff3cd;
             border: 2px dashed #ffc107; border-radius: 6px; text-align: left;
         }
-        .manual-id-section h4 {
-            font-size: 13px; color: #856404; margin-bottom: 8px;
-            display: flex; align-items: center; gap: 5px;
-        }
+        .manual-id-section h4 { font-size: 13px; color: #856404; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
         .manual-id-input-row { display: flex; gap: 8px; flex-wrap: wrap; }
         .manual-id-input-row input {
             flex: 1; min-width: 150px; padding: 8px 12px;
             border: 2px solid #ffc107; border-radius: 4px;
             font-size: 14px; font-weight: 600; text-align: center;
         }
-        .btn-manual-submit {
-            background-color: #ff9800; color: white; border: none;
-            padding: 8px 20px; border-radius: 4px; cursor: pointer;
-            font-size: 13px; font-weight: 600;
-        }
+        .btn-manual-submit { background-color: #ff9800; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
         .btn-manual-submit:hover { background-color: #e68900; }
         .manual-live-detect { margin-top: 8px; font-size: 12px; font-weight: 600; min-height: 18px; }
         .manual-live-detect.found { color: #28a745; }
         .manual-live-detect.not-found { color: #dc3545; }
 
-        /* 🔥 Lineman Modal */
         .lineman-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1100; justify-content: center; align-items: center; }
-        .lineman-modal-content {
-            background: #fff; border-radius: 8px; padding: 20px;
-            width: 90%; max-width: 450px; position: relative;
-        }
-        .lineman-modal-content h3 {
-            font-size: 16px; color: #333; margin-bottom: 15px;
-            text-align: center; display: flex; align-items: center;
-            justify-content: center; gap: 8px;
-        }
-        .lineman-form-group {
-            display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px;
-        }
-        .lineman-form-group label {
-            font-size: 12px; font-weight: 600; color: #555;
-        }
-        .lineman-form-group select {
-            padding: 10px 12px; border: 2px solid #106cc8; border-radius: 4px;
-            font-size: 14px; background: #fff; font-weight: 500;
-        }
-        .lineman-info {
-            padding: 8px 12px; background: #eef4fb; border-radius: 4px;
-            font-size: 12px; color: #106cc8; margin-bottom: 15px;
-            border-left: 4px solid #106cc8;
-        }
-        .lineman-buttons {
-            display: flex; gap: 10px; justify-content: center;
-        }
-        .btn-lineman-submit {
-            background-color: #28a745; color: white; border: none;
-            padding: 10px 25px; border-radius: 4px; cursor: pointer;
-            font-size: 14px; font-weight: 600; flex: 1;
-        }
-        .btn-lineman-cancel {
-            background-color: #6c757d; color: white; border: none;
-            padding: 10px 25px; border-radius: 4px; cursor: pointer;
-            font-size: 14px; font-weight: 600;
-        }
+        .lineman-modal-content { background: #fff; border-radius: 8px; padding: 20px; width: 90%; max-width: 450px; position: relative; }
+        .lineman-modal-content h3 { font-size: 16px; color: #333; margin-bottom: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .lineman-form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; }
+        .lineman-form-group label { font-size: 12px; font-weight: 600; color: #555; }
+        .lineman-form-group select { padding: 10px 12px; border: 2px solid #106cc8; border-radius: 4px; font-size: 14px; background: #fff; font-weight: 500; }
+        .lineman-info { padding: 8px 12px; background: #eef4fb; border-radius: 4px; font-size: 12px; color: #106cc8; margin-bottom: 15px; border-left: 4px solid #106cc8; }
+        .lineman-buttons { display: flex; gap: 10px; justify-content: center; }
+        .btn-lineman-submit { background-color: #28a745; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; flex: 1; }
+        .btn-lineman-cancel { background-color: #6c757d; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
 
         .ocr-processing { display: none; margin-top: 12px; padding: 12px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeeba; color: #856404; font-weight: 600; font-size: 13px; }
         .spinner-small { border: 3px solid #f3f3f3; border-top: 3px solid #6f42c1; border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 6px; }
@@ -253,6 +236,37 @@
             padding: 3px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;
         }
 
+        /* 🔥 Print Preview Styles */
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; }
+            .button-group, .punch-card-section, .master-report-section,
+            .report-history-list, .pagination, .camera-modal,
+            .lineman-modal, .info-msg, .loading, .btn-red,
+            .day-shift-stats, .action-taken-line { display: none !important; }
+            .table-responsive { display: block !important; max-height: none !important; overflow: visible !important; }
+            table { font-size: 10px; }
+            th, td { padding: 3px 4px; border: 1px solid #333; }
+            th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            tr.row-present { background: #d4edda !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .day-shift-summary { display: block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            #printHeader { display: block !important; text-align: center; margin-bottom: 15px; }
+        }
+
+        #printHeader {
+            display: none;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        #printHeader h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        #printHeader p {
+            font-size: 12px;
+            color: #666;
+        }
+
         @media (max-width: 768px) {
             .button-group { flex-direction: column; align-items: stretch; }
             .btn { width: 100%; }
@@ -273,6 +287,12 @@
     </div>
     <hr>
 
+    <!-- Print Header (Only Shows on Print) -->
+    <div id="printHeader">
+        <h2>Employee Punch Report</h2>
+        <p id="printReportInfo"></p>
+    </div>
+
     <div class="button-group">
         <button class="btn btn-green" onclick="document.getElementById('masterListInput').click()">📋 Upload Master List</button>
         <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Punch Report Day Shift</button>
@@ -282,6 +302,13 @@
         
         <button class="btn btn-teal" onclick="toggleMasterReportSection()" id="masterReportToggleBtn">📊 Master Report (History)</button>
 
+        <!-- 🔥 Print Preview Button -->
+        <button class="btn btn-print" onclick="printPreview()" id="printBtn" style="display: none;">🖨️ Print Preview</button>
+
+        <!-- 🔥 Download PDF Button -->
+        <button class="btn btn-pdf" onclick="downloadPDF()" id="pdfBtn" style="display: none;">📄 Download PDF</button>
+
+        <!-- Download Excel Button -->
         <button class="btn btn-dark" onclick="downloadExcel()" id="downloadExcelBtn" style="display: none;">⬇️ Download Excel</button>
     </div>
 
@@ -468,7 +495,7 @@
     </div>
 </div>
 
-<!-- 🔥 LINEMAN MODAL -->
+<!-- LINEMAN MODAL -->
 <div class="lineman-modal" id="linemanModal">
     <div class="lineman-modal-content">
         <h3>👷 Line Man & MC No Select</h3>
@@ -611,7 +638,8 @@
     let currentReportShift = 'Day';
     let currentPage = 1;
     const rowsPerPage = 100;
-    let pendingStaffId = null; // Lineman modal er jonno
+    let pendingStaffId = null;
+    let currentStatusData = {}; // 🔥 Global status data for download
 
     // ====================================================
     // 2A. BANGLA TO ENGLISH
@@ -818,15 +846,11 @@
         }
 
         const dateStr = String(dateVal).trim();
-        if (dateStr.includes(' ')) {
-            return dateStr.split(' ')[0];
-        } else if (dateStr.includes('-')) {
+        if (dateStr.includes(' ')) return dateStr.split(' ')[0];
+        else if (dateStr.includes('-')) {
             const parts = dateStr.split('-');
-            if (parts.length === 3 && parts[0].length === 4) {
-                return dateStr;
-            } else if (parts.length === 3) {
-                return `${parts[2]}-${parts[1]}-${parts[0]}`;
-            }
+            if (parts.length === 3 && parts[0].length === 4) return dateStr;
+            else if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
         return dateStr;
     }
@@ -844,6 +868,8 @@
         document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
         document.getElementById('punchCardSection').style.display = 'block';
         document.getElementById('downloadExcelBtn').style.display = 'inline-block';
+        document.getElementById('printBtn').style.display = 'inline-block';
+        document.getElementById('pdfBtn').style.display = 'inline-block';
     }
 
     function renderTablePage() {
@@ -873,9 +899,9 @@
             if (remarks.isLate) lateCount++;
         });
 
-        // Lineman data load kori
         database.ref('punchStatus').once('value', (snapshot) => {
             const statusData = snapshot.val() || {};
+            currentStatusData = statusData; // 🔥 Global save
 
             pageData.forEach((record, idx) => {
                 const masterInfo = masterMap[record.staffId];
@@ -883,7 +909,6 @@
                 const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
                 const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
 
-                // Status check
                 const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
                 const statusObj = statusData[statusKey];
                 const isPresent = statusObj && statusObj.status === 'Present';
@@ -920,7 +945,6 @@
 
             renderPagination(totalPages);
 
-            // Present count
             let presentCount = 0;
             currentTableData.forEach(record => {
                 const sk = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
@@ -1125,7 +1149,7 @@
     function retakePhoto() { openCamera(); }
 
     // ====================================================
-    // 8. MANUAL ID LIVE DETECT
+    // 8. MANUAL ID
     // ====================================================
     function liveDetectStaffId(value) {
         const detectDiv = document.getElementById('manualLiveDetect');
@@ -1167,7 +1191,6 @@
         const statusCell = document.getElementById(`status_${staffId}`);
         if (!statusCell) { alert(`Staff ID "${staffId}" table e nei.`); return; }
 
-        // 🔥 Lineman Modal open kori
         openLinemanModal(staffId);
     }
 
@@ -1203,8 +1226,6 @@
             if (staffId) {
                 detectedIdSpan.textContent = staffId;
                 ocrResult.style.display = 'block';
-                
-                // 🔥 Lineman Modal open kori
                 openLinemanModal(staffId);
             } else {
                 staffConfirmSection.style.display = 'block';
@@ -1261,7 +1282,6 @@
                 if (found) return found;
             }
         }
-
         return null;
     }
 
@@ -1272,17 +1292,14 @@
         const statusCell = document.getElementById(`status_${staffId}`);
         if (!statusCell) { alert(`Staff ID "${staffId}" not found.`); return; }
 
-        // 🔥 Lineman Modal open kori
         openLinemanModal(staffId);
     }
 
     // ====================================================
-    // 10. 🔥 LINEMAN MODAL
+    // 10. LINEMAN MODAL
     // ====================================================
     function openLinemanModal(staffId) {
         pendingStaffId = staffId;
-
-        // Employee name ber kori
         const masterInfo = masterListData.find(emp => emp.staffId === staffId);
         const empName = masterInfo ? masterInfo.name : (currentTableData.find(r => r.staffId === staffId)?.empName || 'Unknown');
 
@@ -1322,7 +1339,6 @@
                 detectedBy: 'OCR/Manual'
             });
 
-            // UI Update
             const row = document.getElementById(`row_${pendingStaffId}`);
             const statusCell = document.getElementById(`status_${pendingStaffId}`);
             const linemanCell = document.getElementById(`lineman_${pendingStaffId}`);
@@ -1340,7 +1356,6 @@
                     </span>
                 `;
             }
-
             if (linemanCell) linemanCell.innerHTML = `<strong>${linemanName}</strong>`;
             if (mcnoCell) mcnoCell.textContent = mcNo;
 
@@ -1349,7 +1364,6 @@
             closeLinemanModal();
             closeCamera();
 
-            // Summary update
             setTimeout(() => { renderTablePage(); }, 500);
 
         } catch (error) {
@@ -1379,7 +1393,154 @@
     }
 
     // ====================================================
-    // 11. DOWNLOAD EXCEL
+    // 11. 🖨️ PRINT PREVIEW
+    // ====================================================
+    function printPreview() {
+        if (!currentTableData || currentTableData.length === 0) {
+            alert("Kono data nei print korar jonno.");
+            return;
+        }
+
+        // Print header info set kori
+        const printInfo = document.getElementById('printReportInfo');
+        if (printInfo) {
+            printInfo.textContent = `Date: ${currentReportDate} | Shift: ${currentReportShift} | Total Employees: ${currentTableData.length}`;
+        }
+
+        // Print window open kori
+        window.print();
+    }
+
+    // ====================================================
+    // 12. 📄 DOWNLOAD PDF
+    // ====================================================
+    function downloadPDF() {
+        if (!currentTableData || currentTableData.length === 0) {
+            alert("Kono data nei PDF download korar jonno.");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+
+        // Landscape mode for wide table
+        const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        // Title
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('Employee Punch Report', doc.internal.pageSize.width / 2, 12, { align: 'center' });
+
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Date: ${currentReportDate} | Shift: ${currentReportShift} | Total Employees: ${currentTableData.length}`, doc.internal.pageSize.width / 2, 18, { align: 'center' });
+
+        // Prepare table data
+        const masterMap = {};
+        masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
+
+        const tableData = currentTableData.map((record, idx) => {
+            const masterInfo = masterMap[record.staffId];
+            const empName = record.empName || (masterInfo ? masterInfo.name : '-');
+            const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
+            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+
+            const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
+            const statusObj = currentStatusData[statusKey];
+            const isPresent = statusObj && statusObj.status === 'Present';
+            const lineman = statusObj ? (statusObj.lineman || '-') : '-';
+            const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
+
+            return [
+                idx + 1,
+                record.date || '-',
+                record.shift || '-',
+                record.icName || '-',
+                record.staffId || '-',
+                empName,
+                designation,
+                record.punchTime || '-',
+                remarks.isLate ? 'Late' : 'On Time',
+                lineman,
+                mcNo,
+                isPresent ? 'Present' : 'Pending'
+            ];
+        });
+
+        // AutoTable
+        doc.autoTable({
+            head: [[
+                'SL', 'Date', 'Shift', 'I/C Name', 'Staff ID',
+                'Employee Name', 'Designation', 'Punch Time', 'Remarks',
+                'Line Man', 'MC No', 'Status'
+            ]],
+            body: tableData,
+            startY: 22,
+            theme: 'grid',
+            styles: {
+                fontSize: 6,
+                cellPadding: 1,
+                overflow: 'linebreak'
+            },
+            headStyles: {
+                fillColor: [16, 108, 200],
+                textColor: 255,
+                fontStyle: 'bold',
+                fontSize: 6
+            },
+            columnStyles: {
+                0: { cellWidth: 8 },   // SL
+                1: { cellWidth: 18 },  // Date
+                2: { cellWidth: 12 },  // Shift
+                3: { cellWidth: 18 },  // I/C
+                4: { cellWidth: 20 },  // Staff ID
+                5: { cellWidth: 32 },  // Name
+                6: { cellWidth: 24 },  // Designation
+                7: { cellWidth: 15 },  // Punch
+                8: { cellWidth: 24 },  // Remarks
+                9: { cellWidth: 20 },  // Line Man
+                10: { cellWidth: 20 }, // MC No
+                11: { cellWidth: 15 }  // Status
+            },
+            didParseCell: function(data) {
+                // Present row green background
+                if (data.section === 'body') {
+                    const rowData = tableData[data.row.index];
+                    if (rowData && rowData[11] === 'Present') {
+                        data.cell.styles.fillColor = [212, 237, 218];
+                        data.cell.styles.textColor = [21, 87, 36];
+                    }
+                    if (rowData && rowData[8] === 'Late') {
+                        data.cell.styles.textColor = [220, 53, 69];
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            }
+        });
+
+        // Footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.text(
+                `Page ${i} of ${pageCount} | Generated: ${new Date().toLocaleString()}`,
+                doc.internal.pageSize.width / 2,
+                doc.internal.pageSize.height - 8,
+                { align: 'center' }
+            );
+        }
+
+        const fileName = `Punch_Report_${currentReportDate}_${currentReportShift}.pdf`;
+        doc.save(fileName);
+        console.log(`✅ PDF Downloaded: ${fileName}`);
+    }
+
+    // ====================================================
+    // 13. ⬇️ DOWNLOAD EXCEL
     // ====================================================
     function downloadExcel() {
         if (!currentTableData || currentTableData.length === 0) {
@@ -1437,7 +1598,7 @@
     }
 
     // ====================================================
-    // 12. MASTER REPORT
+    // 14. MASTER REPORT
     // ====================================================
     function loadSavedReport() {
         const filterDate = document.getElementById('filterDate').value;
