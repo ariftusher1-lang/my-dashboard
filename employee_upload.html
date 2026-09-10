@@ -157,13 +157,20 @@
         #employeeTable th:nth-child(11), #employeeTable td:nth-child(11) { width: 90px; max-width: 90px; font-size: 10px; }
         #employeeTable th:nth-child(12), #employeeTable td:nth-child(12) { width: 70px; max-width: 70px; font-size: 9px; padding: 2px 3px; text-align: center; }
 
+        /* ✅ PRESENT ROW — GREEN */
         tr.row-present { background-color: #d4edda !important; border-left: 4px solid #28a745; }
         tr.row-present td { color: #155724 !important; font-weight: 500; }
         tr.row-present:hover { background-color: #c3e6cb !important; }
 
+        /* 🔴 PENDING ROW — RED (NICHE SHOW KORBE) */
+        tr.row-pending { background-color: #f8d7da !important; border-left: 4px solid #dc3545; }
+        tr.row-pending td { color: #721c24 !important; font-weight: 500; }
+        tr.row-pending:hover { background-color: #f5c6cb !important; }
+
         .status-badge { display: inline-flex; align-items: center; gap: 2px; padding: 2px 5px; border-radius: 8px; font-weight: 600; font-size: 9px; white-space: nowrap; }
         .status-present { background-color: #28a745; color: #ffffff; border: 1px solid #1e7e34; }
         .status-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .status-pending-red { background-color: #dc3545; color: #ffffff; border: 1px solid #a71d2a; }
         .green-dot { height: 5px; width: 5px; background-color: #ffffff; border-radius: 50%; display: inline-block; }
 
         .remarks-badge { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 600; font-size: 9px; }
@@ -344,6 +351,8 @@
             th, td { padding: 3px 4px; border: 1px solid #333; }
             th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             tr.row-present { background: #d4edda !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            tr.row-pending { background: #f8d7da !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            tr.row-pending td { color: #721c24 !important; }
             #printHeader { display: block !important; }
         }
 
@@ -427,7 +436,6 @@
             
             <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo</button>
 
-            <!-- 🔥 QR Scan Button -->
             <button class="btn btn-qr" onclick="openQRScanner()" id="qrScanBtn" style="display: none;">📱 QR Scan (Punch Card)</button>
 
             <button class="btn btn-print" onclick="printPreview()" id="printBtn" style="display: none;">🖨️ Print</button>
@@ -1089,12 +1097,13 @@
         document.getElementById('dayShiftSummary').style.display = 'block';
         document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
         document.getElementById('punchCardSection').style.display = 'block';
-        document.getElementById('qrScanBtn').style.display = 'inline-block'; // 🔥 Show QR Button
+        document.getElementById('qrScanBtn').style.display = 'inline-block';
         document.getElementById('downloadExcelBtn').style.display = 'inline-block';
         document.getElementById('printBtn').style.display = 'inline-block';
         document.getElementById('pdfBtn').style.display = 'inline-block';
     }
 
+    // ✅ UPDATED: Present উপরে, Pending নিচে + Pending Red color
     function renderTablePage() {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
@@ -1126,22 +1135,46 @@
             const statusData = snapshot.val() || {};
             currentStatusData = statusData;
 
-            pageData.forEach((record, idx) => {
+            // 🔥 Present ar Pending আলাদা করি
+            const presentRows = [];
+            const pendingRows = [];
+
+            pageData.forEach((record) => {
+                const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
+                const statusObj = statusData[statusKey];
+                const isPresent = statusObj && statusObj.status === 'Present';
+                if (isPresent) {
+                    presentRows.push({ record, isPresent: true, statusObj });
+                } else {
+                    pendingRows.push({ record, isPresent: false, statusObj: null });
+                }
+            });
+
+            // 🔥 Present আগে, Pending পরে (নিচে)
+            const orderedData = [...presentRows, ...pendingRows];
+
+            orderedData.forEach((item, idx) => {
+                const record = item.record;
+                const isPresent = item.isPresent;
+                const statusObj = item.statusObj;
+
                 const masterInfo = masterMap[record.staffId];
                 const empName = record.empName || (masterInfo ? masterInfo.name : '-');
                 const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
                 const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
 
-                const statusKey = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
-                const statusObj = statusData[statusKey];
-                const isPresent = statusObj && statusObj.status === 'Present';
                 const lineman = statusObj ? (statusObj.lineman || '-') : '-';
                 const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
 
                 const tr = document.createElement('tr');
                 tr.id = `row_${record.staffId}`;
                 tr.setAttribute('data-staff-id', record.staffId);
-                if (isPresent) tr.classList.add('row-present');
+
+                if (isPresent) {
+                    tr.classList.add('row-present');
+                } else {
+                    tr.classList.add('row-pending');
+                }
 
                 tr.innerHTML = `
                     <td>${startIdx + idx + 1}</td>
@@ -1160,7 +1193,9 @@
                     <td id="lineman_${record.staffId}"><strong>${lineman}</strong></td>
                     <td id="mcno_${record.staffId}">${mcNo}</td>
                     <td class="status-cell" id="status_${record.staffId}">
-                        ${isPresent ? '<span class="status-badge status-present"><span class="green-dot"></span> Present</span>' : '<span class="status-badge status-pending">Pending</span>'}
+                        ${isPresent 
+                            ? '<span class="status-badge status-present"><span class="green-dot"></span> Present</span>' 
+                            : '<span class="status-badge status-pending-red"><span class="green-dot"></span> Pending</span>'}
                     </td>
                 `;
                 tableBody.appendChild(tr);
@@ -1308,7 +1343,6 @@
 
         qrScanning = true;
 
-        // Initialize QR Scanner
         qrScanner = new Html5Qrcode("qrReader");
         
         const config = {
@@ -1335,7 +1369,6 @@
 
         console.log("✅ QR Code Scanned:", decodedText);
 
-        // QR code theke Staff ID extract kori
         const staffId = extractStaffIdFromQR(decodedText);
 
         const resultDiv = document.getElementById('qrResult');
@@ -1346,13 +1379,9 @@
             resultDiv.style.display = 'block';
             resultDiv.classList.remove('error');
 
-            // Vibration (mobile)
             if (navigator.vibrate) navigator.vibrate(200);
-
-            // Sound feedback
             playBeepSound();
 
-            // 1.5 sec por Lineman Modal open
             setTimeout(() => {
                 closeQRScanner();
                 openLinemanModal(staffId);
@@ -1363,7 +1392,6 @@
             resultDiv.classList.add('error');
             resultDiv.innerHTML = `❌ <strong>QR Code Scanned but Staff ID Not Found</strong><br><small>Content: ${decodedText.substring(0, 50)}</small>`;
             
-            // Restart scanning after 2 sec
             setTimeout(() => {
                 qrScanning = true;
                 resultDiv.style.display = 'none';
@@ -1382,7 +1410,6 @@
         const cleanQR = convertBanglaToEnglish(qrText.trim()).toUpperCase();
         console.log("Cleaned QR:", cleanQR);
 
-        // Method 1: Direct Staff ID match
         for (const staffId of validIds) {
             const regex = new RegExp(`\\b${staffId.toUpperCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
             if (regex.test(cleanQR)) {
@@ -1391,7 +1418,6 @@
             }
         }
 
-        // Method 2: JSON format check (jodi QR code e JSON thake)
         try {
             const jsonData = JSON.parse(qrText);
             if (jsonData.staffId && validIds.includes(jsonData.staffId)) {
@@ -1401,10 +1427,9 @@
                 return jsonData.id;
             }
         } catch (e) {
-            // Not JSON, continue
+            // Not JSON
         }
 
-        // Method 3: Pattern match (ID: xxx, Staff: xxx)
         const patterns = [
             /(?:STAFF\s*ID|STAFF\s*NO|EMP\s*ID|ID)[\s:.\-]*([A-Z]?\d{4,})/i,
             /\b([A-Z]\d{5,})\b/g,
@@ -1430,7 +1455,6 @@
             }
         }
 
-        // Method 4: Number match
         const allNumbers = cleanQR.match(/\d{4,}/g);
         if (allNumbers) {
             for (const num of allNumbers) {
@@ -1449,7 +1473,7 @@
     }
 
     function onQRScanError(errorMessage) {
-        // Silent — jodi scan fail hoy, kichu korar dorkar nei
+        // Silent
     }
 
     function closeQRScanner() {
@@ -1768,6 +1792,7 @@
             const mcnoCell = document.getElementById(`mcno_${savedStaffId}`);
 
             if (row) {
+                row.classList.remove('row-pending');
                 row.classList.add('row-present');
                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
@@ -1788,7 +1813,6 @@
                 mcNo: mcNo
             };
 
-            // Success sound
             playBeepSound();
 
             alert(`✅ Staff ID: ${savedStaffId}\nLine Man: ${linemanName}\nMC No: ${mcNo}\n\nPresent mark hoyeche!`);
@@ -1905,6 +1929,9 @@
                     if (rowData && rowData[11] === 'Present') {
                         data.cell.styles.fillColor = [212, 237, 218];
                         data.cell.styles.textColor = [21, 87, 36];
+                    } else if (rowData && rowData[11] === 'Pending') {
+                        data.cell.styles.fillColor = [248, 215, 218];
+                        data.cell.styles.textColor = [114, 28, 36];
                     }
                     if (rowData && rowData[8] === 'Late') {
                         data.cell.styles.textColor = [220, 53, 69];
@@ -2007,6 +2034,7 @@
         });
     }
 
+    // ✅ UPDATED: Present উপরে, Pending নিচে + Pending Red color
     function displaySavedReport(punchData, reportDate, shift, uploadedAt) {
         const resultSection = document.getElementById('masterReportResult');
         const resultBody = document.getElementById('masterReportBody');
@@ -2018,30 +2046,50 @@
         database.ref('punchStatus').once('value', (snapshot) => {
             const statusData = snapshot.val() || {};
             
+            // 🔥 Present ar Pending আলাদা
+            const presentList = [];
+            const pendingList = [];
+
+            punchData.forEach((record) => {
+                const statusKey = `${reportDate}_${shift}_${record.staffId}`;
+                const statusObj = statusData[statusKey];
+                const isPresent = statusObj && statusObj.status === 'Present';
+                if (isPresent) {
+                    presentList.push({ record, statusObj });
+                } else {
+                    pendingList.push({ record, statusObj: null });
+                }
+            });
+
+            const orderedList = [...presentList, ...pendingList];
+
             let html = '';
             let presentCount = 0;
             let lateCount = 0;
 
-            punchData.forEach((record, idx) => {
+            orderedList.forEach((item, idx) => {
+                const record = item.record;
+                const statusObj = item.statusObj;
+                const isPresent = !!statusObj;
+
                 const masterInfo = masterMap[record.staffId];
                 const empName = record.empName || (masterInfo ? masterInfo.name : '-');
                 const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
                 const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
                 if (remarks.isLate) lateCount++;
 
-                const statusKey = `${reportDate}_${shift}_${record.staffId}`;
-                const statusObj = statusData[statusKey];
-                const isPresent = statusObj && statusObj.status === 'Present';
                 const lineman = statusObj ? (statusObj.lineman || '-') : '-';
                 const mcNo = statusObj ? (statusObj.mcNo || '-') : '-';
                 if (isPresent) presentCount++;
 
                 const statusBadge = isPresent 
                     ? `<span class="status-badge status-present"><span class="green-dot"></span> Present</span>`
-                    : `<span class="status-badge status-pending">Pending</span>`;
+                    : `<span class="status-badge status-pending-red"><span class="green-dot"></span> Pending</span>`;
+
+                const rowClass = isPresent ? 'row-present' : 'row-pending';
 
                 html += `
-                    <tr class="${isPresent ? 'row-present' : ''}">
+                    <tr class="${rowClass}">
                         <td>${idx + 1}</td>
                         <td>${record.date || '-'}</td>
                         <td>${record.shift || '-'}</td>
