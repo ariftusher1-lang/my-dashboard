@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - OCR Auto Detect</title>
+    <title>Employee Punch Report - Excel + OCR + Firebase</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -12,11 +12,14 @@
     <!-- Tesseract.js OCR Library -->
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
+    <!-- SheetJS (xlsx) - Excel file read korar jonno -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
     <style>
         /* --- General Styles --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f4f4; padding: 20px; }
-        .container { background-color: #ffffff; max-width: 1200px; margin: 0 auto; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .container { background-color: #ffffff; max-width: 1500px; margin: 0 auto; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h1 { font-size: 26px; color: #111; margin-bottom: 20px; font-weight: 600; }
         h2 { font-size: 18px; color: #333; margin-bottom: 12px; font-weight: 600; }
         hr { border: 0; border-top: 1px solid #e0e0e0; margin-bottom: 20px; }
@@ -35,10 +38,10 @@
         .hidden-input { display: none; }
 
         /* --- Table Styles --- */
-        .table-responsive { overflow-x: auto; margin-top: 20px; display: none; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: middle; }
-        th { background-color: #f8f9fa; font-weight: 600; color: #333; }
+        .table-responsive { overflow-x: auto; margin-top: 20px; display: none; max-height: 600px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: middle; white-space: nowrap; }
+        th { background-color: #f8f9fa; font-weight: 600; color: #333; position: sticky; top: 0; z-index: 10; }
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
 
@@ -47,6 +50,11 @@
         .status-present { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .status-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .green-dot { height: 8px; width: 8px; background-color: #28a745; border-radius: 50%; display: inline-block; }
+
+        /* --- Remarks Styling --- */
+        .remarks-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }
+        .remarks-late { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .remarks-ontime { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 
         /* --- Camera Section --- */
         .punch-card-section { background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: none; }
@@ -73,19 +81,15 @@
             border: 3px solid #f3f3f3;
             border-top: 3px solid #6f42c1;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 20px; height: 20px;
             animation: spin 1s linear infinite;
             display: inline-block;
             vertical-align: middle;
             margin-right: 8px;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- Staff Confirm Section (Fallback) --- */
+        /* --- Staff Confirm Section --- */
         .staff-confirm-section { display: none; margin-top: 15px; padding: 15px; background: #eef4fb; border-radius: 4px; border: 1px solid #b8d4f0; }
         .staff-confirm-section label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
         .staff-confirm-section input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; width: 200px; margin-right: 10px; }
@@ -94,25 +98,21 @@
         /* --- OCR Result --- */
         .ocr-result { display: none; margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 4px; border: 1px solid #c3e6cb; color: #155724; font-weight: 600; }
 
-        .info-msg { margin-top: 10px; color: #555; font-style: italic; display: none; }
+        /* --- Info Message --- */
+        .info-msg { margin-top: 10px; padding: 10px; background: #eef4fb; border-left: 4px solid #106cc8; color: #333; font-size: 14px; display: none; border-radius: 4px; }
 
         /* --- Loading Spinner --- */
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-            font-size: 16px;
-            color: #555;
-        }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #6f42c1;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
+        .loading { display: none; text-align: center; padding: 20px; font-size: 16px; color: #555; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #6f42c1; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+
+        /* --- Summary Cards --- */
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+        .summary-card { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; text-align: center; }
+        .summary-card .number { font-size: 24px; font-weight: 700; margin-bottom: 5px; }
+        .summary-card .label { font-size: 13px; color: #666; font-weight: 500; }
+        .summary-card.total .number { color: #106cc8; }
+        .summary-card.present .number { color: #2e9f46; }
+        .summary-card.late .number { color: #dc3545; }
 
         @media (max-width: 768px) {
             .button-group { flex-direction: column; align-items: stretch; }
@@ -126,18 +126,24 @@
 
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <h1>Employee Master List Upload</h1>
-        <button class="btn btn-red" onclick="clearAllData()">🗑️ Clear All Data (Firebase)</button>
+        <h1>Employee Punch Report</h1>
+        <button class="btn btn-red" onclick="clearAllData()">🗑️ Clear All Data</button>
     </div>
     <hr>
 
+    <!-- Upload Buttons -->
     <div class="button-group">
-        <button class="btn btn-green" onclick="triggerUpload('Master List')">Upload List</button>
-        <button class="btn btn-orange" onclick="triggerUpload('Punch Report Day Shift')">Upload Punch Report Day Shift</button>
-        <button class="btn btn-blue" onclick="triggerUpload('Punch Report Night Shift')">Upload Punch Report Night Shift</button>
+        <button class="btn btn-green" onclick="document.getElementById('masterListInput').click()">📋 Upload Master List</button>
+        <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Punch Report Day Shift</button>
+        <button class="btn btn-blue" onclick="document.getElementById('nightShiftInput').click()">🌙 Upload Punch Report Night Shift</button>
         
         <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo Upload (Individual)</button>
     </div>
+
+    <!-- Hidden File Inputs -->
+    <input type="file" id="masterListInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleMasterListUpload(this)">
+    <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Day')">
+    <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Night')">
 
     <!-- ============================================== -->
     <!-- PUNCH CARD CAMERA SECTION -->
@@ -153,31 +159,45 @@
         </div>
     </div>
 
-    <div class="file-upload-section" style="margin-bottom: 15px;">
-        <input type="file" id="mainFileUpload" onchange="handleFileChange(this, 'Master List')">
-        <label for="mainFileUpload" style="font-weight: 500;">Employee Master List</label>
-    </div>
-
-    <div class="info-msg" id="infoMsg">File Uploaded Successfully! Generating Table...</div>
+    <!-- Info Message -->
+    <div class="info-msg" id="infoMsg"></div>
 
     <!-- Loading Spinner -->
     <div class="loading" id="loadingSpinner">
         <div class="spinner"></div>
-        Loading Data from Firebase...
+        Processing...
     </div>
 
-    <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleFileChange(this, 'Day Shift')">
-    <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleFileChange(this, 'Night Shift')">
+    <!-- Summary Cards -->
+    <div class="summary-cards" id="summaryCards" style="display: none;">
+        <div class="summary-card total">
+            <div class="number" id="totalCount">0</div>
+            <div class="label">Total Employees</div>
+        </div>
+        <div class="summary-card present">
+            <div class="number" id="ontimeCount">0</div>
+            <div class="label">On Time</div>
+        </div>
+        <div class="summary-card late">
+            <div class="number" id="lateCount">0</div>
+            <div class="label">Late Punch</div>
+        </div>
+    </div>
 
+    <!-- Main Table -->
     <div class="table-responsive" id="tableContainer">
         <table id="employeeTable">
             <thead>
                 <tr>
                     <th>SL/No</th>
+                    <th>Date</th>
+                    <th>Shift</th>
+                    <th>I/C Name</th>
                     <th>Staff ID</th>
                     <th>Employee Name</th>
                     <th>Designation</th>
                     <th>In Punch Time</th>
+                    <th>Remarks</th>
                     <th>Present Status</th>
                 </tr>
             </thead>
@@ -207,17 +227,14 @@
             <button class="btn-confirm" id="confirmBtn" onclick="processOCRAndUpload()">✅ Confirm & Auto Detect</button>
         </div>
 
-        <!-- OCR Processing Indicator -->
         <div class="ocr-processing" id="ocrProcessing">
             <span class="spinner-small"></span> Reading Punch Card... Please wait.
         </div>
 
-        <!-- OCR Result -->
         <div class="ocr-result" id="ocrResult">
             ✅ <strong>Staff ID Detected:</strong> <span id="detectedId"></span>
         </div>
 
-        <!-- Fallback: Manual Staff ID Input (Jodi OCR fail kore) -->
         <div class="staff-confirm-section" id="staffConfirmSection">
             <label for="confirmStaffId">⚠️ OCR Staff ID detect korte pareni. Please type manually:</label>
             <input type="text" id="confirmStaffId" placeholder="e.g. 64686">
@@ -245,290 +262,16 @@
     const database = firebase.database();
 
     // ====================================================
-    // 2. MOCK DATA
+    // 2. GLOBAL VARIABLES
     // ====================================================
-    const masterList = [
-        { staffId: "S147069", name: "Sisir Soren", designation: "General Worker" },
-        { staffId: "S231390", name: "Tushar Kumar Biswas", designation: "General Worker" },
-        { staffId: "S231391", name: "Sonjit Kumar Roy", designation: "General Worker" },
-        { staffId: "S222997", name: "Nitai Chandra Mohanta", designation: "General Worker" },
-        { staffId: "S203899", name: "Md Mofazzal Haque Sakib", designation: "General Worker" },
-        { staffId: "S171722", name: "Md Shahadat Hossain", designation: "General Worker" },
-        { staffId: "248070", name: "Runa Aktar", designation: "Assistant Operator" },
-        { staffId: "1020708986", name: "Sharifa Begum", designation: "Assistant Operator" },
-        { staffId: "1020711599", name: "Muslima Akter", designation: "Operator" },
-        { staffId: "1020720185", name: "Selina Munda", designation: "General Worker" },
-        { staffId: "1020723192", name: "Sonia Akter", designation: "General Worker" },
-        { staffId: "1020723681", name: "Jaeda Khatun", designation: "General Worker" },
-        { staffId: "1020723682", name: "Mst. Khadija Sarker", designation: "General Worker" },
-        { staffId: "1020727375", name: "Akhi Begum", designation: "General Worker" },
-        { staffId: "43649", name: "Md. Milon", designation: "Officer" },
-        { staffId: "51428", name: "Sirajul Islam", designation: "Officer" },
-        { staffId: "47632", name: "Gaiotri Rani Das", designation: "Assistant Officer" },
-        { staffId: "64686", name: "Md. Arifuzzaman", designation: "Senior Manager" },
-        { staffId: "64712", name: "Shaikh Md. Jakir Hossain (Razzak)", designation: "Officer" },
-        { staffId: "69449", name: "Khuki Khatun", designation: "Assistant Officer" },
-        { staffId: "72126", name: "Md. Belal Hossain", designation: "Officer" },
-        { staffId: "75487", name: "Prodip Chandra Roy", designation: "Assistant Officer" },
-        { staffId: "79449", name: "Abdul Aziz", designation: "Assistant Officer" },
-        { staffId: "79053", name: "Shikha", designation: "Assistant Officer" },
-        { staffId: "124489", name: "Md. Hazrat Ali", designation: "Assistant Officer" },
-        { staffId: "193215", name: "Afzal Hossain", designation: "Officer" },
-        { staffId: "1020704167", name: "Saiful Islam", designation: "Assistant Officer" },
-        { staffId: "1020704195", name: "Sharif Miah", designation: "Assistant Officer" },
-        { staffId: "1020707741", name: "Md. Nazmul Islam", designation: "Assistant Officer" },
-        { staffId: "1020708647", name: "Md. Mominul Islam", designation: "Assistant Officer" },
-        { staffId: "1020710660", name: "Md.Ahammed Ali Sheikh", designation: "Assistant Officer" },
-        { staffId: "1020710763", name: "Joynal Abedin", designation: "Assistant Officer" },
-        { staffId: "1020716201", name: "Daliya Akter", designation: "Assistant Officer" },
-        { staffId: "1020716396", name: "Rita Rani Roy", designation: "Assistant Officer" },
-        { staffId: "1020717921", name: "Sultana Razia", designation: "Assistant Operator" },
-        { staffId: "1020719764", name: "Narayan Chandra Barman", designation: "General Worker" },
-        { staffId: "1020720785", name: "Md. Tanjimul Islam", designation: "Assistant Officer" },
-        { staffId: "1020722708", name: "Md. Suruj Ali", designation: "Assistant Officer" },
-        { staffId: "1020723299", name: "Pobitro Mahato", designation: "General Worker" },
-        { staffId: "1020723518", name: "Md. Sumon Mia", designation: "General Worker" },
-        { staffId: "1020725201", name: "Md. Sajib Miah", designation: "General Worker" },
-        { staffId: "1020727689", name: "Zharna", designation: "General Worker" },
-        { staffId: "1020728600", name: "Md. Juwel Molla", designation: "General Worker" },
-        { staffId: "1020729603", name: "Mitu Rani Das", designation: "General Worker" },
-        { staffId: "1020729789", name: "Md. Nazmul Alam", designation: "General Worker" },
-        { staffId: "1020732079", name: "Md. Forhadul Raton", designation: "General Worker" },
-        { staffId: "1020732082", name: "Mithun Chandra Das", designation: "General Worker" },
-        { staffId: "1020735709", name: "Md. Hafizul Islam", designation: "General Worker" },
-        { staffId: "1020707072", name: "Rozi Akter", designation: "Service Assistant" },
-        { staffId: "1020736436", name: "Md.Mobarak Ali", designation: "General Worker" },
-        { staffId: "1020736507", name: "Dipu Miah", designation: "Assistant Operator" },
-        { staffId: "1020738783", name: "Sahana Akter Rekha", designation: "General Worker" },
-        { staffId: "1020734827", name: "Mst. Asma Khatun", designation: "General Worker" },
-        { staffId: "1020736685", name: "Uttama Rani Das", designation: "General Worker" },
-        { staffId: "1020737226", name: "Shahina", designation: "General Worker" },
-        { staffId: "177978", name: "Babul Mia", designation: "Assistant Manager" },
-        { staffId: "1020716854", name: "Tarek Mia", designation: "Assistant Operator" },
-        { staffId: "1020740218", name: "Azanta Rani Das", designation: "General Worker" },
-        { staffId: "56005", name: "Ferdousi Begum", designation: "Assistant Officer" },
-        { staffId: "1020740381", name: "Seuly Begum", designation: "General Worker" },
-        { staffId: "1020741007", name: "Choton Roy", designation: "General Worker" },
-        { staffId: "1020741065", name: "Md. Naieem Mia", designation: "General Worker" },
-        { staffId: "1020741552", name: "Mst. Mita Khatun", designation: "General Worker" },
-        { staffId: "1020741550", name: "Sweety Akter", designation: "General Worker" },
-        { staffId: "1020741628", name: "Mst. Alo Khatun", designation: "General Worker" },
-        { staffId: "1020741634", name: "Shawn Mia", designation: "General Worker" },
-        { staffId: "1020741891", name: "Soravita Akter", designation: "General Worker" },
-        { staffId: "1020742341", name: "Mst. Munni Khatun", designation: "General Worker" },
-        { staffId: "1020742446", name: "yesmin Akter", designation: "General Worker" },
-        { staffId: "1020742966", name: "Niranjon Roy", designation: "General Worker" },
-        { staffId: "333152", name: "Md. Bipul Sarker", designation: "Assistant Manager" },
-        { staffId: "1020707333", name: "Md. Akram Hossain", designation: "Assistant Officer" },
-        { staffId: "1020730785", name: "Amir Hossan", designation: "Assistant Operator" },
-        { staffId: "S106792", name: "MD. Monirul Islam", designation: "General Worker" },
-        { staffId: "S115177", name: "Mhoiminul Islam", designation: "General Worker" },
-        { staffId: "S115039", name: "Rupaly Khatun Sarabonti", designation: "General Worker" },
-        { staffId: "S121421", name: "Safiur Rahman", designation: "General Worker" },
-        { staffId: "S127172", name: "Mst. Nilufa Yeasmin", designation: "General Worker" },
-        { staffId: "S133197", name: "Md Azizul Hakim", designation: "General Worker" },
-        { staffId: "S135218", name: "Md.Milon Sarker", designation: "Assistant Operator" },
-        { staffId: "S137076", name: "Bithi Rani Sheel", designation: "General Worker" },
-        { staffId: "S138215", name: "Mst Reka Begum", designation: "General Worker" },
-        { staffId: "S138808", name: "Md.Abdullah Al Mamun", designation: "General Worker" },
-        { staffId: "S139961", name: "Beauti Begum", designation: "General Worker" },
-        { staffId: "S139963", name: "Mst.Sabia Begum Sweety", designation: "General Worker" },
-        { staffId: "S140589", name: "Joma Debnath", designation: "General Worker" },
-        { staffId: "S133949", name: "Ripon Chandro Haolader", designation: "General Worker" },
-        { staffId: "513951", name: "Md. Abdur Rahman Rony", designation: "Sub Assistant Engineer" },
-        { staffId: "S164338", name: "Sree Sajib Kumar", designation: "General Worker" },
-        { staffId: "S168206", name: "Pranto Kumar Roy", designation: "Assistant Officer" },
-        { staffId: "S132012", name: "FOKHRUL ISLAM KHANDAKAR", designation: "Operator" },
-        { staffId: "S168482", name: "Shujit Toppo", designation: "General Worker" },
-        { staffId: "S168637", name: "Mst Rumina Begum", designation: "General Worker" },
-        { staffId: "S169803", name: "Airin Akter", designation: "General Worker" },
-        { staffId: "S123401", name: "Mst Parven Begum", designation: "General Worker" },
-        { staffId: "S180569", name: "Mst Salma Begum", designation: "General Worker" },
-        { staffId: "S184615", name: "Anik Biswas", designation: "General Worker" },
-        { staffId: "S191601", name: "Md Sohel Rana", designation: "General Worker" },
-        { staffId: "S192446", name: "Md Alom Sheikh", designation: "General Worker" },
-        { staffId: "S197055", name: "Arifa Khatun", designation: "General Worker" },
-        { staffId: "S201113", name: "Rana Ahmed", designation: "General Worker" },
-        { staffId: "S201585", name: "Abdul Kader", designation: "General Worker" },
-        { staffId: "S201778", name: "MD REJAUL KORIM", designation: "General Worker" },
-        { staffId: "S203275", name: "Md Shah-Alam", designation: "General Worker" },
-        { staffId: "569596", name: "Syed Nazmus Sakib", designation: "Trainee Engineer" },
-        { staffId: "S205868", name: "Md Naim Mia", designation: "General Worker" },
-        { staffId: "S218069", name: "Anjila Hasda", designation: "General Worker" },
-        { staffId: "S217969", name: "Sajib Chandra Barmon", designation: "General Worker" },
-        { staffId: "S219025", name: "Swapan Chandra", designation: "General Worker" },
-        { staffId: "S210430", name: "Jannatul Ferdaus", designation: "General Worker" },
-        { staffId: "576882", name: "AL- AMIN ISLAM", designation: "Sub Assistant Engineer" },
-        { staffId: "S228406", name: "Tajemul Islam", designation: "General Worker" },
-        { staffId: "S228407", name: "Md. Samiul Islam", designation: "General Worker" },
-        { staffId: "S230019", name: "Narayon Kumar Ghosh", designation: "General Worker" },
-        { staffId: "S203829", name: "Md Piash Pramanik", designation: "General Worker" },
-        { staffId: "S231745", name: "Marzia Akter", designation: "General Worker" },
-        { staffId: "42079", name: "Md. Zakir Ali", designation: "Officer" },
-        { staffId: "R000225348", name: "Md.Mohon", designation: "Assistant Officer" },
-        { staffId: "580907", name: "Md Abdul Bashit Uddin", designation: "Trainee Engineer" },
-        { staffId: "S246066", name: "Sumita Tudu", designation: "General Worker" },
-        { staffId: "S246067", name: "Mahmudullah Hossain", designation: "General Worker" },
-        { staffId: "S246068", name: "Kamrunnahhar Begum", designation: "General Worker" },
-        { staffId: "S246069", name: "Nazmin Akter Sohana", designation: "General Worker" },
-        { staffId: "S246070", name: "Mirajul Islam Mahim", designation: "General Worker" },
-        { staffId: "S246071", name: "Mst Khadija Begum", designation: "General Worker" },
-        { staffId: "S246072", name: "MOST FARJANA AKTER", designation: "General Worker" },
-        { staffId: "S246583", name: "Md. Rakibul Hasan", designation: "General Worker" },
-        { staffId: "S247562", name: "Mst. Aklima Begum", designation: "General Worker" },
-        { staffId: "S247563", name: "Mst. Nafisha Khatun", designation: "General Worker" },
-        { staffId: "S248260", name: "Ononto Mankin", designation: "Assistant Operator" },
-        { staffId: "S248262", name: "Dharam Biswas", designation: "Assistant Operator" },
-        { staffId: "S248256", name: "Subas Tudu", designation: "Assistant Operator" },
-        { staffId: "S248263", name: "TAMANNA AKTER MIM", designation: "General Worker" },
-        { staffId: "S248573", name: "Chinta Tudu", designation: "Assistant Operator" },
-        { staffId: "S248251", name: "Dip Gain", designation: "Assistant Operator" },
-        { staffId: "S249221", name: "Babu Joy Das", designation: "Assistant Operator" },
-        { staffId: "S249237", name: "Mukim Islam Rimon", designation: "General Worker" },
-        { staffId: "S249256", name: "Likhon Miya", designation: "General Worker" },
-        { staffId: "S249259", name: "Sijib Miya", designation: "General Worker" },
-        { staffId: "S249270", name: "MSt Asma Khatun", designation: "General Worker" },
-        { staffId: "S249271", name: "Mst Parvin Khatun", designation: "General Worker" },
-        { staffId: "S249273", name: "AL AMIN IMRAN", designation: "General Worker" },
-        { staffId: "S249277", name: "KORNAL MURMU", designation: "General Worker" },
-        { staffId: "S250171", name: "Saina Khatun", designation: "General Worker" },
-        { staffId: "S250174", name: "Mst Raziya Khatun", designation: "General Worker" },
-        { staffId: "S250357", name: "Mst. Tonuja Khatun", designation: "General Worker" },
-        { staffId: "S250158", name: "MD. SHOHAN BABU", designation: "Assistant Operator" },
-        { staffId: "S250156", name: "Sohel Rana", designation: "General Worker" },
-        { staffId: "S250175", name: "Mst Sweety Khatun", designation: "General Worker" },
-        { staffId: "S249971", name: "Shoriful Islam", designation: "General Worker" },
-        { staffId: "S250173", name: "Miss Moyna Bibi", designation: "General Worker" },
-        { staffId: "S250170", name: "Nurnahar", designation: "General Worker" },
-        { staffId: "S250177", name: "Sabiha Khatun", designation: "General Worker" },
-        { staffId: "S250172", name: "Mst Rebeka Begum", designation: "General Worker" },
-        { staffId: "S250178", name: "Mst Tahmina Khatun Asha", designation: "Assistant Operator" },
-        { staffId: "S250886", name: "Shamoly Basra", designation: "General Worker" },
-        { staffId: "S250895", name: "MD SAMSUDDIN", designation: "General Worker" },
-        { staffId: "S250888", name: "Citta Kumar Mahata", designation: "General Worker" },
-        { staffId: "S250896", name: "Goutom Kumar Roy", designation: "Assistant Operator" },
-        { staffId: "S252776", name: "Bishnu Das", designation: "General Worker" },
-        { staffId: "S253664", name: "Md. Moshur Rahman", designation: "Assistant Operator" },
-        { staffId: "S253690", name: "Siyam Sorkar", designation: "Assistant Operator" },
-        { staffId: "S254090", name: "Bibi Rubina", designation: "General Worker" },
-        { staffId: "S253681", name: "Sifat Hasan", designation: "Assistant Operator" },
-        { staffId: "S253694", name: "Mohadeb Pahari", designation: "Assistant Operator" },
-        { staffId: "S254104", name: "Forhad Hossain", designation: "Assistant Operator" },
-        { staffId: "S253687", name: "Babu Mia", designation: "Assistant Operator" },
-        { staffId: "S253692", name: "Sadik Shek", designation: "Assistant Operator" },
-        { staffId: "S253686", name: "Sowrov Akondo", designation: "Assistant Operator" },
-        { staffId: "S253688", name: "Omor Faruk", designation: "Assistant Operator" },
-        { staffId: "S253994", name: "Rifat Mia", designation: "General Worker" },
-        { staffId: "S257257", name: "Shajalal", designation: "General Worker" },
-        { staffId: "S257383", name: "Mst. Shohida Akter", designation: "General Worker" },
-        { staffId: "S258129", name: "May Rong Ching Marma", designation: "Assistant Operator" },
-        { staffId: "S258130", name: "Sing May Ching Marma", designation: "Assistant Operator" },
-        { staffId: "S258131", name: "Samathui Marma", designation: "Assistant Operator" },
-        { staffId: "S258133", name: "Mahbub Hasan", designation: "General Worker" },
-        { staffId: "S258134", name: "SREEMOTI ADORI MURMU", designation: "General Worker" },
-        { staffId: "S258135", name: "Sadikul Islam", designation: "General Worker" },
-        { staffId: "S258137", name: "MAHFUZ AHMED", designation: "General Worker" },
-        { staffId: "S258138", name: "IMRAN HOSSEN", designation: "General Worker" },
-        { staffId: "S258139", name: "Refat Hossen", designation: "General Worker" },
-        { staffId: "S258312", name: "Shajib", designation: "General Worker" },
-        { staffId: "S258579", name: "Nayon biswas", designation: "General Worker" },
-        { staffId: "S258576", name: "Pronay Das", designation: "General Worker" },
-        { staffId: "S258472", name: "MOST. MATUARA KHATUN", designation: "General Worker" },
-        { staffId: "S260012", name: "Moni Khatun", designation: "General Worker" },
-        { staffId: "S260013", name: "MST. NAZMIN NAHAR", designation: "General Worker" },
-        { staffId: "S260014", name: "AFRIN AKTER", designation: "General Worker" },
-        { staffId: "S260015", name: "Narocy Aktar", designation: "General Worker" },
-        { staffId: "S260016", name: "Saiful Islam", designation: "General Worker" },
-        { staffId: "S260017", name: "Rifat Ali", designation: "General Worker" },
-        { staffId: "S258471", name: "MST AMENA KHATUN", designation: "General Worker" },
-        { staffId: "S258473", name: "Mst Nasrin Khatun", designation: "General Worker" },
-        { staffId: "S258575", name: "Samiul Ahmed Anik", designation: "General Worker" }
-    ];
-
-    const punchReportData = [
-        { staffId: "124489", punchTime: "07:52:00" },
-        { staffId: "1020707072", punchTime: "07:52:00" },
-        { staffId: "1020741550", punchTime: "07:52:00" },
-        { staffId: "1020741065", punchTime: "07:55:00" },
-        { staffId: "S127172", punchTime: "07:50:00" },
-        { staffId: "S171722", punchTime: "07:45:00" },
-        { staffId: "S246066", punchTime: "07:41:00" },
-        { staffId: "S250888", punchTime: "07:52:00" },
-        { staffId: "S253692", punchTime: "07:47:00" },
-        { staffId: "S258133", punchTime: "07:52:00" },
-        { staffId: "177978", punchTime: "07:56:00" },
-        { staffId: "576882", punchTime: "07:51:00" },
-        { staffId: "S180569", punchTime: "07:53:00" },
-        { staffId: "S248256", punchTime: "07:53:00" },
-        { staffId: "S246070", punchTime: "07:53:00" },
-        { staffId: "1020741552", punchTime: "07:52:00" },
-        { staffId: "1020738783", punchTime: "07:49:00" },
-        { staffId: "S139963", punchTime: "07:48:00" },
-        { staffId: "S201778", punchTime: "07:49:00" },
-        { staffId: "S248573", punchTime: "07:40:00" },
-        { staffId: "S248263", punchTime: "07:45:00" },
-        { staffId: "S258135", punchTime: "08:10:00" },
-        { staffId: "569596", punchTime: "07:56:00" },
-        { staffId: "69449", punchTime: "07:52:00" },
-        { staffId: "43649", punchTime: "07:53:00" },
-        { staffId: "1020736436", punchTime: "07:53:00" },
-        { staffId: "1020737226", punchTime: "07:50:00" },
-        { staffId: "S139961", punchTime: "07:48:00" },
-        { staffId: "S260012", punchTime: "07:45:00" },
-        { staffId: "580907", punchTime: "07:57:00" },
-        { staffId: "S168206", punchTime: "07:54:00" },
-        { staffId: "75487", punchTime: "07:45:00" },
-        { staffId: "42079", punchTime: "07:57:00" },
-        { staffId: "S253690", punchTime: "07:44:00" },
-        { staffId: "1020717921", punchTime: "07:51:00" },
-        { staffId: "1020716854", punchTime: "07:53:00" },
-        { staffId: "1020741628", punchTime: "07:45:00" },
-        { staffId: "1020741634", punchTime: "07:55:00" },
-        { staffId: "S249277", punchTime: "07:52:00" },
-        { staffId: "S250896", punchTime: "07:49:00" },
-        { staffId: "S115177", punchTime: "07:57:00" },
-        { staffId: "S249259", punchTime: "07:53:00" },
-        { staffId: "S249221", punchTime: "07:41:00" },
-        { staffId: "S246583", punchTime: "07:50:00" },
-        { staffId: "1020742341", punchTime: "07:52:00" },
-        { staffId: "S201585", punchTime: "07:43:00" },
-        { staffId: "1020704195", punchTime: "07:56:00" },
-        { staffId: "1020742446", punchTime: "07:49:00" },
-        { staffId: "S230019", punchTime: "07:53:00" },
-        { staffId: "S231745", punchTime: "07:54:00" },
-        { staffId: "S258137", punchTime: "07:51:00" },
-        { staffId: "64686", punchTime: "08:00:00" },
-        { staffId: "79053", punchTime: "07:50:00" },
-        { staffId: "1020741891", punchTime: "07:41:00" },
-        { staffId: "1020736507", punchTime: "07:53:00" },
-        { staffId: "S184615", punchTime: "07:43:00" },
-        { staffId: "56005", punchTime: "07:47:00" },
-        { staffId: "S203899", punchTime: "07:52:00" },
-        { staffId: "S231390", punchTime: "07:48:00" },
-        { staffId: "S137076", punchTime: "07:44:00" },
-        { staffId: "S250175", punchTime: "07:56:00" },
-        { staffId: "S250357", punchTime: "07:51:00" },
-        { staffId: "S254090", punchTime: "07:48:00" },
-        { staffId: "S260015", punchTime: "07:45:00" },
-        { staffId: "S260014", punchTime: "07:56:00" },
-        { staffId: "S260016", punchTime: "07:50:00" },
-        { staffId: "1020716396", punchTime: "07:49:00" },
-        { staffId: "1020740381", punchTime: "07:49:00" },
-        { staffId: "R000225348", punchTime: "07:47:00" },
-        { staffId: "1020722708", punchTime: "07:48:00" },
-        { staffId: "1020730785", punchTime: "07:39:00" },
-        { staffId: "1020723681", punchTime: "07:51:00" },
-        { staffId: "1020723682", punchTime: "07:48:00" },
-        { staffId: "1020723192", punchTime: "07:51:00" },
-        { staffId: "S132012", punchTime: "07:56:00" }
-    ];
-
-    // ====================================================
-    // 3. INITIALIZATION
-    // ====================================================
+    let masterListData = [];     // Employee Master List (Staff ID, Name, Designation)
+    let currentTableData = [];   // Current Punch Report Data
     let videoStream = null;
-    let capturedImageData = null; // Chobi store korar jonno
+    let capturedImageData = null;
 
+    // ====================================================
+    // 3. PAGE INITIALIZATION
+    // ====================================================
     window.onload = function() {
         loadDataFromFirebase();
     };
@@ -543,93 +286,337 @@
             const data = snapshot.val();
             loadingSpinner.style.display = 'none';
 
-            if (data && data.masterList && data.punchReportData) {
-                generateTableFromData(data.masterList, data.punchReportData);
-            } else {
-                generateTableFromData(masterList, punchReportData);
+            if (data && data.masterList) {
+                masterListData = data.masterList;
+                console.log("✅ Master List loaded from Firebase:", masterListData.length, "employees");
+            }
+
+            if (data && data.currentTableData) {
+                currentTableData = data.currentTableData;
+                generateTable(currentTableData);
+                console.log("✅ Previous Table Data loaded from Firebase");
             }
         }).catch((error) => {
             console.error("Firebase Load Error:", error);
             loadingSpinner.style.display = 'none';
-            generateTableFromData(masterList, punchReportData);
         });
     }
 
-    function triggerUpload(type) {
-        if (type === 'Punch Report Day Shift') document.getElementById('dayShiftInput').click();
-        else if (type === 'Punch Report Night Shift') document.getElementById('nightShiftInput').click();
-        else if (type === 'Master List') document.getElementById('mainFileUpload').click();
-    }
+    // ====================================================
+    // 4. MASTER LIST UPLOAD (Employee Master List.xlsx)
+    // ====================================================
+    function handleMasterListUpload(input) {
+        if (!input.files || input.files.length === 0) return;
 
-    function handleFileChange(input, type) {
-        if (input.files && input.files.length > 0) {
-            const fileName = input.files[0].name;
-            const infoMsg = document.getElementById('infoMsg');
-            infoMsg.style.display = 'block';
-            infoMsg.textContent = `File Selected: ${fileName} (${type}). Saving to Firebase...`;
+        const file = input.files[0];
+        const infoMsg = document.getElementById('infoMsg');
+        const loadingSpinner = document.getElementById('loadingSpinner');
 
-            const dataToSave = {
-                masterList: masterList,
-                punchReportData: punchReportData,
-                lastUpdated: new Date().toISOString()
-            };
+        infoMsg.style.display = 'block';
+        infoMsg.textContent = `📂 Reading Master List: ${file.name}...`;
+        loadingSpinner.style.display = 'block';
 
-            database.ref('employeeData').set(dataToSave)
-                .then(() => {
-                    infoMsg.textContent = `✅ Data Saved to Firebase!`;
-                    generateTableFromData(masterList, punchReportData);
-                })
-                .catch((error) => {
-                    console.error("Firebase Save Error:", error);
-                    alert("Firebase e data save korte somossa hoyeche.");
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                // Parse Master List
+                // Column: SL/No, STAFF ID, EMPLOYEE NAME, DESIGNATION, SECTION NAME, Joining Date, Mobile No
+                const masterList = [];
+                const rows = jsonData.slice(1);
+
+                rows.forEach(row => {
+                    if (row[1]) { // STAFF ID column
+                        masterList.push({
+                            staffId: String(row[1]).trim(),
+                            name: row[2] ? String(row[2]).trim() : '',
+                            designation: row[3] ? String(row[3]).trim() : ''
+                        });
+                    }
                 });
-        }
+
+                masterListData = masterList;
+
+                // Save to Firebase
+                database.ref('employeeData').update({
+                    masterList: masterList,
+                    lastUpdated: new Date().toISOString()
+                }).then(() => {
+                    loadingSpinner.style.display = 'none';
+                    infoMsg.textContent = `✅ Master List saved! Total: ${masterList.length} employees.`;
+                    alert(`✅ Master List Uploaded Successfully!\nTotal Employees: ${masterList.length}`);
+                }).catch((error) => {
+                    console.error("Save Error:", error);
+                    loadingSpinner.style.display = 'none';
+                    alert("Firebase e save korte somossa hoyeche.");
+                });
+
+            } catch (error) {
+                console.error("Excel Read Error:", error);
+                loadingSpinner.style.display = 'none';
+                alert("Excel file read korte somossa hoyeche.");
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
     }
 
-    function togglePunchCardSection() {
-        const section = document.getElementById('punchCardSection');
-        section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
+    // ====================================================
+    // 5. PUNCH REPORT UPLOAD (Day/Night Shift)
+    // ====================================================
+    function handlePunchReportUpload(input, shiftType) {
+        if (!input.files || input.files.length === 0) return;
+
+        const file = input.files[0];
+        const infoMsg = document.getElementById('infoMsg');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        infoMsg.style.display = 'block';
+        infoMsg.textContent = `📂 Reading Punch Report: ${file.name}...`;
+        loadingSpinner.style.display = 'block';
+
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                // Parse Punch Report
+                // Column: Date, Shift, I/C Name, Staff No, Employee Name, Designation, In Punch Time
+                const punchData = [];
+                const rows = jsonData.slice(1);
+
+                rows.forEach(row => {
+                    if (row[3]) { // Staff No column (D)
+                        punchData.push({
+                            date: row[0] ? formatDate(row[0]) : '',
+                            shift: row[1] ? String(row[1]).trim() : shiftType,
+                            icName: row[2] ? String(row[2]).trim() : '',
+                            staffId: String(row[3]).trim(),
+                            empName: row[4] ? String(row[4]).trim() : '',
+                            designation: row[5] ? String(row[5]).trim() : '',
+                            punchTime: row[6] ? formatTime(row[6]) : '',
+                            rawPunchTime: row[6] // Raw value for remarks calculation
+                        });
+                    }
+                });
+
+                currentTableData = punchData;
+
+                loadingSpinner.style.display = 'none';
+                infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length} records.`;
+
+                // Generate Table
+                generateTable(punchData);
+
+                // Save to Firebase
+                database.ref('employeeData').update({
+                    currentTableData: punchData,
+                    lastUpdated: new Date().toISOString()
+                });
+
+            } catch (error) {
+                console.error("Excel Read Error:", error);
+                loadingSpinner.style.display = 'none';
+                alert("Excel file read korte somossa hoyeche.");
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
     }
 
-    function generateTableFromData(masterData, punchData) {
+    // ====================================================
+    // 6. GENERATE TABLE
+    // ====================================================
+    function generateTable(data) {
         const tableBody = document.getElementById('tableBody');
         const tableContainer = document.getElementById('tableContainer');
+        const summaryCards = document.getElementById('summaryCards');
         
-        tableBody.innerHTML = ''; 
+        tableBody.innerHTML = '';
 
+        if (!data || data.length === 0) {
+            tableContainer.style.display = 'none';
+            return;
+        }
+
+        // Master List map (Staff ID diye quick lookup)
         const masterMap = {};
-        masterData.forEach(emp => { masterMap[emp.staffId] = emp; });
-
-        let slNo = 1;
-
-        punchData.forEach(punch => {
-            const masterInfo = masterMap[punch.staffId];
-            if (masterInfo) {
-                const row = document.createElement('tr');
-                row.id = `row_${punch.staffId}`; 
-                
-                row.innerHTML = `
-                    <td>${slNo}</td>
-                    <td>${punch.staffId}</td>
-                    <td>${masterInfo.name}</td>
-                    <td>${masterInfo.designation}</td>
-                    <td>${punch.punchTime}</td>
-                    <td class="status-cell" id="status_${punch.staffId}">
-                        <span class="status-badge status-pending">Pending</span>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-                slNo++;
-            }
+        masterListData.forEach(emp => {
+            masterMap[emp.staffId] = emp;
         });
 
+        let slNo = 1;
+        let ontimeCount = 0;
+        let lateCount = 0;
+
+        data.forEach(record => {
+            // Master List theke Name/Designation ber kori (jodi Excel e na thake)
+            const masterInfo = masterMap[record.staffId];
+            const empName = record.empName || (masterInfo ? masterInfo.name : '-');
+            const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
+
+            // 🔥 Remarks Calculate Kori
+            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+
+            if (remarks.isLate) {
+                lateCount++;
+            } else {
+                ontimeCount++;
+            }
+
+            const tr = document.createElement('tr');
+            tr.id = `row_${record.staffId}`;
+            tr.innerHTML = `
+                <td>${slNo}</td>
+                <td>${record.date || '-'}</td>
+                <td>${record.shift || '-'}</td>
+                <td>${record.icName || '-'}</td>
+                <td><strong>${record.staffId}</strong></td>
+                <td>${empName}</td>
+                <td>${designation}</td>
+                <td>${record.punchTime || '-'}</td>
+                <td>
+                    <span class="remarks-badge ${remarks.isLate ? 'remarks-late' : 'remarks-ontime'}">
+                        ${remarks.text}
+                    </span>
+                </td>
+                <td class="status-cell" id="status_${record.staffId}">
+                    <span class="status-badge status-pending">Pending</span>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+            slNo++;
+        });
+
+        // Summary update
+        document.getElementById('totalCount').textContent = data.length;
+        document.getElementById('ontimeCount').textContent = ontimeCount;
+        document.getElementById('lateCount').textContent = lateCount;
+
+        // Show sections
         tableContainer.style.display = 'block';
+        summaryCards.style.display = 'grid';
         document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
         document.getElementById('punchCardSection').style.display = 'block';
 
+        // Load Present Status from Firebase
         loadStatusFromFirebase();
     }
 
+    // ====================================================
+    // 7. REMARKS CALCULATION LOGIC
+    // ====================================================
+    function calculateRemarks(punchTimeVal, shift) {
+        if (punchTimeVal === null || punchTimeVal === undefined || punchTimeVal === '') {
+            return { text: 'No Punch', isLate: true };
+        }
+
+        const punchMinutes = timeToMinutes(punchTimeVal);
+
+        // Day Shift cutoff: 08:00 AM (480 minutes)
+        // Night Shift cutoff: 08:00 PM (1200 minutes)
+        let cutoff = 8 * 60; // Default 8:00 AM
+        if (shift && String(shift).toLowerCase().includes('night')) {
+            cutoff = 20 * 60; // 8:00 PM
+        }
+
+        if (punchMinutes > cutoff) {
+            return { 
+                text: 'Late Punch / Shift Schedule Problem', 
+                isLate: true 
+            };
+        } else {
+            return { 
+                text: 'On Time', 
+                isLate: false 
+            };
+        }
+    }
+
+    // Time ke minutes e convert kori
+    function timeToMinutes(timeVal) {
+        if (timeVal === null || timeVal === undefined) return 0;
+        
+        // Excel time number (0.328 = 07:52 AM)
+        if (typeof timeVal === 'number' && timeVal < 1) {
+            return Math.round(timeVal * 24 * 60);
+        }
+
+        const timeStr = String(timeVal).trim();
+        const parts = timeStr.split(':');
+        if (parts.length >= 2) {
+            const hours = parseInt(parts[0]) || 0;
+            const minutes = parseInt(parts[1]) || 0;
+            return hours * 60 + minutes;
+        }
+        return 0;
+    }
+
+    // Date format kori (2026-09-10 00:00:00 → 10-09-2026)
+    function formatDate(dateVal) {
+        if (!dateVal) return '';
+        
+        if (typeof dateVal === 'number') {
+            const excelDate = XLSX.SSF.parse_date_code(dateVal);
+            if (excelDate) {
+                const d = String(excelDate.d).padStart(2, '0');
+                const m = String(excelDate.m).padStart(2, '0');
+                const y = excelDate.y;
+                return `${d}-${m}-${y}`;
+            }
+        }
+
+        const dateStr = String(dateVal).trim();
+        if (dateStr.includes(' ')) {
+            const datePart = dateStr.split(' ')[0];
+            const parts = datePart.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+        }
+        return dateStr;
+    }
+
+    // Time format kori (07:52:00 → 07:52 AM)
+    function formatTime(timeVal) {
+        if (timeVal === null || timeVal === undefined || timeVal === '') return '-';
+        
+        let hours = 0, minutes = 0;
+
+        if (typeof timeVal === 'number' && timeVal < 1) {
+            const totalMinutes = Math.round(timeVal * 24 * 60);
+            hours = Math.floor(totalMinutes / 60);
+            minutes = totalMinutes % 60;
+        } else {
+            const timeStr = String(timeVal).trim();
+            const parts = timeStr.split(':');
+            if (parts.length >= 2) {
+                hours = parseInt(parts[0]) || 0;
+                minutes = parseInt(parts[1]) || 0;
+            } else {
+                return timeStr;
+            }
+        }
+
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
+    }
+
+    // ====================================================
+    // 8. LOAD PRESENT STATUS FROM FIREBASE
+    // ====================================================
     function loadStatusFromFirebase() {
         const statusRef = database.ref('punchStatus');
         statusRef.on('value', (snapshot) => {
@@ -650,8 +637,13 @@
     }
 
     // ====================================================
-    // 4. CAMERA LOGIC
+    // 9. CAMERA LOGIC
     // ====================================================
+    function togglePunchCardSection() {
+        const section = document.getElementById('punchCardSection');
+        section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
+    }
+
     async function openCamera() {
         const modal = document.getElementById('cameraModal');
         const video = document.getElementById('cameraVideo');
@@ -700,7 +692,7 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        capturedImageData = canvas.toDataURL('image/png'); // Store chobi
+        capturedImageData = canvas.toDataURL('image/png');
         capturedPhoto.src = capturedImageData;
         capturedPhoto.style.display = 'block';
         video.style.display = 'none';
@@ -720,7 +712,7 @@
     }
 
     // ====================================================
-    // 5. OCR + AUTO DETECT LOGIC
+    // 10. OCR + AUTO DETECT LOGIC
     // ====================================================
     async function processOCRAndUpload() {
         const ocrProcessing = document.getElementById('ocrProcessing');
@@ -729,44 +721,35 @@
         const staffConfirmSection = document.getElementById('staffConfirmSection');
         const confirmBtn = document.getElementById('confirmBtn');
 
-        // Hide confirm button, show processing
         confirmBtn.style.display = 'none';
         ocrProcessing.style.display = 'block';
         ocrResult.style.display = 'none';
         staffConfirmSection.style.display = 'none';
 
         try {
-            // 🔥 Tesseract.js diye OCR chole
             const result = await Tesseract.recognize(
                 capturedImageData,
                 'eng',
-                { 
-                    logger: m => console.log(m) // Progress log
-                }
+                { logger: m => console.log(m) }
             );
 
             const detectedText = result.data.text;
             console.log("OCR Detected Text:", detectedText);
 
-            // 🔥 Text theke Staff ID extract kora
             const staffId = extractStaffId(detectedText);
 
             ocrProcessing.style.display = 'none';
 
             if (staffId) {
-                // ✅ ID pawa geche
                 detectedIdSpan.textContent = staffId;
                 ocrResult.style.display = 'block';
 
-                // Automatic Present Status update
                 await autoUpdateStatus(staffId);
                 
-                // 2 second por modal close
                 setTimeout(() => {
                     closeCamera();
                 }, 2000);
             } else {
-                // ❌ ID pawa jayni, manual input dekhaye
                 staffConfirmSection.style.display = 'block';
             }
 
@@ -779,38 +762,36 @@
 
     // 🔥 Text theke Staff ID extract korar function
     function extractStaffId(text) {
-        // Master List theke shob Staff ID collect kori
-        const allStaffIds = masterList.map(emp => emp.staffId);
-        
-        // Text ta clean kori (space, newline remove)
+        // Shob valid Staff ID collect kori (Master List + Current Table)
+        const allStaffIds = new Set();
+        masterListData.forEach(emp => allStaffIds.add(emp.staffId));
+        currentTableData.forEach(row => allStaffIds.add(row.staffId));
+        const validIds = Array.from(allStaffIds);
+
         const cleanText = text.replace(/\s+/g, ' ').toUpperCase();
         console.log("Cleaned Text:", cleanText);
 
-        // 🔥 Method 1: Exact match kori (Master List er sathe)
-        for (const staffId of allStaffIds) {
-            const idUpper = staffId.toUpperCase();
-            if (cleanText.includes(idUpper)) {
+        // Method 1: Exact match
+        for (const staffId of validIds) {
+            if (cleanText.includes(staffId.toUpperCase())) {
                 console.log("Exact match found:", staffId);
                 return staffId;
             }
         }
 
-        // 🔥 Method 2: Regex diye number pattern ber kori
-        // "Staff ID", "ID", "Emp ID" er porer number ta khujbe
+        // Method 2: Regex pattern
         const patterns = [
-            /(?:STAFF\s*ID|ID|EMP\s*ID|EMPLOYEE\s*ID)[\s:]*([A-Z]?\d{4,})/i,
-            /\b([A-Z]?\d{4,})\b/g, // Any number with 4+ digits
+            /(?:STAFF\s*ID|ID|EMP\s*ID|EMPLOYEE\s*ID|SL)[\s:]*([A-Z]?\d{4,})/i,
+            /\b([A-Z]?\d{4,})\b/g,
         ];
 
         for (const pattern of patterns) {
             const matches = cleanText.match(pattern);
             if (matches) {
-                // Match gulo check kori Master List er sathe
                 for (const match of matches) {
                     const cleanMatch = match.replace(/[^A-Z0-9]/gi, '').toUpperCase();
                     
-                    // Number match kori
-                    const found = allStaffIds.find(id => 
+                    const found = validIds.find(id => 
                         id.toUpperCase() === cleanMatch ||
                         id.toUpperCase().includes(cleanMatch) ||
                         cleanMatch.includes(id.toUpperCase())
@@ -824,12 +805,11 @@
             }
         }
 
-        // 🔥 Method 3: Fuzzy match (jodi OCR e typo thake)
-        // Choto number gulo match kori
+        // Method 3: Fuzzy match
         const allNumbers = cleanText.match(/\d{4,}/g);
         if (allNumbers) {
             for (const num of allNumbers) {
-                const found = allStaffIds.find(id => id.includes(num) || num.includes(id.replace(/[A-Z]/g, '')));
+                const found = validIds.find(id => id.includes(num) || num.includes(id.replace(/[A-Z]/g, '')));
                 if (found) {
                     console.log("Fuzzy match found:", found);
                     return found;
@@ -837,7 +817,7 @@
             }
         }
 
-        return null; // Kichui match korlo na
+        return null;
     }
 
     // 🔥 Auto Present Status update
@@ -845,26 +825,23 @@
         const statusCell = document.getElementById(`status_${staffId}`);
         
         if (!statusCell) {
-            alert(`Staff ID "${staffId}" detected kintu table e nei. Please check manually.`);
+            alert(`Staff ID "${staffId}" detected kintu table e nei.`);
             return;
         }
 
         try {
-            // Firebase e save kori
             await database.ref('punchStatus/' + staffId).set({
                 status: 'Present',
                 timestamp: new Date().toISOString(),
                 detectedBy: 'OCR'
             });
 
-            // Green status dekhai
             statusCell.innerHTML = `
                 <span class="status-badge status-present">
                     <span class="green-dot"></span> Present
                 </span>
             `;
 
-            // Row highlight kori
             const updatedRow = document.getElementById(`row_${staffId}`);
             if (updatedRow) {
                 updatedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -872,7 +849,7 @@
                 setTimeout(() => { updatedRow.style.backgroundColor = ''; }, 2000);
             }
 
-            console.log(`✅ Staff ID ${staffId} marked Present automatically!`);
+            console.log(`✅ Staff ID ${staffId} marked Present!`);
 
         } catch (error) {
             console.error("Firebase Error:", error);
@@ -880,7 +857,7 @@
         }
     }
 
-    // Manual Submit (Jodi OCR fail kore)
+    // Manual Submit (Fallback)
     function finalizeUpload() {
         const staffId = document.getElementById('confirmStaffId').value.trim();
 
@@ -892,7 +869,7 @@
         const statusCell = document.getElementById(`status_${staffId}`);
         
         if (!statusCell) {
-            alert(`Staff ID "${staffId}" not found. Please check again.`);
+            alert(`Staff ID "${staffId}" not found.`);
             return;
         }
 
@@ -943,10 +920,10 @@
     }
 
     // ====================================================
-    // 6. CLEAR ALL DATA
+    // 11. CLEAR ALL DATA
     // ====================================================
     function clearAllData() {
-        if (confirm("Apni ki shob data clear korte chan?")) {
+        if (confirm("Apni ki shob data clear korte chan? Firebase theke shob data muche jabe.")) {
             Promise.all([
                 database.ref('employeeData').remove(),
                 database.ref('punchStatus').remove()
