@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - History + Master Report</title>
+    <title>Employee Punch Report - Final</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -86,6 +86,18 @@
         .day-shift-stat-box.abnormal .value { color: #dc3545; }
         .day-shift-stat-box.normal .value { color: #2e9f46; }
 
+        /* --- Action Taken Line --- */
+        .action-taken-line {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #fff8e1;
+            border-left: 4px solid #ff9800;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #663c00;
+            font-weight: 600;
+        }
+
         /* --- TABLE STYLES --- */
         .table-responsive { overflow-x: auto; margin-top: 15px; display: none; max-height: 500px; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -94,7 +106,6 @@
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
 
-        /* Smaller columns */
         #employeeTable th:nth-child(1), #employeeTable td:nth-child(1) { width: 40px; max-width: 40px; }
         #employeeTable th:nth-child(2), #employeeTable td:nth-child(2) { width: 75px; max-width: 75px; font-size: 10px; }
         #employeeTable th:nth-child(3), #employeeTable td:nth-child(3) { width: 45px; max-width: 45px; }
@@ -208,31 +219,6 @@
             padding: 12px;
         }
         .master-report-result h3 { font-size: 14px; color: #333; margin-bottom: 10px; }
-
-        /* Abnormalities Box */
-        .abnormalities-box {
-            background: #fff5f5;
-            border: 2px solid #dc3545;
-            border-radius: 6px;
-            padding: 10px 12px;
-            margin-top: 10px;
-        }
-        .abnormalities-box.ok {
-            background: #f0fff4;
-            border-color: #28a745;
-        }
-        .abnormalities-box h4 {
-            font-size: 13px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .abnormalities-box h4.red { color: #dc3545; }
-        .abnormalities-box h4.green { color: #28a745; }
-        .abnormalities-list { font-size: 12px; color: #333; }
-        .abnormalities-list ul { margin-left: 15px; margin-top: 5px; }
-        .abnormalities-list li { margin-bottom: 3px; }
 
         /* Report History List */
         .report-history-list {
@@ -357,7 +343,7 @@
         <h3>📅 Day Shift Punch Record (As per Upload)</h3>
         <div class="day-shift-stats">
             <div class="day-shift-stat-box total-box">
-                <div class="label">Total Employees</div>
+                <div class="label">Total Employees (Punch Report)</div>
                 <div class="value" id="dsTotal">0</div>
             </div>
             <div class="day-shift-stat-box present">
@@ -382,7 +368,10 @@
             </div>
         </div>
 
-        <div id="abnormalitiesDetail" style="margin-top: 12px;"></div>
+        <!-- Action Taken Line -->
+        <div class="action-taken-line" id="actionTakenLine">
+            🎯 <strong>Action Taken:</strong> Please Check Shift Schedule Employee & Solved it
+        </div>
     </div>
 
     <!-- MAIN TABLE -->
@@ -494,7 +483,7 @@
     let videoStream = null;
     let capturedImageData = null;
     let currentShiftType = 'Day';
-    let currentReportDate = ''; // Current report er date (YYYY-MM-DD format)
+    let currentReportDate = '';
     let currentReportShift = 'Day';
 
     // ====================================================
@@ -515,6 +504,7 @@
     // ====================================================
     window.onload = function() {
         loadMasterListFromFirebase();
+        loadCurrentReportFromFirebase();
     };
 
     function loadMasterListFromFirebase() {
@@ -524,6 +514,33 @@
                 masterListData = data;
                 console.log("✅ Master List loaded:", masterListData.length);
             }
+        });
+    }
+
+    function loadCurrentReportFromFirebase() {
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        loadingSpinner.style.display = 'block';
+
+        database.ref('currentReport').once('value', (snapshot) => {
+            loadingSpinner.style.display = 'none';
+            const data = snapshot.val();
+            
+            if (data && data.punchData && data.punchData.length > 0) {
+                currentTableData = data.punchData;
+                currentReportDate = data.reportDate;
+                currentReportShift = data.shift;
+                
+                console.log(`✅ Previous Report loaded: ${data.punchData.length} records`);
+                
+                generateTable(data.punchData);
+                
+                const infoMsg = document.getElementById('infoMsg');
+                infoMsg.style.display = 'block';
+                infoMsg.textContent = `✅ Previous Report loaded! Total: ${data.punchData.length} | Date: ${data.reportDate} | Shift: ${data.shift}`;
+            }
+        }).catch((error) => {
+            console.error("Load Current Report Error:", error);
+            loadingSpinner.style.display = 'none';
         });
     }
 
@@ -581,7 +598,7 @@
     }
 
     // ====================================================
-    // 5. PUNCH REPORT UPLOAD (Save to Firebase with Date+Shift)
+    // 5. PUNCH REPORT UPLOAD
     // ====================================================
     function handlePunchReportUpload(input, shiftType) {
         if (!input.files || input.files.length === 0) return;
@@ -610,7 +627,6 @@
 
                 jsonData.slice(1).forEach(row => {
                     if (row[3]) {
-                        // Report date from first valid row
                         if (!reportDate && row[0]) {
                             reportDate = extractReportDate(row[0]);
                         }
@@ -638,7 +654,6 @@
 
                 generateTable(punchData);
 
-                // 🔥 Firebase e save kori - ALADA node (reportHistory/date_shift)
                 const historyKey = `${reportDate}_${shiftType}`;
                 
                 database.ref('reportHistory/' + historyKey).set({
@@ -648,17 +663,16 @@
                     uploadedAt: new Date().toISOString(),
                     totalRecords: punchData.length
                 }).then(() => {
-                    console.log(`✅ Report saved to Firebase: ${historyKey}`);
-                }).catch((error) => {
-                    console.error("Save Error:", error);
+                    console.log(`✅ Report saved to history: ${historyKey}`);
                 });
 
-                // Current report (latest) o save kori
                 database.ref('currentReport').set({
                     reportDate: reportDate,
                     shift: shiftType,
                     punchData: punchData,
                     uploadedAt: new Date().toISOString()
+                }).then(() => {
+                    console.log("✅ Current Report saved");
                 });
 
             } catch (error) {
@@ -672,7 +686,7 @@
     }
 
     // ====================================================
-    // 6. EXTRACT REPORT DATE (YYYY-MM-DD format)
+    // 6. EXTRACT REPORT DATE
     // ====================================================
     function extractReportDate(dateVal) {
         if (!dateVal) return '';
@@ -686,11 +700,11 @@
 
         const dateStr = String(dateVal).trim();
         if (dateStr.includes(' ')) {
-            return dateStr.split(' ')[0]; // "2026-09-10"
+            return dateStr.split(' ')[0];
         } else if (dateStr.includes('-')) {
             const parts = dateStr.split('-');
             if (parts.length === 3 && parts[0].length === 4) {
-                return dateStr; // Already YYYY-MM-DD
+                return dateStr;
             } else if (parts.length === 3) {
                 return `${parts[2]}-${parts[1]}-${parts[0]}`;
             }
@@ -763,7 +777,7 @@
     }
 
     // ====================================================
-    // 8. UPDATE DAY SHIFT SUMMARY + ABNORMALITIES (NEW LOGIC)
+    // 8. UPDATE DAY SHIFT SUMMARY
     // ====================================================
     function updateDayShiftSummary(total, present, pending, late) {
         document.getElementById('dsTotal').textContent = total;
@@ -771,11 +785,6 @@
         document.getElementById('dsPending').textContent = pending;
         document.getElementById('dsLate').textContent = late;
 
-        // 🔥 NEW Abnormalities Logic:
-        // Jodi Present == Total → No Abnormalities (0 abnormal)
-        // Jodi Present < Total → Abnormalities = Total - Present
-        // Abnormalities means: jara Present na (Pending + Late soho shob mismatch)
-        
         let abnormalCount = 0;
         let normalCount = 0;
 
@@ -783,53 +792,15 @@
             abnormalCount = 0;
             normalCount = 0;
         } else if (present === total) {
-            // 100% Present → No Abnormalities
             abnormalCount = 0;
             normalCount = present;
         } else {
-            // Kichu employee Present na → Abnormalities
-            abnormalCount = total - present; // Pending + Late soho shob
+            abnormalCount = total - present;
             normalCount = present;
         }
 
         document.getElementById('dsAbnormal').textContent = abnormalCount;
         document.getElementById('dsNormal').textContent = normalCount;
-
-        // Abnormalities Details Box
-        const detailBox = document.getElementById('abnormalitiesDetail');
-        if (abnormalCount === 0 && total > 0) {
-            detailBox.innerHTML = `
-                <div class="abnormalities-box ok">
-                    <h4 class="green">✔️ No Abnormalities</h4>
-                    <div class="abnormalities-list">
-                        <p>Sob <strong>${total}</strong> jon employee er Punch Card upload hoyeche. <strong>Kono abnormalities nei.</strong></p>
-                        <ul>
-                            <li>Total Employees: <strong>${total}</strong></li>
-                            <li>Present (Card Uploaded): <strong>${present}</strong></li>
-                            <li>Match Rate: <strong>100%</strong></li>
-                        </ul>
-                    </div>
-                </div>
-            `;
-        } else if (total > 0) {
-            detailBox.innerHTML = `
-                <div class="abnormalities-box">
-                    <h4 class="red">🚨 Abnormalities Detected</h4>
-                    <div class="abnormalities-list">
-                        <p><strong>${abnormalCount}</strong> jon employee er Punch Card upload hoyni. Ei jonno <strong>${abnormalCount}</strong> ta abnormalities.</p>
-                        <ul>
-                            <li>Total Employees: <strong>${total}</strong></li>
-                            <li>✅ Present (Card Uploaded): <strong>${present}</strong></li>
-                            <li>⏳ Pending: <strong>${pending}</strong></li>
-                            <li>⚠️ Late Punch / Shift Schedule Problem: <strong>${late}</strong></li>
-                            <li>🚨 Abnormalities: <strong>${abnormalCount}</strong></li>
-                        </ul>
-                    </div>
-                </div>
-            `;
-        } else {
-            detailBox.innerHTML = '';
-        }
     }
 
     // ====================================================
@@ -920,7 +891,7 @@
     }
 
     // ====================================================
-    // 10. LOAD PRESENT STATUS + GREEN ROW
+    // 10. LOAD PRESENT STATUS
     // ====================================================
     function loadStatusFromFirebase() {
         const statusRef = database.ref('punchStatus');
@@ -938,19 +909,22 @@
             });
 
             if (data) {
-                for (const [staffId, status] of Object.entries(data)) {
-                    if (status.status === 'Present') {
-                        const row = document.getElementById(`row_${staffId}`);
-                        const statusCell = document.getElementById(`status_${staffId}`);
-                        
-                        if (row && statusCell) {
-                            row.classList.add('row-present');
-                            statusCell.innerHTML = `
-                                <span class="status-badge status-present">
-                                    <span class="green-dot"></span> Present
-                                </span>
-                            `;
-                            presentCount++;
+                for (const [statusKey, status] of Object.entries(data)) {
+                    if (status.status === 'Present' && status.staffId) {
+                        // Current report er date+shift er status check kori
+                        if (status.reportDate === currentReportDate && status.shift === currentReportShift) {
+                            const row = document.getElementById(`row_${status.staffId}`);
+                            const statusCell = document.getElementById(`status_${status.staffId}`);
+                            
+                            if (row && statusCell) {
+                                row.classList.add('row-present');
+                                statusCell.innerHTML = `
+                                    <span class="status-badge status-present">
+                                        <span class="green-dot"></span> Present
+                                    </span>
+                                `;
+                                presentCount++;
+                            }
                         }
                     }
                 }
@@ -1166,7 +1140,7 @@
     }
 
     // ====================================================
-    // 13. AUTO UPDATE STATUS (Green Row)
+    // 13. AUTO UPDATE STATUS
     // ====================================================
     async function autoUpdateStatus(staffId) {
         const statusCell = document.getElementById(`status_${staffId}`);
@@ -1176,7 +1150,6 @@
         }
 
         try {
-            // Report-specific status key (date+shift+staffId)
             const statusKey = `${currentReportDate}_${currentReportShift}_${staffId}`;
             
             await database.ref('punchStatus/' + statusKey).set({
@@ -1257,7 +1230,7 @@
     }
 
     // ====================================================
-    // 14. MASTER REPORT - LOAD SAVED REPORT (History)
+    // 14. MASTER REPORT - LOAD SAVED REPORT
     // ====================================================
     function loadSavedReport() {
         const filterDate = document.getElementById('filterDate').value;
@@ -1269,7 +1242,6 @@
         }
 
         const historyKey = `${filterDate}_${filterShift}`;
-
         const loadingSpinner = document.getElementById('loadingSpinner');
         loadingSpinner.style.display = 'block';
 
@@ -1278,11 +1250,10 @@
             const data = snapshot.val();
 
             if (!data || !data.punchData) {
-                alert(`❌ Kono report paoa jayni!\n\nDate: ${filterDate}\nShift: ${filterShift}\n\nPlease check the date & shift.`);
+                alert(`❌ Kono report paoa jayni!\n\nDate: ${filterDate}\nShift: ${filterShift}`);
                 return;
             }
 
-            // Show saved report
             displaySavedReport(data.punchData, data.reportDate, data.shift, data.uploadedAt);
         });
     }
@@ -1295,7 +1266,6 @@
         const masterMap = {};
         masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
-        // Save kora status load kori
         database.ref('punchStatus').once('value', (snapshot) => {
             const statusData = snapshot.val() || {};
             
@@ -1310,7 +1280,6 @@
                 const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
                 if (remarks.isLate) lateCount++;
 
-                // Status check kori
                 const statusKey = `${reportDate}_${shift}_${record.staffId}`;
                 const isPresent = statusData[statusKey] && statusData[statusKey].status === 'Present';
                 if (isPresent) presentCount++;
@@ -1362,7 +1331,7 @@
             const data = snapshot.val();
             
             if (!data) {
-                historyItems.innerHTML = '<p style="color:#666; font-size:12px;">Kono saved report nei. Please upload Punch Report first.</p>';
+                historyItems.innerHTML = '<p style="color:#666; font-size:12px;">Kono saved report nei.</p>';
                 return;
             }
 
