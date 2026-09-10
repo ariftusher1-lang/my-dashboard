@@ -111,6 +111,8 @@
         .btn-pdf { background-color: #e63946; }
         .btn-qr { background-color: #00b894; }
         .btn-qr:hover { background-color: #00a383; }
+        .btn-copy { background-color: #8e44ad; }
+        .btn-copy:hover { background-color: #7d3c98; }
 
         .hidden-input { display: none; }
 
@@ -135,6 +137,61 @@
             margin-top: 10px; padding: 8px 12px; background: #fff8e1;
             border-left: 4px solid #ff9800; border-radius: 4px;
             font-size: 12px; color: #663c00; font-weight: 600;
+        }
+
+        /* 🔥 SUMMARY MESSAGE BOX */
+        .summary-message-section {
+            display: none;
+            margin-top: 18px;
+            margin-bottom: 18px;
+            background: #ffffff;
+            border: 2px solid #106cc8;
+            border-radius: 10px;
+            padding: 0;
+            box-shadow: 0 4px 12px rgba(16, 108, 200, 0.15);
+            overflow: hidden;
+        }
+        .summary-message-header {
+            background: linear-gradient(135deg, #106cc8 0%, #17a2b8 100%);
+            color: #ffffff;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .summary-message-body {
+            padding: 18px 20px;
+            font-size: 13.5px;
+            line-height: 1.8;
+            color: #222;
+            background: #f8fbff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .summary-message-body strong { color: #106cc8; }
+        .summary-message-body .line-title { font-weight: 700; color: #0d3d75; }
+        .summary-message-body .line-present { color: #1b7a35; font-weight: 700; }
+        .summary-message-body .line-pending { color: #c0392b; font-weight: 700; }
+        .summary-message-body .line-normal { color: #1b7a35; font-weight: 700; }
+        .summary-message-body .line-problem { color: #c0392b; font-weight: 700; }
+        .summary-message-body .line-dept { color: #6f42c1; font-weight: 700; }
+        .summary-message-body .line-ic { color: #d97d26; font-weight: 700; }
+        .summary-message-footer {
+            padding: 8px 15px;
+            background: #eef4fb;
+            border-top: 1px solid #d0e3f5;
+            font-size: 12px;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .table-responsive { overflow-x: auto; margin-top: 15px; display: none; max-height: 500px; overflow-y: auto; }
@@ -354,6 +411,8 @@
             tr.row-pending { background: #f8d7da !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             tr.row-pending td { color: #721c24 !important; }
             #printHeader { display: block !important; }
+            .summary-message-section { display: block !important; box-shadow: none; }
+            .summary-message-footer { display: none !important; }
         }
 
         #printHeader { display: none; text-align: center; margin-bottom: 15px; }
@@ -368,6 +427,7 @@
             .filter-row { flex-direction: column; }
             .filter-group { width: 100%; }
             .filter-group input, .filter-group select { width: 100%; min-width: unset; }
+            .summary-message-body { font-size: 12.5px; padding: 14px 15px; }
         }
     </style>
 </head>
@@ -519,6 +579,22 @@
 
             <div class="action-taken-line" id="actionTakenLine">
                 🎯 <strong>Action Taken:</strong> Please Check Shift Schedule Employee & Solved it
+            </div>
+        </div>
+
+        <!-- 🔥 SUMMARY MESSAGE BOX (Dear Sir Format) -->
+        <div class="summary-message-section" id="summaryMessageSection">
+            <div class="summary-message-header">
+                <span>📩 Summary Message Report (Copy & Send)</span>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn btn-copy" onclick="copySummaryMessage()" style="padding: 5px 12px; font-size: 12px;">📋 Copy Message</button>
+                    <button class="btn btn-teal" onclick="toggleSummaryMessage()" style="padding: 5px 12px; font-size: 12px;">▲ Hide</button>
+                </div>
+            </div>
+            <div class="summary-message-body" id="summaryMessageBody"></div>
+            <div class="summary-message-footer">
+                <span>📌 Auto-generated summary — WhatsApp / Messenger এ পাঠানোর জন্য Copy করুন।</span>
+                <span id="summaryTimestamp"></span>
             </div>
         </div>
 
@@ -1103,7 +1179,7 @@
         document.getElementById('pdfBtn').style.display = 'inline-block';
     }
 
-    // ✅ UPDATED: Present উপরে, Pending নিচে + Pending Red color
+    // ✅ Present উপরে, Pending নিচে + Pending Red color
     function renderTablePage() {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
@@ -1135,7 +1211,6 @@
             const statusData = snapshot.val() || {};
             currentStatusData = statusData;
 
-            // 🔥 Present ar Pending আলাদা করি
             const presentRows = [];
             const pendingRows = [];
 
@@ -1150,7 +1225,6 @@
                 }
             });
 
-            // 🔥 Present আগে, Pending পরে (নিচে)
             const orderedData = [...presentRows, ...pendingRows];
 
             orderedData.forEach((item, idx) => {
@@ -1210,6 +1284,9 @@
             });
 
             updateDayShiftSummary(currentTableData.length, presentCount, currentTableData.length - presentCount, lateCount);
+
+            // 🔥 Update Summary Message Box
+            updateSummaryMessage();
         });
     }
 
@@ -1268,6 +1345,145 @@
 
         document.getElementById('dsAbnormal').textContent = abnormalCount;
         document.getElementById('dsNormal').textContent = normalCount;
+    }
+
+    // ====================================================
+    // 🔥 SUMMARY MESSAGE (Dear Sir Format)
+    // ====================================================
+    function updateSummaryMessage() {
+        if (!currentTableData || currentTableData.length === 0) {
+            document.getElementById('summaryMessageSection').style.display = 'none';
+            return;
+        }
+
+        const masterMap = {};
+        masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
+
+        const statusData = currentStatusData || {};
+
+        // 🔥 সব Unique I/C Name বের করি
+        const icNameSet = new Set();
+        currentTableData.forEach(record => {
+            if (record.icName && record.icName.trim() !== '') {
+                icNameSet.add(record.icName.trim());
+            }
+        });
+        const icNameList = Array.from(icNameSet);
+        let icDisplayText = '';
+        if (icNameList.length === 0) {
+            icDisplayText = 'N/A';
+        } else if (icNameList.length === 1) {
+            icDisplayText = 'Mr. ' + icNameList[0];
+        } else {
+            icDisplayText = icNameList.map(n => 'Mr. ' + n).join(', ');
+        }
+
+        // 🔥 Counts
+        const totalPunch = currentTableData.length;
+
+        let presentCount = 0;
+        let pendingCount = 0;
+        let lateCount = 0;
+
+        currentTableData.forEach(record => {
+            const sk = `${currentReportDate}_${currentReportShift}_${record.staffId}`;
+            const statusObj = statusData[sk];
+            const isPresent = statusObj && statusObj.status === 'Present';
+            if (isPresent) {
+                presentCount++;
+            } else {
+                pendingCount++;
+            }
+
+            const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
+            if (remarks.isLate) lateCount++;
+        });
+
+        const noAbnormalities = presentCount; // Present = No Abnormalities
+        const problemCount = lateCount;
+
+        // 🔥 Shift Display
+        let shiftDisplay = currentReportShift;
+        if (String(currentReportShift).toLowerCase().includes('night')) {
+            shiftDisplay = 'Night';
+        } else if (String(currentReportShift).toLowerCase().includes('day')) {
+            shiftDisplay = 'Day';
+        }
+
+        // 🔥 Date Display
+        const dateDisplay = currentReportDate || '-';
+
+        // 🔥 Department Display
+        const deptDisplay = loggedInSection || '-';
+
+        // 🔥 Message Build
+        const messageHTML = `
+<span class="line-title">Dear Sir,</span>
+Please See the Below Summery Report For Punch Report Vs Physically HR
+
+<span class="line-title">Date</span> - ${dateDisplay}, <span class="line-title">Shift</span> - ${shiftDisplay},
+<span class="line-dept">Department</span>- ${deptDisplay}
+<span class="line-title">Total Punch Data</span>- ${totalPunch} Nos (<span class="line-ic">Running I/C Name</span> - ${icDisplayText})
+<span class="line-present">✅ Present (Card Uploaded)</span>- ${presentCount} Nos 
+<span class="line-pending">Pending/Not Found Employee</span>- ${pendingCount} Nos
+<span class="line-normal">No Abnormalities Status</span>- ${noAbnormalities} Nos
+<span class="line-problem">Punch & Shift Schedule Problem</span> - ${problemCount} Nos
+        `.trim();
+
+        document.getElementById('summaryMessageBody').innerHTML = messageHTML;
+
+        // 🔥 Show section
+        document.getElementById('summaryMessageSection').style.display = 'block';
+
+        // 🔥 Timestamp
+        document.getElementById('summaryTimestamp').textContent = '🕒 Generated: ' + new Date().toLocaleString();
+    }
+
+    function toggleSummaryMessage() {
+        const body = document.getElementById('summaryMessageBody');
+        const section = document.getElementById('summaryMessageSection');
+        const btn = event ? event.target : null;
+        if (body.style.display === 'none') {
+            body.style.display = 'block';
+            if (btn) btn.textContent = '▲ Hide';
+        } else {
+            body.style.display = 'none';
+            if (btn) btn.textContent = '▼ Show';
+        }
+    }
+
+    function copySummaryMessage() {
+        const body = document.getElementById('summaryMessageBody');
+        if (!body) return;
+
+        // 🔥 Plain text বানাই (with line breaks)
+        const plainText = body.innerText;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(plainText).then(() => {
+                alert("✅ Summary Message copied! WhatsApp / Messenger এ Paste করুন।");
+            }).catch(err => {
+                fallbackCopy(plainText);
+            });
+        } else {
+            fallbackCopy(plainText);
+        }
+    }
+
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            alert("✅ Summary Message copied! WhatsApp / Messenger এ Paste করুন।");
+        } catch (err) {
+            alert("❌ Copy failed. Please manually select and copy.");
+        }
+        document.body.removeChild(textarea);
     }
 
     function calculateRemarks(punchTimeVal, shift) {
@@ -2034,7 +2250,6 @@
         });
     }
 
-    // ✅ UPDATED: Present উপরে, Pending নিচে + Pending Red color
     function displaySavedReport(punchData, reportDate, shift, uploadedAt) {
         const resultSection = document.getElementById('masterReportResult');
         const resultBody = document.getElementById('masterReportBody');
@@ -2046,7 +2261,6 @@
         database.ref('punchStatus').once('value', (snapshot) => {
             const statusData = snapshot.val() || {};
             
-            // 🔥 Present ar Pending আলাদা
             const presentList = [];
             const pendingList = [];
 
