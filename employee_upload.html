@@ -22,6 +22,9 @@
     <!-- 🔥 QR Code Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
+    <!-- 🖼️ html2canvas for Summary Image Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f4f4; padding: 15px; }
@@ -113,6 +116,8 @@
         .btn-qr:hover { background-color: #00a383; }
         .btn-copy { background-color: #8e44ad; }
         .btn-copy:hover { background-color: #7d3c98; }
+        .btn-img { background-color: #e67e22; }
+        .btn-img:hover { background-color: #d35400; }
 
         .hidden-input { display: none; }
 
@@ -413,6 +418,7 @@
             #printHeader { display: block !important; }
             .summary-message-section { display: block !important; box-shadow: none; }
             .summary-message-footer { display: none !important; }
+            .summary-message-header { display: none !important; }
         }
 
         #printHeader { display: none; text-align: center; margin-bottom: 15px; }
@@ -586,7 +592,8 @@
         <div class="summary-message-section" id="summaryMessageSection">
             <div class="summary-message-header">
                 <span>📩 Summary Message Report (Copy & Send)</span>
-                <div style="display: flex; gap: 6px;">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="btn btn-img" onclick="downloadSummaryImage()" style="padding: 5px 12px; font-size: 12px;">📸 Download Image</button>
                     <button class="btn btn-copy" onclick="copySummaryMessage()" style="padding: 5px 12px; font-size: 12px;">📋 Copy Message</button>
                     <button class="btn btn-teal" onclick="toggleSummaryMessage()" style="padding: 5px 12px; font-size: 12px;">▲ Hide</button>
                 </div>
@@ -1361,11 +1368,16 @@
 
         const statusData = currentStatusData || {};
 
-        // 🔥 সব Unique I/C Name বের করি
+        // 🔥 সব Unique I/C Name বের করি (FIX: "Mr. Mr." double problem)
         const icNameSet = new Set();
         currentTableData.forEach(record => {
             if (record.icName && record.icName.trim() !== '') {
-                icNameSet.add(record.icName.trim());
+                let rawIc = record.icName.trim();
+                // ❌ Remove starting "Mr." / "Mr" / "MR." / "MR" from raw
+                rawIc = rawIc.replace(/^(Mr\.?\s*|MR\.?\s*)+/i, '').trim();
+                if (rawIc !== '') {
+                    icNameSet.add(rawIc);
+                }
             }
         });
         const icNameList = Array.from(icNameSet);
@@ -1399,7 +1411,16 @@
             if (remarks.isLate) lateCount++;
         });
 
-        const noAbnormalities = presentCount; // Present = No Abnormalities
+        // 🔥 Abnormalities Status — নতুন লজিক
+        // যদি Total Punch == Present → "No"
+        // যদি 1 জনও Pending থাকে → "Yes X Nos"
+        let abnormalitiesText = '';
+        if (totalPunch === presentCount) {
+            abnormalitiesText = 'No';
+        } else {
+            abnormalitiesText = 'Yes ' + pendingCount + ' Nos';
+        }
+
         const problemCount = lateCount;
 
         // 🔥 Shift Display
@@ -1416,6 +1437,9 @@
         // 🔥 Department Display
         const deptDisplay = loggedInSection || '-';
 
+        // 🔥 Abnormalities color — "No" হলে সবুজ, "Yes" হলে লাল
+        const abnormalClass = (totalPunch === presentCount) ? 'line-normal' : 'line-problem';
+
         // 🔥 Message Build
         const messageHTML = `
 <span class="line-title">Dear Sir,</span>
@@ -1426,7 +1450,7 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
 <span class="line-title">Total Punch Data</span>- ${totalPunch} Nos (<span class="line-ic">Running I/C Name</span> - ${icDisplayText})
 <span class="line-present">✅ Present (Card Uploaded)</span>- ${presentCount} Nos 
 <span class="line-pending">Pending/Not Found Employee</span>- ${pendingCount} Nos
-<span class="line-normal">No Abnormalities Status</span>- ${noAbnormalities} Nos
+<span class="${abnormalClass}">Abnormalities Status</span>- ${abnormalitiesText}
 <span class="line-problem">Punch & Shift Schedule Problem</span> - ${problemCount} Nos
         `.trim();
 
@@ -1441,7 +1465,6 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
 
     function toggleSummaryMessage() {
         const body = document.getElementById('summaryMessageBody');
-        const section = document.getElementById('summaryMessageSection');
         const btn = event ? event.target : null;
         if (body.style.display === 'none') {
             body.style.display = 'block';
@@ -1456,7 +1479,6 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         const body = document.getElementById('summaryMessageBody');
         if (!body) return;
 
-        // 🔥 Plain text বানাই (with line breaks)
         const plainText = body.innerText;
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1484,6 +1506,55 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             alert("❌ Copy failed. Please manually select and copy.");
         }
         document.body.removeChild(textarea);
+    }
+
+    // 🔥 NEW: Summary Message Image Download
+    function downloadSummaryImage() {
+        const section = document.getElementById('summaryMessageSection');
+        if (!section) return;
+
+        // Show section temporarily (jodi hide thake)
+        const oldDisplay = section.style.display;
+        section.style.display = 'block';
+
+        // 🔥 Timestamp + button hide for clean image
+        const timestampEl = document.getElementById('summaryTimestamp');
+        const footer = section.querySelector('.summary-message-footer');
+        const header = section.querySelector('.summary-message-header');
+
+        const oldTimestampDisplay = timestampEl ? timestampEl.style.display : '';
+        const oldFooterDisplay = footer ? footer.style.display : '';
+        const oldHeaderDisplay = header ? header.style.display : '';
+
+        if (footer) footer.style.display = 'none';
+        if (header) header.style.display = 'none';
+
+        html2canvas(section, {
+            scale: 3,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            logging: false
+        }).then(canvas => {
+            // Restore UI
+            if (footer) footer.style.display = oldFooterDisplay;
+            if (header) header.style.display = oldHeaderDisplay;
+            if (timestampEl) timestampEl.style.display = oldTimestampDisplay;
+            section.style.display = oldDisplay;
+
+            const link = document.createElement('a');
+            const dateStr = (currentReportDate || 'Report').replace(/[^0-9\-]/g, '');
+            const shiftStr = (currentReportShift || 'Shift').replace(/[^A-Za-z]/g, '');
+            link.download = `Summary_Report_${dateStr}_${shiftStr}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(err => {
+            console.error("Image Download Error:", err);
+            if (footer) footer.style.display = oldFooterDisplay;
+            if (header) header.style.display = oldHeaderDisplay;
+            if (timestampEl) timestampEl.style.display = oldTimestampDisplay;
+            section.style.display = oldDisplay;
+            alert("❌ Image download failed. Please try again.");
+        });
     }
 
     function calculateRemarks(punchTimeVal, shift) {
