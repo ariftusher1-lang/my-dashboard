@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Excel + OCR + Firebase</title>
+    <title>Employee Punch Report - Excel + OCR (Bangla Support)</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -97,6 +97,7 @@
 
         /* --- OCR Result --- */
         .ocr-result { display: none; margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 4px; border: 1px solid #c3e6cb; color: #155724; font-weight: 600; }
+        .ocr-debug { display: none; margin-top: 10px; padding: 10px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 12px; color: #333; max-height: 150px; overflow-y: auto; text-align: left; }
 
         /* --- Info Message --- */
         .info-msg { margin-top: 10px; padding: 10px; background: #eef4fb; border-left: 4px solid #106cc8; color: #333; font-size: 14px; display: none; border-radius: 4px; }
@@ -131,7 +132,6 @@
     </div>
     <hr>
 
-    <!-- Upload Buttons -->
     <div class="button-group">
         <button class="btn btn-green" onclick="document.getElementById('masterListInput').click()">📋 Upload Master List</button>
         <button class="btn btn-orange" onclick="document.getElementById('dayShiftInput').click()">📅 Upload Punch Report Day Shift</button>
@@ -140,18 +140,15 @@
         <button class="btn btn-purple" onclick="togglePunchCardSection()" id="punchCardToggleBtn" style="display: none;">📸 Punch Card Photo Upload (Individual)</button>
     </div>
 
-    <!-- Hidden File Inputs -->
     <input type="file" id="masterListInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleMasterListUpload(this)">
     <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Day')">
     <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handlePunchReportUpload(this, 'Night')">
 
-    <!-- ============================================== -->
     <!-- PUNCH CARD CAMERA SECTION -->
-    <!-- ============================================== -->
     <div class="punch-card-section" id="punchCardSection">
         <h2>📸 Punch Card Photo Upload (Individual)</h2>
         <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
-            Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe ebong <strong>Present Status</strong> Green hoye jabe.
+            Camera button e click korun, Punch Card er chobi tulun. OCR automatic Staff ID detect korbe (Bangla/English dui tai) ebong <strong>Present Status</strong> Green hoye jabe.
         </p>
         
         <div class="camera-controls">
@@ -159,16 +156,13 @@
         </div>
     </div>
 
-    <!-- Info Message -->
     <div class="info-msg" id="infoMsg"></div>
 
-    <!-- Loading Spinner -->
     <div class="loading" id="loadingSpinner">
         <div class="spinner"></div>
         Processing...
     </div>
 
-    <!-- Summary Cards -->
     <div class="summary-cards" id="summaryCards" style="display: none;">
         <div class="summary-card total">
             <div class="number" id="totalCount">0</div>
@@ -184,7 +178,6 @@
         </div>
     </div>
 
-    <!-- Main Table -->
     <div class="table-responsive" id="tableContainer">
         <table id="employeeTable">
             <thead>
@@ -201,16 +194,12 @@
                     <th>Present Status</th>
                 </tr>
             </thead>
-            <tbody id="tableBody">
-                <!-- Data will be inserted here dynamically -->
-            </tbody>
+            <tbody id="tableBody"></tbody>
         </table>
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- CAMERA MODAL (POPUP) -->
-<!-- ============================================== -->
+<!-- CAMERA MODAL -->
 <div class="camera-modal" id="cameraModal">
     <div class="camera-modal-content">
         <button class="btn-close-modal" onclick="closeCamera()">✖</button>
@@ -233,6 +222,12 @@
 
         <div class="ocr-result" id="ocrResult">
             ✅ <strong>Staff ID Detected:</strong> <span id="detectedId"></span>
+        </div>
+
+        <!-- OCR Debug (Ki text paoa geche dekhar jonno) -->
+        <div class="ocr-debug" id="ocrDebug">
+            <strong>OCR Detected Text:</strong><br>
+            <pre id="ocrDebugText" style="white-space: pre-wrap; word-break: break-word;"></pre>
         </div>
 
         <div class="staff-confirm-section" id="staffConfirmSection">
@@ -264,10 +259,23 @@
     // ====================================================
     // 2. GLOBAL VARIABLES
     // ====================================================
-    let masterListData = [];     // Employee Master List (Staff ID, Name, Designation)
-    let currentTableData = [];   // Current Punch Report Data
+    let masterListData = [];
+    let currentTableData = [];
     let videoStream = null;
     let capturedImageData = null;
+
+    // ====================================================
+    // 2A. BANGLA TO ENGLISH DIGIT CONVERTER
+    // ====================================================
+    const banglaToEnglishDigits = {
+        '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+        '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+    };
+
+    function convertBanglaToEnglish(text) {
+        if (!text) return '';
+        return String(text).replace(/[০-৯]/g, (match) => banglaToEnglishDigits[match] || match);
+    }
 
     // ====================================================
     // 3. PAGE INITIALIZATION
@@ -288,13 +296,12 @@
 
             if (data && data.masterList) {
                 masterListData = data.masterList;
-                console.log("✅ Master List loaded from Firebase:", masterListData.length, "employees");
+                console.log("✅ Master List loaded:", masterListData.length, "employees");
             }
 
             if (data && data.currentTableData) {
                 currentTableData = data.currentTableData;
                 generateTable(currentTableData);
-                console.log("✅ Previous Table Data loaded from Firebase");
             }
         }).catch((error) => {
             console.error("Firebase Load Error:", error);
@@ -303,7 +310,7 @@
     }
 
     // ====================================================
-    // 4. MASTER LIST UPLOAD (Employee Master List.xlsx)
+    // 4. MASTER LIST UPLOAD
     // ====================================================
     function handleMasterListUpload(input) {
         if (!input.files || input.files.length === 0) return;
@@ -326,15 +333,13 @@
                 const worksheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                // Parse Master List
-                // Column: SL/No, STAFF ID, EMPLOYEE NAME, DESIGNATION, SECTION NAME, Joining Date, Mobile No
                 const masterList = [];
                 const rows = jsonData.slice(1);
 
                 rows.forEach(row => {
-                    if (row[1]) { // STAFF ID column
+                    if (row[1]) {
                         masterList.push({
-                            staffId: String(row[1]).trim(),
+                            staffId: convertBanglaToEnglish(String(row[1]).trim()),
                             name: row[2] ? String(row[2]).trim() : '',
                             designation: row[3] ? String(row[3]).trim() : ''
                         });
@@ -343,24 +348,23 @@
 
                 masterListData = masterList;
 
-                // Save to Firebase
                 database.ref('employeeData').update({
                     masterList: masterList,
                     lastUpdated: new Date().toISOString()
                 }).then(() => {
                     loadingSpinner.style.display = 'none';
                     infoMsg.textContent = `✅ Master List saved! Total: ${masterList.length} employees.`;
-                    alert(`✅ Master List Uploaded Successfully!\nTotal Employees: ${masterList.length}`);
+                    alert(`✅ Master List Uploaded!\nTotal: ${masterList.length}`);
                 }).catch((error) => {
                     console.error("Save Error:", error);
                     loadingSpinner.style.display = 'none';
-                    alert("Firebase e save korte somossa hoyeche.");
+                    alert("Firebase save error.");
                 });
 
             } catch (error) {
                 console.error("Excel Read Error:", error);
                 loadingSpinner.style.display = 'none';
-                alert("Excel file read korte somossa hoyeche.");
+                alert("Excel read error.");
             }
         };
 
@@ -368,7 +372,7 @@
     }
 
     // ====================================================
-    // 5. PUNCH REPORT UPLOAD (Day/Night Shift)
+    // 5. PUNCH REPORT UPLOAD
     // ====================================================
     function handlePunchReportUpload(input, shiftType) {
         if (!input.files || input.files.length === 0) return;
@@ -391,22 +395,20 @@
                 const worksheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                // Parse Punch Report
-                // Column: Date, Shift, I/C Name, Staff No, Employee Name, Designation, In Punch Time
                 const punchData = [];
                 const rows = jsonData.slice(1);
 
                 rows.forEach(row => {
-                    if (row[3]) { // Staff No column (D)
+                    if (row[3]) {
                         punchData.push({
                             date: row[0] ? formatDate(row[0]) : '',
                             shift: row[1] ? String(row[1]).trim() : shiftType,
                             icName: row[2] ? String(row[2]).trim() : '',
-                            staffId: String(row[3]).trim(),
+                            staffId: convertBanglaToEnglish(String(row[3]).trim()),
                             empName: row[4] ? String(row[4]).trim() : '',
                             designation: row[5] ? String(row[5]).trim() : '',
                             punchTime: row[6] ? formatTime(row[6]) : '',
-                            rawPunchTime: row[6] // Raw value for remarks calculation
+                            rawPunchTime: row[6]
                         });
                     }
                 });
@@ -416,10 +418,8 @@
                 loadingSpinner.style.display = 'none';
                 infoMsg.textContent = `✅ Punch Report loaded! Total: ${punchData.length} records.`;
 
-                // Generate Table
                 generateTable(punchData);
 
-                // Save to Firebase
                 database.ref('employeeData').update({
                     currentTableData: punchData,
                     lastUpdated: new Date().toISOString()
@@ -428,7 +428,7 @@
             } catch (error) {
                 console.error("Excel Read Error:", error);
                 loadingSpinner.style.display = 'none';
-                alert("Excel file read korte somossa hoyeche.");
+                alert("Excel read error.");
             }
         };
 
@@ -450,7 +450,6 @@
             return;
         }
 
-        // Master List map (Staff ID diye quick lookup)
         const masterMap = {};
         masterListData.forEach(emp => {
             masterMap[emp.staffId] = emp;
@@ -461,12 +460,10 @@
         let lateCount = 0;
 
         data.forEach(record => {
-            // Master List theke Name/Designation ber kori (jodi Excel e na thake)
             const masterInfo = masterMap[record.staffId];
             const empName = record.empName || (masterInfo ? masterInfo.name : '-');
             const designation = record.designation || (masterInfo ? masterInfo.designation : '-');
 
-            // 🔥 Remarks Calculate Kori
             const remarks = calculateRemarks(record.rawPunchTime || record.punchTime, record.shift);
 
             if (remarks.isLate) {
@@ -499,23 +496,20 @@
             slNo++;
         });
 
-        // Summary update
         document.getElementById('totalCount').textContent = data.length;
         document.getElementById('ontimeCount').textContent = ontimeCount;
         document.getElementById('lateCount').textContent = lateCount;
 
-        // Show sections
         tableContainer.style.display = 'block';
         summaryCards.style.display = 'grid';
         document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
         document.getElementById('punchCardSection').style.display = 'block';
 
-        // Load Present Status from Firebase
         loadStatusFromFirebase();
     }
 
     // ====================================================
-    // 7. REMARKS CALCULATION LOGIC
+    // 7. REMARKS CALCULATION
     // ====================================================
     function calculateRemarks(punchTimeVal, shift) {
         if (punchTimeVal === null || punchTimeVal === undefined || punchTimeVal === '') {
@@ -524,31 +518,21 @@
 
         const punchMinutes = timeToMinutes(punchTimeVal);
 
-        // Day Shift cutoff: 08:00 AM (480 minutes)
-        // Night Shift cutoff: 08:00 PM (1200 minutes)
-        let cutoff = 8 * 60; // Default 8:00 AM
+        let cutoff = 8 * 60;
         if (shift && String(shift).toLowerCase().includes('night')) {
-            cutoff = 20 * 60; // 8:00 PM
+            cutoff = 20 * 60;
         }
 
         if (punchMinutes > cutoff) {
-            return { 
-                text: 'Late Punch / Shift Schedule Problem', 
-                isLate: true 
-            };
+            return { text: 'Late Punch / Shift Schedule Problem', isLate: true };
         } else {
-            return { 
-                text: 'On Time', 
-                isLate: false 
-            };
+            return { text: 'On Time', isLate: false };
         }
     }
 
-    // Time ke minutes e convert kori
     function timeToMinutes(timeVal) {
         if (timeVal === null || timeVal === undefined) return 0;
         
-        // Excel time number (0.328 = 07:52 AM)
         if (typeof timeVal === 'number' && timeVal < 1) {
             return Math.round(timeVal * 24 * 60);
         }
@@ -563,7 +547,6 @@
         return 0;
     }
 
-    // Date format kori (2026-09-10 00:00:00 → 10-09-2026)
     function formatDate(dateVal) {
         if (!dateVal) return '';
         
@@ -588,7 +571,6 @@
         return dateStr;
     }
 
-    // Time format kori (07:52:00 → 07:52 AM)
     function formatTime(timeVal) {
         if (timeVal === null || timeVal === undefined || timeVal === '') return '-';
         
@@ -615,7 +597,7 @@
     }
 
     // ====================================================
-    // 8. LOAD PRESENT STATUS FROM FIREBASE
+    // 8. LOAD PRESENT STATUS
     // ====================================================
     function loadStatusFromFirebase() {
         const statusRef = database.ref('punchStatus');
@@ -654,6 +636,7 @@
         const staffConfirmSection = document.getElementById('staffConfirmSection');
         const ocrProcessing = document.getElementById('ocrProcessing');
         const ocrResult = document.getElementById('ocrResult');
+        const ocrDebug = document.getElementById('ocrDebug');
 
         video.style.display = 'block';
         capturedPhoto.style.display = 'none';
@@ -663,6 +646,7 @@
         staffConfirmSection.style.display = 'none';
         ocrProcessing.style.display = 'none';
         ocrResult.style.display = 'none';
+        ocrDebug.style.display = 'none';
         document.getElementById('confirmStaffId').value = '';
 
         modal.style.display = 'flex';
@@ -712,7 +696,7 @@
     }
 
     // ====================================================
-    // 10. OCR + AUTO DETECT LOGIC
+    // 10. OCR + AUTO DETECT (Bangla Support)
     // ====================================================
     async function processOCRAndUpload() {
         const ocrProcessing = document.getElementById('ocrProcessing');
@@ -720,23 +704,39 @@
         const detectedIdSpan = document.getElementById('detectedId');
         const staffConfirmSection = document.getElementById('staffConfirmSection');
         const confirmBtn = document.getElementById('confirmBtn');
+        const ocrDebug = document.getElementById('ocrDebug');
+        const ocrDebugText = document.getElementById('ocrDebugText');
 
         confirmBtn.style.display = 'none';
         ocrProcessing.style.display = 'block';
         ocrResult.style.display = 'none';
         staffConfirmSection.style.display = 'none';
+        ocrDebug.style.display = 'none';
 
         try {
+            // 🔥 Tesseract.js - Bangla + English dui language e OCR chole
+            // 'eng' = English, 'ben' = Bangla
             const result = await Tesseract.recognize(
                 capturedImageData,
-                'eng',
+                'eng+ben',  // Dui language support
                 { logger: m => console.log(m) }
             );
 
             const detectedText = result.data.text;
-            console.log("OCR Detected Text:", detectedText);
+            console.log("=== RAW OCR TEXT ===");
+            console.log(detectedText);
 
-            const staffId = extractStaffId(detectedText);
+            // 🔥 Bangla digit ke English digit e convert kori
+            const englishText = convertBanglaToEnglish(detectedText);
+            console.log("=== CONVERTED TO ENGLISH ===");
+            console.log(englishText);
+
+            // Show debug info
+            ocrDebugText.textContent = `Raw: ${detectedText}\n\nConverted: ${englishText}`;
+            ocrDebug.style.display = 'block';
+
+            // Extract Staff ID
+            const staffId = extractStaffId(englishText);
 
             ocrProcessing.style.display = 'none';
 
@@ -748,7 +748,7 @@
                 
                 setTimeout(() => {
                     closeCamera();
-                }, 2000);
+                }, 2500);
             } else {
                 staffConfirmSection.style.display = 'block';
             }
@@ -760,67 +760,109 @@
         }
     }
 
-    // 🔥 Text theke Staff ID extract korar function
+    // ====================================================
+    // 11. EXTRACT STAFF ID (Smart Matching)
+    // ====================================================
     function extractStaffId(text) {
-        // Shob valid Staff ID collect kori (Master List + Current Table)
+        // Shob valid Staff ID collect kori
         const allStaffIds = new Set();
         masterListData.forEach(emp => allStaffIds.add(emp.staffId));
         currentTableData.forEach(row => allStaffIds.add(row.staffId));
         const validIds = Array.from(allStaffIds);
 
-        const cleanText = text.replace(/\s+/g, ' ').toUpperCase();
+        // Text clean kori
+        const cleanText = text.replace(/\s+/g, ' ').toUpperCase().trim();
         console.log("Cleaned Text:", cleanText);
 
-        // Method 1: Exact match
+        // 🔥 Method 1: Exact match (Master List + Table er sathe)
         for (const staffId of validIds) {
-            if (cleanText.includes(staffId.toUpperCase())) {
-                console.log("Exact match found:", staffId);
+            const idUpper = staffId.toUpperCase();
+            // Word boundary diye check (jate partial match na hoy)
+            const regex = new RegExp(`\\b${idUpper.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+            if (regex.test(cleanText)) {
+                console.log("✅ Exact match found:", staffId);
                 return staffId;
             }
         }
 
-        // Method 2: Regex pattern
+        // 🔥 Method 2: "Staff ID", "ID", "Emp ID" er porer number pattern
         const patterns = [
-            /(?:STAFF\s*ID|ID|EMP\s*ID|EMPLOYEE\s*ID|SL)[\s:]*([A-Z]?\d{4,})/i,
-            /\b([A-Z]?\d{4,})\b/g,
+            /(?:STAFF\s*ID|STAFF\s*NO|EMP\s*ID|EMPLOYEE\s*ID|ID\s*NO|CARD\s*NO)[\s:.\-]*([A-Z]?\d{4,})/i,
+            /\b([A-Z]\d{5,})\b/g,  // S12345 pattern
+            /\b(\d{5,})\b/g,        // Any number with 5+ digits
         ];
 
         for (const pattern of patterns) {
             const matches = cleanText.match(pattern);
             if (matches) {
+                console.log("Pattern matches:", matches);
                 for (const match of matches) {
                     const cleanMatch = match.replace(/[^A-Z0-9]/gi, '').toUpperCase();
                     
-                    const found = validIds.find(id => 
-                        id.toUpperCase() === cleanMatch ||
-                        id.toUpperCase().includes(cleanMatch) ||
-                        cleanMatch.includes(id.toUpperCase())
-                    );
+                    const found = validIds.find(id => {
+                        const idUp = id.toUpperCase();
+                        return idUp === cleanMatch ||
+                               idUp === cleanMatch.replace(/^S/, '') ||
+                               cleanMatch === idUp.replace(/^S/, '') ||
+                               idUp.includes(cleanMatch) ||
+                               cleanMatch.includes(idUp);
+                    });
                     
                     if (found) {
-                        console.log("Pattern match found:", found);
+                        console.log("✅ Pattern match found:", found);
                         return found;
                     }
                 }
             }
         }
 
-        // Method 3: Fuzzy match
+        // 🔥 Method 3: Fuzzy match (OCR e typo thakle)
+        // Shob number ber kori text theke
         const allNumbers = cleanText.match(/\d{4,}/g);
         if (allNumbers) {
             for (const num of allNumbers) {
-                const found = validIds.find(id => id.includes(num) || num.includes(id.replace(/[A-Z]/g, '')));
+                // Exact number match
+                const found = validIds.find(id => {
+                    const idNum = id.replace(/[^0-9]/g, '');
+                    return idNum === num || idNum.endsWith(num) || num.endsWith(idNum);
+                });
                 if (found) {
-                    console.log("Fuzzy match found:", found);
+                    console.log("✅ Number match found:", found);
                     return found;
                 }
             }
         }
 
+        // 🔥 Method 4: Similarity match (Levenshtein-like)
+        // Jodi kono ID er 80% similar paoa jay
+        if (allNumbers) {
+            for (const num of allNumbers) {
+                for (const validId of validIds) {
+                    const idNum = validId.replace(/[^0-9]/g, '');
+                    if (idNum.length > 0 && num.length > 0) {
+                        // Koto character match kore check kori
+                        let matches = 0;
+                        const minLen = Math.min(idNum.length, num.length);
+                        for (let i = 0; i < minLen; i++) {
+                            if (idNum[i] === num[i]) matches++;
+                        }
+                        const similarity = matches / Math.max(idNum.length, num.length);
+                        if (similarity >= 0.8) {
+                            console.log(`✅ Similar match found: ${validId} (${Math.round(similarity * 100)}%)`);
+                            return validId;
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log("❌ No match found");
         return null;
     }
 
-    // 🔥 Auto Present Status update
+    // ====================================================
+    // 12. AUTO UPDATE STATUS
+    // ====================================================
     async function autoUpdateStatus(staffId) {
         const statusCell = document.getElementById(`status_${staffId}`);
         
@@ -853,13 +895,13 @@
 
         } catch (error) {
             console.error("Firebase Error:", error);
-            alert("Database e save korte somossa hoyeche.");
+            alert("Database save error.");
         }
     }
 
-    // Manual Submit (Fallback)
+    // Manual Submit
     function finalizeUpload() {
-        const staffId = document.getElementById('confirmStaffId').value.trim();
+        const staffId = convertBanglaToEnglish(document.getElementById('confirmStaffId').value.trim());
 
         if (!staffId) {
             alert("Please enter the Staff ID.");
@@ -898,7 +940,7 @@
         })
         .catch((error) => {
             console.error("Firebase Error:", error);
-            alert("Database e save korte somossa hoyeche.");
+            alert("Database save error.");
         });
     }
 
@@ -917,24 +959,25 @@
         document.getElementById('ocrProcessing').style.display = 'none';
         document.getElementById('ocrResult').style.display = 'none';
         document.getElementById('staffConfirmSection').style.display = 'none';
+        document.getElementById('ocrDebug').style.display = 'none';
     }
 
     // ====================================================
-    // 11. CLEAR ALL DATA
+    // 13. CLEAR ALL DATA
     // ====================================================
     function clearAllData() {
-        if (confirm("Apni ki shob data clear korte chan? Firebase theke shob data muche jabe.")) {
+        if (confirm("Apni ki shob data clear korte chan?")) {
             Promise.all([
                 database.ref('employeeData').remove(),
                 database.ref('punchStatus').remove()
             ])
             .then(() => {
-                alert("✅ All Data Cleared from Firebase!");
+                alert("✅ All Data Cleared!");
                 location.reload();
             })
             .catch((error) => {
-                console.error("Error clearing data:", error);
-                alert("Data clear korte somossa hoyeche.");
+                console.error("Error:", error);
+                alert("Clear error.");
             });
         }
     }
