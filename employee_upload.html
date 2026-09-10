@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Punch Report - Firebase + LocalStorage</title>
+    <title>Employee Punch Report - Firebase Multi-Device</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -26,6 +26,7 @@
         .btn-orange { background-color: #d97d26; }
         .btn-blue { background-color: #106cc8; }
         .btn-purple { background-color: #6f42c1; }
+        .btn-red { background-color: #dc3545; }
 
         /* --- Hidden File Inputs --- */
         .hidden-input { display: none; }
@@ -70,9 +71,26 @@
         .btn-confirm-staff { background-color: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
         .info-msg { margin-top: 10px; color: #555; font-style: italic; display: none; }
 
-        /* --- Logout Button --- */
-        .logout-btn {
-            background-color: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600;
+        /* --- Loading Spinner --- */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #555;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #6f42c1;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
@@ -80,16 +98,15 @@
             .btn { width: 100%; }
             .camera-controls { flex-direction: column; align-items: stretch; }
             .btn-camera { width: 100%; justify-content: center; }
-            .logout-btn { width: 100%; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <h1>Employee Master List Upload</h1>
-        <button class="logout-btn" onclick="clearAllData()">🗑️ Clear All Data</button>
+        <button class="btn btn-red" onclick="clearAllData()">🗑️ Clear All Data (Firebase)</button>
     </div>
     <hr>
 
@@ -121,6 +138,12 @@
     </div>
 
     <div class="info-msg" id="infoMsg">File Uploaded Successfully! Generating Table...</div>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loadingSpinner">
+        <div class="spinner"></div>
+        Loading Data from Firebase...
+    </div>
 
     <input type="file" id="dayShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleFileChange(this, 'Day Shift')">
     <input type="file" id="nightShiftInput" class="hidden-input" accept=".xlsx, .xls, .csv" onchange="handleFileChange(this, 'Night Shift')">
@@ -190,7 +213,7 @@
     const database = firebase.database();
 
     // ====================================================
-    // 2. MOCK DATA
+    // 2. MOCK DATA (Shudhu demo, real data asbe file theke)
     // ====================================================
     const masterList = [
         { staffId: "S147069", name: "Sisir Soren", designation: "General Worker" },
@@ -469,17 +492,41 @@
     ];
 
     // ====================================================
-    // 3. FUNCTIONALITY WITH LOCALSTORAGE
+    // 3. INITIALIZATION & FIREBASE SYNC
     // ====================================================
     let videoStream = null;
 
-    // Page load howar somoy LocalStorage check korbe
+    // 🔥 Page load howar somoy Firebase theke data load korbe
     window.onload = function() {
-        const savedData = localStorage.getItem('employeeData');
-        if (savedData) {
-            generateTable(); // Table generate korbe LocalStorage theke
-        }
+        loadDataFromFirebase();
     };
+
+    // Firebase theke data load kora
+    function loadDataFromFirebase() {
+        const dataRef = database.ref('employeeData');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const tableContainer = document.getElementById('tableContainer');
+        
+        loadingSpinner.style.display = 'block';
+
+        dataRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            loadingSpinner.style.display = 'none';
+
+            if (data && data.masterList && data.punchReportData) {
+                // Data firebase e ache, table generate korbo
+                generateTableFromData(data.masterList, data.punchReportData);
+            } else {
+                // Data nei, kintu demo data diye table generate korbo
+                console.log("No data in Firebase. Using demo data.");
+                generateTableFromData(masterList, punchReportData);
+            }
+        }).catch((error) => {
+            console.error("Firebase Load Error:", error);
+            loadingSpinner.style.display = 'none';
+            alert("Firebase theke data load korte somossa hoyeche. Please check your internet and rules.");
+        });
+    }
 
     function triggerUpload(type) {
         if (type === 'Punch Report Day Shift') document.getElementById('dayShiftInput').click();
@@ -487,26 +534,30 @@
         else if (type === 'Master List') document.getElementById('mainFileUpload').click();
     }
 
+    // 🔥 File select korle Firebase e save korbe
     function handleFileChange(input, type) {
         if (input.files && input.files.length > 0) {
             const fileName = input.files[0].name;
             const infoMsg = document.getElementById('infoMsg');
             infoMsg.style.display = 'block';
-            infoMsg.textContent = `File Selected: ${fileName} (${type}). Generating Table...`;
+            infoMsg.textContent = `File Selected: ${fileName} (${type}). Saving to Firebase...`;
 
-            // 🔥 LocalStorage e save kora (Refresh dileo thakbe)
+            // 🔥 Firebase e data save korchi
             const dataToSave = {
                 masterList: masterList,
-                punchReportData: punchReportData
+                punchReportData: punchReportData,
+                lastUpdated: new Date().toISOString()
             };
-            localStorage.setItem('employeeData', JSON.stringify(dataToSave));
 
-            setTimeout(() => {
-                generateTable();
-                document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
-                document.getElementById('punchCardSection').style.display = 'block';
-                infoMsg.textContent = `Table Generated Successfully for ${type}! Data saved to LocalStorage.`;
-            }, 800);
+            database.ref('employeeData').set(dataToSave)
+                .then(() => {
+                    infoMsg.textContent = `✅ Data Saved to Firebase! Generating Table...`;
+                    generateTableFromData(masterList, punchReportData);
+                })
+                .catch((error) => {
+                    console.error("Firebase Save Error:", error);
+                    alert("Firebase e data save korte somossa hoyeche. Please check your Firebase rules.");
+                });
         }
     }
 
@@ -515,17 +566,12 @@
         section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
     }
 
-    // Generate Table (LocalStorage theke data niye)
-    function generateTable() {
+    // Generate Table
+    function generateTableFromData(masterData, punchData) {
         const tableBody = document.getElementById('tableBody');
         const tableContainer = document.getElementById('tableContainer');
         
         tableBody.innerHTML = ''; 
-
-        // LocalStorage theke data load
-        const savedData = JSON.parse(localStorage.getItem('employeeData'));
-        const masterData = savedData ? savedData.masterList : masterList;
-        const punchData = savedData ? savedData.punchReportData : punchReportData;
 
         const masterMap = {};
         masterData.forEach(emp => { masterMap[emp.staffId] = emp; });
@@ -554,10 +600,10 @@
         });
 
         tableContainer.style.display = 'block';
-        document.getElementById('punchCardToggleBtn').style.display = 'inline-block'; // Show button
-        document.getElementById('punchCardSection').style.display = 'block'; // Show section
+        document.getElementById('punchCardToggleBtn').style.display = 'inline-block';
+        document.getElementById('punchCardSection').style.display = 'block';
 
-        // 🔥 Firebase theke status load kora
+        // 🔥 Firebase theke Present Status load kora
         loadStatusFromFirebase();
     }
 
@@ -669,7 +715,7 @@
             return;
         }
 
-        // 🔥 Firebase Realtime Database e save kora
+        // 🔥 Firebase e Present Status save korchi
         database.ref('punchStatus/' + staffId).set({
             status: 'Present',
             timestamp: new Date().toISOString()
@@ -713,23 +759,23 @@
     }
 
     // ====================================================
-    // 6. CLEAR ALL DATA (Logout er moto)
+    // 6. CLEAR ALL DATA (Firebase theke)
     // ====================================================
     function clearAllData() {
-        if (confirm("Apni ki shob data clear korte chan? Ei kaj ta Database thekeo data muche felbe.")) {
-            // LocalStorage clear
-            localStorage.removeItem('employeeData');
-
-            // Firebase theke data clear
-            database.ref('punchStatus').remove()
-                .then(() => {
-                    alert("✅ All Data Cleared Successfully!");
-                    location.reload(); // Page reload
-                })
-                .catch((error) => {
-                    console.error("Error clearing data:", error);
-                    alert("Data clear korte somossa hoyeche.");
-                });
+        if (confirm("Apni ki shob data clear korte chan? Ei kaj ta Firebase theke data muche felbe.")) {
+            // Firebase theke employeeData ebong punchStatus clear
+            Promise.all([
+                database.ref('employeeData').remove(),
+                database.ref('punchStatus').remove()
+            ])
+            .then(() => {
+                alert("✅ All Data Cleared Successfully from Firebase!");
+                location.reload();
+            })
+            .catch((error) => {
+                console.error("Error clearing data:", error);
+                alert("Data clear korte somossa hoyeche.");
+            });
         }
     }
 </script>
