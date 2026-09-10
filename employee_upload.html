@@ -736,7 +736,8 @@
             Staff ID: <strong id="linemanStaffId"></strong> | Employee: <strong id="linemanEmpName"></strong>
         </div>
 
-        <div class="lineman-form-group">
+        <!-- 🔥 Line Man Field (Hide হবে Staff Category সিলেক্ট করলে) -->
+        <div class="lineman-form-group" id="linemanFormGroup">
             <label for="linemanNameSelect">Line Man Name <span style="color: red;">*</span></label>
             <select id="linemanNameSelect">
                 <option value="">-- Select Line Man --</option>
@@ -757,7 +758,7 @@
 
         <div class="lineman-form-group">
             <label for="mcNoSelect">MC No <span style="color: red;">*</span></label>
-            <select id="mcNoSelect">
+            <select id="mcNoSelect" onchange="handleMCNoChange(this)">
                 <option value="">-- Select MC No --</option>
                 <optgroup label="A Line">
                     <option>A1-160</option>
@@ -830,6 +831,20 @@
                     <option>F5-380-101</option>
                     <option>F6-380-100</option>
                 </optgroup>
+                <!-- 🔥 NEW: Staff Category (Line Man লাগবে না) -->
+                <optgroup label="Staff Category (No Line Man Required)">
+                    <option>Pack</option>
+                    <option>Mold Change</option>
+                    <option>Mixture</option>
+                    <option>Store</option>
+                    <option>ERP</option>
+                    <option>IC</option>
+                    <option>Sharp Tool</option>
+                    <option>TE</option>
+                    <option>Floor Manager</option>
+                    <option>Senior OP</option>
+                    <option>Cleaner</option>
+                </optgroup>
             </select>
         </div>
 
@@ -857,6 +872,12 @@
         "Plastic Packaging-02": "Pack2",
         "Silicon Project": "SP"
     };
+
+    // 🔥 No Line Man Required Categories
+    const NO_LINEMAN_CATEGORIES = [
+        'Pack', 'Mold Change', 'Mixture', 'Store', 'ERP', 'IC', 
+        'Sharp Tool', 'TE', 'Floor Manager', 'Senior OP', 'Cleaner'
+    ];
 
     let loggedInSection = '';
 
@@ -1390,9 +1411,6 @@
             document.getElementById('summaryMessageSection').style.display = 'none';
             return;
         }
-
-        const masterMap = {};
-        masterListData.forEach(emp => { masterMap[emp.staffId] = emp; });
 
         const statusData = currentStatusData || {};
 
@@ -2048,6 +2066,24 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
     }
 
     // ====================================================
+    // 🔥 MC NO CHANGE HANDLER (Line Man Hide/Show)
+    // ====================================================
+    function handleMCNoChange(selectElem) {
+        const selectedValue = selectElem.value;
+        const linemanGroup = document.getElementById('linemanFormGroup');
+        const linemanSelect = document.getElementById('linemanNameSelect');
+        
+        if (NO_LINEMAN_CATEGORIES.includes(selectedValue)) {
+            // 🔥 Line Man Hide
+            linemanGroup.style.display = 'none';
+            linemanSelect.value = ''; // Reset
+        } else {
+            // 🔥 Line Man Show
+            linemanGroup.style.display = 'flex';
+        }
+    }
+
+    // ====================================================
     // LINEMAN MODAL
     // ====================================================
     function openLinemanModal(staffId) {
@@ -2059,6 +2095,10 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         document.getElementById('linemanEmpName').textContent = empName;
         document.getElementById('linemanNameSelect').value = '';
         document.getElementById('mcNoSelect').value = '';
+        
+        // 🔥 Modal খোলার সময় Line Man Field আবার Show করি
+        const linemanGroup = document.getElementById('linemanFormGroup');
+        if (linemanGroup) linemanGroup.style.display = 'flex';
 
         document.getElementById('linemanModal').style.display = 'flex';
     }
@@ -2074,8 +2114,15 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
         const linemanName = document.getElementById('linemanNameSelect').value;
         const mcNo = document.getElementById('mcNoSelect').value;
 
-        if (!linemanName) { alert("Please select Line Man Name."); return; }
         if (!mcNo) { alert("Please select MC No."); return; }
+
+        // 🔥 MC No যদি Staff Category হয়, Line Man লাগবে না
+        const isNoLineManCategory = NO_LINEMAN_CATEGORIES.includes(mcNo);
+        
+        if (!isNoLineManCategory) {
+            // সাধারণ লাইন এর জন্য Line Man বাধ্যতামূলক
+            if (!linemanName) { alert("Please select Line Man Name."); return; }
+        }
 
         try {
             const savedStaffId = pendingStaffId;
@@ -2084,12 +2131,15 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
             // 🔥 Section অনুযায়ী আলাদা Path
             const safeSection = getSafeSection();
             
+            // 🔥 Staff Category হলে lineman = "N/A"
+            const finalLineman = isNoLineManCategory ? 'N/A' : linemanName;
+            
             await database.ref(`punchStatus/${safeSection}/${statusKey}`).set({
                 staffId: savedStaffId,
                 status: 'Present',
                 reportDate: currentReportDate,
                 shift: currentReportShift,
-                lineman: linemanName,
+                lineman: finalLineman,
                 mcNo: mcNo,
                 timestamp: new Date().toISOString(),
                 detectedBy: 'QR/OCR/Manual',
@@ -2113,19 +2163,19 @@ Please See the Below Summery Report For Punch Report Vs Physically HR
                     </span>
                 `;
             }
-            if (linemanCell) linemanCell.innerHTML = `<strong>${linemanName}</strong>`;
+            if (linemanCell) linemanCell.innerHTML = `<strong>${finalLineman}</strong>`;
             if (mcnoCell) mcnoCell.textContent = mcNo;
 
             currentStatusData[statusKey] = {
                 staffId: savedStaffId,
                 status: 'Present',
-                lineman: linemanName,
+                lineman: finalLineman,
                 mcNo: mcNo
             };
 
             playBeepSound();
 
-            alert(`✅ Staff ID: ${savedStaffId}\nLine Man: ${linemanName}\nMC No: ${mcNo}\n\nPresent mark hoyeche!`);
+            alert(`✅ Staff ID: ${savedStaffId}\nLine Man: ${finalLineman}\nMC No: ${mcNo}\n\nPresent mark hoyeche!`);
 
             closeLinemanModal();
             closeCamera();
