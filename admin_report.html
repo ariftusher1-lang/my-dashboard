@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</title>
+    <title>HRIS - Human Resource Information System</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js">
@@ -11,1336 +13,614 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
     </script>
     <style>
-        /* ===== সম্পূর্ণ স্টাইল (আগের মতোই) ===== */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: #f0f2f5;
-            padding: 10px 20px;
-        }
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 0 10px;
-        }
+        /* ============================================================
+           LOGIN PAGE STYLES
+           ============================================================ */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #e9ecef; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        
+        .login-container { display: flex; width: 100%; max-width: 1100px; height: 650px; background: #ffffff; border-radius: 20px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); overflow: hidden; }
+        .left-panel { flex: 1; background: #1a233a; color: #ffffff; padding: 45px 40px; display: flex; flex-direction: column; justify-content: center; position: relative; }
+        .left-panel .logo-area { margin-bottom: 25px; }
+        .left-panel .logo-area h1 { font-size: 36px; font-weight: 800; letter-spacing: 1px; color: #ffffff; margin-bottom: 2px; }
+        .left-panel .logo-area h1 span { color: #f5b041; }
+        .left-panel .logo-area p { font-size: 14px; color: #a0aec0; font-weight: 400; letter-spacing: 0.5px; }
+        .left-panel .description { font-size: 15px; color: #cbd5e0; line-height: 1.7; margin-bottom: 30px; max-width: 90%; }
+        .left-panel .description strong { color: #ffffff; font-weight: 600; }
+        .left-panel .features { list-style: none; margin-bottom: 35px; }
+        .left-panel .features li { display: flex; align-items: center; font-size: 14px; color: #e2e8f0; margin-bottom: 14px; }
+        .left-panel .features li i { color: #f5b041; font-size: 16px; width: 24px; margin-right: 12px; text-align: center; }
+        .left-panel .footer-note { display: flex; gap: 25px; font-size: 12px; color: #a0aec0; margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 20px; flex-wrap: wrap; }
+        .left-panel .footer-note span { display: flex; align-items: center; gap: 6px; }
+        
+        .right-panel { flex: 1; background: #ffffff; padding: 45px 50px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .company-logo { display: flex; align-items: center; gap: 15px; margin-bottom: 40px; width: 100%; justify-content: center; border: 2px solid #dc3545; padding: 12px 20px; border-radius: 12px; }
+        .company-logo .icon { font-size: 48px; color: #dc3545; }
+        .company-logo .text { display: flex; flex-direction: column; line-height: 1.1; }
+        .company-logo .text .brand-sub { font-size: 16px; font-weight: 700; color: #4a5568; letter-spacing: 1px; }
+        .company-logo .text .brand-main { font-size: 44px; font-weight: 800; color: #dc3545; }
+        .company-logo .text .brand-main span { color: #2e7d32; }
+        
+        .login-form { width: 100%; max-width: 380px; }
+        .input-group { display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0 15px; margin-bottom: 18px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .input-group:focus-within { border-color: #f5b041; box-shadow: 0 0 0 3px rgba(245, 176, 65, 0.15); }
+        .input-group i { color: #a0aec0; font-size: 16px; width: 20px; }
+        .input-group input { width: 100%; padding: 14px 10px; border: none; background: transparent; font-size: 15px; color: #1a233a; outline: none; }
+        .input-group input::placeholder { color: #a0aec0; }
+        
+        .remember-forgot { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; font-size: 14px; }
+        .remember-forgot label { display: flex; align-items: center; gap: 8px; color: #4a5568; cursor: pointer; }
+        .remember-forgot label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #f5b041; cursor: pointer; }
+        .remember-forgot a { color: #f5b041; text-decoration: none; font-weight: 600; }
+        .remember-forgot a:hover { text-decoration: underline; }
+        
+        .btn-login { width: 100%; padding: 15px; background: #f5b041; color: #ffffff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: background 0.2s, transform 0.1s; text-transform: uppercase; }
+        .btn-login:hover { background: #e0a030; }
+        .btn-login:active { transform: scale(0.98); }
+        .error-msg { color: #dc3545; font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px; font-weight: 500; }
 
-        /* ----- ডিজিটাল ঘড়ি (লাল) ----- */
-        #clockContainer {
-            text-align: center;
-            background: #000;
-            padding: 12px 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            border: 2px solid #ff0000;
-        }
-        #digitalClock {
-            color: #ff0000;
-            font-size: 3.2rem;
-            font-weight: 700;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 4px;
-            text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
-        }
-        @media (max-width: 600px) {
-            #digitalClock { font-size: 2.2rem; }
-        }
-
-        .header {
-            background: linear-gradient(135deg, #0d47a1, #1976d2);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .header h1 {
-            font-size: 24px;
-        }
-        .header span {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        .filters {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            align-items: flex-end;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-        .filters .group {
-            display: flex;
-            flex-direction: column;
-        }
-        .filters label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-        }
-        .filters input,
-        .filters select {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 14px;
-            min-width: 160px;
-        }
-        .filters .actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-left: auto;
-        }
-        .filters .actions button {
-            padding: 8px 20px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-primary {
-            background: #1976d2;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #0d47a1;
-        }
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-        .btn-success:hover {
-            background: #1e7e34;
-        }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 12px;
-            margin: 20px 0;
-        }
-        .stats .card {
-            background: white;
-            padding: 14px 16px;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-            border-left: 4px solid #1976d2;
-        }
-        .stats .card .label {
-            font-size: 12px;
-            color: #666;
-            font-weight: 600;
-        }
-        .stats .card .value {
-            font-size: 22px;
-            font-weight: 700;
-            color: #0d47a1;
-        }
-        .stats .card .sub {
-            font-size: 11px;
-            color: #999;
-        }
-        .section-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #1a3a5c;
-            margin: 25px 0 15px 0;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #1976d2;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .btn-excel {
-            background: #1e7e34;
+        /* ============================================================
+           DASHBOARD STYLES (FROM YOUR PREVIOUS CODE)
+           ============================================================ */
+        #dashboardContainer { display: none; width: 100%; max-width: 100%; margin: 0 auto; padding: 0 10px; }
+        #dashboardContainer.active { display: block; }
+        .login-container.hidden { display: none; }
+        
+        #dashboardContainer * { box-sizing: border-box; margin: 0; padding: 0; }
+        #dashboardContainer body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 10px 20px; }
+        #dashboardContainer .container { max-width: 100%; margin: 0 auto; padding: 0 10px; }
+        #clockContainer { text-align: center; background: #000; padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2px solid #ff0000; }
+        #digitalClock { color: #ff0000; font-size: 3.2rem; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: 4px; text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000; }
+        @media (max-width: 600px) { #digitalClock { font-size: 2.2rem; } }
+        .header { background: linear-gradient(135deg, #0d47a1, #1976d2); color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .header h1 { font-size: 24px; }
+        .header span { font-size: 14px; opacity: 0.9; }
+        .filters { background: white; padding: 20px; border-radius: 12px; margin: 20px 0; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); }
+        .filters .group { display: flex; flex-direction: column; }
+        .filters label { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 4px; }
+        .filters input, .filters select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; min-width: 160px; }
+        .filters .actions { display: flex; gap: 10px; align-items: center; margin-left: auto; }
+        .filters .actions button { padding: 8px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: #1976d2; color: white; }
+        .btn-primary:hover { background: #0d47a1; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #1e7e34; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 20px 0; }
+        .stats .card { background: white; padding: 14px 16px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); border-left: 4px solid #1976d2; }
+        .stats .card .label { font-size: 12px; color: #666; font-weight: 600; }
+        .stats .card .value { font-size: 22px; font-weight: 700; color: #0d47a1; }
+        .stats .card .sub { font-size: 11px; color: #999; }
+        .section-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #1976d2; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn-excel { background: #1e7e34; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-excel:hover { background: #136b2a; }
+        .btn-image { background: #6c757d; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-image:hover { background: #5a6268; }
+        .btn-pdf { background: #d32f2f; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-pdf:hover { background: #b71c1c; }
+        .sub-title { font-size: 16px; font-weight: 600; color: #333; margin: 15px 0 10px 0; }
+        .table-wrap { overflow-x: auto; background: white; border-radius: 10px; padding: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #e3eef9; color: #0d47a1; padding: 10px 8px; text-align: center; border-bottom: 2px solid #1976d2; white-space: nowrap; }
+        td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f5f9ff; }
+        .total-row { background: #d4e4f7 !important; font-weight: 700; }
+        .no-data { text-align: center; color: #888; padding: 20px; font-style: italic; }
+        .missing-list { display: flex; flex-wrap: wrap; gap: 10px; background: #fff5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #e53935; }
+        .missing-item { background: #e53935; color: white; padding: 4px 14px; border-radius: 20px; font-size: 13px; }
+        .clearfix::after { content: ""; display: table; clear: both; }
+        .filter-status { background: #e3f2fd; padding: 10px 15px; border-radius: 6px; margin: 10px 0; font-size: 14px; color: #0d47a1; }
+        .summary-header { background: #fff3e0; padding: 12px 20px; border-radius: 8px; margin: 15px 0; font-size: 16px; font-weight: 600; color: #e65100; border-left: 4px solid #ff9800; }
+        .mc-badge { background: #0d47a1; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
+        .saifuddin-title { background: #1a237e; color: white; padding: 8px 20px; border-radius: 6px; display: inline-block; font-weight: 600; }
+        .row-duplicate { background: #f8d7da !important; border-left: 4px solid #dc3545 !important; }
+        .row-duplicate td:first-child { border-left: 4px solid #dc3545; }
+        .row-duplicate:hover { background: #f1c0c0 !important; }
+        .total-row.row-duplicate { background: #d4e4f7 !important; border-left: none !important; }
+        .row-production.row-duplicate td { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important; }
+        .row-packaging.row-duplicate td { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important; }
+        .row-common.row-duplicate td { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important; }
+        .row-manpower.row-duplicate { background: #1a237e !important; }
+        .saifuddin-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03); }
+        .saifuddin-table thead th { background: #0d47a1; color: white; padding: 12px 8px; font-weight: 700; font-size: 12px; letter-spacing: 0.3px; border-bottom: 3px solid #1565c0; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
+        .saifuddin-table tbody td { padding: 10px 8px; border-bottom: 1px solid #e8ecf1; vertical-align: middle; white-space: nowrap; }
+        .saifuddin-table .dept-name { font-weight: 600; color: #1a3a5c; text-align: left; padding-left: 15px; }
+        .saifuddin-table .highlight-number { font-weight: 700; color: #0d47a1; }
+        .run-pct-wrapper { display: flex; align-items: center; gap: 10px; justify-content: center; }
+        .run-pct-text { font-weight: 700; font-size: 14px; min-width: 50px; }
+        .run-pct-text.green { color: #1b5e20; }
+        .run-pct-text.yellow { color: #e65100; }
+        .run-pct-text.red { color: #b71c1c; }
+        .bar-container { width: 70px; height: 8px; background: #e0e0e0; border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); }
+        .bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+        .bar-fill.green { background: linear-gradient(90deg, #66bb6a, #43a047); }
+        .bar-fill.yellow { background: linear-gradient(90deg, #ffa726, #fb8c00); }
+        .bar-fill.red { background: linear-gradient(90deg, #ef5350, #c62828); }
+        .badge-count { display: inline-block; padding: 2px 12px; border-radius: 30px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+        .badge-present { background: #e8f5e9; color: #1b5e20; }
+        .badge-absent { background: #ffebee; color: #b71c1c; }
+        .badge-leave { background: #fff3e0; color: #e65100; }
+        .badge-total { background: #e3f2fd; color: #0d47a1; }
+        .badge-duplicate { background: #dc3545 !important; color: white !important; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+        .row-production td { background: #d4edda !important; border-top: 2px solid #28a745 !important; border-bottom: 2px solid #28a745 !important; font-weight: 700 !important; color: #155724 !important; }
+        .row-packaging td { background: #fff3cd !important; border-top: 2px solid #ffc107 !important; border-bottom: 2px solid #ffc107 !important; font-weight: 700 !important; color: #856404 !important; }
+        .row-common td { background: #cce5ff !important; border-top: 2px solid #007bff !important; border-bottom: 2px solid #007bff !important; font-weight: 700 !important; color: #004085 !important; }
+        .row-manpower td { background: #1a237e !important; border-top: 3px solid #0d47a1 !important; border-bottom: 3px solid #0d47a1 !important; font-weight: 800 !important; color: #ffffff !important; font-size: 14px; }
+        .row-manpower td .badge-count { color: #1a237e; }
+        .row-manpower td .badge-total { background: #ffffff; color: #1a237e; }
+        .row-manpower td .badge-present { background: #a5d6a7; color: #1b5e20; }
+        .row-manpower td .badge-absent { background: #ef9a9a; color: #b71c1c; }
+        .row-manpower td .badge-leave { background: #ffcc80; color: #e65100; }
+        .mc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .mc-table thead th { background: #0d47a1; color: white; padding: 12px 8px; font-weight: 700; font-size: 12px; border-bottom: 3px solid #1565c0; white-space: nowrap; }
+        .mc-table tbody td { padding: 10px 8px; border-bottom: 1px solid #e8ecf1; vertical-align: middle; }
+        .mc-table tbody tr:nth-child(even) { background: #f8faff; }
+        .mc-table tbody tr:hover { background: #e3edfb !important; transition: 0.2s; }
+        .mc-table .total-row td { background: #d4e4f7 !important; font-weight: 700; border-top: 2px solid #1976d2; border-bottom: 2px solid #1976d2; }
+        .mc-table .dept-name { font-weight: 600; color: #1a3a5c; text-align: left; padding-left: 15px; }
+        .mc-run-pct-high { background: #e8f5e9 !important; color: #1b5e20; font-weight: 700; }
+        .mc-run-pct-mid { background: #fff8e1 !important; color: #e65100; font-weight: 700; }
+        .mc-run-pct-low { background: #ffebee !important; color: #b71c1c; font-weight: 700; }
+        .mc-bar-wrap { display: flex; align-items: center; gap: 8px; justify-content: center; }
+        .mc-bar-wrap .bar-bg { width: 60px; height: 7px; background: #e0e0e0; border-radius: 10px; overflow: hidden; }
+        .mc-bar-wrap .bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+        .mc-bar-wrap .bar-fill.green { background: #43a047; }
+        .mc-bar-wrap .bar-fill.yellow { background: #fb8c00; }
+        .mc-bar-wrap .bar-fill.red { background: #c62828; }
+        .mc-bar-wrap .pct-text { font-weight: 700; font-size: 13px; min-width: 40px; }
+        .weekly-table th { background: #1a237e; color: white; padding: 12px 8px; font-weight: 700; font-size: 12px; border-bottom: 3px solid #0d47a1; white-space: nowrap; }
+        .weekly-table td { padding: 10px 8px; border-bottom: 1px solid #e8ecf1; vertical-align: middle; text-align: center; }
+        .weekly-table tr:nth-child(even) { background: #f8faff; }
+        .weekly-table tr:hover { background: #e3edfb !important; }
+        .weekly-table .dept-name { font-weight: 600; color: #1a3a5c; text-align: left; padding-left: 15px; }
+        .weekly-table .total-row td { background: #d4e4f7 !important; font-weight: 700; border-top: 2px solid #1976d2; border-bottom: 2px solid #1976d2; }
+        .weekly-filter-area { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .weekly-filter-area select { padding: 6px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .auto-refresh-container { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin: 10px 0 5px 0; background: #f8fafc; padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .toggle-wrapper { display: flex; align-items: center; gap: 8px; }
+        .toggle-wrapper label { font-weight: 600; font-size: 14px; color: #1e293b; }
+        .switch { position: relative; display: inline-block; width: 48px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 24px; transition: 0.3s; }
+        .slider::before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
+        .switch input:checked+.slider { background: #0d47a1; }
+        .switch input:checked+.slider::before { transform: translateX(24px); }
+        .auto-status { font-size: 14px; font-weight: 600; color: #1b5e20; }
+        .auto-status.off { color: #b71c1c; }
+        #countdownDisplay { font-size: 14px; font-weight: 600; color: #0d47a1; min-width: 120px; }
+        .summary-table-wrap { background: white; border-radius: 12px; padding: 18px 22px; margin: 15px 0 20px 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); border-left: 6px solid #0d47a1; }
+        .summary-table-wrap .summary-header-text { font-size: 18px; font-weight: 700; color: #0d47a1; margin-bottom: 12px; border-bottom: 2px solid #e3eef9; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .summary-table-wrap .summary-header-text .btn-group-sm { display: flex; gap: 8px; }
+        .summary-table-wrap .summary-header-text .btn-group-sm button { padding: 4px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .btn-sm-image { background: #6c757d; color: white; }
+        .btn-sm-image:hover { background: #5a6268; }
+        .btn-sm-excel { background: #1e7e34; color: white; }
+        .btn-sm-excel:hover { background: #136b2a; }
+        .summary-data-table { width: 100%; border-collapse: collapse; font-size: 15px; font-family: 'Segoe UI', Tahoma, sans-serif; background: #fafcff; border-radius: 8px; overflow: hidden; }
+        .summary-data-table td { padding: 10px 14px; border-bottom: 1px solid #e8ecf1; vertical-align: middle; }
+        .summary-data-table .label-cell { font-weight: 600; color: #1a3a5c; width: 40%; background: #f0f5fe; white-space: nowrap; }
+        .summary-data-table .value-cell { font-weight: 700; color: #0d47a1; width: 60%; background: #ffffff; }
+        .summary-data-table tr:last-child td { border-bottom: none; }
+        .summary-data-table .highlight-row td { background: #e3f2fd; }
+        .summary-data-table .greeting-row td { background: #fff8e1; font-weight: 700; color: #e65100; text-align: center; font-size: 16px; padding: 14px; border-bottom: 2px solid #ffb300; }
+        .scorecard-wrap { background: white; border-radius: 12px; padding: 18px 22px; margin: 15px 0 20px 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); border-left: 6px solid #ff6f00; }
+        .scorecard-wrap .scorecard-header { font-size: 18px; font-weight: 700; color: #e65100; margin-bottom: 12px; border-bottom: 2px solid #ffe0b2; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .scorecard-wrap .scorecard-header .btn-group-sm { display: flex; gap: 8px; }
+        .scorecard-wrap .scorecard-header .btn-group-sm button { padding: 4px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .scorecard-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .scorecard-table th { background: #1a237e; color: white; padding: 10px 8px; font-weight: 700; font-size: 12px; text-align: center; border-bottom: 3px solid #0d47a1; white-space: nowrap; }
+        .scorecard-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #e8ecf1; vertical-align: middle; }
+        .scorecard-table tr:nth-child(even) { background: #f8faff; }
+        .scorecard-table tr:hover { background: #e3edfb !important; }
+        .scorecard-table .dept-name { font-weight: 600; color: #1a3a5c; text-align: left; padding-left: 15px; }
+        .scorecard-table .total-row td { background: #d4e4f7 !important; font-weight: 700; border-top: 2px solid #1976d2; border-bottom: 2px solid #1976d2; }
+        .grade-badge { display: inline-block; padding: 4px 14px; border-radius: 30px; font-weight: 700; font-size: 16px; min-width: 40px; }
+        .grade-A { background: #1b5e20; color: white; }
+        .grade-B { background: #e65100; color: white; }
+        .grade-C { background: #f57f17; color: white; }
+        .grade-D { background: #b71c1c; color: white; }
+        .score-bar-bg { width: 80px; height: 10px; background: #e0e0e0; border-radius: 10px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+        .score-bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; }
+        .score-bar-fill.green { background: #43a047; }
+        .score-bar-fill.yellow { background: #fb8c00; }
+        .score-bar-fill.orange { background: #f57f17; }
+        .score-bar-fill.red { background: #c62828; }
+        .score-text { font-weight: 700; font-size: 14px; min-width: 40px; display: inline-block; }
+        #whatsappMessageBox { border-left-color: #25D366 !important; }
+        #whatsappMessageBox .summary-header-text { color: #075E54; }
+        #whatsappMessageBox .btn-sm-excel { background: #25D366; color: white; }
+        #whatsappMessageBox .btn-sm-excel:hover { background: #1da851; }
+        #whatsappMessageContent { font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 15px; line-height: 1.8; padding: 10px 0; white-space: pre-wrap; background: #f8fafc; border-radius: 8px; padding: 15px; border: 1px solid #e2e8f0; }
+        .mc-dept-summary-wrap { background: white; border-radius: 12px; padding: 18px 22px; margin: 15px 0 20px 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); border-left: 6px solid #0d47a1; }
+        .mc-dept-summary-wrap .mc-dept-header { font-size: 18px; font-weight: 700; color: #0d47a1; margin-bottom: 12px; border-bottom: 2px solid #e3eef9; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .mc-dept-summary-wrap .mc-dept-header .btn-group-sm { display: flex; gap: 8px; }
+        .mc-dept-summary-wrap .mc-dept-header .btn-group-sm button { padding: 4px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .mc-horizontal-table { width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #e2e8f0; }
+        .mc-horizontal-table thead th { background: #0d47a1; color: white; padding: 8px 6px; font-weight: 700; font-size: 11px; border-bottom: 2px solid #1565c0; white-space: nowrap; text-align: center; min-width: 90px; position: sticky; top: 0; z-index: 10; }
+        .mc-horizontal-table thead th:first-child { min-width: 120px; position: sticky; left: 0; z-index: 20; background: #0d47a1; }
+        .mc-horizontal-table thead th .sub-header { font-weight: 400; font-size: 10px; opacity: 0.9; display: block; margin-top: 2px; border-top: 1px solid rgba(255, 255, 255, 0.3); padding-top: 2px; }
+        .mc-horizontal-table thead .sub-header-metric { font-weight: 400; font-size: 11px; opacity: 0.85; display: block; padding: 2px 0; background: #0d47a1; color: #fff; }
+        .mc-horizontal-table tbody td { padding: 5px 6px; border-bottom: 1px solid #e8ecf1; vertical-align: middle; text-align: center; font-size: 11px; white-space: nowrap; }
+        .mc-horizontal-table tbody td:first-child { font-weight: 600; color: #1a3a5c; text-align: left; padding-left: 10px; background: #f0f5fe; position: sticky; left: 0; z-index: 5; border-right: 1px solid #dde4ec; min-width: 120px; }
+        .mc-horizontal-table tbody tr:nth-child(even) td:first-child { background: #e8eff8; }
+        .mc-horizontal-table tbody tr:nth-child(even) td:not(:first-child) { background: #fafcff; }
+        .mc-horizontal-table tbody tr:hover td { background: #e3edfb !important; }
+        .mc-horizontal-table tbody tr:hover td:first-child { background: #d4e2f5 !important; }
+        .mc-horizontal-table .total-row td { background: #d4e4f7 !important; font-weight: 700; border-top: 2px solid #1976d2; border-bottom: 2px solid #1976d2; }
+        .mc-horizontal-table .total-row td:first-child { background: #c5d8ee !important; }
+        .mc-horizontal-table .highlight-number { font-weight: 700; color: #0d47a1; }
+        .mc-horizontal-table .run-pct-text { font-weight: 700; font-size: 12px; }
+        .mc-horizontal-table .run-pct-text.green { color: #1b5e20; }
+        .mc-horizontal-table .run-pct-text.yellow { color: #e65100; }
+        .mc-horizontal-table .run-pct-text.red { color: #b71c1c; }
+        .mc-horizontal-table .bar-container { width: 45px; height: 5px; background: #e0e0e0; border-radius: 10px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 4px; }
+        .mc-horizontal-table .bar-fill { height: 100%; border-radius: 10px; }
+        .mc-horizontal-table .bar-fill.green { background: #43a047; }
+        .mc-horizontal-table .bar-fill.yellow { background: #fb8c00; }
+        .mc-horizontal-table .bar-fill.red { background: #c62828; }
+        .mc-horizontal-table .dept-header { font-weight: 700; font-size: 11px; }
+        .mc-horizontal-scroll { overflow-x: auto; padding-bottom: 8px; }
+        .mc-horizontal-scroll::-webkit-scrollbar { height: 8px; }
+        .mc-horizontal-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .mc-horizontal-scroll::-webkit-scrollbar-thumb { background: #0d47a1; border-radius: 10px; }
+        .mc-horizontal-scroll::-webkit-scrollbar-thumb:hover { background: #0a3a8a; }
+        .metric-label { font-weight: 600; color: #1a3a5c; font-size: 11px; }
+        
+        /* Logout Button Style */
+        .logout-btn {
+            background: #dc3545;
             color: white;
             border: none;
             padding: 8px 18px;
             border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
-        }
-        .btn-excel:hover {
-            background: #136b2a;
-        }
-        .btn-image {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .btn-image:hover {
-            background: #5a6268;
-        }
-        .btn-pdf {
-            background: #d32f2f;
-            color: white;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .btn-pdf:hover {
-            background: #b71c1c;
-        }
-        .sub-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-            margin: 15px 0 10px 0;
-        }
-        .table-wrap {
-            overflow-x: auto;
-            background: white;
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            margin-bottom: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        th {
-            background: #e3eef9;
-            color: #0d47a1;
-            padding: 10px 8px;
-            text-align: center;
-            border-bottom: 2px solid #1976d2;
-            white-space: nowrap;
-        }
-        td {
-            padding: 8px 6px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-        }
-        tr:hover {
-            background: #f5f9ff;
-        }
-        .total-row {
-            background: #d4e4f7 !important;
-            font-weight: 700;
-        }
-        .no-data {
-            text-align: center;
-            color: #888;
-            padding: 20px;
-            font-style: italic;
-        }
-        .missing-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            background: #fff5f5;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #e53935;
-        }
-        .missing-item {
-            background: #e53935;
-            color: white;
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-        }
-        .clearfix::after {
-            content: "";
-            display: table;
-            clear: both;
-        }
-        .filter-status {
-            background: #e3f2fd;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin: 10px 0;
-            font-size: 14px;
-            color: #0d47a1;
-        }
-        .summary-header {
-            background: #fff3e0;
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin: 15px 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: #e65100;
-            border-left: 4px solid #ff9800;
-        }
-        .mc-badge {
-            background: #0d47a1;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            display: inline-block;
-        }
-        .saifuddin-title {
-            background: #1a237e;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 6px;
-            display: inline-block;
-            font-weight: 600;
-        }
-
-        .row-duplicate {
-            background: #f8d7da !important;
-            border-left: 4px solid #dc3545 !important;
-        }
-        .row-duplicate td:first-child {
-            border-left: 4px solid #dc3545;
-        }
-        .row-duplicate:hover {
-            background: #f1c0c0 !important;
-        }
-        .total-row.row-duplicate {
-            background: #d4e4f7 !important;
-            border-left: none !important;
-        }
-        .row-production.row-duplicate td {
-            background: #f8d7da !important;
-            border-color: #dc3545 !important;
-            color: #721c24 !important;
-        }
-        .row-packaging.row-duplicate td {
-            background: #f8d7da !important;
-            border-color: #dc3545 !important;
-            color: #721c24 !important;
-        }
-        .row-common.row-duplicate td {
-            background: #f8d7da !important;
-            border-color: #dc3545 !important;
-            color: #721c24 !important;
-        }
-        .row-manpower.row-duplicate {
-            background: #1a237e !important;
-        }
-
-        .saifuddin-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 13px;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-        }
-        .saifuddin-table thead th {
-            background: #0d47a1;
-            color: white;
-            padding: 12px 8px;
-            font-weight: 700;
-            font-size: 12px;
-            letter-spacing: 0.3px;
-            border-bottom: 3px solid #1565c0;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            white-space: nowrap;
-        }
-        .saifuddin-table tbody td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #e8ecf1;
-            vertical-align: middle;
-            white-space: nowrap;
-        }
-        .saifuddin-table .dept-name {
-            font-weight: 600;
-            color: #1a3a5c;
-            text-align: left;
-            padding-left: 15px;
-        }
-        .saifuddin-table .highlight-number {
-            font-weight: 700;
-            color: #0d47a1;
-        }
-        .run-pct-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: center;
-        }
-        .run-pct-text {
-            font-weight: 700;
-            font-size: 14px;
-            min-width: 50px;
-        }
-        .run-pct-text.green {
-            color: #1b5e20;
-        }
-        .run-pct-text.yellow {
-            color: #e65100;
-        }
-        .run-pct-text.red {
-            color: #b71c1c;
-        }
-        .bar-container {
-            width: 70px;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .bar-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
-        .bar-fill.green {
-            background: linear-gradient(90deg, #66bb6a, #43a047);
-        }
-        .bar-fill.yellow {
-            background: linear-gradient(90deg, #ffa726, #fb8c00);
-        }
-        .bar-fill.red {
-            background: linear-gradient(90deg, #ef5350, #c62828);
-        }
-        .badge-count {
-            display: inline-block;
-            padding: 2px 12px;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-        .badge-present {
-            background: #e8f5e9;
-            color: #1b5e20;
-        }
-        .badge-absent {
-            background: #ffebee;
-            color: #b71c1c;
-        }
-        .badge-leave {
-            background: #fff3e0;
-            color: #e65100;
-        }
-        .badge-total {
-            background: #e3f2fd;
-            color: #0d47a1;
-        }
-        .badge-duplicate {
-            background: #dc3545 !important;
-            color: white !important;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .row-production td {
-            background: #d4edda !important;
-            border-top: 2px solid #28a745 !important;
-            border-bottom: 2px solid #28a745 !important;
-            font-weight: 700 !important;
-            color: #155724 !important;
-        }
-        .row-packaging td {
-            background: #fff3cd !important;
-            border-top: 2px solid #ffc107 !important;
-            border-bottom: 2px solid #ffc107 !important;
-            font-weight: 700 !important;
-            color: #856404 !important;
-        }
-        .row-common td {
-            background: #cce5ff !important;
-            border-top: 2px solid #007bff !important;
-            border-bottom: 2px solid #007bff !important;
-            font-weight: 700 !important;
-            color: #004085 !important;
-        }
-        .row-manpower td {
-            background: #1a237e !important;
-            border-top: 3px solid #0d47a1 !important;
-            border-bottom: 3px solid #0d47a1 !important;
-            font-weight: 800 !important;
-            color: #ffffff !important;
-            font-size: 14px;
-        }
-        .row-manpower td .badge-count {
-            color: #1a237e;
-        }
-        .row-manpower td .badge-total {
-            background: #ffffff;
-            color: #1a237e;
-        }
-        .row-manpower td .badge-present {
-            background: #a5d6a7;
-            color: #1b5e20;
-        }
-        .row-manpower td .badge-absent {
-            background: #ef9a9a;
-            color: #b71c1c;
-        }
-        .row-manpower td .badge-leave {
-            background: #ffcc80;
-            color: #e65100;
-        }
-
-        .mc-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .mc-table thead th {
-            background: #0d47a1;
-            color: white;
-            padding: 12px 8px;
-            font-weight: 700;
-            font-size: 12px;
-            border-bottom: 3px solid #1565c0;
-            white-space: nowrap;
-        }
-        .mc-table tbody td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #e8ecf1;
-            vertical-align: middle;
-        }
-        .mc-table tbody tr:nth-child(even) {
-            background: #f8faff;
-        }
-        .mc-table tbody tr:hover {
-            background: #e3edfb !important;
             transition: 0.2s;
+            margin-left: 15px;
         }
-        .mc-table .total-row td {
-            background: #d4e4f7 !important;
-            font-weight: 700;
-            border-top: 2px solid #1976d2;
-            border-bottom: 2px solid #1976d2;
-        }
-        .mc-table .dept-name {
-            font-weight: 600;
-            color: #1a3a5c;
-            text-align: left;
-            padding-left: 15px;
-        }
-        .mc-run-pct-high {
-            background: #e8f5e9 !important;
-            color: #1b5e20;
-            font-weight: 700;
-        }
-        .mc-run-pct-mid {
-            background: #fff8e1 !important;
-            color: #e65100;
-            font-weight: 700;
-        }
-        .mc-run-pct-low {
-            background: #ffebee !important;
-            color: #b71c1c;
-            font-weight: 700;
-        }
-        .mc-bar-wrap {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            justify-content: center;
-        }
-        .mc-bar-wrap .bar-bg {
-            width: 60px;
-            height: 7px;
-            background: #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .mc-bar-wrap .bar-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
-        .mc-bar-wrap .bar-fill.green {
-            background: #43a047;
-        }
-        .mc-bar-wrap .bar-fill.yellow {
-            background: #fb8c00;
-        }
-        .mc-bar-wrap .bar-fill.red {
-            background: #c62828;
-        }
-        .mc-bar-wrap .pct-text {
-            font-weight: 700;
-            font-size: 13px;
-            min-width: 40px;
-        }
-
-        .weekly-table th {
-            background: #1a237e;
-            color: white;
-            padding: 12px 8px;
-            font-weight: 700;
-            font-size: 12px;
-            border-bottom: 3px solid #0d47a1;
-            white-space: nowrap;
-        }
-        .weekly-table td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #e8ecf1;
-            vertical-align: middle;
-            text-align: center;
-        }
-        .weekly-table tr:nth-child(even) {
-            background: #f8faff;
-        }
-        .weekly-table tr:hover {
-            background: #e3edfb !important;
-        }
-        .weekly-table .dept-name {
-            font-weight: 600;
-            color: #1a3a5c;
-            text-align: left;
-            padding-left: 15px;
-        }
-        .weekly-table .total-row td {
-            background: #d4e4f7 !important;
-            font-weight: 700;
-            border-top: 2px solid #1976d2;
-            border-bottom: 2px solid #1976d2;
-        }
-        .weekly-filter-area {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .weekly-filter-area select {
-            padding: 6px 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        .auto-refresh-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin: 10px 0 5px 0;
-            background: #f8fafc;
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-        .toggle-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .toggle-wrapper label {
-            font-weight: 600;
-            font-size: 14px;
-            color: #1e293b;
-        }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 48px;
-            height: 24px;
-        }
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: #ccc;
-            border-radius: 24px;
-            transition: 0.3s;
-        }
-        .slider::before {
-            content: "";
-            position: absolute;
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background: white;
-            border-radius: 50%;
-            transition: 0.3s;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-        }
-        .switch input:checked+.slider {
-            background: #0d47a1;
-        }
-        .switch input:checked+.slider::before {
-            transform: translateX(24px);
-        }
-        .auto-status {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1b5e20;
-        }
-        .auto-status.off {
-            color: #b71c1c;
-        }
-        #countdownDisplay {
-            font-size: 14px;
-            font-weight: 600;
-            color: #0d47a1;
-            min-width: 120px;
-        }
-
-        .summary-table-wrap {
-            background: white;
-            border-radius: 12px;
-            padding: 18px 22px;
-            margin: 15px 0 20px 0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            border-left: 6px solid #0d47a1;
-        }
-        .summary-table-wrap .summary-header-text {
-            font-size: 18px;
-            font-weight: 700;
-            color: #0d47a1;
-            margin-bottom: 12px;
-            border-bottom: 2px solid #e3eef9;
-            padding-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .summary-table-wrap .summary-header-text .btn-group-sm {
-            display: flex;
-            gap: 8px;
-        }
-        .summary-table-wrap .summary-header-text .btn-group-sm button {
-            padding: 4px 14px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 13px;
-            transition: 0.2s;
-        }
-        .btn-sm-image {
-            background: #6c757d;
-            color: white;
-        }
-        .btn-sm-image:hover {
-            background: #5a6268;
-        }
-        .btn-sm-excel {
-            background: #1e7e34;
-            color: white;
-        }
-        .btn-sm-excel:hover {
-            background: #136b2a;
-        }
-
-        .summary-data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 15px;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: #fafcff;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .summary-data-table td {
-            padding: 10px 14px;
-            border-bottom: 1px solid #e8ecf1;
-            vertical-align: middle;
-        }
-        .summary-data-table .label-cell {
-            font-weight: 600;
-            color: #1a3a5c;
-            width: 40%;
-            background: #f0f5fe;
-            white-space: nowrap;
-        }
-        .summary-data-table .value-cell {
-            font-weight: 700;
-            color: #0d47a1;
-            width: 60%;
-            background: #ffffff;
-        }
-        .summary-data-table tr:last-child td {
-            border-bottom: none;
-        }
-        .summary-data-table .highlight-row td {
-            background: #e3f2fd;
-        }
-        .summary-data-table .greeting-row td {
-            background: #fff8e1;
-            font-weight: 700;
-            color: #e65100;
-            text-align: center;
-            font-size: 16px;
-            padding: 14px;
-            border-bottom: 2px solid #ffb300;
-        }
-
-        .scorecard-wrap {
-            background: white;
-            border-radius: 12px;
-            padding: 18px 22px;
-            margin: 15px 0 20px 0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            border-left: 6px solid #ff6f00;
-        }
-        .scorecard-wrap .scorecard-header {
-            font-size: 18px;
-            font-weight: 700;
-            color: #e65100;
-            margin-bottom: 12px;
-            border-bottom: 2px solid #ffe0b2;
-            padding-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .scorecard-wrap .scorecard-header .btn-group-sm {
-            display: flex;
-            gap: 8px;
-        }
-        .scorecard-wrap .scorecard-header .btn-group-sm button {
-            padding: 4px 14px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 13px;
-            transition: 0.2s;
-        }
-        .scorecard-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        .scorecard-table th {
-            background: #1a237e;
-            color: white;
-            padding: 10px 8px;
-            font-weight: 700;
-            font-size: 12px;
-            text-align: center;
-            border-bottom: 3px solid #0d47a1;
-            white-space: nowrap;
-        }
-        .scorecard-table td {
-            padding: 10px 8px;
-            text-align: center;
-            border-bottom: 1px solid #e8ecf1;
-            vertical-align: middle;
-        }
-        .scorecard-table tr:nth-child(even) {
-            background: #f8faff;
-        }
-        .scorecard-table tr:hover {
-            background: #e3edfb !important;
-        }
-        .scorecard-table .dept-name {
-            font-weight: 600;
-            color: #1a3a5c;
-            text-align: left;
-            padding-left: 15px;
-        }
-        .scorecard-table .total-row td {
-            background: #d4e4f7 !important;
-            font-weight: 700;
-            border-top: 2px solid #1976d2;
-            border-bottom: 2px solid #1976d2;
-        }
-        .grade-badge {
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 16px;
-            min-width: 40px;
-        }
-        .grade-A {
-            background: #1b5e20;
-            color: white;
-        }
-        .grade-B {
-            background: #e65100;
-            color: white;
-        }
-        .grade-C {
-            background: #f57f17;
-            color: white;
-        }
-        .grade-D {
-            background: #b71c1c;
-            color: white;
-        }
-        .score-bar-bg {
-            width: 80px;
-            height: 10px;
-            background: #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 6px;
-        }
-        .score-bar-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.8s ease;
-        }
-        .score-bar-fill.green {
-            background: #43a047;
-        }
-        .score-bar-fill.yellow {
-            background: #fb8c00;
-        }
-        .score-bar-fill.orange {
-            background: #f57f17;
-        }
-        .score-bar-fill.red {
-            background: #c62828;
-        }
-        .score-text {
-            font-weight: 700;
-            font-size: 14px;
-            min-width: 40px;
-            display: inline-block;
-        }
-
-        #whatsappMessageBox {
-            border-left-color: #25D366 !important;
-        }
-        #whatsappMessageBox .summary-header-text {
-            color: #075E54;
-        }
-        #whatsappMessageBox .btn-sm-excel {
-            background: #25D366;
-            color: white;
-        }
-        #whatsappMessageBox .btn-sm-excel:hover {
-            background: #1da851;
-        }
-        #whatsappMessageContent {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            font-size: 15px;
-            line-height: 1.8;
-            padding: 10px 0;
-            white-space: pre-wrap;
-            background: #f8fafc;
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .mc-dept-summary-wrap {
-            background: white;
-            border-radius: 12px;
-            padding: 18px 22px;
-            margin: 15px 0 20px 0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            border-left: 6px solid #0d47a1;
-        }
-        .mc-dept-summary-wrap .mc-dept-header {
-            font-size: 18px;
-            font-weight: 700;
-            color: #0d47a1;
-            margin-bottom: 12px;
-            border-bottom: 2px solid #e3eef9;
-            padding-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .mc-dept-summary-wrap .mc-dept-header .btn-group-sm {
-            display: flex;
-            gap: 8px;
-        }
-        .mc-dept-summary-wrap .mc-dept-header .btn-group-sm button {
-            padding: 4px 14px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 13px;
-            transition: 0.2s;
-        }
-        .mc-horizontal-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            border: 1px solid #e2e8f0;
-        }
-        .mc-horizontal-table thead th {
-            background: #0d47a1;
-            color: white;
-            padding: 8px 6px;
-            font-weight: 700;
-            font-size: 11px;
-            border-bottom: 2px solid #1565c0;
-            white-space: nowrap;
-            text-align: center;
-            min-width: 90px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        .mc-horizontal-table thead th:first-child {
-            min-width: 120px;
-            position: sticky;
-            left: 0;
-            z-index: 20;
-            background: #0d47a1;
-        }
-        .mc-horizontal-table thead th .sub-header {
-            font-weight: 400;
-            font-size: 10px;
-            opacity: 0.9;
-            display: block;
-            margin-top: 2px;
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
-            padding-top: 2px;
-        }
-        .mc-horizontal-table thead .sub-header-metric {
-            font-weight: 400;
-            font-size: 11px;
-            opacity: 0.85;
-            display: block;
-            padding: 2px 0;
-            background: #0d47a1;
-            color: #fff;
-        }
-        .mc-horizontal-table tbody td {
-            padding: 5px 6px;
-            border-bottom: 1px solid #e8ecf1;
-            vertical-align: middle;
-            text-align: center;
-            font-size: 11px;
-            white-space: nowrap;
-        }
-        .mc-horizontal-table tbody td:first-child {
-            font-weight: 600;
-            color: #1a3a5c;
-            text-align: left;
-            padding-left: 10px;
-            background: #f0f5fe;
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            border-right: 1px solid #dde4ec;
-            min-width: 120px;
-        }
-        .mc-horizontal-table tbody tr:nth-child(even) td:first-child {
-            background: #e8eff8;
-        }
-        .mc-horizontal-table tbody tr:nth-child(even) td:not(:first-child) {
-            background: #fafcff;
-        }
-        .mc-horizontal-table tbody tr:hover td {
-            background: #e3edfb !important;
-        }
-        .mc-horizontal-table tbody tr:hover td:first-child {
-            background: #d4e2f5 !important;
-        }
-        .mc-horizontal-table .total-row td {
-            background: #d4e4f7 !important;
-            font-weight: 700;
-            border-top: 2px solid #1976d2;
-            border-bottom: 2px solid #1976d2;
-        }
-        .mc-horizontal-table .total-row td:first-child {
-            background: #c5d8ee !important;
-        }
-        .mc-horizontal-table .highlight-number {
-            font-weight: 700;
-            color: #0d47a1;
-        }
-        .mc-horizontal-table .run-pct-text {
-            font-weight: 700;
-            font-size: 12px;
-        }
-        .mc-horizontal-table .run-pct-text.green {
-            color: #1b5e20;
-        }
-        .mc-horizontal-table .run-pct-text.yellow {
-            color: #e65100;
-        }
-        .mc-horizontal-table .run-pct-text.red {
-            color: #b71c1c;
-        }
-        .mc-horizontal-table .bar-container {
-            width: 45px;
-            height: 5px;
-            background: #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-            display: inline-block;
-            vertical-align: middle;
-            margin-left: 4px;
-        }
-        .mc-horizontal-table .bar-fill {
-            height: 100%;
-            border-radius: 10px;
-        }
-        .mc-horizontal-table .bar-fill.green {
-            background: #43a047;
-        }
-        .mc-horizontal-table .bar-fill.yellow {
-            background: #fb8c00;
-        }
-        .mc-horizontal-table .bar-fill.red {
-            background: #c62828;
-        }
-        .mc-horizontal-table .dept-header {
-            font-weight: 700;
-            font-size: 11px;
-        }
-        .mc-horizontal-scroll {
-            overflow-x: auto;
-            padding-bottom: 8px;
-        }
-        .mc-horizontal-scroll::-webkit-scrollbar {
-            height: 8px;
-        }
-        .mc-horizontal-scroll::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        .mc-horizontal-scroll::-webkit-scrollbar-thumb {
-            background: #0d47a1;
-            border-radius: 10px;
-        }
-        .mc-horizontal-scroll::-webkit-scrollbar-thumb:hover {
-            background: #0a3a8a;
-        }
-        .metric-label {
-            font-weight: 600;
-            color: #1a3a5c;
-            font-size: 11px;
-        }
+        .logout-btn:hover { background: #b02a37; }
     </style>
 </head>
 <body>
-    <div class="container" id="app">
 
-        <!-- ===== ডিজিটাল ঘড়ি (সবার উপরে) ===== -->
-        <div id="clockContainer">
-            <span id="digitalClock">00:00:00</span>
-        </div>
+    <!-- ============================================================
+         LOGIN PAGE (Visible by default)
+         ============================================================ -->
+    <div class="login-container" id="loginContainer">
+        <!-- LEFT PANEL -->
+        <div class="left-panel">
+            <div class="logo-area">
+                <h1><span>HRIS</span></h1>
+                <p>Human Resource Information System</p>
+            </div>
 
-        <!-- ===== হেডার ===== -->
-        <div class="header">
-            <h1>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</h1>
-            <span id="currentTime">📅 লোড হচ্ছে...</span>
-        </div>
+            <div class="description">
+                <strong>Powerful HR & manpower management system</strong> to organize workforce, track performance and grow together.
+            </div>
 
-        <!-- ===== ফিল্টার ===== -->
-        <div class="filters">
-            <div class="group">
-                <label>📅 তারিখ (Date)</label>
-                <input type="date" id="filterDate">
-            </div>
-            <div class="group">
-                <label>🕒 শিফট (Shift)</label>
-                <select id="filterShift">
-                    <option value="All">সব (All)</option>
-                    <option value="Day">ডে (Day)</option>
-                    <option value="Night">নাইট (Night)</option>
-                </select>
-            </div>
-            <div class="group">
-                <label>🏢 ডিপার্টমেন্ট (Floor)</label>
-                <select id="filterDept">
-                    <option value="All">সব (All)</option>
-                </select>
-            </div>
-            <div class="actions">
-                <button class="btn-primary" onclick="applyFilters()">🔍 ফিল্টার প্রয়োগ</button>
-                <button class="btn-success" onclick="loadData()">🔄 রিফ্রেশ</button>
+            <ul class="features">
+                <li><i class="fas fa-check-circle"></i> MC Running Management</li>
+                <li><i class="fas fa-check-circle"></i> HR Vs MC Running Report</li>
+                <li><i class="fas fa-check-circle"></i> Summery of MC Running Vs HR</li>
+                <li><i class="fas fa-check-circle"></i> Recruitment & Onboarding</li>
+                <li><i class="fas fa-check-circle"></i> Performance Management</li>
+                <li><i class="fas fa-check-circle"></i> Training & Development</li>
+            </ul>
+
+            <div class="footer-note">
+                <span><i class="fas fa-shield-alt"></i> Secure & Reliable</span>
+                <span><i class="fas fa-sync-alt"></i> Real-time Updates</span>
+                <span><i class="fas fa-globe"></i> Access Anywhere Anytime</span>
             </div>
         </div>
 
-        <!-- ===== অটো-রিফ্রেশ ===== -->
-        <div class="auto-refresh-container">
-            <div class="toggle-wrapper">
-                <label for="autoRefreshToggle">🔄 অটো-রিফ্রেশ</label>
-                <div class="switch">
-                    <input type="checkbox" id="autoRefreshToggle" checked>
-                    <span class="slider"></span>
+        <!-- RIGHT PANEL -->
+        <div class="right-panel">
+            <!-- Company Logo / Remarking Area -->
+            <div class="company-logo">
+                <div class="icon">
+                    <i class="fas fa-cogs"></i>
                 </div>
-                <span id="autoStatusText" class="auto-status">চালু</span>
-            </div>
-            <span id="countdownDisplay">পরবর্তী আপডেট: ১০s</span>
-        </div>
-
-        <!-- ===== হোয়াটসঅ্যাপ মেসেজ (আপডেটেড) ===== -->
-        <div class="summary-table-wrap" id="whatsappMessageBox">
-            <div class="summary-header-text">
-                <span>💬 হোয়াটসঅ্যাপ মেসেজ কপি করে পাঠান (জাহিদ স্যার এর জন্য)</span>
-                <div class="btn-group-sm">
-                    <button class="btn-sm-excel" onclick="copyWhatsAppMessage()">📋 কপি করুন</button>
+                <div class="text">
+                    <span class="brand-sub">RIP DPL HR 360M</span>
+                    <span class="brand-main">HR<span>360</span></span>
                 </div>
             </div>
-            <div id="whatsappMessageContent"></div>
-        </div>
 
-        <!-- ===== সারাংশ টেবিল ===== -->
-        <div class="summary-table-wrap" id="summaryTableWrap">
-            <div class="summary-header-text">
-                <span>📌 Current Date &amp; Shift Summery Report</span>
-                <div class="btn-group-sm">
-                    <button class="btn-sm-image" onclick="downloadSummaryImage()">📷 ইমেজ</button>
-                    <button class="btn-sm-excel" onclick="downloadSummaryExcel()">⬇️ Excel</button>
+            <!-- Login Form -->
+            <form class="login-form" id="loginForm" onsubmit="return handleLogin(event)">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Username" autocomplete="off" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+
+                <div class="remember-forgot">
+                    <label>
+                        <input type="checkbox" id="rememberMe"> Remember username
+                    </label>
+                    <a href="#">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="btn-login">LOGIN</button>
+                <div class="error-msg" id="errorMsg"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         DASHBOARD (Hidden by default, shown after login)
+         ============================================================ -->
+    <div id="dashboardContainer">
+        <div class="container" id="app">
+
+            <!-- ===== ডিজিটাল ঘড়ি (সবার উপরে) ===== -->
+            <div id="clockContainer">
+                <span id="digitalClock">00:00:00</span>
+            </div>
+
+            <!-- ===== হেডার ===== -->
+            <div class="header">
+                <h1>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</h1>
+                <div style="display: flex; align-items: center;">
+                    <span id="currentTime">📅 লোড হচ্ছে...</span>
+                    <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button>
                 </div>
             </div>
-            <div id="summaryTableContainer">
-                <table class="summary-data-table" id="summaryDataTable">
-                    <tbody>
-                        <tr class="greeting-row"><td colspan="2">Dear @ DPL DGM Sir, Below is Current Date &amp; Shift Summery Report. You Can Check The report</td></tr>
-                        <tr><td class="label-cell">📅 Total MC</td><td class="value-cell" id="sumtotalmc">-</td></tr>
-                        <tr><td class="label-cell">📅 Targert MC Run</td><td class="value-cell" id="sumtargetMC Run">-</td></tr>
-                        <tr><td class="label-cell">📅 Date</td><td class="value-cell" id="sumDate">-</td></tr>
-                        <tr><td class="label-cell">🕒 Shift</td><td class="value-cell" id="sumShift">-</td></tr>
-                        <tr><td class="label-cell">👥 Total Present</td><td class="value-cell" id="sumPresent">0</td></tr>
-                        <tr><td class="label-cell">❌ Total Absent</td><td class="value-cell" id="sumAbsent">0</td></tr>
-                        <tr><td class="label-cell">📊 Total No Demand</td><td class="value-cell" id="sumNoDemand">0</td></tr>
-                        <tr><td class="label-cell">🔧 Total Mold Change QTY</td><td class="value-cell" id="sumMoldChange">0</td></tr>
-                        <tr><td class="label-cell">⛔ MC Stop (Manpower)</td><td class="value-cell" id="sumMCStopManpower">0</td></tr>
-                        <tr><td class="label-cell">⛔ MC Stop (No Demand)</td><td class="value-cell" id="sumMCStopNoDemand">0</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
 
-        <div id="filterStatus" class="filter-status">⏳ ডেটা লোড হচ্ছে...</div>
-        <div id="summaryHeader" class="summary-header">📌 বর্তমান তারিখ: -- | শিফট: --</div>
-
-        <!-- ===== Saifuddin Table ===== -->
-        <div class="section-title clearfix">
-            <span class="saifuddin-title">📊 Summery Table For Mr. Saifuddin</span>
-            <div class="btn-group">
-                <button class="btn-image" onclick="downloadSaifuddinImage()">📷 ইমেজ ডাউনলোড</button>
-                <button class="btn-excel" onclick="downloadSaifuddinExcel()">⬇️ Excel ডাউনলোড</button>
-                <button class="btn-pdf" onclick="downloadSaifuddinPDF()">📄 PDF ডাউনলোড</button>
-            </div>
-        </div>
-        <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
-
-        <!-- ===== MC ডিপার্টমেন্ট হরাইজন্টাল সারাংশ (তিন-লাইন হেডার) ===== -->
-        <div class="mc-dept-summary-wrap" id="mcDeptSummaryWrap">
-            <div class="mc-dept-header">
-                <span>🖨️ MC ডিপার্টমেন্ট সারাংশ (হরাইজন্টাল – কপি করার জন্য)</span>
-                <div class="btn-group-sm">
-                    <button class="btn-sm-image" onclick="downloadMcDeptImage()">📷 ইমেজ</button>
-                    <button class="btn-sm-excel" onclick="downloadMcDeptExcel()">⬇️ Excel</button>
+            <!-- ===== ফিল্টার ===== -->
+            <div class="filters">
+                <div class="group">
+                    <label>📅 তারিখ (Date)</label>
+                    <input type="date" id="filterDate">
+                </div>
+                <div class="group">
+                    <label>🕒 শিফট (Shift)</label>
+                    <select id="filterShift">
+                        <option value="All">সব (All)</option>
+                        <option value="Day">ডে (Day)</option>
+                        <option value="Night">নাইট (Night)</option>
+                    </select>
+                </div>
+                <div class="group">
+                    <label>🏢 ডিপার্টমেন্ট (Floor)</label>
+                    <select id="filterDept">
+                        <option value="All">সব (All)</option>
+                    </select>
+                </div>
+                <div class="actions">
+                    <button class="btn-primary" onclick="applyFilters()">🔍 ফিল্টার প্রয়োগ</button>
+                    <button class="btn-success" onclick="loadData()">🔄 রিফ্রেশ</button>
                 </div>
             </div>
-            <div id="mcDeptSummaryContainer"><div class="no-data">লোড হচ্ছে...</div></div>
-        </div>
 
-        <!-- ===== স্কোরকার্ড ===== -->
-        <div class="scorecard-wrap" id="scorecardWrap">
-            <div class="scorecard-header">
-                <span>🏆 পারফরম্যান্স স্কোরকার্ড (MC ডিপার্টমেন্ট)</span>
-                <div class="btn-group-sm">
-                    <button class="btn-sm-image" onclick="downloadScorecardImage()">📷 ইমেজ</button>
-                    <button class="btn-sm-excel" onclick="downloadScorecardExcel()">⬇️ Excel</button>
+            <!-- ===== অটো-রিফ্রেশ ===== -->
+            <div class="auto-refresh-container">
+                <div class="toggle-wrapper">
+                    <label for="autoRefreshToggle">🔄 অটো-রিফ্রেশ</label>
+                    <div class="switch">
+                        <input type="checkbox" id="autoRefreshToggle" checked>
+                        <span class="slider"></span>
+                    </div>
+                    <span id="autoStatusText" class="auto-status">চালু</span>
+                </div>
+                <span id="countdownDisplay">পরবর্তী আপডেট: ১০s</span>
+            </div>
+
+            <!-- ===== হোয়াটসঅ্যাপ মেসেজ (আপডেটেড) ===== -->
+            <div class="summary-table-wrap" id="whatsappMessageBox">
+                <div class="summary-header-text">
+                    <span>💬 হোয়াটসঅ্যাপ মেসেজ কপি করে পাঠান (জাহিদ স্যার এর জন্য)</span>
+                    <div class="btn-group-sm">
+                        <button class="btn-sm-excel" onclick="copyWhatsAppMessage()">📋 কপি করুন</button>
+                    </div>
+                </div>
+                <div id="whatsappMessageContent"></div>
+            </div>
+
+            <!-- ===== সারাংশ টেবিল ===== -->
+            <div class="summary-table-wrap" id="summaryTableWrap">
+                <div class="summary-header-text">
+                    <span>📌 Current Date &amp; Shift Summery Report</span>
+                    <div class="btn-group-sm">
+                        <button class="btn-sm-image" onclick="downloadSummaryImage()">📷 ইমেজ</button>
+                        <button class="btn-sm-excel" onclick="downloadSummaryExcel()">⬇️ Excel</button>
+                    </div>
+                </div>
+                <div id="summaryTableContainer">
+                    <table class="summary-data-table" id="summaryDataTable">
+                        <tbody>
+                            <tr class="greeting-row"><td colspan="2">Dear @ DPL DGM Sir, Below is Current Date &amp; Shift Summery Report. You Can Check The report</td></tr>
+                            <tr><td class="label-cell">📅 Total MC</td><td class="value-cell" id="sumtotalmc">-</td></tr>
+                            <tr><td class="label-cell">📅 Targert MC Run</td><td class="value-cell" id="sumtargetMC Run">-</td></tr>
+                            <tr><td class="label-cell">📅 Date</td><td class="value-cell" id="sumDate">-</td></tr>
+                            <tr><td class="label-cell">🕒 Shift</td><td class="value-cell" id="sumShift">-</td></tr>
+                            <tr><td class="label-cell">👥 Total Present</td><td class="value-cell" id="sumPresent">0</td></tr>
+                            <tr><td class="label-cell">❌ Total Absent</td><td class="value-cell" id="sumAbsent">0</td></tr>
+                            <tr><td class="label-cell">📊 Total No Demand</td><td class="value-cell" id="sumNoDemand">0</td></tr>
+                            <tr><td class="label-cell">🔧 Total Mold Change QTY</td><td class="value-cell" id="sumMoldChange">0</td></tr>
+                            <tr><td class="label-cell">⛔ MC Stop (Manpower)</td><td class="value-cell" id="sumMCStopManpower">0</td></tr>
+                            <tr><td class="label-cell">⛔ MC Stop (No Demand)</td><td class="value-cell" id="sumMCStopNoDemand">0</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div id="scorecardContainer"><div class="no-data">লোড হচ্ছে...</div></div>
-        </div>
 
-        <!-- ===== MC ভিজুয়াল রিপোর্ট ===== -->
-        <div class="section-title clearfix">
-            <span class="mc-badge" style="font-size:18px;">🟦 মেশিন ডিপার্টমেন্ট (MC Department) - ভিজুয়াল রিপোর্ট</span>
-            <div class="btn-group">
-                <button class="btn-image" onclick="downloadMCImage()">📷 ইমেজ ডাউনলোড</button>
-                <button class="btn-excel" onclick="downloadMCExcel()">⬇️ Excel ডাউনলোড</button>
-                <button class="btn-pdf" onclick="downloadMCPDF()">📄 PDF ডাউনলোড</button>
+            <div id="filterStatus" class="filter-status">⏳ ডেটা লোড হচ্ছে...</div>
+            <div id="summaryHeader" class="summary-header">📌 বর্তমান তারিখ: -- | শিফট: --</div>
+
+            <!-- ===== Saifuddin Table ===== -->
+            <div class="section-title clearfix">
+                <span class="saifuddin-title">📊 Summery Table For Mr. Saifuddin</span>
+                <div class="btn-group">
+                    <button class="btn-image" onclick="downloadSaifuddinImage()">📷 ইমেজ ডাউনলোড</button>
+                    <button class="btn-excel" onclick="downloadSaifuddinExcel()">⬇️ Excel ডাউনলোড</button>
+                    <button class="btn-pdf" onclick="downloadSaifuddinPDF()">📄 PDF ডাউনলোড</button>
+                </div>
             </div>
-        </div>
-        <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
+            <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
-        <!-- ===== সাপ্তাহিক সারাংশ ===== -->
-        <div class="section-title clearfix">
-            <div class="weekly-filter-area">
-                <span style="background:#1a237e; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📅 সাপ্তাহিক সারাংশ</span>
-                <select id="weeklyDaysFilter" onchange="renderWeeklySummaryFromData()">
-                    <option value="7">শেষ ৭ দিনের গড়</option>
-                    <option value="14">শেষ ১৪ দিনের গড়</option>
-                    <option value="21">শেষ ২১ দিনের গড়</option>
-                    <option value="30">শেষ ৩০ দিনের গড়</option>
-                </select>
+            <!-- ===== MC ডিপার্টমেন্ট হরাইজন্টাল সারাংশ (তিন-লাইন হেডার) ===== -->
+            <div class="mc-dept-summary-wrap" id="mcDeptSummaryWrap">
+                <div class="mc-dept-header">
+                    <span>🖨️ MC ডিপার্টমেন্ট সারাংশ (হরাইজন্টাল – কপি করার জন্য)</span>
+                    <div class="btn-group-sm">
+                        <button class="btn-sm-image" onclick="downloadMcDeptImage()">📷 ইমেজ</button>
+                        <button class="btn-sm-excel" onclick="downloadMcDeptExcel()">⬇️ Excel</button>
+                    </div>
+                </div>
+                <div id="mcDeptSummaryContainer"><div class="no-data">লোড হচ্ছে...</div></div>
             </div>
-            <div class="btn-group">
-                <button class="btn-image" onclick="downloadWeeklyImage()">📷 ইমেজ ডাউনলোড</button>
-                <button class="btn-excel" onclick="downloadWeeklyExcel()">⬇️ Excel ডাউনলোড</button>
+
+            <!-- ===== স্কোরকার্ড ===== -->
+            <div class="scorecard-wrap" id="scorecardWrap">
+                <div class="scorecard-header">
+                    <span>🏆 পারফরম্যান্স স্কোরকার্ড (MC ডিপার্টমেন্ট)</span>
+                    <div class="btn-group-sm">
+                        <button class="btn-sm-image" onclick="downloadScorecardImage()">📷 ইমেজ</button>
+                        <button class="btn-sm-excel" onclick="downloadScorecardExcel()">⬇️ Excel</button>
+                    </div>
+                </div>
+                <div id="scorecardContainer"><div class="no-data">লোড হচ্ছে...</div></div>
             </div>
+
+            <!-- ===== MC ভিজুয়াল রিপোর্ট ===== -->
+            <div class="section-title clearfix">
+                <span class="mc-badge" style="font-size:18px;">🟦 মেশিন ডিপার্টমেন্ট (MC Department) - ভিজুয়াল রিপোর্ট</span>
+                <div class="btn-group">
+                    <button class="btn-image" onclick="downloadMCImage()">📷 ইমেজ ডাউনলোড</button>
+                    <button class="btn-excel" onclick="downloadMCExcel()">⬇️ Excel ডাউনলোড</button>
+                    <button class="btn-pdf" onclick="downloadMCPDF()">📄 PDF ডাউনলোড</button>
+                </div>
+            </div>
+            <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
+
+            <!-- ===== সাপ্তাহিক সারাংশ ===== -->
+            <div class="section-title clearfix">
+                <div class="weekly-filter-area">
+                    <span style="background:#1a237e; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📅 সাপ্তাহিক সারাংশ</span>
+                    <select id="weeklyDaysFilter" onchange="renderWeeklySummaryFromData()">
+                        <option value="7">শেষ ৭ দিনের গড়</option>
+                        <option value="14">শেষ ১৪ দিনের গড়</option>
+                        <option value="21">শেষ ২১ দিনের গড়</option>
+                        <option value="30">শেষ ৩০ দিনের গড়</option>
+                    </select>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-image" onclick="downloadWeeklyImage()">📷 ইমেজ ডাউনলোড</button>
+                    <button class="btn-excel" onclick="downloadWeeklyExcel()">⬇️ Excel ডাউনলোড</button>
+                </div>
+            </div>
+            <div class="table-wrap" id="weeklySummaryContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+
+            <!-- ===== স্ট্যাটস ===== -->
+            <div class="stats" id="statsContainer">
+                <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
+                <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
+                <div class="card"><div class="label">✅ মোট Present</div><div class="value" id="totalPresent">0</div></div>
+                <div class="card"><div class="label">📤 মোট Leave</div><div class="value" id="totalLeave">0</div></div>
+                <div class="card"><div class="label">❌ মোট Absent</div><div class="value" id="totalAbsent">0</div></div>
+                <div class="card"><div class="label">👥 মোট Manpower</div><div class="value" id="totalManpower">0</div></div>
+                <div class="card"><div class="label">⚙️ মোট MC</div><div class="value" id="totalMC">0</div></div>
+                <div class="card"><div class="label">🏃 মোট Target Run</div><div class="value" id="totalTargetRun">0</div></div>
+                <div class="card"><div class="label">📈 গড় % Running</div><div class="value" id="avgRunningPct">0.0%</div></div>
+            </div>
+
+            <!-- ===== গ্রুপ টেবিল ===== -->
+            <div class="section-title">📊 ডেইলি সারাংশ (Summary)</div>
+            <div class="sub-title">🟢 প্রোডাকশন ডিপার্টমেন্ট (Group A)</div>
+            <div class="table-wrap" id="groupATable"><div class="no-data">লোড হচ্ছে...</div></div>
+            <div class="sub-title">🟡 সাপোর্ট ডিপার্টমেন্ট (Group B)</div>
+            <div class="table-wrap" id="groupBTable"><div class="no-data">লোড হচ্ছে...</div></div>
+            <div class="sub-title">🏢 RIP DPL টোটাল (Overall)</div>
+            <div class="table-wrap" id="overallTable"><div class="no-data">লোড হচ্ছে...</div></div>
+
+            <!-- ===== মিসিং ডিপার্টমেন্ট ===== -->
+            <div class="section-title">🔴 মিসিং ডিপার্টমেন্ট (এন্ট্রি নেই)</div>
+            <div id="missingContainer" class="missing-list"><div class="no-data">লোড হচ্ছে...</div></div>
+
+            <!-- ===== র-ডেটা ===== -->
+            <div class="section-title clearfix">
+                📋 র-ডেটা (Raw Data) - প্রতিটি এন্ট্রি আলাদা
+                <button class="btn-excel" onclick="downloadExcel()">⬇️ Excel ডাউনলোড করুন</button>
+            </div>
+            <div class="table-wrap" id="rawDataTable"><div class="no-data">লোড হচ্ছে...</div></div>
         </div>
-        <div class="table-wrap" id="weeklySummaryContainer"><div class="no-data">লোড হচ্ছে...</div></div>
-
-        <!-- ===== স্ট্যাটস ===== -->
-        <div class="stats" id="statsContainer">
-            <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
-            <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
-            <div class="card"><div class="label">✅ মোট Present</div><div class="value" id="totalPresent">0</div></div>
-            <div class="card"><div class="label">📤 মোট Leave</div><div class="value" id="totalLeave">0</div></div>
-            <div class="card"><div class="label">❌ মোট Absent</div><div class="value" id="totalAbsent">0</div></div>
-            <div class="card"><div class="label">👥 মোট Manpower</div><div class="value" id="totalManpower">0</div></div>
-            <div class="card"><div class="label">⚙️ মোট MC</div><div class="value" id="totalMC">0</div></div>
-            <div class="card"><div class="label">🏃 মোট Target Run</div><div class="value" id="totalTargetRun">0</div></div>
-            <div class="card"><div class="label">📈 গড় % Running</div><div class="value" id="avgRunningPct">0.0%</div></div>
-        </div>
-
-        <!-- ===== গ্রুপ টেবিল ===== -->
-        <div class="section-title">📊 ডেইলি সারাংশ (Summary)</div>
-        <div class="sub-title">🟢 প্রোডাকশন ডিপার্টমেন্ট (Group A)</div>
-        <div class="table-wrap" id="groupATable"><div class="no-data">লোড হচ্ছে...</div></div>
-        <div class="sub-title">🟡 সাপোর্ট ডিপার্টমেন্ট (Group B)</div>
-        <div class="table-wrap" id="groupBTable"><div class="no-data">লোড হচ্ছে...</div></div>
-        <div class="sub-title">🏢 RIP DPL টোটাল (Overall)</div>
-        <div class="table-wrap" id="overallTable"><div class="no-data">লোড হচ্ছে...</div></div>
-
-        <!-- ===== মিসিং ডিপার্টমেন্ট ===== -->
-        <div class="section-title">🔴 মিসিং ডিপার্টমেন্ট (এন্ট্রি নেই)</div>
-        <div id="missingContainer" class="missing-list"><div class="no-data">লোড হচ্ছে...</div></div>
-
-        <!-- ===== র-ডেটা ===== -->
-        <div class="section-title clearfix">
-            📋 র-ডেটা (Raw Data) - প্রতিটি এন্ট্রি আলাদা
-            <button class="btn-excel" onclick="downloadExcel()">⬇️ Excel ডাউনলোড করুন</button>
-        </div>
-        <div class="table-wrap" id="rawDataTable"><div class="no-data">লোড হচ্ছে...</div></div>
     </div>
 
     <script>
         // ============================================================
-        // CONSTANTS & CONFIGURATION
+        // LOGIN LOGIC
         // ============================================================
-        const API_URL =
-            'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
+        const VALID_USERNAME = "DPL";
+        const VALID_PASSWORD = "DPL";
+
+        window.onload = function() {
+            const loggedIn = sessionStorage.getItem('hris_logged_in');
+            if (loggedIn === 'true') {
+                showDashboard();
+            } else {
+                showLogin();
+                const remembered = localStorage.getItem('hris_remember');
+                if (remembered === 'true') {
+                    document.getElementById('username').value = VALID_USERNAME;
+                    document.getElementById('rememberMe').checked = true;
+                }
+            }
+        };
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const rememberCheck = document.getElementById('rememberMe').checked;
+            errorMsg.textContent = '';
+
+            if (usernameInput === VALID_USERNAME && passwordInput === VALID_PASSWORD) {
+                if (rememberCheck) {
+                    localStorage.setItem('hris_remember', 'true');
+                } else {
+                    localStorage.removeItem('hris_remember');
+                }
+                sessionStorage.setItem('hris_logged_in', 'true');
+                showDashboard();
+                initDashboard();
+                return false;
+            } else {
+                errorMsg.textContent = 'Invalid username or password. Please try again.';
+                return false;
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('dashboardContainer').classList.add('active');
+            document.body.style.display = 'block';
+            document.body.style.padding = '10px 20px';
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        function showLogin() {
+            document.getElementById('loginContainer').classList.remove('hidden');
+            document.getElementById('dashboardContainer').classList.remove('active');
+            document.body.style.display = 'flex';
+            document.body.style.padding = '20px';
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('hris_logged_in');
+            if (typeof stopAutoRefresh === 'function') stopAutoRefresh();
+            showLogin();
+        }
+
+        // ============================================================
+        // DASHBOARD LOGIC (FROM YOUR PREVIOUS CODE)
+        // ============================================================
+        const API_URL = 'https://script.google.com/macros/s/AKfycbysydKnbUPM318FLov_121PBy--xvndahd5kecetHLnRboavCjWM-lkXtXgteK-WsXjQQ/exec';
 
         const FIXED_MC_QTY = {
             'RIP> DPL> Plastic-1': 38,
@@ -1440,29 +720,21 @@
             'Plastic-Maintenance.', 'Tool Room Maintenance'
         ];
 
-        // ============================================================
-        // GLOBAL STATE
-        // ============================================================
         let allData = [];
         let filteredData = [];
         let autoRefreshInterval = null;
         let countdownInterval = null;
         let secondsLeft = 10;
 
-        // ============================================================
-        // DIGITAL CLOCK
-        // ============================================================
         function updateDigitalClock() {
             const now = new Date();
             const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
-            document.getElementById('digitalClock').textContent = timeStr;
+            const el = document.getElementById('digitalClock');
+            if (el) el.textContent = timeStr;
         }
         setInterval(updateDigitalClock, 1000);
         updateDigitalClock();
 
-        // ============================================================
-        // AUTO-REFRESH
-        // ============================================================
         function startAutoRefresh() {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             if (countdownInterval) clearInterval(countdownInterval);
@@ -1486,37 +758,51 @@
         function stopAutoRefresh() {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             if (countdownInterval) clearInterval(countdownInterval);
-            document.getElementById('countdownDisplay').innerText = 'অটো-রিফ্রেশ বন্ধ';
+            const el = document.getElementById('countdownDisplay');
+            if (el) el.innerText = 'অটো-রিফ্রেশ বন্ধ';
         }
 
         function updateCountdownDisplay() {
-            document.getElementById('countdownDisplay').innerText = `পরবর্তী আপডেট: ${secondsLeft}s`;
+            const el = document.getElementById('countdownDisplay');
+            if (el) el.innerText = `পরবর্তী আপডেট: ${secondsLeft}s`;
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        function initDashboard() {
             const toggle = document.getElementById('autoRefreshToggle');
             const statusText = document.getElementById('autoStatusText');
 
-            toggle.addEventListener('change', function() {
-                if (this.checked) {
-                    statusText.innerText = 'চালু';
-                    statusText.className = 'auto-status';
+            if (toggle && statusText) {
+                toggle.addEventListener('change', function() {
+                    if (this.checked) {
+                        statusText.innerText = 'চালু';
+                        statusText.className = 'auto-status';
+                        startAutoRefresh();
+                    } else {
+                        statusText.innerText = 'বন্ধ';
+                        statusText.className = 'auto-status off';
+                        stopAutoRefresh();
+                    }
+                });
+
+                if (toggle.checked) {
                     startAutoRefresh();
-                } else {
-                    statusText.innerText = 'বন্ধ';
-                    statusText.className = 'auto-status off';
-                    stopAutoRefresh();
                 }
-            });
-
-            if (toggle.checked) {
-                startAutoRefresh();
             }
-        });
 
-        // ============================================================
-        // UTILITY FUNCTIONS
-        // ============================================================
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const dateInput = document.getElementById('filterDate');
+            if (dateInput) dateInput.value = `${year}-${month}-${day}`;
+            
+            const shiftInput = document.getElementById('filterShift');
+            if (shiftInput) shiftInput.value = getCurrentShift();
+            
+            loadData();
+            setTimeout(updateWhatsAppMessage, 500);
+        }
+
         function getCurrentShift() {
             const now = new Date();
             const hours = now.getHours();
@@ -1559,12 +845,11 @@
             return parseFloat(v) || 0;
         }
 
-        // ============================================================
-        // DATA LOADING & FILTERING
-        // ============================================================
         async function loadData() {
-            document.getElementById('currentTime').innerText = '⏳ লোড হচ্ছে...';
-            document.getElementById('filterStatus').innerHTML = '⏳ ডেটা লোড হচ্ছে...';
+            const ct = document.getElementById('currentTime');
+            const fs = document.getElementById('filterStatus');
+            if (ct) ct.innerText = '⏳ লোড হচ্ছে...';
+            if (fs) fs.innerHTML = '⏳ ডেটা লোড হচ্ছে...';
             try {
                 const res = await fetch(API_URL);
                 const json = await res.json();
@@ -1574,18 +859,19 @@
                 populateDeptFilter();
                 applyFilters();
                 renderWeeklySummaryFromData();
-                document.getElementById('currentTime').innerText = '📅 ' + new Date().toLocaleString('bn-BD');
+                if (ct) ct.innerText = '📅 ' + new Date().toLocaleString('bn-BD');
                 setTimeout(updateWhatsAppMessage, 300);
             } catch (e) {
                 console.error('❌ লোড ব্যর্থ:', e);
-                document.getElementById('currentTime').innerText = '❌ লোড ব্যর্থ!';
-                document.getElementById('filterStatus').innerHTML = '❌ ডেটা লোড ব্যর্থ! URL চেক করুন।';
+                if (ct) ct.innerText = '❌ লোড ব্যর্থ!';
+                if (fs) fs.innerHTML = '❌ ডেটা লোড ব্যর্থ! URL চেক করুন।';
                 showError('ডেটা লোড করতে ব্যর্থ! URL বা CORS চেক করুন।');
             }
         }
 
         function populateDeptFilter() {
             const select = document.getElementById('filterDept');
+            if (!select) return;
             const depts = [...new Set(allData.map(d => d.Department || d.department).filter(Boolean))].sort();
             select.innerHTML = '<option value="All">সব (All)</option>';
             depts.forEach(d => {
@@ -1621,9 +907,8 @@
                 return d && s && dep;
             });
 
-            console.log('📌 ফিল্টারকৃত ডেটা:', filteredData.length);
-            document.getElementById('filterStatus').innerHTML =
-                `📌 ফিল্টার প্রয়োগ করা হয়েছে: ${filteredData.length} টি এন্ট্রি পাওয়া গেছে।`;
+            const fs = document.getElementById('filterStatus');
+            if (fs) fs.innerHTML = `📌 ফিল্টার প্রয়োগ করা হয়েছে: ${filteredData.length} টি এন্ট্রি পাওয়া গেছে।`;
             updateSummaryHeader();
             renderDashboard(filteredData);
             setTimeout(updateWhatsAppMessage, 200);
@@ -1634,8 +919,8 @@
             const shift = document.getElementById('filterShift').value;
             let displayDate = date ? formatDate(date) : 'সব তারিখ';
             let displayShift = shift !== 'All' ? shift : 'সব শিফট';
-            document.getElementById('summaryHeader').innerHTML =
-                `📌 বর্তমান তারিখ: ${displayDate} | শিফট: ${displayShift}`;
+            const el = document.getElementById('summaryHeader');
+            if (el) el.innerHTML = `📌 বর্তমান তারিখ: ${displayDate} | শিফট: ${displayShift}`;
         }
 
         function renderDashboard(data) {
@@ -1652,21 +937,10 @@
             renderRawData(data);
         }
 
-        // ============================================================
-        // RENDER FUNCTIONS
-        // ============================================================
-
-        // ---- Current Summary (Total MC, Target MC Run, MC Will Off যুক্ত) ----
         function renderCurrentSummary(data) {
-            let totalPresent = 0,
-                totalAbsent = 0,
-                totalNoDemand = 0;
-            let mcStopManpower = 0,
-                mcStopNoDemand = 0,
-                totalMoldChange = 0;
-            let totalMC = 0,
-                targetRun = 0,
-                mcWillOff = 0;
+            let totalPresent = 0, totalAbsent = 0, totalNoDemand = 0;
+            let mcStopManpower = 0, mcStopNoDemand = 0, totalMoldChange = 0;
+            let totalMC = 0, targetRun = 0;
 
             data.forEach(row => {
                 totalPresent += getNum(row, ['Total HR', 'totalHR']);
@@ -1677,33 +951,27 @@
                 totalMoldChange += getNum(row, ['Mold Change', 'moldChange']);
                 totalMC += getNum(row, ['Total MC', 'totalMC']);
                 targetRun += getNum(row, ['MC Running', 'mcRunning']);
-                mcWillOff += getNum(row, ['MC Stopped', 'mcStopped']);
             });
 
-            document.getElementById('sumPresent').innerText = totalPresent;
-            document.getElementById('sumAbsent').innerText = totalAbsent;
-            document.getElementById('sumNoDemand').innerText = totalNoDemand;
-            document.getElementById('sumMCStopManpower').innerText = mcStopManpower;
-            document.getElementById('sumMCStopNoDemand').innerText = mcStopNoDemand;
-            document.getElementById('sumMoldChange').innerText = totalMoldChange;
-            document.getElementById('sumtotalmc').innerText = totalMC;
-            document.getElementById('sumtargetMC Run').innerText = targetRun;
+            const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+            setTxt('sumPresent', totalPresent);
+            setTxt('sumAbsent', totalAbsent);
+            setTxt('sumNoDemand', totalNoDemand);
+            setTxt('sumMCStopManpower', mcStopManpower);
+            setTxt('sumMCStopNoDemand', mcStopNoDemand);
+            setTxt('sumMoldChange', totalMoldChange);
+            setTxt('sumtotalmc', totalMC);
+            setTxt('sumtargetMC Run', targetRun);
 
             const date = document.getElementById('filterDate').value;
             const shift = document.getElementById('filterShift').value;
-            document.getElementById('sumDate').innerText = date ? formatDate(date) : 'সব তারিখ';
-            document.getElementById('sumShift').innerText = shift !== 'All' ? shift : 'সব শিফট';
+            setTxt('sumDate', date ? formatDate(date) : 'সব তারিখ');
+            setTxt('sumShift', shift !== 'All' ? shift : 'সব শিফট');
         }
 
-        // ---- Stats ----
         function renderStats(data) {
-            let totalHR = 0,
-                totalPresent = 0,
-                totalLeave = 0,
-                totalAbsent = 0;
-            let totalMC = 0,
-                totalTargetRun = 0,
-                sumPct = 0;
+            let totalHR = 0, totalPresent = 0, totalLeave = 0, totalAbsent = 0;
+            let totalMC = 0, totalTargetRun = 0, sumPct = 0;
 
             data.forEach(r => {
                 const hr = getNum(r, ['Total HR', 'totalHR']);
@@ -1719,44 +987,33 @@
                 sumPct += parseFloat(pct) || 0;
             });
 
-            document.getElementById('totalEntries').innerText = data.length;
-            document.getElementById('totalHr').innerText = totalHR;
-            document.getElementById('totalPresent').innerText = totalPresent;
-            document.getElementById('totalLeave').innerText = totalLeave;
-            document.getElementById('totalAbsent').innerText = totalAbsent;
-            document.getElementById('totalManpower').innerText = totalPresent + totalLeave + totalAbsent;
-            document.getElementById('totalMC').innerText = totalMC;
-            document.getElementById('totalTargetRun').innerText = totalTargetRun;
-            document.getElementById('avgRunningPct').innerText = data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' :
-                '0.0%';
+            const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+            setTxt('totalEntries', data.length);
+            setTxt('totalHr', totalHR);
+            setTxt('totalPresent', totalPresent);
+            setTxt('totalLeave', totalLeave);
+            setTxt('totalAbsent', totalAbsent);
+            setTxt('totalManpower', totalPresent + totalLeave + totalAbsent);
+            setTxt('totalMC', totalMC);
+            setTxt('totalTargetRun', totalTargetRun);
+            setTxt('avgRunningPct', data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%');
         }
 
-        // ---- Saifuddin Table (সম্পূর্ণ) ----
         function renderSaifuddinTable(data) {
             const container = document.getElementById('saifuddinTableContainer');
+            if (!container) return;
             let rows = [];
-            let prodTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
-                doubleMC: 0, packagingOperator: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
-                preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
-            let packagingTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
-                doubleMC: 0, packagingOperator: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
-                preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
-            let commonTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
-                doubleMC: 0, packagingOperator: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
-                preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
-            let grandTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0,
-                doubleMC: 0, packagingOperator: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0,
-                preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
+            let prodTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0, doubleMC: 0, packagingOperator: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0, preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
+            let packagingTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0, doubleMC: 0, packagingOperator: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0, preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
+            let commonTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0, doubleMC: 0, packagingOperator: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0, preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
+            let grandTotal = { totalMP: 0, totalPresent: 0, absent: 0, leave: 0, totalMC: 0, targetRun: 0, mcWillOff: 0, doubleMC: 0, packagingOperator: 0, mpShort: 0, moldProb: 0, moldChange: 0, sample: 0, mcProb: 0, preventive: 0, noDemand: 0, materialShort: 0, overStock: 0, accShort: 0 };
 
             SAIFUDDIN_DEPTS.forEach(item => {
                 const deptName = item.name;
                 const possibleNames = DEPT_MAP[deptName] || [deptName];
                 let deptRows = [];
                 for (let pn of possibleNames) {
-                    const found = data.filter(r => {
-                        let d = getVal(r, ['Department', 'department']);
-                        return d === pn;
-                    });
+                    const found = data.filter(r => getVal(r, ['Department', 'department']) === pn);
                     deptRows = deptRows.concat(found);
                 }
 
@@ -1764,24 +1021,11 @@
                 const isFixed = FIXED_SN_LIST.includes(item.sn);
                 const isDuplicate = deptRows.length > 1;
 
-                let totalPresent = 0,
-                    absent = 0,
-                    leave = 0;
-                let calculatedMC = 0,
-                    targetRun = 0,
-                    mcWillOff = 0;
-                let doubleMC = 0,
-                    packagingOperator = 0;
-                let mpShort = 0,
-                    moldProb = 0,
-                    moldChange = 0,
-                    sample = 0,
-                    mcProb = 0;
-                let preventive = 0,
-                    noDemand = 0,
-                    materialShort = 0,
-                    overStock = 0,
-                    accShort = 0;
+                let totalPresent = 0, absent = 0, leave = 0;
+                let calculatedMC = 0, targetRun = 0, mcWillOff = 0;
+                let doubleMC = 0, packagingOperator = 0;
+                let mpShort = 0, moldProb = 0, moldChange = 0, sample = 0, mcProb = 0;
+                let preventive = 0, noDemand = 0, materialShort = 0, overStock = 0, accShort = 0;
 
                 if (hasData) {
                     deptRows.forEach(r => {
@@ -1991,9 +1235,9 @@
             window._saifuddinHeaders = headers;
         }
 
-        // ---- MC Department Horizontal Summary ----
         function renderMcDeptSummary(data) {
             const container = document.getElementById('mcDeptSummaryContainer');
+            if (!container) return;
             const mcData = data.filter(row => {
                 const dept = getVal(row, ['Department', 'department']);
                 return MC_DEPARTMENTS.includes(dept);
@@ -2168,14 +1412,12 @@
                 { key: 'hrTransfer', label: 'HR Transfer' }
             ];
 
-            // তিন-লাইন হেডার তৈরি
             let html = `<div class="mc-horizontal-scroll">`;
             html += `<table class="mc-horizontal-table">`;
             html += `<thead>`;
 
             html += `<tr>`;
-            html +=
-                `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center;" class="sub-header-metric">📊 Metric</th>`;
+            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center;" class="sub-header-metric">📊 Metric</th>`;
             depts.forEach(() => {
                 html += `<th style="background:#0d47a1; color:white; font-weight:400; font-size:10px;"></th>`;
             });
@@ -2183,8 +1425,7 @@
             html += `</tr>`;
 
             html += `<tr>`;
-            html +=
-                `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center; font-weight:700; font-size:12px;">Department</th>`;
+            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; text-align:center; font-weight:700; font-size:12px;">Department</th>`;
             depts.forEach(dept => {
                 const shortName = dept.replace('RIP> DPL> ', '').replace('Plastic-', 'P-');
                 html += `<th style="min-width:90px;" class="dept-header">${shortName}</th>`;
@@ -2193,14 +1434,11 @@
             html += `</tr>`;
 
             html += `<tr>`;
-            html +=
-                `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; font-weight:400; font-size:10px; color:white; border-top:1px solid rgba(255,255,255,0.3); text-align:center;">&nbsp;</th>`;
+            html += `<th style="min-width:120px;position:sticky;left:0;z-index:20;background:#0d47a1; font-weight:400; font-size:10px; color:white; border-top:1px solid rgba(255,255,255,0.3); text-align:center;">&nbsp;</th>`;
             depts.forEach(() => {
-                html +=
-                    `<th style="font-weight:400; font-size:10px; background:#0d47a1; color:white; border-top:1px solid rgba(255,255,255,0.3);">Entry Output</th>`;
+                html += `<th style="font-weight:400; font-size:10px; background:#0d47a1; color:white; border-top:1px solid rgba(255,255,255,0.3);">Entry Output</th>`;
             });
-            html +=
-                `<th style="font-weight:400; font-size:10px; background:#1a237e; color:white; border-top:1px solid rgba(255,255,255,0.3);">Total</th>`;
+            html += `<th style="font-weight:400; font-size:10px; background:#1a237e; color:white; border-top:1px solid rgba(255,255,255,0.3);">Total</th>`;
             html += `</tr>`;
 
             html += `</thead>`;
@@ -2226,14 +1464,12 @@
                             displayVal = val.runPct.toFixed(1) + '%';
                             const cls = val.runPct >= 80 ? 'green' : (val.runPct >= 50 ? 'yellow' : 'red');
                             extraClass = `run-pct-text ${cls}`;
-                            barHtml =
-                                `<div class="bar-container"><div class="bar-fill ${cls}" style="width:${Math.min(val.runPct,100)}%;"></div></div>`;
+                            barHtml = `<div class="bar-container"><div class="bar-fill ${cls}" style="width:${Math.min(val.runPct,100)}%;"></div></div>`;
                         } else if (metric.key === 'stopPct') {
                             displayVal = val.stopPct.toFixed(1) + '%';
                             const cls = val.stopPct <= 20 ? 'green' : (val.stopPct <= 50 ? 'yellow' : 'red');
                             extraClass = `run-pct-text ${cls}`;
-                            barHtml =
-                                `<div class="bar-container"><div class="bar-fill ${cls}" style="width:${Math.min(val.stopPct,100)}%;"></div></div>`;
+                            barHtml = `<div class="bar-container"><div class="bar-fill ${cls}" style="width:${Math.min(val.stopPct,100)}%;"></div></div>`;
                         } else {
                             const numVal = val[metric.key];
                             if (numVal !== undefined && numVal !== null) {
@@ -2250,7 +1486,6 @@
                     html += `</td>`;
                 });
 
-                // Grand Total
                 const gVal = grandTotal[metric.key];
                 let gDisplay = '-';
                 let gExtra = '';
@@ -2262,14 +1497,12 @@
                     gDisplay = grandTotal.runPct.toFixed(1) + '%';
                     const cls = grandTotal.runPct >= 80 ? 'green' : (grandTotal.runPct >= 50 ? 'yellow' : 'red');
                     gExtra = `run-pct-text ${cls}`;
-                    gBar =
-                        `<div class="bar-container"><div class="bar-fill ${cls}" style="width:${Math.min(grandTotal.runPct,100)}%;"></div></div>`;
+                    gBar = `<div class="bar-container"><div class="bar-fill ${cls}" style="width:${Math.min(grandTotal.runPct,100)}%;"></div></div>`;
                 } else if (metric.key === 'stopPct') {
                     gDisplay = grandTotal.stopPct.toFixed(1) + '%';
                     const cls = grandTotal.stopPct <= 20 ? 'green' : (grandTotal.stopPct <= 50 ? 'yellow' : 'red');
                     gExtra = `run-pct-text ${cls}`;
-                    gBar =
-                        `<div class="bar-container"><div class="bar-fill ${cls}" style="width:${Math.min(grandTotal.stopPct,100)}%;"></div></div>`;
+                    gBar = `<div class="bar-container"><div class="bar-fill ${cls}" style="width:${Math.min(grandTotal.stopPct,100)}%;"></div></div>`;
                 } else {
                     if (gVal !== undefined && gVal !== null) {
                         gDisplay = gVal;
@@ -2292,9 +1525,9 @@
             window._mcDeptData = { depts, deptValues, grandTotal, metrics };
         }
 
-        // ---- Scorecard ----
         function renderScorecard(data) {
             const container = document.getElementById('scorecardContainer');
+            if (!container) return;
             const mcData = data.filter(row => {
                 const dept = getVal(row, ['Department', 'department']);
                 return MC_DEPARTMENTS.includes(dept);
@@ -2426,9 +1659,9 @@
             window._scorecardData = scoreData;
         }
 
-        // ---- MC Summary Table ----
         function renderMcSummaryTable(data) {
             const container = document.getElementById('mcSummaryTable');
+            if (!container) return;
             const mcData = data.filter(row => {
                 const dept = getVal(row, ['Department', 'department']);
                 return MC_DEPARTMENTS.includes(dept);
@@ -2606,9 +1839,9 @@
             };
         }
 
-        // ---- Group Tables ----
         function renderGroupTable(data, containerId, groupType) {
             const container = document.getElementById(containerId);
+            if (!container) return;
             const isGroupA = (groupType === 'A');
             let depts = isGroupA ? MASTER_DEPARTMENTS.filter(d => !SUPPORT_DEPTS.includes(d)) : SUPPORT_DEPTS;
             let rows = [];
@@ -2694,9 +1927,9 @@
             container.innerHTML = html;
         }
 
-        // ---- Overall ----
         function renderOverall(data) {
             const container = document.getElementById('overallTable');
+            if (!container) return;
             let totalHR = 0,
                 leave = 0,
                 absent = 0;
@@ -2722,9 +1955,9 @@
             </table>`;
         }
 
-        // ---- Missing ----
         function renderMissing(data) {
             const container = document.getElementById('missingContainer');
+            if (!container) return;
             const presentDepts = new Set(data.map(r => getVal(r, ['Department', 'department'])).filter(Boolean));
             const missing = MASTER_DEPARTMENTS.filter(d => !presentDepts.has(d));
             if (missing.length === 0) {
@@ -2738,9 +1971,9 @@
             container.innerHTML = html;
         }
 
-        // ---- Raw Data ----
         function renderRawData(data) {
             const container = document.getElementById('rawDataTable');
+            if (!container) return;
             if (data.length === 0) {
                 container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
                 return;
@@ -2790,7 +2023,6 @@
             container.innerHTML = html;
         }
 
-        // ---- Weekly Summary ----
         function renderWeeklySummaryFromData() {
             const days = parseInt(document.getElementById('weeklyDaysFilter').value) || 7;
             renderWeeklySummary(allData, days, 'weeklySummaryContainer');
@@ -2798,6 +2030,7 @@
 
         function renderWeeklySummary(data, days, containerId) {
             const container = document.getElementById(containerId);
+            if (!container) return;
             if (!data || data.length === 0) {
                 container.innerHTML = `<div class="no-data">পর্যাপ্ত ডেটা নেই</div>`;
                 return;
@@ -2910,30 +2143,142 @@
             window._currentWeeklyData = { rows, totalFixedMC, overallAvgPresent, overallAvgRun, totalCount, days };
         }
 
-        // ============================================================
-        // DOWNLOAD FUNCTIONS (সমস্ত ডাউনলোড অপশন যুক্ত)
-        // ============================================================
+        function updateWhatsAppMessage() {
+            const container = document.getElementById('whatsappMessageContent');
+            if (!container) return;
 
+            const dateVal = document.getElementById('filterDate').value;
+            const shiftVal = document.getElementById('filterShift').value;
+
+            let displayDate = dateVal ? formatDate(dateVal) : formatDate(new Date().toISOString().slice(0, 10));
+            let displayShift = (shiftVal !== 'All' && shiftVal !== '') ? shiftVal : getCurrentShift();
+
+            let totalPresent = 0,
+                totalAbsent = 0,
+                totalNoDemand = 0,
+                totalMoldChange = 0,
+                mcStopManpower = 0;
+            let totalMC = 0,
+                targetRun = 0,
+                mcWillOff = 0;
+
+            const prodDepts = [
+                'RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1',
+                'RIP> DPL> Plastic-6.2', 'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2',
+                'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4', 'Silicon Project'
+            ];
+            const packDepts = ['Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03'];
+            const commonDepts = [
+                'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
+                'Corporate sales Production.', 'Plastics-Recycle & Silo',
+                'Product Development & Mold Change', 'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
+            ];
+
+            let prodPresent = 0,
+                packPresent = 0,
+                commonPresent = 0;
+
+            (filteredData.length > 0 ? filteredData : allData).forEach(row => {
+                const dept = getVal(row, ['Department', 'department']);
+                const hr = getNum(row, ['Total HR', 'totalHR']);
+                totalPresent += hr;
+                totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
+                totalNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
+                totalMoldChange += getNum(row, ['Mold Change', 'moldChange']);
+                mcStopManpower += getNum(row, ['MP Short', 'mpShort']);
+                totalMC += getNum(row, ['Total MC', 'totalMC']);
+                targetRun += getNum(row, ['MC Running', 'mcRunning']);
+                mcWillOff += getNum(row, ['MC Stopped', 'mcStopped']);
+
+                if (prodDepts.includes(dept)) prodPresent += hr;
+                else if (packDepts.includes(dept)) packPresent += hr;
+                else if (commonDepts.includes(dept)) commonPresent += hr;
+            });
+
+            let runningPct = 0;
+            if (totalMC > 0) {
+                runningPct = (targetRun / totalMC) * 100;
+            }
+
+            if (filteredData.length === 0 && allData.length === 0) {
+                totalPresent = 923;
+                totalAbsent = 54;
+                totalNoDemand = 49;
+                totalMoldChange = 26;
+                mcStopManpower = 84;
+                totalMC = 422;
+                targetRun = 239;
+                mcWillOff = 183;
+                runningPct = (239 / 422) * 100;
+                prodPresent = 544;
+                packPresent = 173;
+                commonPresent = 216;
+            }
+
+            const message =
+                `Dear @ DPL DGM Sir, 
+        Asslamualaikum ,
+        Good Day !!! 
+        Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Report. You Can Check The report. 
+
+        📅 Date\t${displayDate}
+        🕒 Shift\t${displayShift}
+        🔧 Total MC\t${totalMC}
+        🔧 Target MC Run\t${targetRun}
+        ❌ MC Will Off\t${mcWillOff}
+        📊 % of MC Running  %\t- ${runningPct.toFixed(1)}%
+        👥 Total Present\t${totalPresent} (Breakdown Prod Team ${prodPresent} , Packaging Team ${packPresent}, Common Team ${commonPresent})
+        ❌ Total Absent\t${totalAbsent}
+        📊 Total No Demand\t${totalNoDemand}
+        🔧 Total Mold Change QTY\t${totalMoldChange}
+        ⛔ MC Stop (Manpower)\t${mcStopManpower}`;
+
+            container.innerText = message;
+        }
+
+        function copyWhatsAppMessage() {
+            const content = document.getElementById('whatsappMessageContent');
+            if (!content) return;
+            const text = content.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ মেসেজ কপি হয়েছে! এখন হোয়াটসঅ্যাপে পেস্ট করুন।');
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('✅ মেসেজ কপি হয়েছে!');
+            });
+        }
+
+        function showError(msg) {
+            const ids = ['saifuddinTableContainer','mcSummaryTable','weeklySummaryContainer','groupATable','groupBTable','overallTable','missingContainer','rawDataTable'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
+            });
+        }
+
+        // Download Functions
         function downloadMcDeptImage() {
             const container = document.getElementById('mcDeptSummaryWrap');
             if (!container) return;
             const btn = document.querySelector('.mc-dept-header .btn-sm-image');
-            btn.innerText = '⏳...';
-            btn.disabled = true;
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
             html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
                 .then(canvas => {
                     const link = document.createElement('a');
                     link.download = `MC_Dept_Horizontal_${new Date().toISOString().slice(0,10)}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
-                    btn.innerText = '📷 ইমেজ';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
                 })
                 .catch(err => {
                     console.error(err);
                     alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                    btn.innerText = '📷 ইমেজ';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
                 });
         }
 
@@ -2981,22 +2326,19 @@
             const container = document.getElementById('scorecardWrap');
             if (!container) return;
             const btn = document.querySelector('.scorecard-header .btn-sm-image');
-            btn.innerText = '⏳...';
-            btn.disabled = true;
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
             html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
                 .then(canvas => {
                     const link = document.createElement('a');
                     link.download = `Scorecard_${new Date().toISOString().slice(0,10)}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
-                    btn.innerText = '📷 ইমেজ';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
                 })
                 .catch(err => {
                     console.error(err);
                     alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                    btn.innerText = '📷 ইমেজ';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
                 });
         }
 
@@ -3021,22 +2363,19 @@
             const container = document.getElementById('summaryTableWrap');
             if (!container) return;
             const btn = document.querySelector('.summary-header-text .btn-sm-image');
-            btn.innerText = '⏳...';
-            btn.disabled = true;
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
             html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
                 .then(canvas => {
                     const link = document.createElement('a');
                     link.download = `Summary_Report_${new Date().toISOString().slice(0,10)}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
-                    btn.innerText = '📷 ইমেজ';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
                 })
                 .catch(err => {
                     console.error(err);
                     alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                    btn.innerText = '📷 ইমেজ';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
                 });
         }
 
@@ -3070,27 +2409,24 @@
 
         function downloadMCImage() {
             const container = document.getElementById('mcSummaryTable');
-            if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
                 alert('⚠️ ডেটা নেই!');
                 return;
             }
             const btn = document.querySelector('.btn-image');
-            btn.innerText = '⏳...';
-            btn.disabled = true;
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
             html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
                 .then(canvas => {
                     const link = document.createElement('a');
                     link.download = `MC_Summary_${new Date().toISOString().slice(0,10)}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
-                    btn.innerText = '📷 ইমেজ ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
                 })
                 .catch(err => {
                     console.error(err);
                     alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                    btn.innerText = '📷 ইমেজ ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
                 });
         }
 
@@ -3134,13 +2470,12 @@
 
         function downloadMCPDF() {
             const container = document.getElementById('mcSummaryTable');
-            if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
                 alert('⚠️ ডেটা নেই!');
                 return;
             }
             const btn = document.querySelector('.btn-pdf');
-            btn.innerText = '⏳...';
-            btn.disabled = true;
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
             html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
                 .then(canvas => {
                     const imgData = canvas.toDataURL('image/png');
@@ -3150,26 +2485,23 @@
                     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                     pdf.save(`MC_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
-                    btn.innerText = '📄 PDF ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📄 PDF ডাউনলোড'; btn.disabled = false; }
                 })
                 .catch(err => {
                     console.error(err);
                     alert('❌ PDF তৈরি ব্যর্থ!');
-                    btn.innerText = '📄 PDF ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📄 PDF ডাউনলোড'; btn.disabled = false; }
                 });
         }
 
         function downloadSaifuddinImage() {
             const container = document.getElementById('saifuddinTableContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
                 alert('⚠️ ডেটা নেই!');
                 return;
             }
             const btn = document.querySelector('.btn-image');
-            btn.innerText = '⏳...';
-            btn.disabled = true;
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
             const clone = container.cloneNode(true);
             clone.querySelectorAll('td, th').forEach(el => {
                 el.style.whiteSpace = 'nowrap';
@@ -3196,15 +2528,13 @@
                     link.href = canvas.toDataURL('image/png');
                     link.click();
                     document.body.removeChild(wrapper);
-                    btn.innerText = '📷 ইমেজ ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
                 })
                 .catch(err => {
                     console.error(err);
                     if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
                     alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                    btn.innerText = '📷 ইমেজ ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
                 });
         }
 
@@ -3276,13 +2606,12 @@
 
         function downloadSaifuddinPDF() {
             const container = document.getElementById('saifuddinTableContainer');
-            if (container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
                 alert('⚠️ ডেটা নেই!');
                 return;
             }
             const btn = document.querySelector('.btn-pdf');
-            btn.innerText = '⏳...';
-            btn.disabled = true;
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
             html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
                 .then(canvas => {
                     const imgData = canvas.toDataURL('image/png');
@@ -3292,26 +2621,23 @@
                     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                     pdf.save(`Saifuddin_Report_${new Date().toISOString().slice(0,10)}.pdf`);
-                    btn.innerText = '📄 PDF ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📄 PDF ডাউনলোড'; btn.disabled = false; }
                 })
                 .catch(err => {
                     console.error(err);
                     alert('❌ PDF তৈরি ব্যর্থ!');
-                    btn.innerText = '📄 PDF ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📄 PDF ডাউনলোড'; btn.disabled = false; }
                 });
         }
 
         function downloadWeeklyImage() {
             const container = document.getElementById('weeklySummaryContainer');
-            if (container.innerText.includes('পর্যাপ্ত ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            if (!container || container.innerText.includes('পর্যাপ্ত ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
                 alert('⚠️ ডেটা নেই!');
                 return;
             }
             const btn = document.querySelector('.btn-image');
-            btn.innerText = '⏳...';
-            btn.disabled = true;
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
             html2canvas(container, { scale: 2.5, backgroundColor: '#ffffff', logging: false })
                 .then(canvas => {
                     const link = document.createElement('a');
@@ -3319,14 +2645,12 @@
                     link.download = `Weekly_Summary_${days}days_${new Date().toISOString().slice(0,10)}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
-                    btn.innerText = '📷 ইমেজ ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
                 })
                 .catch(err => {
                     console.error(err);
                     alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                    btn.innerText = '📷 ইমেজ ডাউনলোড';
-                    btn.disabled = false;
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
                 });
         }
 
@@ -3397,153 +2721,6 @@
             link.click();
             URL.revokeObjectURL(link.href);
         }
-
-        // ============================================================
-        // WHATSAPP MESSAGE – সঠিক ক্যালকুলেশন (Total MC & Target Run থেকে % বের করা)
-        // ============================================================
-        function updateWhatsAppMessage() {
-            const container = document.getElementById('whatsappMessageContent');
-            if (!container) return;
-
-            const dateVal = document.getElementById('filterDate').value;
-            const shiftVal = document.getElementById('filterShift').value;
-
-            let displayDate = dateVal ? formatDate(dateVal) : formatDate(new Date().toISOString().slice(0, 10));
-            let displayShift = (shiftVal !== 'All' && shiftVal !== '') ? shiftVal : getCurrentShift();
-
-            let totalPresent = 0,
-                totalAbsent = 0,
-                totalNoDemand = 0,
-                totalMoldChange = 0,
-                mcStopManpower = 0;
-            let totalMC = 0,
-                targetRun = 0,
-                mcWillOff = 0;
-
-            const prodDepts = [
-                'RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1',
-                'RIP> DPL> Plastic-6.2', 'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2',
-                'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4', 'Silicon Project'
-            ];
-            const packDepts = ['Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03'];
-            const commonDepts = [
-                'Plastic-Maintenance.', 'Tool Room Maintenance', 'Plastic Inventory & Delivery',
-                'Corporate sales Production.', 'Plastics-Recycle & Silo',
-                'Product Development & Mold Change', 'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
-            ];
-
-            let prodPresent = 0,
-                packPresent = 0,
-                commonPresent = 0;
-
-            (filteredData.length > 0 ? filteredData : allData).forEach(row => {
-                const dept = getVal(row, ['Department', 'department']);
-                const hr = getNum(row, ['Total HR', 'totalHR']);
-                totalPresent += hr;
-                totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
-                totalNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
-                totalMoldChange += getNum(row, ['Mold Change', 'moldChange']);
-                mcStopManpower += getNum(row, ['MP Short', 'mpShort']);
-                totalMC += getNum(row, ['Total MC', 'totalMC']);
-                targetRun += getNum(row, ['MC Running', 'mcRunning']);
-                mcWillOff += getNum(row, ['MC Stopped', 'mcStopped']);
-
-                if (prodDepts.includes(dept)) prodPresent += hr;
-                else if (packDepts.includes(dept)) packPresent += hr;
-                else if (commonDepts.includes(dept)) commonPresent += hr;
-            });
-
-            // সঠিকভাবে % বের করা – (Target Run / Total MC) * 100
-            let runningPct = 0;
-            if (totalMC > 0) {
-                runningPct = (targetRun / totalMC) * 100;
-            }
-
-            if (filteredData.length === 0 && allData.length === 0) {
-                totalPresent = 923;
-                totalAbsent = 54;
-                totalNoDemand = 49;
-                totalMoldChange = 26;
-                mcStopManpower = 84;
-                totalMC = 422;
-                targetRun = 239;
-                mcWillOff = 183;
-                runningPct = (239 / 422) * 100; // ~56.6%
-                prodPresent = 544;
-                packPresent = 173;
-                commonPresent = 216;
-            }
-
-            const message =
-                `Dear @ DPL DGM Sir, 
-        Asslamualaikum ,
-        Good Day !!! 
-        Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Report. You Can Check The report. 
-
-        📅 Date\t${displayDate}
-        🕒 Shift\t${displayShift}
-        🔧 Total MC\t${totalMC}
-        🔧 Target MC Run\t${targetRun}
-        ❌ MC Will Off\t${mcWillOff}
-        📊 % of MC Running  %\t- ${runningPct.toFixed(1)}%
-        👥 Total Present\t${totalPresent} (Breakdown Prod Team ${prodPresent} , Packaging Team ${packPresent}, Common Team ${commonPresent})
-        ❌ Total Absent\t${totalAbsent}
-        📊 Total No Demand\t${totalNoDemand}
-        🔧 Total Mold Change QTY\t${totalMoldChange}
-        ⛔ MC Stop (Manpower)\t${mcStopManpower}`;
-
-            container.innerText = message;
-        }
-
-        function copyWhatsAppMessage() {
-            const content = document.getElementById('whatsappMessageContent');
-            if (!content) return;
-            const text = content.innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('✅ মেসেজ কপি হয়েছে! এখন হোয়াটসঅ্যাপে পেস্ট করুন।');
-            }).catch(() => {
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                alert('✅ মেসেজ কপি হয়েছে!');
-            });
-        }
-
-        // ============================================================
-        // ERROR HANDLING
-        // ============================================================
-        function showError(msg) {
-            document.getElementById('saifuddinTableContainer').innerHTML = `<div class="no-data">${msg}</div>`;
-            document.getElementById('mcSummaryTable').innerHTML = `<div class="no-data">${msg}</div>`;
-            document.getElementById('weeklySummaryContainer').innerHTML = `<div class="no-data">${msg}</div>`;
-            document.getElementById('groupATable').innerHTML = `<div class="no-data">${msg}</div>`;
-            document.getElementById('groupBTable').innerHTML = `<div class="no-data">${msg}</div>`;
-            document.getElementById('overallTable').innerHTML = `<div class="no-data">${msg}</div>`;
-            document.getElementById('missingContainer').innerHTML = `<div class="no-data">${msg}</div>`;
-            document.getElementById('rawDataTable').innerHTML = `<div class="no-data">${msg}</div>`;
-        }
-
-        // ============================================================
-        // PAGE LOAD
-        // ============================================================
-        window.onload = function() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            document.getElementById('filterDate').value = `${year}-${month}-${day}`;
-            const shift = getCurrentShift();
-            document.getElementById('filterShift').value = shift;
-            loadData();
-            const toggle = document.getElementById('autoRefreshToggle');
-            if (toggle.checked) {
-                startAutoRefresh();
-            }
-            setTimeout(updateWhatsAppMessage, 500);
-        };
     </script>
 </body>
 </html>
