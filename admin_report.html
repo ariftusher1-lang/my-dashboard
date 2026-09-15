@@ -345,12 +345,10 @@
 </head>
 <body>
 
-    <!-- TOP SCROLLING MESSAGE (Login Page) -->
     <div class="scrolling-message-login" id="loginScrollMessage">
         <span>দিনের শেষে সফলতা যখন সামনে আসে, তার নেপথ্যের কারিগর হয়ে থাকে প্রোডাকশনের এই অনবদ্য মানুষগুলোই, এবং প্রতিটি মানসম্মত পণ্যের পেছনে লুকিয়ে থাকে একদল নিবেদিতপ্রাণ মানুষের অক্লান্ত শ্রম, দক্ষতা আর নিখুঁত কারিগরি দক্ষতা।</span>
     </div>
 
-    <!-- LOGIN PAGE -->
     <div class="login-container" id="loginContainer">
         <div class="left-panel">
             <div class="logo-area">
@@ -413,7 +411,6 @@
         </div>
     </div>
 
-    <!-- DASHBOARD -->
     <div id="dashboardContainer">
         <div class="scrolling-message-dashboard" id="dashboardScrollMessage">
             <span>প্রতিদিনের লক্ষ্য প্রতিদিন অর্জন করাই একজন শ্রেষ্ঠ পারফর্মারের আসল পরিচয়, আমার প্রতিযোগিতা অন্যের সাথে নয়, গতকালের নিজের সাথে—প্রতিদিনের ছোট ছোট জয়ই আমাকে করে তোলে সবার চেয়ে আলাদা।</span>
@@ -775,10 +772,6 @@
         let countdownInterval = null;
         let secondsLeft = 10;
 
-        function updateDigitalClock() {
-            // Hidden - no need to update
-        }
-
         function startAutoRefresh() {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             if (countdownInterval) clearInterval(countdownInterval);
@@ -889,16 +882,14 @@
             return parseFloat(v) || 0;
         }
 
+        // UPDATED loadData function - No AbortController, No Timeout
         async function loadData() {
             const ct = document.getElementById('currentTime');
             const fs = document.getElementById('filterStatus');
             if (ct) ct.innerText = '⏳ লোড হচ্ছে...';
             if (fs) fs.innerHTML = '⏳ ডেটা লোড হচ্ছে...';
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 sec timeout
-                const res = await fetch(API_URL, { signal: controller.signal });
-                clearTimeout(timeoutId);
+                const res = await fetch(API_URL);
                 if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
                 const json = await res.json();
                 if (json.error) throw new Error(json.error);
@@ -912,8 +903,7 @@
             } catch (e) {
                 console.error('❌ লোড ব্যর্থ:', e);
                 let errMsg = '❌ ডেটা লোড ব্যর্থ!';
-                if (e.name === 'AbortError') errMsg += ' (সময় শেষ)';
-                else if (e.message) errMsg += ' ' + e.message;
+                if (e.message) errMsg += ' ' + e.message;
                 if (ct) ct.innerText = '❌ লোড ব্যর্থ!';
                 if (fs) fs.innerHTML = `❌ ${errMsg} <br>API URL বা CORS চেক করুন।`;
                 showError(errMsg);
