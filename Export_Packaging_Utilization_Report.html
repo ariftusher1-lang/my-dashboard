@@ -669,7 +669,7 @@
             </div>
 
             <div class="form-group">
-                <label>পাসওয়ার্ড</label>
+                <label>পাসওয়ার্ড</label>
                 <input type="password" id="login-pwd" class="login-input" placeholder="Enter Password" onkeypress="handleLoginKeyPress(event)">
             </div>
 
@@ -1693,10 +1693,10 @@
 
             if (count > 0) {
                 db.ref('job_master_data').update(masterDataUpdates).then(() => {
-                    alert(`✅ ${count} টি রেকর্ড সফলভাবে মাস্টার ডাটা হিসেবে আপলোড ও সিঙ্ক হয়েছে!`);
+                    alert(`✅ ${count} টি রেকর্ড সফলভাবে মাস্টার ডাটা হিসেবে আপলোড ও সিঙ্ক হয়েছে!`);
                 });
             } else {
-                alert("⚠️ এক্সেল ফাইল থেকে সঠিক কলাম ডাটা পাওয়া যায়নি।");
+                alert("⚠️ এক্সেল ফাইল থেকে সঠিক কলাম ডাটা পাওয়া যায়নি।");
             }
         };
         reader.readAsArrayBuffer(file);
@@ -1716,11 +1716,11 @@
         let orderQtyVal = parseFloat(orderQtyInput.value) || 0;
 
         if(!val) {
-            alert("⚠️ দয়া করে সঠিক Job Order নাম লিখুন!");
+            alert("⚠️ দয়া করে সঠিক Job Order নাম লিখুন!");
             return;
         }
         if(!itemNameVal) {
-            alert("⚠️ দয়া করে Items Name লিখুন!");
+            alert("⚠️ দয়া করে Items Name লিখুন!");
             return;
         }
 
@@ -1736,7 +1736,7 @@
             itemNameInput.value = "";
             unitCtnInput.value = "";
             orderQtyInput.value = "";
-            alert("✅ নতুন JO এবং Items Data সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
+            alert("✅ নতুন JO এবং Items Data সফলভাবে ক্লাউডে যোগ করা হয়েছে!");
         });
     }
 
@@ -1774,7 +1774,7 @@
             localStorage.setItem('pran_lead', "Mr. Rakib");
             setLoggedInEnvironment(dept, "Mr. Rakib");
         } else {
-            alert("❌ ভুল পাসওয়ার্ড অথবা ডিপার্টমেন্ট সিলেক্ট করা হয়নি!");
+            alert("❌ ভুল পাসওয়ার্ড অথবা ডিপার্টমেন্ট সিলেক্ট করা হয়নি!");
         }
     }
 
@@ -1846,7 +1846,7 @@
                 video.srcObject = stream;
             })
             .catch(err => {
-                alert("❌ ক্যামেরা চালু করা যায়নি বা পারমিশন দেওয়া হয়নি!");
+                alert("❌ ক্যামেরা চালু করা যায়নি বা পারমিশন দেওয়া হয়নি!");
                 modal.style.display = 'none';
                 selectElem.value = ""; 
             });
@@ -1864,7 +1864,7 @@
         temporaryCapturedPhoto = canvas.toDataURL('image/png'); 
 
         closeCameraModal();
-        alert("✅ IC সেলফি সফলভাবে ক্যাপচার হয়েছে!");
+        alert("✅ IC সেলফি সফলভাবে ক্যাপচার হয়েছে!");
     });
 
     document.getElementById('closeCamBtn').addEventListener('click', function() {
@@ -2433,6 +2433,10 @@
 
     function updateReport() {}
 
+    // ============================================================
+    // ✅ UPDATED saveDataToFirebase() - NO DUPLICATE CHECK
+    // এখন একই Date, Shift, Line-এ যতবার খুশি এন্ট্রি দেওয়া যাবে
+    // ============================================================
     function saveDataToFirebase() {
         let date = document.getElementById('prod-date').value;
         let shift = document.getElementById('shift-select').value;
@@ -2442,11 +2446,11 @@
 
         if (floor === "Plastic Packaging - 2") {
             if (shiftIc === "") {
-                alert("⚠️ দয়া করে Concern Shift IC সিলেক্ট করুন!");
+                alert("⚠️ দয়া করে Concern Shift IC সিলেক্ট করুন!");
                 return;
             }
             if (!temporaryCapturedPhoto) {
-                alert("⚠️ IC-এর জন্য সেলফি তোলা বাধ্যতামূলক! দয়া করে সেলফি ক্যাপচার করুন।");
+                alert("⚠️ IC-এর জন্য সেলফি তোলা বাধ্যতামূলক! দয়া করে সেলফি ক্যাপচার করুন।");
                 checkAndCaptureICSelfie(document.getElementById('shift-ic-select'));
                 return;
             }
@@ -2513,33 +2517,17 @@
             return;
         }
 
+        // ✅ Direct save to Firebase — NO DUPLICATE CHECK
         let dbRef = db.ref('productions');
-        dbRef.once('value', (snapshot) => {
-            let isDuplicate = false;
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
-                    let d = childSnapshot.val();
-                    if (d.date === date && d.shift === shift && d.floor === floor) {
-                        isDuplicate = true;
-                    }
-                });
-            }
-
-            if (isDuplicate) {
-                alert(`⚠️ ডুপ্লিকেট এন্ট্রি! Date: ${date} এবং Shift: (${shift})-এর জন্য ইতিমধ্যে এই ফ্লোরে ডাটা এন্ট্রি করা হয়েছে।`);
-                return;
-            }
-
-            let promises = entriesToSave.map(entry => dbRef.push(entry));
-            Promise.all(promises)
-                .then(() => {
-                    alert("✅ Data & IC Selfie Successfully Saved!");
-                    location.reload(); 
-                })
-                .catch((error) => {
-                    alert("❌ Error saving data: " + error.message);
-                });
-        });
+        let promises = entriesToSave.map(entry => dbRef.push(entry));
+        Promise.all(promises)
+            .then(() => {
+                alert("✅ Data & IC Selfie Successfully Saved!");
+                location.reload(); 
+            })
+            .catch((error) => {
+                alert("❌ Error saving data: " + error.message);
+            });
     }
 
     function initLiveStream() {
