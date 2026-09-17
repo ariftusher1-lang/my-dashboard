@@ -3,10 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>প্রতিদিনের এন্ট্রি ফর্ম</title>
-    <link rel="manifest" href="/my-dashboard/manifest.json"> 
+    <title>RIP DPL - Entry Form System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="/my-dashboard/manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        /* ===== LOGIN PAGE STYLES ===== */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #e9ecef; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        
+        .login-container { display: flex; width: 100%; max-width: 1100px; height: 650px; background: #ffffff; border-radius: 20px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); overflow: hidden; }
+        .left-panel { flex: 1; background: #1a233a; color: #ffffff; padding: 45px 40px; display: flex; flex-direction: column; justify-content: center; position: relative; }
+        .left-panel .logo-area { margin-bottom: 25px; }
+        .left-panel .logo-area h1 { font-size: 36px; font-weight: 800; letter-spacing: 1px; color: #ffffff; margin-bottom: 2px; }
+        .left-panel .logo-area h1 span { color: #f5b041; }
+        .left-panel .logo-area p { font-size: 14px; color: #a0aec0; font-weight: 400; letter-spacing: 0.5px; }
+        .left-panel .description { font-size: 15px; color: #cbd5e0; line-height: 1.7; margin-bottom: 30px; max-width: 90%; }
+        .left-panel .description strong { color: #ffffff; font-weight: 600; }
+        .left-panel .features { list-style: none; margin-bottom: 35px; }
+        .left-panel .features li { display: flex; align-items: center; font-size: 14px; color: #e2e8f0; margin-bottom: 14px; }
+        .left-panel .features li i { color: #f5b041; font-size: 16px; width: 24px; margin-right: 12px; text-align: center; }
+        .left-panel .footer-note { display: flex; gap: 25px; font-size: 12px; color: #a0aec0; margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 20px; flex-wrap: wrap; }
+        .left-panel .footer-note span { display: flex; align-items: center; gap: 6px; }
+
+        .scrolling-message-login {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: transparent;
+            color: #ff0000;
+            padding: 15px 0;
+            font-weight: 800;
+            font-size: 42px;
+            white-space: nowrap;
+            overflow: hidden;
+            z-index: 9999;
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+        }
+        .scrolling-message-login span {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-left 100s linear infinite;
+        }
+        @keyframes scroll-left {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .right-panel { flex: 1; background: #ffffff; padding: 45px 50px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .company-logo { display: flex; align-items: center; gap: 15px; margin-bottom: 40px; width: 100%; justify-content: center; border: 2px solid #dc3545; padding: 12px 20px; border-radius: 12px; }
+        .company-logo .icon { font-size: 48px; color: #dc3545; }
+        .company-logo .text { display: flex; flex-direction: column; line-height: 1.1; }
+        .company-logo .text .brand-sub { font-size: 16px; font-weight: 700; color: #4a5568; letter-spacing: 1px; }
+        .company-logo .text .brand-main { font-size: 44px; font-weight: 800; color: #dc3545; }
+        
+        .login-form { width: 100%; max-width: 380px; }
+        .input-group { display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0 15px; margin-bottom: 18px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .input-group:focus-within { border-color: #f5b041; box-shadow: 0 0 0 3px rgba(245, 176, 65, 0.15); }
+        .input-group i { color: #a0aec0; font-size: 16px; width: 20px; }
+        .input-group input { width: 100%; padding: 14px 10px; border: none; background: transparent; font-size: 15px; color: #1a233a; outline: none; }
+        .input-group input::placeholder { color: #a0aec0; }
+        
+        .remember-forgot { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; font-size: 14px; }
+        .remember-forgot label { display: flex; align-items: center; gap: 8px; color: #4a5568; cursor: pointer; }
+        .remember-forgot label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #f5b041; cursor: pointer; }
+        .remember-forgot a { color: #f5b041; text-decoration: none; font-weight: 600; }
+        .remember-forgot a:hover { text-decoration: underline; }
+        
+        .btn-login { width: 100%; padding: 15px; background: #f5b041; color: #ffffff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: background 0.2s, transform 0.1s; text-transform: uppercase; }
+        .btn-login:hover { background: #e0a030; }
+        .btn-login:active { transform: scale(0.98); }
+        .error-msg { color: #dc3545; font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px; font-weight: 500; }
+
+        /* ===== DASHBOARD / ENTRY FORM STYLES ===== */
+        #dashboardContainer { display: none; width: 100%; max-width: 100%; margin: 0 auto; padding: 0 10px; }
+        #dashboardContainer.active { display: block; }
+        .login-container.hidden { display: none; }
+
+        .scrolling-message-dashboard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            color: #ff0000;
+            padding: 14px 0;
+            font-weight: 800;
+            font-size: 32px;
+            white-space: nowrap;
+            overflow: hidden;
+            z-index: 9999;
+            text-shadow: 0 0 4px rgba(255, 0, 0, 0.4);
+            border-bottom: 3px solid #dc3545;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        .scrolling-message-dashboard span {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-left 100s linear infinite;
+        }
+
         :root {
             --bg-color: #f4f7fc; --container-bg: #ffffff; --text-color: #333333; --section-bg: #f8f9fa;
             --border-color: #cccccc; --input-bg: #ffffff; --label-color: #333333; --placeholder-color: red;
@@ -37,9 +134,9 @@
             --shift-badge-day: #42a5f5; --shift-badge-night: #5c6bc0; --summary-item-border: rgba(255,255,255,0.06);
             --head-photo-bg: #2a2a2a; --head-photo-border: #444444; --head-photo-shadow: rgba(0,0,0,0.3); --head-highlight-border: #ffb74d;
         }
-        * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: var(--bg-color); padding: 20px; margin: 0; transition: background 0.3s, color 0.3s; color: var(--text-color); }
-        .container { max-width: 1200px; margin: auto; background: var(--container-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px var(--shadow-color); transition: background 0.3s, box-shadow 0.3s; position: relative; }
+        #dashboardContainer * { box-sizing: border-box; }
+        #dashboardContainer body { font-family: Arial, sans-serif; background: var(--bg-color); padding: 20px; margin: 0; transition: background 0.3s, color 0.3s; color: var(--text-color); }
+        #dashboardContainer .container { max-width: 1200px; margin: auto; background: var(--container-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px var(--shadow-color); transition: background 0.3s, box-shadow 0.3s; position: relative; padding-top: 90px; }
         .top-clock { text-align: center; background: #1a1a2e; padding: 12px 20px 16px; border-radius: 12px; margin-bottom: 15px; border: 2px solid #e53935; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .top-clock .clock-label { font-size: 14px; color: #ffb74d; font-weight: 600; letter-spacing: 1px; }
         .top-clock .clock-time { font-size: 42px; font-weight: 700; color: #ff1744; text-shadow: 0 0 20px rgba(255,23,68,0.6); font-family: 'Courier New', monospace; letter-spacing: 3px; background: #0d0d1a; padding: 6px 20px; border-radius: 8px; display: inline-block; margin-top: 4px; border: 1px solid #e53935; }
@@ -58,7 +155,7 @@
         .head-grid .head-item.active img { border-color: var(--head-highlight-border); box-shadow: 0 0 0 3px rgba(255,152,0,0.3); }
         .head-grid .head-item .no-photo-small { font-size: 10px; color: #999; }
         @media (max-width:600px) { .head-grid .head-item img { width: 40px; height: 40px; } .head-grid .head-item .head-label { font-size: 9px; max-width: 60px; } }
-        h2 { color: var(--header-color); border-bottom: 2px solid #007bff; padding-bottom: 10px; font-size: 22px; line-height: 1.4; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        #dashboardContainer h2 { color: var(--header-color); border-bottom: 2px solid #007bff; padding-bottom: 10px; font-size: 22px; line-height: 1.4; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .dark-toggle { background: none; border: 2px solid var(--border-color); border-radius: 30px; font-size: 24px; padding: 4px 14px; cursor: pointer; background: var(--container-bg); color: var(--text-color); transition: 0.2s; margin-left: 10px; }
         .dark-toggle:hover { transform: scale(1.05); border-color: #0d47a1; }
         .counter-box { background: var(--counter-bg); color: var(--counter-text); padding: 8px 16px; border-radius: 30px; font-weight: 700; font-size: 16px; display: inline-flex; align-items: center; gap: 6px; transition: background 0.3s, color 0.3s; border: 1px solid var(--border-color); margin-bottom: 10px; flex-wrap: wrap; cursor: pointer; }
@@ -71,9 +168,9 @@
         input, select { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; background: var(--input-bg); color: var(--text-color); transition: background 0.3s, color 0.3s, border 0.3s; }
         input[readonly] { background: var(--input-bg); color: var(--machine-box-input-color); font-weight: 700; }
         input:not([readonly])::placeholder { color: var(--placeholder-color); font-size: 12px; font-weight: bold; opacity: 1; }
-        button { background: var(--button-bg); color: white; border: none; padding: 14px; font-size: 18px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 25px; font-weight: bold; transition: background 0.3s; }
-        button:hover { background: var(--button-hover); }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        #dashboardContainer button { background: var(--button-bg); color: white; border: none; padding: 14px; font-size: 18px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 25px; font-weight: bold; transition: background 0.3s; }
+        #dashboardContainer button:hover { background: var(--button-hover); }
+        #dashboardContainer button:disabled { opacity: 0.6; cursor: not-allowed; }
         #status { margin-top: 15px; padding: 12px 16px; border-radius: 8px; text-align: center; font-weight: 600; font-size: 15px; line-height: 1.6; transition: background 0.3s, color 0.3s; }
         .success { background: var(--status-success-bg); color: var(--status-success-text); }
         .error { background: var(--status-error-bg); color: var(--status-error-text); }
@@ -150,7 +247,6 @@
         .btn-cancel:hover { background: #5a6268; }
         .btn-search { background: #0d47a1; }
         .btn-search:hover { background: #0a3a7a; }
-        /* ✅ NEW: Admin Panel Button (pill style) */
         .admin-panel-btn { 
             background: #0d47a1; 
             color: white; 
@@ -174,254 +270,411 @@
             background: #0a3a7a; 
             transform: scale(1.05); 
         }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-left: 15px;
+            width: auto;
+            font-size: 14px;
+        }
+        .logout-btn:hover { background: #b02a37; }
         @media (max-width:600px) { 
-            .admin-panel-btn { 
-                font-size: 12px; 
-                padding: 6px 10px; 
-            } 
+            .admin-panel-btn { font-size: 12px; padding: 6px 10px; }
         }
     </style>
 </head>
 <body>
 
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <span>⏳ আপনার ডেটা চেক করা হচ্ছে অপেক্ষা করুন...</span>
+<!-- ===================== LOGIN PAGE ===================== -->
+<div class="scrolling-message-login" id="loginScrollMessage">
+    <span>প্রোডাকশন টিম মানেই কারখানার জ্যান্ত ইঞ্জিন, কারণ অবিরাম চাকা ঘুরিয়ে কোম্পানি কে সচল রাখাই যাদের নেশা, তারা রাতকে দিন বানিয়ে দিন কে রাত বানিয়ে সাফল্য ছিনিয়ে আনতে জানে! ফ্লোরে টার্গেট মেলাতে গিয়ে হাজারো সমস্যা কিংবা ব্রেকডাউন আসে, তবুও প্রোডাকশন লাইন কখনো থামার নাম নেয় না।</span>
 </div>
 
-<div class="container">
+<div class="login-container" id="loginContainer">
+    <div class="left-panel">
+        <div class="logo-area">
+            <h1><span>RIP DPL</span></h1>
+            <p>Human Resource Information System</p>
+        </div>
 
-    <div class="top-clock">
-        <div class="clock-label">🇧🇩 বাংলাদেশ সময়</div>
-        <div class="clock-time" id="topClock">
-            <span id="topHours">00</span>:<span id="topMinutes">00</span>:<span id="topSeconds" class="seconds">00</span>
+        <div class="description">
+            <strong>Powerful HR & manpower management system</strong> to organize workforce, track performance and grow together.
         </div>
-        <div class="clock-date" id="topDate">শনিবার, ০১ জানুয়ারি ২০২৬</div>
-        <div class="scrolling-red-text">
-            <span>প্রোডাকশন টিম মানেই কারখানার জ্যান্ত ইঞ্জিন, কারণ অবিরাম চাকা ঘুরিয়ে কোম্পানি কে সচল রাখাই যাদের নেশা, তারা রাতকে দিন বানিয়ে দিন কে রাত বানিয়ে সাফল্য ছিনিয়ে আনতে জানে!ফ্লোরে টার্গেট মেলাতে গিয়ে হাজারো সমস্যা কিংবা ব্রেকডাউন আসে, তবুও প্রোডাকশন লাইন কখনো থামার নাম নেয় না।</span>
-        </div>
-        <div class="clock-admin-info">
-            System Administrator &amp; Control The System - Mr. Arif, Mr. Sayem, Mr. Saifuddin, Mr. Biplob - Any Issue Contact with Them
+
+        <ul class="features">
+            <li><i class="fas fa-check-circle"></i> MC Running Management</li>
+            <li><i class="fas fa-check-circle"></i> HR Vs MC Running Report</li>
+            <li><i class="fas fa-check-circle"></i> Summery of MC Running Vs HR</li>
+        </ul>
+
+        <div class="footer-note">
+            <span><i class="fas fa-shield-alt"></i> Secure & Reliable</span>
+            <span><i class="fas fa-sync-alt"></i> Real-time Updates</span>
+            <span><i class="fas fa-globe"></i> Access Anywhere Anytime</span>
         </div>
     </div>
 
-    <div class="head-grid" id="headGrid"></div>
+    <div class="right-panel">
+        <div class="company-logo">
+            <div class="icon">
+                <i class="fas fa-cogs"></i>
+            </div>
+            <div class="text">
+                <span class="brand-sub">RIP DPL Entry System</span>
+                <span class="brand-main">Daily Entry Form</span>
+            </div>
+        </div>
 
-    <h2>
-        📋 প্রতিদিনের প্রতি শিফটের ম্যানপাওয়ার এলোকেশন এবং মেশিন রানিং মনিটরিং
-        <span style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <button class="admin-panel-btn" onclick="openAdminLogin()" title="Admin Panel">⚙️ Admin Panel</button>
-            <span class="auto-dark-indicator" id="autoDarkIndicator">🌙 অটো</span>
-            <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
-        </span>
-    </h2>
+        <form class="login-form" id="loginForm" onsubmit="return handleLogin(event)">
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="username" placeholder="Username" autocomplete="off" required>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="password" placeholder="Password" required>
+            </div>
 
-    <div class="counter-box" id="counterBox">
-        📊 আজকের এন্ট্রি: <span class="count-number" id="entryCount">০</span>
-        <span style="font-weight:400; font-size:14px; margin-left:5px;" id="counterShiftInfo">(Day)</span>
-        <span id="counterStatus" style="font-weight:400; font-size:13px; margin-left:8px; opacity:0.7;">⏳ লোড হচ্ছে...</span>
+            <div class="remember-forgot">
+                <label>
+                    <input type="checkbox" id="rememberMe"> Remember username
+                </label>
+                <a href="#">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="btn-login">LOGIN</button>
+            <div class="error-msg" id="errorMsg"></div>
+        </form>
+    </div>
+</div>
+
+<!-- ===================== DASHBOARD (ENTRY FORM) ===================== -->
+<div id="dashboardContainer">
+    <div class="scrolling-message-dashboard" id="dashboardScrollMessage">
+        <span>প্রোডাকশন টিম মানেই কারখানার জ্যান্ত ইঞ্জিন, কারণ অবিরাম চাকা ঘুরিয়ে কোম্পানি কে সচল রাখাই যাদের নেশা, তারা রাতকে দিন বানিয়ে দিন কে রাত বানিয়ে সাফল্য ছিনিয়ে আনতে জানে! ফ্লোরে টার্গেট মেলাতে গিয়ে হাজারো সমস্যা কিংবা ব্রেকডাউন আসে, তবুও প্রোডাকশন লাইন কখনো থামার নাম নেয় না।</span>
     </div>
 
-    <form id="entryForm">
-        <div class="section">
-            <h3>📅 মৌলিক তথ্য</h3>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <span>⏳ আপনার ডেটা চেক করা হচ্ছে অপেক্ষা করুন...</span>
+    </div>
+
+    <div class="container">
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:15px; padding:10px 15px; background:linear-gradient(135deg,#0d47a1,#1976d2); border-radius:10px; color:#fff;">
+            <strong style="font-size:16px;">🏭 RIP DPL — Daily Entry Form</strong>
+            <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button>
+        </div>
+
+        <div class="top-clock">
+            <div class="clock-label">🇧🇩 বাংলাদেশ সময়</div>
+            <div class="clock-time" id="topClock">
+                <span id="topHours">00</span>:<span id="topMinutes">00</span>:<span id="topSeconds" class="seconds">00</span>
+            </div>
+            <div class="clock-date" id="topDate">শনিবার, ০১ জানুয়ারি ২০২৬</div>
+            <div class="scrolling-red-text">
+                <span>প্রোডাকশন টিম মানেই কারখানার জ্যান্ত ইঞ্জিন, কারণ অবিরাম চাকা ঘুরিয়ে কোম্পানি কে সচল রাখাই যাদের নেশা, তারা রাতকে দিন বানিয়ে দিন কে রাত বানিয়ে সাফল্য ছিনিয়ে আনতে জানে!</span>
+            </div>
+            <div class="clock-admin-info">
+                System Administrator &amp; Control The System - Mr. Arif, Mr. Sayem, Mr. Saifuddin, Mr. Biplob - Any Issue Contact with Them
+            </div>
+        </div>
+
+        <div class="head-grid" id="headGrid"></div>
+
+        <h2>
+            📋 প্রতিদিনের প্রতি শিফটের ম্যানপাওয়ার এলোকেশন এবং মেশিন রানিং মনিটরিং
+            <span style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <button class="admin-panel-btn" onclick="openAdminLogin()" title="Admin Panel">⚙️ Admin Panel</button>
+                <span class="auto-dark-indicator" id="autoDarkIndicator">🌙 অটো</span>
+                <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
+            </span>
+        </h2>
+
+        <div class="counter-box" id="counterBox">
+            📊 আজকের এন্ট্রি: <span class="count-number" id="entryCount">০</span>
+            <span style="font-weight:400; font-size:14px; margin-left:5px;" id="counterShiftInfo">(Day)</span>
+            <span id="counterStatus" style="font-weight:400; font-size:13px; margin-left:8px; opacity:0.7;">⏳ লোড হচ্ছে...</span>
+        </div>
+
+        <form id="entryForm">
+            <div class="section">
+                <h3>📅 মৌলিক তথ্য</h3>
+                <div class="row">
+                    <div><label>তারিখ (Date) <span class="required-star">*</span></label><input type="date" id="entryDate" required></div>
+                    <div><label>শিফট (Shift) <span class="required-star">*</span> <span class="auto-shift-indicator" id="autoShiftIndicator">⏰ অটো</span></label>
+                        <select id="shift" required>
+                            <option value="Day">Day</option>
+                            <option value="Night">Night</option>
+                        </select>
+                    </div>
+                    <div><label>ডিপার্টমেন্ট <span class="required-star">*</span></label>
+                        <select id="department" required>
+                            <option value="">-- সিলেক্ট করুন --</option>
+                        </select>
+                    </div>
+                    <div><label>আইসি নাম <span class="required-star">*</span></label>
+                        <input type="text" id="icName" placeholder="ডিপার্টমেন্ট সিলেক্ট করলে অটো আসবে" required>
+                    </div>
+                </div>
+                <div class="head-photo-container" id="headPhotoContainer" style="margin-top:12px;">
+                    <img id="headPhoto" src="" alt="হেডের ছবি" style="display:none; width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid #1976d2;">
+                    <div class="info">
+                        <span class="name" id="headName">-</span>
+                        <span class="dept" id="headDept">ডিপার্টমেন্ট সিলেক্ট করুন</span>
+                    </div>
+                    <span class="no-photo" id="noPhotoMsg">📷 ছবি নেই</span>
+                </div>
+            </div>
+
+            <div class="section machine-box" id="mcDataSection">
+                <h3>⚙️ মেশিনের ডেটা (অটো ক্যালকুলেশন)</h3>
+                <div class="row">
+                    <div><label>Total MC</label><input type="number" id="totalMC" placeholder="Typ QTY"></div>
+                    <div><label>Target MC Run (Running)</label><input type="number" id="mcRunning" placeholder="Typ QTY" oninput="autoCalculate()"></div>
+                    <div><label>MC Will off (Stopped)</label><input type="number" id="mcStopped" placeholder="Typ QTY" oninput="autoCalculate()"></div>
+                </div>
+                <div class="row">
+                    <div><label>MC Run %</label><input type="text" id="pctRunning" readonly></div>
+                    <div><label>MC Will off %</label><input type="text" id="pctStopped" readonly></div>
+                </div>
+            </div>
+
+            <div class="section" id="causeSection">
+                <h3>⛔ স্টপের কারণ (Cause of Stop - QTY)</h3>
+                <div class="flex-grid">
+                    <div><label>MP Short</label><input type="number" id="mpShort" placeholder="Typ QTY"></div>
+                    <div><label>Mold Prob</label><input type="number" id="moldProblem" placeholder="Typ QTY"></div>
+                    <div><label>Mold Change</label><input type="number" id="moldChange" placeholder="Typ QTY"></div>
+                    <div><label>Sample</label><input type="number" id="underSample" placeholder="Typ QTY"></div>
+                    <div><label>MC prob</label><input type="number" id="mcProblem" placeholder="Typ QTY"></div>
+                    <div><label>Preventive</label><input type="number" id="preventiveMaintenance" placeholder="Typ QTY"></div>
+                    <div><label>No demand</label><input type="number" id="noDemandQty" placeholder="Typ QTY"></div>
+                    <div><label>Material short &amp; MB</label><input type="number" id="materialMBShortage" placeholder="Typ QTY"></div>
+                    <div><label>Over Stock</label><input type="number" id="overStockWIP" placeholder="Typ QTY"></div>
+                    <div><label>Acc short</label><input type="number" id="accessoriesShort" placeholder="Typ QTY"></div>
+                </div>
+            </div>
+
+            <div class="section" id="hrSection">
+                <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
+                <div class="row">
+                    <div><label>Total Present <span class="required-star">*</span></label>
+                        <input type="number" id="totalPresent" placeholder="Typ QTY" required>
+                    </div>
+                    <div><label>Leave</label><input type="number" id="leaveEmployee" placeholder="Typ QTY"></div>
+                    <div><label>Absent</label><input type="number" id="absentEmployee" placeholder="Typ QTY"></div>
+                </div>
+            </div>
+
+            <div class="section" id="machineTypeSection">
+                <h3>🏭 মেশিন টাইপ (Machine Type)</h3>
+                <div class="row">
+                    <div><label>Export MC</label><input type="number" id="exportMC" placeholder="Typ QTY"></div>
+                    <div><label>Domestic MC</label><input type="number" id="domesticMC" placeholder="Typ QTY"></div>
+                    <div><label>Single MC</label><input type="number" id="singleMC" placeholder="Typ QTY"></div>
+                    <div><label>Double MC</label><input type="number" id="doubleMC" placeholder="Typ QTY"></div>
+                    <div class="qty-placeholder"><span>Typ QTY</span></div>
+                </div>
+            </div>
+
+            <div class="section" id="operatorSection">
+                <h3>👨‍🔧 অপারেটর ও স্টাফ</h3>
+                <div class="flex-grid">
+                    <div><label>Prod IC</label><input type="number" id="prodIC" placeholder="Typ QTY"></div>
+                    <div><label>SIC</label><input type="number" id="sic" placeholder="Typ QTY"></div>
+                    <div><label>MC Operator</label><input type="number" id="mcOperator" placeholder="Typ QTY"></div>
+                    <div><label>Packaging Op</label><input type="number" id="packagingOperator" placeholder="Typ QTY"></div>
+                    <div><label>Foreman</label><input type="number" id="foreman" placeholder="Typ QTY"></div>
+                    <div><label>Senior Operator</label><input type="number" id="seniorOperator" placeholder="Typ QTY"></div>
+                    <div><label>Shrink-wrap Op</label><input type="number" id="shrinkOperator" placeholder="Typ QTY"></div>
+                    <div><label>Printing Op</label><input type="number" id="printingOperator" placeholder="Typ QTY"></div>
+                    <div><label>Mold Change Op</label><input type="number" id="moldChangeOperator" placeholder="Typ QTY"></div>
+                    <div><label>Mix/Recycle/Crush</label><input type="number" id="mixRecycle" placeholder="Typ QTY"></div>
+                    <div><label>Sub Store</label><input type="number" id="subStore" placeholder="Typ QTY"></div>
+                    <div><label>Inventory Op</label><input type="number" id="inventoryOperator" placeholder="Typ QTY"></div>
+                    <div><label>FG Delivery</label><input type="number" id="fgDelivery" placeholder="Typ QTY"></div>
+                    <div><label>Sharp Tools</label><input type="number" id="sharpTools" placeholder="Typ QTY"></div>
+                    <div><label>PSI</label><input type="number" id="psi" placeholder="Typ QTY"></div>
+                    <div><label>ERP</label><input type="number" id="erp" placeholder="Typ QTY"></div>
+                    <div><label>Floor Housekeeping</label><input type="number" id="floorHousekeeping" placeholder="Typ QTY"></div>
+                    <div><label>Rework</label><input type="number" id="rework" placeholder="Typ QTY"></div>
+                    <div><label>Welding</label><input type="number" id="welding" placeholder="Typ QTY"></div>
+                    <div><label>HR Transfer</label><input type="number" id="hrTransfer" placeholder="Typ QTY"></div>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn">💾 ডেটা সেভ করুন</button>
+            
+            <div id="duplicateAlert"></div>
+        </form>
+
+        <div id="summaryCard">
+            <div class="card-title">
+                <span>✅ সম্পূর্ণ এন্ট্রি সারাংশ</span>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn-action btn-edit" id="userEditBtn" onclick="openUserEdit()" style="display:none;">✏️ Edit</button>
+                    <button class="btn-action" onclick="downloadSummaryImage()">🖼️ Make Image</button>
+                    <button class="btn-action btn-print" onclick="printSummaryCard()">🖨️ Print</button>
+                    <button class="btn-action btn-whatsapp" onclick="sendWhatsApp()">📱 WhatsApp</button>
+                </div>
+            </div>
+            <div class="card-body" id="summaryCardBody"></div>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="report-footer">
+            <div class="link-group">
+                <a href="https://my-dashboard-a4y.pages.dev/admin_report" target="_blank" class="admin-report-link">📊 রিপোর্ট দেখতে ক্লিক করুন</a>
+                <a href="https://my-dashboard-a4y.pages.dev/carton_entry" target="_blank" class="packaging-entry-link">📦 পেকেজিং এন্ট্রি</a>
+                <a href="https://my-dashboard-a4y.pages.dev/carton_report" target="_blank" class="packaging-report-link">📊 পেকেজিং রিপোর্ট</a>
+            </div>
+            <div class="contact-note">
+                ⚠️ এন্ট্রি দেওয়ার সময় ভুল হলে Mr. Saifuddin (01844609720)-এ যোগাযোগ করুন
+            </div>
+        </div>
+
+    </div>
+
+    <!-- User Edit Modal -->
+    <div class="modal-overlay" id="userEditModal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeUserEdit()">×</button>
+            <h3>✏️ Edit Entry (৫ মিনিটের মধ্যে)</h3>
+            <div id="userEditTimer" style="background:#fff3cd; padding:10px; border-radius:8px; text-align:center; font-weight:700; color:#856404; margin-bottom:15px;">
+                ⏱️ সময় বাকি: 05:00
+            </div>
+            <div id="userEditFormFields"></div>
+            <div class="btn-row">
+                <button class="btn-save" onclick="saveUserEdit()">💾 Save</button>
+                <button class="btn-cancel" onclick="closeUserEdit()">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal-overlay" id="adminLoginModal">
+        <div class="modal-box" style="max-width:400px;">
+            <button class="modal-close" onclick="closeAdminLogin()">×</button>
+            <h3>🔐 Admin Login</h3>
+            <label>Password</label>
+            <input type="password" id="adminPassword" placeholder="Admin password দিন">
+            <div class="btn-row">
+                <button class="btn-search" onclick="submitAdminLogin()">🔓 Login</button>
+                <button class="btn-cancel" onclick="closeAdminLogin()">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Edit Panel -->
+    <div class="modal-overlay" id="adminEditModal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeAdminEdit()">×</button>
+            <h3>⚙️ Admin Panel — Edit / Delete Entry</h3>
             <div class="row">
-                <div><label>তারিখ (Date) <span class="required-star">*</span></label><input type="date" id="entryDate" required></div>
-                <div><label>শিফট (Shift) <span class="required-star">*</span> <span class="auto-shift-indicator" id="autoShiftIndicator">⏰ অটো</span></label>
-                    <select id="shift" required>
+                <div><label>তারিখ</label><input type="date" id="adminSearchDate"></div>
+                <div><label>শিফট</label>
+                    <select id="adminSearchShift">
                         <option value="Day">Day</option>
                         <option value="Night">Night</option>
                     </select>
                 </div>
-                <div><label>ডিপার্টমেন্ট <span class="required-star">*</span></label>
-                    <select id="department" required>
+                <div><label>ডিপার্টমেন্ট</label>
+                    <select id="adminSearchDept">
                         <option value="">-- সিলেক্ট করুন --</option>
                     </select>
                 </div>
-                <div><label>আইসি নাম <span class="required-star">*</span></label>
-                    <input type="text" id="icName" placeholder="ডিপার্টমেন্ট সিলেক্ট করলে অটো আসবে" required>
-                </div>
             </div>
-            <div class="head-photo-container" id="headPhotoContainer" style="margin-top:12px;">
-                <img id="headPhoto" src="" alt="হেডের ছবি" style="display:none; width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid #1976d2;">
-                <div class="info">
-                    <span class="name" id="headName">-</span>
-                    <span class="dept" id="headDept">ডিপার্টমেন্ট সিলেক্ট করুন</span>
-                </div>
-                <span class="no-photo" id="noPhotoMsg">📷 ছবি নেই</span>
+            <div class="btn-row">
+                <button class="btn-search" onclick="adminFindEntry()">🔍 খুঁজুন</button>
+                <button class="btn-cancel" onclick="closeAdminEdit()">❌ Close</button>
             </div>
-        </div>
-
-        <div class="section machine-box" id="mcDataSection">
-            <h3>⚙️ মেশিনের ডেটা (অটো ক্যালকুলেশন)</h3>
-            <div class="row">
-                <div><label>Total MC</label><input type="number" id="totalMC" placeholder="Typ QTY"></div>
-                <div><label>Target MC Run (Running)</label><input type="number" id="mcRunning" placeholder="Typ QTY" oninput="autoCalculate()"></div>
-                <div><label>MC Will off (Stopped)</label><input type="number" id="mcStopped" placeholder="Typ QTY" oninput="autoCalculate()"></div>
-            </div>
-            <div class="row">
-                <div><label>MC Run %</label><input type="text" id="pctRunning" readonly></div>
-                <div><label>MC Will off %</label><input type="text" id="pctStopped" readonly></div>
-            </div>
-        </div>
-
-        <div class="section" id="causeSection">
-            <h3>⛔ স্টপের কারণ (Cause of Stop - QTY)</h3>
-            <div class="flex-grid">
-                <div><label>MP Short</label><input type="number" id="mpShort" placeholder="Typ QTY"></div>
-                <div><label>Mold Prob</label><input type="number" id="moldProblem" placeholder="Typ QTY"></div>
-                <div><label>Mold Change</label><input type="number" id="moldChange" placeholder="Typ QTY"></div>
-                <div><label>Sample</label><input type="number" id="underSample" placeholder="Typ QTY"></div>
-                <div><label>MC prob</label><input type="number" id="mcProblem" placeholder="Typ QTY"></div>
-                <div><label>Preventive</label><input type="number" id="preventiveMaintenance" placeholder="Typ QTY"></div>
-                <div><label>No demand</label><input type="number" id="noDemandQty" placeholder="Typ QTY"></div>
-                <div><label>Material short &amp; MB</label><input type="number" id="materialMBShortage" placeholder="Typ QTY"></div>
-                <div><label>Over Stock</label><input type="number" id="overStockWIP" placeholder="Typ QTY"></div>
-                <div><label>Acc short</label><input type="number" id="accessoriesShort" placeholder="Typ QTY"></div>
-            </div>
-        </div>
-
-        <div class="section" id="hrSection">
-            <h3>👥 এইচআর ও ম্যানপাওয়ার</h3>
-            <div class="row">
-                <div><label>Total Present <span class="required-star">*</span></label>
-                    <input type="number" id="totalPresent" placeholder="Typ QTY" required>
-                </div>
-                <div><label>Leave</label><input type="number" id="leaveEmployee" placeholder="Typ QTY"></div>
-                <div><label>Absent</label><input type="number" id="absentEmployee" placeholder="Typ QTY"></div>
-            </div>
-        </div>
-
-        <div class="section" id="machineTypeSection">
-            <h3>🏭 মেশিন টাইপ (Machine Type)</h3>
-            <div class="row">
-                <div><label>Export MC</label><input type="number" id="exportMC" placeholder="Typ QTY"></div>
-                <div><label>Domestic MC</label><input type="number" id="domesticMC" placeholder="Typ QTY"></div>
-                <div><label>Single MC</label><input type="number" id="singleMC" placeholder="Typ QTY"></div>
-                <div><label>Double MC</label><input type="number" id="doubleMC" placeholder="Typ QTY"></div>
-                <div class="qty-placeholder"><span>Typ QTY</span></div>
-            </div>
-        </div>
-
-        <div class="section" id="operatorSection">
-            <h3>👨‍🔧 অপারেটর ও স্টাফ</h3>
-            <div class="flex-grid">
-                <div><label>Prod IC</label><input type="number" id="prodIC" placeholder="Typ QTY"></div>
-                <div><label>SIC</label><input type="number" id="sic" placeholder="Typ QTY"></div>
-                <div><label>MC Operator</label><input type="number" id="mcOperator" placeholder="Typ QTY"></div>
-                <div><label>Packaging Op</label><input type="number" id="packagingOperator" placeholder="Typ QTY"></div>
-                <div><label>Foreman</label><input type="number" id="foreman" placeholder="Typ QTY"></div>
-                <div><label>Senior Operator</label><input type="number" id="seniorOperator" placeholder="Typ QTY"></div>
-                <div><label>Shrink-wrap Op</label><input type="number" id="shrinkOperator" placeholder="Typ QTY"></div>
-                <div><label>Printing Op</label><input type="number" id="printingOperator" placeholder="Typ QTY"></div>
-                <div><label>Mold Change Op</label><input type="number" id="moldChangeOperator" placeholder="Typ QTY"></div>
-                <div><label>Mix/Recycle/Crush</label><input type="number" id="mixRecycle" placeholder="Typ QTY"></div>
-                <div><label>Sub Store</label><input type="number" id="subStore" placeholder="Typ QTY"></div>
-                <div><label>Inventory Op</label><input type="number" id="inventoryOperator" placeholder="Typ QTY"></div>
-                <div><label>FG Delivery</label><input type="number" id="fgDelivery" placeholder="Typ QTY"></div>
-                <div><label>Sharp Tools</label><input type="number" id="sharpTools" placeholder="Typ QTY"></div>
-                <div><label>PSI</label><input type="number" id="psi" placeholder="Typ QTY"></div>
-                <div><label>ERP</label><input type="number" id="erp" placeholder="Typ QTY"></div>
-                <div><label>Floor Housekeeping</label><input type="number" id="floorHousekeeping" placeholder="Typ QTY"></div>
-                <div><label>Rework</label><input type="number" id="rework" placeholder="Typ QTY"></div>
-                <div><label>Welding</label><input type="number" id="welding" placeholder="Typ QTY"></div>
-                <div><label>HR Transfer</label><input type="number" id="hrTransfer" placeholder="Typ QTY"></div>
-            </div>
-        </div>
-
-        <button type="submit" id="submitBtn">💾 ডেটা সেভ করুন</button>
-        
-        <div id="duplicateAlert"></div>
-    </form>
-
-    <div id="summaryCard">
-        <div class="card-title">
-            <span>✅ সম্পূর্ণ এন্ট্রি সারাংশ</span>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button class="btn-action btn-edit" id="userEditBtn" onclick="openUserEdit()" style="display:none;">✏️ Edit</button>
-                <button class="btn-action" onclick="downloadSummaryImage()">🖼️ Make Image</button>
-                <button class="btn-action btn-print" onclick="printSummaryCard()">🖨️ Print</button>
-                <button class="btn-action btn-whatsapp" onclick="sendWhatsApp()">📱 WhatsApp</button>
-            </div>
-        </div>
-        <div class="card-body" id="summaryCardBody"></div>
-    </div>
-
-    <div id="status"></div>
-
-    <div class="report-footer">
-        <div class="link-group">
-            <a href="https://my-dashboard-a4y.pages.dev/admin_report" target="_blank" class="admin-report-link">📊 রিপোর্ট দেখতে ক্লিক করুন</a>
-            <a href="https://my-dashboard-a4y.pages.dev/carton_entry" target="_blank" class="packaging-entry-link">📦 পেকেজিং এন্ট্রি</a>
-            <a href="https://my-dashboard-a4y.pages.dev/carton_report" target="_blank" class="packaging-report-link">📊 পেকেজিং রিপোর্ট</a>
-        </div>
-        <div class="contact-note">
-            ⚠️ এন্ট্রি দেওয়ার সময় ভুল হলে Mr. Saifuddin (01844609720)-এ যোগাযোগ করুন
+            <div id="adminEditResult" style="margin-top:20px;"></div>
         </div>
     </div>
 
-</div>
-
-<!-- User Edit Modal -->
-<div class="modal-overlay" id="userEditModal">
-    <div class="modal-box">
-        <button class="modal-close" onclick="closeUserEdit()">×</button>
-        <h3>✏️ Edit Entry (৫ মিনিটের মধ্যে)</h3>
-        <div id="userEditTimer" style="background:#fff3cd; padding:10px; border-radius:8px; text-align:center; font-weight:700; color:#856404; margin-bottom:15px;">
-            ⏱️ সময় বাকি: 05:00
-        </div>
-        <div id="userEditFormFields"></div>
-        <div class="btn-row">
-            <button class="btn-save" onclick="saveUserEdit()">💾 Save</button>
-            <button class="btn-cancel" onclick="closeUserEdit()">❌ Cancel</button>
-        </div>
-    </div>
-</div>
-
-<!-- Admin Login Modal -->
-<div class="modal-overlay" id="adminLoginModal">
-    <div class="modal-box" style="max-width:400px;">
-        <button class="modal-close" onclick="closeAdminLogin()">×</button>
-        <h3>🔐 Admin Login</h3>
-        <label>Password</label>
-        <input type="password" id="adminPassword" placeholder="Admin password দিন">
-        <div class="btn-row">
-            <button class="btn-search" onclick="submitAdminLogin()">🔓 Login</button>
-            <button class="btn-cancel" onclick="closeAdminLogin()">❌ Cancel</button>
-        </div>
-    </div>
-</div>
-
-<!-- Admin Edit Panel -->
-<div class="modal-overlay" id="adminEditModal">
-    <div class="modal-box">
-        <button class="modal-close" onclick="closeAdminEdit()">×</button>
-        <h3>⚙️ Admin Panel — Edit / Delete Entry</h3>
-        <div class="row">
-            <div><label>তারিখ</label><input type="date" id="adminSearchDate"></div>
-            <div><label>শিফট</label>
-                <select id="adminSearchShift">
-                    <option value="Day">Day</option>
-                    <option value="Night">Night</option>
-                </select>
-            </div>
-            <div><label>ডিপার্টমেন্ট</label>
-                <select id="adminSearchDept">
-                    <option value="">-- সিলেক্ট করুন --</option>
-                </select>
-            </div>
-        </div>
-        <div class="btn-row">
-            <button class="btn-search" onclick="adminFindEntry()">🔍 খুঁজুন</button>
-            <button class="btn-cancel" onclick="closeAdminEdit()">❌ Close</button>
-        </div>
-        <div id="adminEditResult" style="margin-top:20px;"></div>
-    </div>
 </div>
 
 <script>
     // =============================================================
-    // CONFIG
+    // LOGIN LOGIC
+    // =============================================================
+    const VALID_USERNAME = "DPL";
+    const VALID_PASSWORD = "DPL";
+    const SESSION_KEY = "RIP-DPL_entry_logged_in";
+
+    window.onload = function() {
+        const loggedIn = sessionStorage.getItem(SESSION_KEY);
+        if (loggedIn === 'true') {
+            showDashboard();
+            initDashboard();
+        } else {
+            showLogin();
+            const remembered = localStorage.getItem('RIP DPL_entry_remember');
+            if (remembered === 'true') {
+                document.getElementById('username').value = VALID_USERNAME;
+                document.getElementById('rememberMe').checked = true;
+            }
+        }
+    };
+
+    function handleLogin(event) {
+        event.preventDefault();
+        const usernameInput = document.getElementById('username').value.trim();
+        const passwordInput = document.getElementById('password').value.trim();
+        const errorMsg = document.getElementById('errorMsg');
+        const rememberCheck = document.getElementById('rememberMe').checked;
+        errorMsg.textContent = '';
+
+        if (usernameInput === VALID_USERNAME && passwordInput === VALID_PASSWORD) {
+            if (rememberCheck) {
+                localStorage.setItem('RIP DPL_entry_remember', 'true');
+            } else {
+                localStorage.removeItem('RIP DPL_entry_remember');
+            }
+            sessionStorage.setItem(SESSION_KEY, 'true');
+            showDashboard();
+            initDashboard();
+            return false;
+        } else {
+            errorMsg.textContent = 'Invalid username or password. Please try again.';
+            return false;
+        }
+    }
+
+    function showDashboard() {
+        document.getElementById('loginContainer').classList.add('hidden');
+        document.getElementById('dashboardContainer').classList.add('active');
+        document.getElementById('loginScrollMessage').style.display = 'none';
+        document.body.style.display = 'block';
+        document.body.style.padding = '0';
+        document.body.style.background = '#f4f7fc';
+        window.dispatchEvent(new Event('resize'));
+    }
+
+    function showLogin() {
+        document.getElementById('loginContainer').classList.remove('hidden');
+        document.getElementById('dashboardContainer').classList.remove('active');
+        document.getElementById('loginScrollMessage').style.display = 'block';
+        document.body.style.display = 'flex';
+        document.body.style.padding = '20px';
+        document.body.style.background = '#e9ecef';
+    }
+
+    function handleLogout() {
+        sessionStorage.removeItem(SESSION_KEY);
+        showLogin();
+    }
+
+    // =============================================================
+    // ENTRY FORM CONFIG
     // =============================================================
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCqPfQdTnXKHWTyvdZGowT4mbvPNXmDQAEFJbW2sK6-OacPyYsvdJ39QbM52ni3m1ZqA/exec';
     const ADMIN_PASSWORD_FOR_CLIENT = 'admin';
@@ -486,6 +739,7 @@
     let lastEntryTimestamp = null;
     let userEditTimerInterval = null;
     let adminPasswordCache = null;
+    let dashboardInitialized = false;
 
     function renderHeadGrid() {
         const grid = document.getElementById('headGrid');
@@ -535,7 +789,10 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    function initDashboard() {
+        if (dashboardInitialized) return;
+        dashboardInitialized = true;
+
         renderHeadGrid();
         populateDepartments();
         populateAdminDeptDropdown();
@@ -604,7 +861,7 @@
         });
 
         updateHeadGridHighlight('');
-    });
+    }
 
     function clearUI() {
         document.getElementById('duplicateAlert').style.display = 'none';
