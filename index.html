@@ -506,6 +506,42 @@
             background: #0a3a7a;
             transform: scale(1.03);
         }
+        #summaryCard .card-title .btn-whatsapp {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            width: auto;
+            margin: 0;
+        }
+        #summaryCard .card-title .btn-whatsapp:hover {
+            background: #1da851;
+            transform: scale(1.03);
+        }
+        #summaryCard .card-title .btn-print {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            width: auto;
+            margin: 0;
+        }
+        #summaryCard .card-title .btn-print:hover {
+            background: #1e7e34;
+            transform: scale(1.03);
+        }
         #summaryCard .card-body {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -738,7 +774,11 @@
     <div id="summaryCard">
         <div class="card-title">
             <span>✅ সম্পূর্ণ এন্ট্রি সারাংশ</span>
-            <button class="btn-download" onclick="downloadSummaryImage()">🖼️ Make Image &amp; Save it</button>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn-download" onclick="downloadSummaryImage()">🖼️ Make Image</button>
+                <button class="btn-print" onclick="printSummaryCard()">🖨️ Print Preview</button>
+                <button class="btn-whatsapp" onclick="sendWhatsApp()">📱 WhatsApp এ পাঠান</button>
+            </div>
         </div>
         <div class="card-body" id="summaryCardBody"></div>
     </div>
@@ -765,7 +805,45 @@
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCqPfQdTnXKHWTyvdZGowT4mbvPNXmDQAEFJbW2sK6-OacPyYsvdJ39QbM52ni3m1ZqA/exec';
 
     // =============================================================
-    // ডিপার্টমেন্ট ম্যাপিং
+    // ✅ WhatsApp Number Map (IC দের number)
+    // =============================================================
+    const WHATSAPP_MAP = {
+        'Mr. Arif': '8801844608734',
+        'Mr. Hazrat': '8801844665365',
+        'Mr. Polash': '8801844664941',
+        'Mr. Monir': '8801844604091',
+        'Mr. Sayem': '8801844665185',
+        'Mr. Saddam': '8801844665186',
+        'Mr. Awal': '8801844200936',
+        'Mr. Atiqur Rahman': '8801841357858',
+        'Mr. Shawon': '8801844601550',
+        'Mr. Rakib': '8801844608732',
+        'Mr. Majed': '8801844660162',
+        'Mr. Jabed': '8801841257841',
+        'Mr. Faysal': '8801844608730',
+        'Mr. Atiq': '8801844665190',
+        'Mr. Asim': '8801844608398',
+        'Mr. Dibakor': '8801844200937',
+        'Mr. Rofik': '8801844605167',
+        'Mr. Rafi': '8801896242198',
+        'Mr. Mithun': '8801844608373',
+        'Mamun': '8801844666008'
+    };
+
+    // ✅ Admin দের number (সব report এরা পাবেন)
+    const ADMIN_WHATSAPP_NUMBERS = [
+        '8801844608734',  // Mr. Arif
+        '8801844665185'   // Mr. Sayem
+    ];
+
+    // ✅ Admin দের নাম (report এ দেখানোর জন্য)
+    const ADMIN_NAMES = [
+        'Mr. Arif',
+        'Mr. Sayem'
+    ];
+
+    // =============================================================
+    // Department → IC mapping
     // =============================================================
     const DEPARTMENT_IC_MAP = {
         'RIP> DPL> Plastic-3': { ic: 'Mr. Arif', photo: 'https://i.ibb.co/1Ym6W0F3/Whats-App-Image-2026-07-12-at-9-28-51-AM.jpg' },
@@ -823,8 +901,11 @@
         'DPL-QA', 'RIP RFL Store'
     ];
 
+    // Global variable — শেষ এন্ট্রির payload জমা রাখার জন্য
+    let lastEntryPayload = null;
+
     // =============================================================
-    // হেড গ্রিড তৈরি
+    // হেড গ্রিড
     // =============================================================
     function renderHeadGrid() {
         const grid = document.getElementById('headGrid');
@@ -882,7 +963,7 @@
     }
 
     // =============================================================
-    // DOM রেডি
+    // DOM Ready
     // =============================================================
     document.addEventListener('DOMContentLoaded', function() {
         renderHeadGrid();
@@ -1150,32 +1231,28 @@
     }
 
     // =============================================================
-    // ✅ নতুন: দ্রুত duplicate check via action=check
+    // ✅ Fast duplicate check via action=check
     // =============================================================
     function checkDuplicateViaJSONP(date, shift, dept) {
         return new Promise((resolve, reject) => {
             const callbackName = 'jsonp_check_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-            
             const timeoutId = setTimeout(() => {
                 delete window[callbackName];
                 if (script && script.parentNode) document.body.removeChild(script);
                 reject(new Error('Timeout'));
             }, 8000);
-            
             window[callbackName] = function(data) {
                 clearTimeout(timeoutId);
                 delete window[callbackName];
                 if (script && script.parentNode) document.body.removeChild(script);
                 resolve(data);
             };
-
             const url = APP_SCRIPT_URL 
                 + '?action=check'
                 + '&date=' + encodeURIComponent(date)
                 + '&shift=' + encodeURIComponent(shift)
                 + '&dept=' + encodeURIComponent(dept)
                 + '&callback=' + callbackName;
-            
             const script = document.createElement('script');
             script.src = url;
             script.onerror = function() {
@@ -1188,19 +1265,13 @@
         });
     }
 
-    // =============================================================
-    // ✅ নতুন: checkDuplicate function (দ্রুত)
-    // =============================================================
     async function checkDuplicate(date, shift, dept) {
         const key = `${date}_${shift}_${dept}`;
-        
         if (localStorage.getItem(key) === 'submitted') {
             return { duplicate: true, source: 'localStorage' };
         }
-
         try {
             const response = await checkDuplicateViaJSONP(date, shift, dept);
-            
             if (response && response.exists === true) {
                 localStorage.setItem(key, 'submitted');
                 return { duplicate: true, source: 'server' };
@@ -1234,14 +1305,6 @@
         if (!selectedVoice) {
             for (let voice of voices) {
                 if (voice.lang.startsWith('bn')) {
-                    selectedVoice = voice;
-                    break;
-                }
-            }
-        }
-        if (!selectedVoice) {
-            for (let voice of voices) {
-                if (voice.name.toLowerCase().includes('female')) {
                     selectedVoice = voice;
                     break;
                 }
@@ -1325,7 +1388,6 @@
 
     document.getElementById('entryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-
         const status = document.getElementById('status');
         const duplicateAlert = document.getElementById('duplicateAlert');
         const submitBtn = document.getElementById('submitBtn');
@@ -1364,7 +1426,7 @@
                     <div style="color: #b71c1c; font-size: 22px; font-weight: 700; line-height: 1.8;">
                         ⚠️ আপনার ডিপার্টমেন্ট থেকে ইতিমধ্যে আপনার ফ্লোর এর কেউ একজন আজকের তারিখ ও শিফটের ডেটা জমা দিয়েছে ! দয়া করে চেক করুন , আর ডুপ্লিকেট এন্ট্রি আজকের তারিখ ও শিফটের ডেটা জমা নেওয়া  সম্ভব না !! <br><br>
                         আপনার সঠিক এবং একবার ডেটা এন্ট্রি  আমাদের কাম্য ! <br><br>
-                        ❌ ডুপ্লিকেট এন্ট্রি অনুমোদিত নয় (এটা সার্ভার থেকে রিকল করছে তাই কোন ভাবেই ডুপ্লিকেট এন্ট্রি জমা নেওয়া  সম্ভব না)  ! (সোর্স: Server)- <br><br>
+                        ❌ ডুপ্লিকেট এন্ট্রি অনুমোদিত নয় ! (সোর্স: Server)- <br><br>
                         ধন্যবাদ  আপনাকে ভালো থাকবনে সুস্থ থাকবেন 
                     </div>
                 </div>
@@ -1448,6 +1510,9 @@
             const key = `${date}_${shift}_${dept}`;
             localStorage.setItem(key, 'submitted');
 
+            // ✅ শেষ payload জমা রাখি (WhatsApp এ পাঠানোর জন্য)
+            lastEntryPayload = payload;
+
             populateSummaryCard(payload, date, shift, dept, icName, pctRunning, totalHRValue);
 
             status.className = 'success';
@@ -1467,6 +1532,9 @@
         }
     });
 
+    // =============================================================
+    // সারাংশ কার্ড
+    // =============================================================
     function populateSummaryCard(payload, date, shift, dept, icName, pctRunning, totalHR) {
         const body = document.getElementById('summaryCardBody');
         const dateObj = new Date(date + 'T00:00:00');
@@ -1538,7 +1606,6 @@
         ];
 
         let html = '';
-
         items.forEach(item => {
             html += `<div class="card-item"><span class="card-label">${item.label}</span><span class="card-value highlight">${item.value}</span></div>`;
         });
@@ -1567,20 +1634,230 @@
         document.getElementById('summaryCard').style.display = 'block';
     }
 
+    // =============================================================
+    // 🖨️ Print Preview
+    // =============================================================
+    function printSummaryCard() {
+        const card = document.getElementById('summaryCard');
+        if (card.style.display === 'none') {
+            alert('⚠️ সারাংশ কার্ড খালি! আগে একটি এন্ট্রি সেভ করুন।');
+            return;
+        }
+        const cardClone = card.cloneNode(true);
+        const buttons = cardClone.querySelectorAll('button');
+        buttons.forEach(btn => btn.remove());
+
+        const printWindow = window.open('', '_blank', 'width=900,height=700');
+        if (!printWindow) {
+            alert('⚠️ Popup blocker! এই সাইটের জন্য popup allow করুন।');
+            return;
+        }
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="bn">
+            <head>
+                <meta charset="UTF-8">
+                <title>এন্ট্রি সারাংশ - Print Preview</title>
+                <style>
+                    * { box-sizing: border-box; }
+                    body {
+                        font-family: Arial, sans-serif;
+                        background: #ffffff;
+                        padding: 20px;
+                        margin: 0;
+                        color: #155724;
+                    }
+                    #summaryCard {
+                        display: block !important;
+                        margin: 0 auto;
+                        padding: 20px 25px;
+                        background: #d4edda;
+                        border: 2px solid #28a745;
+                        border-radius: 12px;
+                        color: #155724;
+                        font-size: 15px;
+                        line-height: 1.7;
+                        max-width: 100%;
+                    }
+                    #summaryCard .card-title {
+                        font-size: 22px;
+                        font-weight: 700;
+                        margin-bottom: 12px;
+                        border-bottom: 2px solid #28a745;
+                        padding-bottom: 8px;
+                    }
+                    #summaryCard .card-body {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                        gap: 6px 18px;
+                    }
+                    #summaryCard .card-item {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 4px 8px;
+                        padding: 4px 0;
+                        border-bottom: 1px solid rgba(0,0,0,0.06);
+                    }
+                    #summaryCard .card-item .card-label {
+                        font-weight: 600;
+                        min-width: 130px;
+                        color: #333;
+                        opacity: 0.85;
+                    }
+                    #summaryCard .card-item .card-value {
+                        font-weight: 400;
+                        color: #155724;
+                    }
+                    #summaryCard .card-item .card-value.highlight {
+                        font-weight: 700;
+                        color: #0d47a1;
+                    }
+                    #summaryCard .summary-section-title {
+                        grid-column: 1 / -1;
+                        font-weight: 700;
+                        font-size: 17px;
+                        margin-top: 8px;
+                        padding-top: 6px;
+                        border-top: 2px solid #28a745;
+                        color: #333;
+                    }
+                    @media print {
+                        body { padding: 0; }
+                        #summaryCard { page-break-inside: avoid; }
+                        @page { margin: 10mm; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${cardClone.outerHTML}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.onafterprint = function() {
+                printWindow.close();
+            };
+        }, 300);
+    }
+
+    // =============================================================
+    // 📱 WhatsApp এ পাঠান
+    // =============================================================
+    function sendWhatsApp() {
+        if (!lastEntryPayload) {
+            alert('⚠️ আগে একটি এন্ট্রি সেভ করুন।');
+            return;
+        }
+
+        const p = lastEntryPayload;
+        const icName = p.icName;
+        
+        // IC এর number
+        const icNumber = WHATSAPP_MAP[icName];
+        if (!icNumber) {
+            alert('⚠️ ' + icName + ' এর WhatsApp number পাওয়া যায়নি।\n\nঅনুগ্রহ করে Admin এর সাথে যোগাযোগ করুন।');
+            return;
+        }
+
+        // তারিখ সুন্দরভাবে সাজাই
+        const dateObj = new Date(p.entryDate + 'T00:00:00');
+        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+        const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' (' + dayName + ')';
+
+        // Message তৈরি
+        let msg = `📊 *রিপোর্ট — ${p.department}*\n`;
+        msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+        msg += `📅 তারিখ: ${formattedDate}\n`;
+        msg += `🕒 শিফট: ${p.shift}\n`;
+        msg += `👤 IC: ${icName}\n`;
+        msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+        
+        msg += `🔧 *মেশিন ডেটা*\n`;
+        msg += `• Total MC: ${p.totalMC || 0}\n`;
+        msg += `• Running: ${p.mcRunning || 0} (${p.pctRunning || '0%'})\n`;
+        msg += `• Stopped: ${p.mcStopped || 0} (${p.pctStopped || '0%'})\n\n`;
+
+        msg += `👥 *এইচআর ও ম্যানপাওয়ার*\n`;
+        msg += `• Total Present: ${p.totalPresent || 0}\n`;
+        msg += `• Leave: ${p.leaveEmployee || 0}\n`;
+        msg += `• Absent: ${p.absentEmployee || 0}\n\n`;
+
+        msg += `⛔ *স্টপের কারণ*\n`;
+        msg += `• MP Short: ${p.mpShort || 0}\n`;
+        msg += `• Mold Problem: ${p.moldProblem || 0}\n`;
+        msg += `• Mold Change: ${p.moldChange || 0}\n`;
+        msg += `• Under Sample: ${p.underSample || 0}\n`;
+        msg += `• MC Problem: ${p.mcProblem || 0}\n`;
+        msg += `• Preventive: ${p.preventiveMaintenance || 0}\n`;
+        msg += `• No Demand: ${p.noDemandQty || 0}\n`;
+        msg += `• Material & MB Short: ${p.materialMBShortage || 0}\n`;
+        msg += `• Over Stock: ${p.overStockWIP || 0}\n`;
+        msg += `• Acc Short: ${p.accessoriesShort || 0}\n\n`;
+
+        msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+        msg += `✅ স্বয়ংক্রিয় রিপোর্ট সিস্টেম`;
+
+        // URL encode
+        const encodedMsg = encodeURIComponent(msg);
+
+        // ✅ IC + Admin সবাইকে পাঠানোর জন্য multiple tab
+        const allNumbers = [];
+        
+        // প্রথমে IC
+        if (icNumber) allNumbers.push(icNumber);
+        
+        // তারপর Admin (তবে IC যদি Admin হয়, তাহলে duplicate হবে না)
+        ADMIN_WHATSAPP_NUMBERS.forEach(adminNum => {
+            if (!allNumbers.includes(adminNum)) {
+                allNumbers.push(adminNum);
+            }
+        });
+
+        // Confirmation
+        const recipients = allNumbers.length;
+        const proceed = confirm(
+            `📱 WhatsApp এ পাঠানো হবে ${recipients} জনকে:\n\n` +
+            `✅ ${icName} (IC)\n` +
+            (ADMIN_WHATSAPP_NUMBERS.length > 0 ? `✅ Mr. Arif (Admin)\n✅ Mr. Sayem (Admin)\n` : '') +
+            `\nContinue?`
+        );
+        
+        if (!proceed) return;
+
+        // প্রতিটা number এ message পাঠানোর জন্য আলাদা tab
+        // (Popup blocker এড়ানোর জন্য প্রথমটা একটু দেরিতে খুলি)
+        allNumbers.forEach((num, index) => {
+            setTimeout(() => {
+                const url = `https://wa.me/${num}?text=${encodedMsg}`;
+                window.open(url, '_blank');
+            }, index * 500);
+        });
+
+        // Success message
+        setTimeout(() => {
+            alert(`✅ ${recipients} টা WhatsApp tab খোলা হয়েছে।\n\nপ্রতিটাতে "Send" চাপুন।`);
+        }, recipients * 500 + 300);
+    }
+
+    // =============================================================
+    // ইমেজ ডাউনলোড
+    // =============================================================
     function downloadSummaryImage() {
         const card = document.getElementById('summaryCard');
         if (card.style.display === 'none') {
             alert('⚠️ সারাংশ কার্ড খালি! আগে একটি এন্ট্রি সেভ করুন।');
             return;
         }
-
         const btn = card.querySelector('.btn-download');
         let btnDisplay = '';
         if (btn) {
             btnDisplay = btn.style.display;
             btn.style.display = 'none';
         }
-
         html2canvas(card, {
             scale: 2,
             backgroundColor: getComputedStyle(document.body).getPropertyValue('--container-bg').trim() || '#ffffff',
