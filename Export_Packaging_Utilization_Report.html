@@ -655,6 +655,46 @@
         .jo-total-stats .stat { font-size: 14px; }
         .jo-total-stats .stat strong { color: #007bff; font-size: 18px; }
         .jo-total-stats .stat .label { color: #475569; font-weight: normal; }
+
+        /* পেজিনেশন স্টাইল */
+        .live-stream-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            flex-wrap: wrap;
+            font-size: 14px;
+        }
+        .live-stream-pagination button {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .live-stream-pagination button:hover {
+            background: #1a252f;
+        }
+        .live-stream-pagination button:disabled {
+            background: #b0bec5;
+            cursor: not-allowed;
+        }
+        .live-stream-pagination .page-info {
+            font-weight: bold;
+            color: #1e293b;
+        }
+        .live-stream-pagination .more-btn {
+            background: #e67e22;
+        }
+        .live-stream-pagination .more-btn:hover {
+            background: #d35400;
+        }
     </style>
 </head>
 <body>
@@ -769,8 +809,8 @@
                 <div>
                     <label>Shift:</label>
                     <select id="shift-select" onchange="updateReport()">
-                        <option value="Shift-A (Day)" selected>Shift-A (Day) [10:00 AM - 10:00 PM]</option>
-                        <option value="Shift-B (Night)">Shift-B (Night) [10:00 PM - 10:00 AM]</option>
+                        <option value="Shift-A (Day)" selected>Shift-A (Day) [7:59 AM - 7:59 PM]</option>
+                        <option value="Shift-B (Night)">Shift-B (Night) [8:00 PM - 7:59 AM]</option>
                     </select>
                 </div>
                 <div id="shift-ic-container" style="display: none;">
@@ -905,6 +945,7 @@
                 <button class="action-btn" onclick="saveDataToFirebase()">💾 Save Entry Data</button>
             </div>
 
+            <!-- Live Production Entry Stream with Pagination -->
             <div style="margin-top: 35px;">
                 <div class="report-title" style="color: #d9534f; margin-bottom: 10px;">🔴 Live Production Entry Stream (Real-Time Monitoring)</div>
                 <div class="table-responsive">
@@ -920,6 +961,13 @@
                             <tr><td colspan="13">Waiting for live entries...</td></tr>
                         </tbody>
                     </table>
+                </div>
+                <!-- Pagination Controls -->
+                <div class="live-stream-pagination" id="live-stream-pagination">
+                    <button id="livePrevBtn" onclick="changeLivePage(-1)" disabled>◀ Previous</button>
+                    <span class="page-info" id="livePageInfo">Page 1</span>
+                    <button id="liveNextBtn" onclick="changeLivePage(1)" disabled>Next ▶</button>
+                    <button id="liveMoreBtn" class="more-btn" onclick="loadMoreLiveEntries()" style="display: none;">More See ▼</button>
                 </div>
             </div>
         </div>
@@ -1176,6 +1224,13 @@
     let masterRecordsRaw = {};
     let historicalProductionData = [];
     let isAsofVisible = true;
+
+    // ---- পেজিনেশন ভেরিয়েবল ----
+    let livePage = 1;
+    let livePageSize = 8;
+    let liveTotalEntries = 0;
+    let liveAllEntries = [];      // ফায়ারবেস থেকে আসা সব এন্ট্রি (অবজেক্ট অ্যারে)
+    let liveLoadedCount = 0;      // কতগুলো লোড করা হয়েছে (More See এর জন্য)
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -2109,35 +2164,108 @@
             .catch((error) => alert("❌ Error: " + error.message));
     }
 
+    // ============================= Live Stream with Pagination =============================
+    let liveAllData = [];
+
     function initLiveStream() {
-        let liveStreamTbody = document.getElementById('live-stream-tbody');
         let dbRef = db.ref('productions');
         dbRef.on('value', (snapshot) => {
-            liveStreamTbody.innerHTML = '';
+            liveAllData = [];
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
                     let keyId = childSnapshot.key;
                     let data = childSnapshot.val();
-                    let photoHtml = data.icPhoto ? `<img src="${data.icPhoto}" width="35" height="35" style="border-radius: 50%; object-fit: cover;">` : '-';
-                    let tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${data.date}</td><td>${data.shift}</td>
-                        <td style="font-weight: bold; color: #8e44ad;">${data.shiftIc || '-'}</td>
-                        <td>${photoHtml}</td><td>${data.floor}</td><td>${data.line}</td>
-                        <td style="font-weight: bold; color: #007bff;">${data.joName}</td>
-                        <td>${data.itemName}</td><td>${data.completeSet}</td>
-                        <td style="font-weight: bold; color: #28a745;">${data.completeCtn}</td>
-                        <td>${data.mhUtil}</td>
-                        <td><span style="background: #e2f0d9; padding: 2px 6px; border-radius: 4px; color: #385723; font-weight: bold;">${data.status || 'Running'}</span></td>
-                        <td><button class="btn-edit" onclick="editLiveRecord('${keyId}')">Edit</button></td>
-                    `;
-                    liveStreamTbody.appendChild(tr);
+                    data._key = keyId;
+                    liveAllData.push(data);
                 });
-            } else {
-                liveStreamTbody.innerHTML = `<tr><td colspan="13">No live entries yet.</td></tr>`;
             }
+            // ডাটা রিভার্স (নতুন আগে)
+            liveAllData.reverse();
+            liveTotalEntries = liveAllData.length;
+            liveLoadedCount = Math.min(livePageSize, liveTotalEntries);
+            livePage = 1;
+            renderLiveStreamPage();
         });
     }
+
+    function renderLiveStreamPage() {
+        let tbody = document.getElementById('live-stream-tbody');
+        if (!tbody) return;
+        let start = (livePage - 1) * livePageSize;
+        let end = Math.min(start + livePageSize, liveLoadedCount);
+        let pageEntries = liveAllData.slice(start, end);
+
+        tbody.innerHTML = '';
+        if (pageEntries.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="13">No live entries yet.</td></tr>`;
+            updatePaginationControls();
+            return;
+        }
+
+        pageEntries.forEach(data => {
+            let photoHtml = data.icPhoto ? `<img src="${data.icPhoto}" width="35" height="35" style="border-radius: 50%; object-fit: cover;">` : '-';
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${data.date || ''}</td>
+                <td>${data.shift || ''}</td>
+                <td style="font-weight: bold; color: #8e44ad;">${data.shiftIc || '-'}</td>
+                <td>${photoHtml}</td>
+                <td>${data.floor || ''}</td>
+                <td>${data.line || ''}</td>
+                <td style="font-weight: bold; color: #007bff;">${data.joName || ''}</td>
+                <td>${data.itemName || ''}</td>
+                <td>${data.completeSet || 0}</td>
+                <td style="font-weight: bold; color: #28a745;">${data.completeCtn || 0}</td>
+                <td>${data.mhUtil || '0%'}</td>
+                <td><span style="background: #e2f0d9; padding: 2px 6px; border-radius: 4px; color: #385723; font-weight: bold;">${data.status || 'Running'}</span></td>
+                <td><button class="btn-edit" onclick="editLiveRecord('${data._key}')">Edit</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updatePaginationControls();
+    }
+
+    function updatePaginationControls() {
+        let totalPages = Math.ceil(liveLoadedCount / livePageSize) || 1;
+        if (livePage > totalPages) livePage = totalPages;
+        let prevBtn = document.getElementById('livePrevBtn');
+        let nextBtn = document.getElementById('liveNextBtn');
+        let moreBtn = document.getElementById('liveMoreBtn');
+        let pageInfo = document.getElementById('livePageInfo');
+
+        prevBtn.disabled = (livePage <= 1);
+        nextBtn.disabled = (livePage >= totalPages);
+
+        pageInfo.textContent = `Page ${livePage} of ${totalPages} (${liveLoadedCount} of ${liveTotalEntries} entries)`;
+
+        // More See: যদি এখনো সব এন্ট্রি লোড না হয়ে থাকে
+        if (liveLoadedCount < liveTotalEntries) {
+            moreBtn.style.display = 'inline-block';
+        } else {
+            moreBtn.style.display = 'none';
+        }
+    }
+
+    function changeLivePage(delta) {
+        let totalPages = Math.ceil(liveLoadedCount / livePageSize) || 1;
+        let newPage = livePage + delta;
+        if (newPage < 1) newPage = 1;
+        if (newPage > totalPages) newPage = totalPages;
+        if (newPage !== livePage) {
+            livePage = newPage;
+            renderLiveStreamPage();
+        }
+    }
+
+    function loadMoreLiveEntries() {
+        // আরও ৮টি এন্ট্রি লোড করো (তবে টোটাল এন্ট্রির বেশি না)
+        liveLoadedCount = Math.min(liveLoadedCount + livePageSize, liveTotalEntries);
+        // যদি বর্তমান পেজ এখন খালি হয়ে যায়, তাহলে শেষ পেজে যাও
+        let totalPages = Math.ceil(liveLoadedCount / livePageSize) || 1;
+        if (livePage > totalPages) livePage = totalPages;
+        renderLiveStreamPage();
+    }
+    // ============================= End Live Stream Pagination =============================
 
     function renderICPerformanceData() {
         let selectedIC = document.getElementById('perf-ic-select').value;
