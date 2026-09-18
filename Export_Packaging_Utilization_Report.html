@@ -952,8 +952,8 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th><th>Shift</th><th>Shift IC</th><th>IC Photo</th><th>Floor</th>
-                                <th>Line</th><th>JO Name</th><th>Items Name</th><th>Complete Set</th>
+                                <th>Line</th><th>Date</th><th>Shift</th><th>Shift IC</th><th>IC Photo</th><th>Floor</th>
+                                <th>JO Name</th><th>Items Name</th><th>Complete Set</th>
                                 <th>Complete CTN</th><th>MH Util (%)</th><th>Status</th><th>Action</th>
                             </tr>
                         </thead>
@@ -1271,9 +1271,8 @@
 
     function filterAsofReport() { renderAsofPackagingReport(); }
 
-    // ✅✅✅ পরিবর্তিত: Last Day Pack Utilization এখন সবসময় আগের দিনের (Yesterday) ডেটা দেখাবে
+    // ✅✅✅ Last Day Pack Utilization: আগের দিনের (Yesterday) ডেটা দেখাবে
     function initLastDayFilterAndRender() {
-        // আজকের তারিখ থেকে ১ দিন বিয়োগ করে আগের দিনের তারিখ বের করা
         let yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         let yyyy = yesterday.getFullYear();
@@ -1281,15 +1280,12 @@
         let dd = String(yesterday.getDate()).padStart(2, '0');
         let yesterdayStr = `${yyyy}-${mm}-${dd}`;
 
-        // ডেট ফিল্টারে আগের দিনের তারিখ সেট করা
         let filterElem = document.getElementById('last-day-filter');
         if (filterElem) filterElem.value = yesterdayStr;
 
-        // শিফট ফিল্টার "All Shifts" সেট করা (Day + Night উভয়ই দেখাবে)
         let shiftFilter = document.getElementById('last-day-shift-filter');
         if (shiftFilter) shiftFilter.value = '';
 
-        // ডেটা রেন্ডার করা
         renderLastDayPackData();
     }
 
@@ -1703,11 +1699,12 @@
         document.getElementById('cameraModal').style.display = 'none';
     }
 
+    // ✅✅✅ Line: E-2 বাদ দিয়ে F-1 যোগ করা হয়েছে
     function addNewRow(lineVal='A-1', joVal='', itemVal='', smvVal='', unitTypeVal='Piece', unitVal='', orderQtyVal='', ctnDemandVal='', asOfCtnVal='', wfVal='', whVal='', compSetVal='', compCtnVal='', statusVal='Running') {
         let tbody = document.getElementById('entry-table-body');
         let tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><select class="line-val" onchange="syncFields(this);"><option value="A-1" ${lineVal==='A-1'?'selected':''}>A-1</option><option value="B-1" ${lineVal==='B-1'?'selected':''}>B-1</option><option value="C-1" ${lineVal==='C-1'?'selected':''}>C-1</option><option value="D-1" ${lineVal==='D-1'?'selected':''}>D-1</option><option value="E-1" ${lineVal==='E-1'?'selected':''}>E-1</option><option value="E-2" ${lineVal==='E-2'?'selected':''}>E-2</option></select></td>
+            <td><select class="line-val" onchange="syncFields(this);"><option value="A-1" ${lineVal==='A-1'?'selected':''}>A-1</option><option value="B-1" ${lineVal==='B-1'?'selected':''}>B-1</option><option value="C-1" ${lineVal==='C-1'?'selected':''}>C-1</option><option value="D-1" ${lineVal==='D-1'?'selected':''}>D-1</option><option value="E-1" ${lineVal==='E-1'?'selected':''}>E-1</option><option value="F-1" ${lineVal==='F-1'?'selected':''}>F-1</option></select></td>
             <td><div class="searchable-dropdown-container"><input type="text" class="jo-search-input jo-name" value="${joVal}" placeholder="Search JO" oninput="filterJODropdown(this)" onfocus="showJODropdown(this)" autocomplete="off"><div class="jo-dropdown-list"></div></div></td>
             <td><div class="searchable-dropdown-container"><input type="text" class="item-search-input item-name" value="${itemVal}" placeholder="Select Item" oninput="filterItemDropdown(this)" onfocus="showItemDropdown(this)" autocomplete="off"><div class="item-dropdown-list"></div></div></td>
             <td><input type="number" step="0.1" class="smv" value="${smvVal}" oninput="calculateValues(this)"></td>
@@ -1740,7 +1737,7 @@
                 <button class="btn-delete" onclick="deleteLocalRowFromMobile(this)">❌ Delete</button>
             </div>
             <div class="card-grid-2 card-row">
-                <div><label>Line:</label><select class="m-line-val" onchange="syncBackFromMobile(this)"><option value="A-1" ${lineVal==='A-1'?'selected':''}>A-1</option><option value="B-1" ${lineVal==='B-1'?'selected':''}>B-1</option><option value="C-1" ${lineVal==='C-1'?'selected':''}>C-1</option><option value="D-1" ${lineVal==='D-1'?'selected':''}>D-1</option><option value="E-1" ${lineVal==='E-1'?'selected':''}>E-1</option><option value="E-2" ${lineVal==='E-2'?'selected':''}>E-2</option></select></div>
+                <div><label>Line:</label><select class="m-line-val" onchange="syncBackFromMobile(this)"><option value="A-1" ${lineVal==='A-1'?'selected':''}>A-1</option><option value="B-1" ${lineVal==='B-1'?'selected':''}>B-1</option><option value="C-1" ${lineVal==='C-1'?'selected':''}>C-1</option><option value="D-1" ${lineVal==='D-1'?'selected':''}>D-1</option><option value="E-1" ${lineVal==='E-1'?'selected':''}>E-1</option><option value="F-1" ${lineVal==='F-1'?'selected':''}>F-1</option></select></div>
                 <div><label>Status:</label><select class="m-status-val" onchange="checkLineStatusAndAutoAddMobile(this); syncBackFromMobile(this)"><option value="Running" ${statusVal==='Running'?'selected':''}>Running</option><option value="Completed" ${statusVal==='Completed'?'selected':''}>Completed</option><option value="Hold" ${statusVal==='Hold'?'selected':''}>Hold</option></select></div>
             </div>
             <div class="card-row"><label>JO Name:</label><div class="searchable-dropdown-container"><input type="text" class="jo-search-input m-jo-name" value="${joVal}" oninput="filterJODropdown(this)" onfocus="showJODropdown(this)" autocomplete="off"><div class="jo-dropdown-list"></div></div></div>
@@ -2189,6 +2186,7 @@
         });
     }
 
+    // ✅✅✅ Live Stream টেবিলে Date এর আগে Line কলাম যোগ করা হয়েছে
     function renderLiveStreamPage() {
         let tbody = document.getElementById('live-stream-tbody');
         if (!tbody) return;
@@ -2207,12 +2205,12 @@
             let photoHtml = data.icPhoto ? `<img src="${data.icPhoto}" width="35" height="35" style="border-radius: 50%; object-fit: cover;">` : '-';
             let tr = document.createElement('tr');
             tr.innerHTML = `
+                <td style="font-weight: bold; color: #007bff;">${data.line || ''}</td>
                 <td>${data.date || ''}</td>
                 <td>${data.shift || ''}</td>
                 <td style="font-weight: bold; color: #8e44ad;">${data.shiftIc || '-'}</td>
                 <td>${photoHtml}</td>
                 <td>${data.floor || ''}</td>
-                <td>${data.line || ''}</td>
                 <td style="font-weight: bold; color: #007bff;">${data.joName || ''}</td>
                 <td>${data.itemName || ''}</td>
                 <td>${data.completeSet || 0}</td>
@@ -2239,7 +2237,6 @@
 
         pageInfo.textContent = `Page ${livePage} of ${totalPages} (${liveLoadedCount} of ${liveTotalEntries} entries)`;
 
-        // More See: যদি এখনো সব এন্ট্রি লোড না হয়ে থাকে
         if (liveLoadedCount < liveTotalEntries) {
             moreBtn.style.display = 'inline-block';
         } else {
@@ -2259,9 +2256,7 @@
     }
 
     function loadMoreLiveEntries() {
-        // আরও ৮টি এন্ট্রি লোড করো (তবে টোটাল এন্ট্রির বেশি না)
         liveLoadedCount = Math.min(liveLoadedCount + livePageSize, liveTotalEntries);
-        // যদি বর্তমান পেজ এখন খালি হয়ে যায়, তাহলে শেষ পেজে যাও
         let totalPages = Math.ceil(liveLoadedCount / livePageSize) || 1;
         if (livePage > totalPages) livePage = totalPages;
         renderLiveStreamPage();
