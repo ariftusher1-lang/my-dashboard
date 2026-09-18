@@ -1229,8 +1229,8 @@
     let livePage = 1;
     let livePageSize = 8;
     let liveTotalEntries = 0;
-    let liveAllEntries = [];      // ফায়ারবেস থেকে আসা সব এন্ট্রি (অবজেক্ট অ্যারে)
-    let liveLoadedCount = 0;      // কতগুলো লোড করা হয়েছে (More See এর জন্য)
+    let liveAllEntries = [];
+    let liveLoadedCount = 0;
 
     window.onload = function() {
         let savedFloor = localStorage.getItem('pran_floor');
@@ -1271,25 +1271,26 @@
 
     function filterAsofReport() { renderAsofPackagingReport(); }
 
+    // ✅✅✅ পরিবর্তিত: Last Day Pack Utilization এখন সবসময় আগের দিনের (Yesterday) ডেটা দেখাবে
     function initLastDayFilterAndRender() {
-        let dbRef = db.ref('productions');
-        dbRef.once('value', (snapshot) => {
-            let latestDate = new Date().toISOString().split('T')[0];
-            if (snapshot.exists()) {
-                let dates = [];
-                snapshot.forEach((childSnap) => {
-                    let d = childSnap.val().date;
-                    if(d) dates.push(d);
-                });
-                if(dates.length > 0) {
-                    dates.sort();
-                    latestDate = dates[dates.length - 1];
-                }
-            }
-            let filterElem = document.getElementById('last-day-filter');
-            if(filterElem) filterElem.value = latestDate;
-            renderLastDayPackData();
-        });
+        // আজকের তারিখ থেকে ১ দিন বিয়োগ করে আগের দিনের তারিখ বের করা
+        let yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        let yyyy = yesterday.getFullYear();
+        let mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+        let dd = String(yesterday.getDate()).padStart(2, '0');
+        let yesterdayStr = `${yyyy}-${mm}-${dd}`;
+
+        // ডেট ফিল্টারে আগের দিনের তারিখ সেট করা
+        let filterElem = document.getElementById('last-day-filter');
+        if (filterElem) filterElem.value = yesterdayStr;
+
+        // শিফট ফিল্টার "All Shifts" সেট করা (Day + Night উভয়ই দেখাবে)
+        let shiftFilter = document.getElementById('last-day-shift-filter');
+        if (shiftFilter) shiftFilter.value = '';
+
+        // ডেটা রেন্ডার করা
+        renderLastDayPackData();
     }
 
     function initCloudMasterListener() {
@@ -2238,7 +2239,7 @@
 
         pageInfo.textContent = `Page ${livePage} of ${totalPages} (${liveLoadedCount} of ${liveTotalEntries} entries)`;
 
-        // More See: যদি এখনো সব এন্ট্রি লোড না হয়ে থাকে
+        // More See: যদি এখনো সব এন্ট্রি লোড না হয়ে থাকে
         if (liveLoadedCount < liveTotalEntries) {
             moreBtn.style.display = 'inline-block';
         } else {
@@ -2260,7 +2261,7 @@
     function loadMoreLiveEntries() {
         // আরও ৮টি এন্ট্রি লোড করো (তবে টোটাল এন্ট্রির বেশি না)
         liveLoadedCount = Math.min(liveLoadedCount + livePageSize, liveTotalEntries);
-        // যদি বর্তমান পেজ এখন খালি হয়ে যায়, তাহলে শেষ পেজে যাও
+        // যদি বর্তমান পেজ এখন খালি হয়ে যায়, তাহলে শেষ পেজে যাও
         let totalPages = Math.ceil(liveLoadedCount / livePageSize) || 1;
         if (livePage > totalPages) livePage = totalPages;
         renderLiveStreamPage();
