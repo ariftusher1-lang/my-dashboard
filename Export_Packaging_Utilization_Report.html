@@ -1524,6 +1524,7 @@
         });
     }
 
+    // ✅✅✅ Excel Upload with Duplicate Prevention (JO + Item Name unique)
     function handleExcelUpload(event) {
         let file = event.target.files[0];
         if (!file) return;
@@ -1535,6 +1536,19 @@
             let json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
             let masterDataUpdates = {};
             let count = 0;
+            let skippedCount = 0;
+            let skippedList = [];
+
+            // ✅ বর্তমানে ডেটাবেসে থাকা সব JO+Item কম্বিনেশন বের করা
+            let existingKeys = {};
+            Object.keys(masterRecordsRaw).forEach(key => {
+                let val = masterRecordsRaw[key];
+                if (val && val.joName && val.itemName) {
+                    let comboKey = (val.joName.trim().toLowerCase()) + "|||" + (val.itemName.trim().toLowerCase());
+                    existingKeys[comboKey] = true;
+                }
+            });
+
             for (let i = 1; i < json.length; i++) {
                 let row = json[i];
                 let joName = row[0] ? String(row[0]).trim() : "";
@@ -1543,17 +1557,39 @@
                 let unitCtn = row[3] ? Number(row[3]) || 0 : 0;
                 let orderQty = row[4] ? Number(row[4]) || 0 : 0;
                 if (joName !== "" && itemName !== "") {
+                    let comboKey = joName.toLowerCase() + "|||" + itemName.toLowerCase();
+
+                    // ✅ Duplicate Check: একই JO + একই Item থাকলে স্কিপ করবে
+                    if (existingKeys[comboKey]) {
+                        skippedCount++;
+                        skippedList.push(`${joName} → ${itemName}`);
+                        continue;
+                    }
+
                     let safeKey = "jo_rec_" + Date.now() + "_" + count;
                     masterDataUpdates[safeKey] = { joName, itemName, unitType, unitCtn, orderQty };
+                    // ✅ এই রানের মধ্যে ডুপ্লিকেট এড়ানোর জন্য existingKeys-এ যোগ করা
+                    existingKeys[comboKey] = true;
                     count++;
                 }
             }
+
             if (count > 0) {
                 db.ref('job_master_data').update(masterDataUpdates).then(() => {
-                    alert(`✅ ${count} টি রেকর্ড আপলোড হয়েছে!`);
+                    let msg = `✅ ${count} টি নতুন রেকর্ড আপলোড হয়েছে!`;
+                    if (skippedCount > 0) {
+                        msg += `\n\n⚠️ ${skippedCount} টি ডুপ্লিকেট রেকর্ড স্কিপ করা হয়েছে (আগে থেকেই আছে):`;
+                        msg += `\n\n` + skippedList.slice(0, 10).join('\n');
+                        if (skippedList.length > 10) {
+                            msg += `\n... আরও ${skippedList.length - 10} টি`;
+                        }
+                    }
+                    alert(msg);
                 });
+            } else if (skippedCount > 0) {
+                alert(`⚠️ সব রেকর্ড (${skippedCount} টি) আগে থেকেই ডেটাবেসে আছে! কোনো নতুন রেকর্ড নেই।`);
             } else {
-                alert("⚠️ এক্সেল থেকে ডাটা পাওয়া যায়নি।");
+                alert("⚠️ এক্সেল থেকে কোনো সঠিক ডাটা পাওয়া যায়নি।");
             }
         };
         reader.readAsArrayBuffer(file);
@@ -1572,6 +1608,22 @@
         let orderQtyVal = parseFloat(orderQtyInput.value) || 0;
         if(!val) { alert("⚠️ JO নাম লিখুন!"); return; }
         if(!itemNameVal) { alert("⚠️ Items Name লিখুন!"); return; }
+
+        // ✅ Manual Add-এও ডুপ্লিকেট চেক
+        let comboKey = val.toLowerCase() + "|||" + itemNameVal.toLowerCase();
+        let isDuplicate = false;
+        Object.keys(masterRecordsRaw).forEach(key => {
+            let existing = masterRecordsRaw[key];
+            if (existing && existing.joName && existing.itemName) {
+                let existCombo = existing.joName.trim().toLowerCase() + "|||" + existing.itemName.trim().toLowerCase();
+                if (existCombo === comboKey) isDuplicate = true;
+            }
+        });
+        if (isDuplicate) {
+            alert(`⚠️ এই JO (${val}) এবং Item (${itemNameVal}) আগে থেকেই ডেটাবেসে আছে! ডুপ্লিকেট যোগ করা যাবে না।`);
+            return;
+        }
+
         let newKey = db.ref('job_master_data').push().key;
         db.ref('job_master_data/' + newKey).set({
             joName: val, itemName: itemNameVal, unitType: unitTypeVal, unitCtn: unitCtnVal, orderQty: orderQtyVal
