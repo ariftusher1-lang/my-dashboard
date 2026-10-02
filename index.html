@@ -455,34 +455,11 @@
                     <div><label>Sample</label><input type="number" id="underSample" placeholder="Typ QTY"></div>
                     <div><label>MC prob</label><input type="number" id="mcProblem" placeholder="Typ QTY"></div>
                     <div><label>Preventive</label><input type="number" id="preventiveMaintenance" placeholder="Typ QTY"></div>
-                    <div style="display:flex; gap:6px; align-items:flex-end; flex-wrap:wrap; grid-column: span 2;">
-                        <div style="flex:1; min-width:90px;">
-                            <label>No demand</label>
-                            <input type="number" id="noDemandQty" placeholder="Typ QTY">
-                        </div>
-                        <div style="flex:1; min-width:110px;">
-                            <label>MC Size</label>
-                            <select id="mcSize">
-                                <option value="">-- সিলেক্ট --</option>
-                                <option value="90">90</option>
-                                <option value="120">120</option>
-                                <option value="160">160</option>
-                                <option value="250">250</option>
-                                <option value="270">270</option>
-                                <option value="280">280</option>
-                                <option value="330">330</option>
-                                <option value="380">380</option>
-                                <option value="470">470</option>
-                                <option value="530">530</option>
-                                <option value="800">800</option>
-                                <option value="IMB">IMB</option>
-                                <option value="BM">BM</option>
-                            </select>
-                        </div>
-                        <div style="flex:1; min-width:90px;">
-                            <label>Size Qty</label>
-                            <input type="number" id="sizeQty" placeholder="Typ QTY">
-                        </div>
+                    <div style="grid-column: span 2;">
+                        <label>No demand <span style="font-size:11px; color:#0d47a1;">(ক্লিক করলে MC Size Wise Popup আসবে)</span></label>
+                        <input type="text" id="noDemandQty" placeholder="ক্লিক করুন..." readonly 
+                               style="cursor:pointer; background:var(--input-bg); color:var(--machine-box-input-color); font-weight:700;" 
+                               onclick="openNoDemandPopup()">
                     </div>
                     <div><label>Material short &amp; MB</label><input type="number" id="materialMBShortage" placeholder="Typ QTY"></div>
                     <div><label>Over Stock</label><input type="number" id="overStockWIP" placeholder="Typ QTY"></div>
@@ -628,6 +605,40 @@
         </div>
     </div>
 
+    <!-- ===================== NO DEMAND POPUP MODAL ===================== -->
+    <div class="modal-overlay" id="noDemandModal">
+        <div class="modal-box" style="max-width:550px;">
+            <button class="modal-close" onclick="closeNoDemandPopup()">×</button>
+            <h3>📊 No Demand — MC Size ও QTY</h3>
+            <p style="font-size:13px; color:#666; margin-top:6px;">প্রতিটি MC Size অনুযায়ী QTY ইনপুট দিন। একাধিক রো যোগ করতে <strong>➕ Add Row</strong> চাপুন।</p>
+            
+            <div style="max-height:300px; overflow-y:auto; margin-top:15px;">
+                <table style="width:100%; border-collapse:collapse;" id="noDemandTable">
+                    <thead>
+                        <tr style="background:#0d47a1; color:#fff;">
+                            <th style="padding:8px; border:1px solid #ddd;">MC Size</th>
+                            <th style="padding:8px; border:1px solid #ddd;">QTY</th>
+                            <th style="padding:8px; border:1px solid #ddd; width:70px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="noDemandTableBody">
+                        <!-- Rows added dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="button" onclick="addNoDemandRow()" 
+                    style="background:#28a745; margin-top:12px; padding:10px; font-size:15px;">
+                ➕ Add Row
+            </button>
+
+            <div class="btn-row">
+                <button class="btn-save" onclick="saveNoDemandPopup()">💾 Save</button>
+                <button class="btn-cancel" onclick="closeNoDemandPopup()">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -762,6 +773,12 @@
         'Product Development & Mold Change', 'RIP-DPL-Factory Support',
         'DPL-QA', 'RIP RFL Store'
     ];
+
+    // =============================================================
+    // NO DEMAND POPUP CONFIG
+    // =============================================================
+    const MC_SIZE_OPTIONS = ['90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
+    let noDemandData = [];
 
     let lastEntryPayload = null;
     let lastEntryTimestamp = null;
@@ -1211,9 +1228,8 @@
             pctRunning: pctRunning, pctStopped: getVal('pctStopped') || '0%',
             mpShort: getNum('mpShort'), moldProblem: getNum('moldProblem'), moldChange: getNum('moldChange'),
             underSample: getNum('underSample'), mcProblem: getNum('mcProblem'),
-            preventiveMaintenance: getNum('preventiveMaintenance'), noDemandQty: getNum('noDemandQty'),
-            mcSize: getVal('mcSize'),
-            sizeQty: getNum('sizeQty'),
+            preventiveMaintenance: getNum('preventiveMaintenance'), 
+            noDemandQty: getVal('noDemandQty') || '',
             materialMBShortage: getNum('materialMBShortage'), overStockWIP: getNum('overStockWIP'),
             accessoriesShort: getNum('accessoriesShort'),
             totalHR: totalHRValue, totalPresent: totalHRValue,
@@ -1254,7 +1270,7 @@
             updateEntryCounter();
 
             setTimeout(() => {
-                const ids = ['totalMC','mcRunning','mcStopped','pctRunning','pctStopped','mpShort','moldProblem','moldChange','underSample','mcProblem','preventiveMaintenance','noDemandQty','mcSize','sizeQty','materialMBShortage','overStockWIP','accessoriesShort','totalPresent','leaveEmployee','absentEmployee','exportMC','domesticMC','singleMC','doubleMC','prodIC','sic','mcOperator','packagingOperator','foreman','seniorOperator','shrinkOperator','printingOperator','moldChangeOperator','mixRecycle','subStore','inventoryOperator','fgDelivery','sharpTools','psi','erp','floorHousekeeping','rework','welding','hrTransfer'];
+                const ids = ['totalMC','mcRunning','mcStopped','pctRunning','pctStopped','mpShort','moldProblem','moldChange','underSample','mcProblem','preventiveMaintenance','noDemandQty','materialMBShortage','overStockWIP','accessoriesShort','totalPresent','leaveEmployee','absentEmployee','exportMC','domesticMC','singleMC','doubleMC','prodIC','sic','mcOperator','packagingOperator','foreman','seniorOperator','shrinkOperator','printingOperator','moldChangeOperator','mixRecycle','subStore','inventoryOperator','fgDelivery','sharpTools','psi','erp','floorHousekeeping','rework','welding','hrTransfer'];
                 ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
                 document.getElementById('department').value = '';
                 document.getElementById('icName').value = '';
@@ -1288,9 +1304,7 @@
             { label: '📊 % of MC Running', value: pctRunning || '0%' },
             { label: '👥 Total Present', value: totalHR || 0 },
             { label: '❌ Total Absent', value: payload.absentEmployee || 0 },
-            { label: '📊 Total No Demand', value: payload.noDemandQty || 0 },
-            { label: '🔧 MC Size', value: payload.mcSize || '-' },
-            { label: '🔧 Size Qty', value: payload.sizeQty || 0 },
+            { label: '📊 Total No Demand', value: payload.noDemandQty || '-' },
             { label: '🔧 Total Mold Change QTY', value: payload.moldChange || 0 },
             { label: '⛔ MC Stop (Manpower)', value: payload.mpShort || 0 },
         ];
@@ -1301,9 +1315,7 @@
             { label: 'Under Sample', value: payload.underSample || 0 },
             { label: 'MC Problem', value: payload.mcProblem || 0 },
             { label: 'Preventive Maintenance', value: payload.preventiveMaintenance || 0 },
-            { label: 'No Demand', value: payload.noDemandQty || 0 },
-            { label: 'MC Size', value: payload.mcSize || '-' },
-            { label: 'Size Qty', value: payload.sizeQty || 0 },
+            { label: 'No Demand', value: payload.noDemandQty || '-' },
             { label: 'Material & MB Shortage', value: payload.materialMBShortage || 0 },
             { label: 'Over Stock (WIP)', value: payload.overStockWIP || 0 },
             { label: 'Accessories Short', value: payload.accessoriesShort || 0 },
@@ -1393,12 +1405,6 @@
         const modal = document.getElementById('userEditModal');
         const p = lastEntryPayload;
 
-        const sizeOptions = ['', '90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
-        let sizeOptHtml = '';
-        sizeOptions.forEach(s => {
-            sizeOptHtml += `<option value="${s}" ${p.mcSize===s?'selected':''}>${s===''?'-- সিলেক্ট --':s}</option>`;
-        });
-
         let html = `
             <div class="row">
                 <div><label>Shift</label>
@@ -1416,11 +1422,11 @@
                 <div><label>MP Short</label><input type="number" id="editMpShort" value="${p.mpShort||0}"></div>
                 <div><label>Mold Problem</label><input type="number" id="editMoldProblem" value="${p.moldProblem||0}"></div>
                 <div><label>Mold Change</label><input type="number" id="editMoldChange" value="${p.moldChange||0}"></div>
-                <div><label>No Demand</label><input type="number" id="editNoDemand" value="${p.noDemandQty||0}"></div>
-                <div><label>MC Size</label>
-                    <select id="editMcSize" style="padding:8px;">${sizeOptHtml}</select>
+                <div><label>No Demand</label>
+                    <input type="text" id="editNoDemand" value="${p.noDemandQty||''}" readonly 
+                           style="cursor:pointer; color:#d32f2f; font-weight:700;" 
+                           onclick="openUserEditNoDemandPopup()">
                 </div>
-                <div><label>Size Qty</label><input type="number" id="editSizeQty" value="${p.sizeQty||0}"></div>
                 <div><label>Material Short</label><input type="number" id="editMaterialShort" value="${p.materialMBShortage||0}"></div>
             </div>
         `;
@@ -1467,9 +1473,7 @@
         newData.mpShort = parseInt(document.getElementById('editMpShort').value) || 0;
         newData.moldProblem = parseInt(document.getElementById('editMoldProblem').value) || 0;
         newData.moldChange = parseInt(document.getElementById('editMoldChange').value) || 0;
-        newData.noDemandQty = parseInt(document.getElementById('editNoDemand').value) || 0;
-        newData.mcSize = document.getElementById('editMcSize').value;
-        newData.sizeQty = parseInt(document.getElementById('editSizeQty').value) || 0;
+        newData.noDemandQty = document.getElementById('editNoDemand').value || '';
         newData.materialMBShortage = parseInt(document.getElementById('editMaterialShort').value) || 0;
 
         const total = newData.totalMC || 0;
@@ -1503,6 +1507,274 @@
         } catch (err) { alert('❌ সার্ভারে সমস্যা: ' + err.message); }
     }
 
+    // =============================================================
+    // NO DEMAND POPUP FUNCTIONS
+    // =============================================================
+    function openNoDemandPopup() {
+        const existingVal = document.getElementById('noDemandQty').value;
+        noDemandData = [];
+        
+        if (existingVal && existingVal.trim() !== '') {
+            const parts = existingVal.split(',').map(s => s.trim()).filter(s => s);
+            parts.forEach(part => {
+                const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
+                if (match) {
+                    noDemandData.push({ size: match[1].trim(), qty: parseInt(match[2]) || 0 });
+                }
+            });
+        }
+        
+        if (noDemandData.length === 0) {
+            noDemandData.push({ size: '', qty: '' });
+        }
+        
+        renderNoDemandTable();
+        document.getElementById('noDemandModal').classList.add('active');
+    }
+
+    function renderNoDemandTable() {
+        const tbody = document.getElementById('noDemandTableBody');
+        tbody.innerHTML = '';
+        
+        noDemandData.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            
+            let sizeOptions = '<option value="">-- সিলেক্ট --</option>';
+            MC_SIZE_OPTIONS.forEach(s => {
+                sizeOptions += `<option value="${s}" ${row.size === s ? 'selected' : ''}>${s}</option>`;
+            });
+            
+            tr.innerHTML = `
+                <td style="padding:6px; border:1px solid #ddd;">
+                    <select onchange="updateNoDemandRow(${index}, 'size', this.value)" 
+                            style="width:100%; padding:6px;">
+                        ${sizeOptions}
+                    </select>
+                </td>
+                <td style="padding:6px; border:1px solid #ddd;">
+                    <input type="number" value="${row.qty}" min="0"
+                           onchange="updateNoDemandRow(${index}, 'qty', this.value)"
+                           style="width:100%; padding:6px;" placeholder="QTY">
+                </td>
+                <td style="padding:6px; border:1px solid #ddd; text-align:center;">
+                    <button type="button" onclick="removeNoDemandRow(${index})"
+                            style="background:#dc3545; color:#fff; border:none; border-radius:6px; 
+                                   padding:6px 10px; cursor:pointer; font-size:14px; width:auto; margin:0;">
+                        ❌
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function addNoDemandRow() {
+        noDemandData.push({ size: '', qty: '' });
+        renderNoDemandTable();
+    }
+
+    function removeNoDemandRow(index) {
+        noDemandData.splice(index, 1);
+        if (noDemandData.length === 0) {
+            noDemandData.push({ size: '', qty: '' });
+        }
+        renderNoDemandTable();
+    }
+
+    function updateNoDemandRow(index, field, value) {
+        if (field === 'qty') {
+            noDemandData[index][field] = value === '' ? '' : (parseInt(value) || 0);
+        } else {
+            noDemandData[index][field] = value;
+        }
+    }
+
+    function saveNoDemandPopup() {
+        const validRows = [];
+        for (let i = 0; i < noDemandData.length; i++) {
+            const row = noDemandData[i];
+            if (row.size && row.qty !== '' && row.qty !== null) {
+                validRows.push(row);
+            }
+        }
+        
+        if (validRows.length === 0) {
+            document.getElementById('noDemandQty').value = '';
+            closeNoDemandPopup();
+            return;
+        }
+        
+        const resultStr = validRows.map(r => `${r.size} - ${r.qty}`).join(', ');
+        document.getElementById('noDemandQty').value = resultStr;
+        
+        closeNoDemandPopup();
+        
+        setTimeout(() => {
+            const nextField = document.getElementById('materialMBShortage');
+            if (nextField) nextField.focus();
+        }, 200);
+    }
+
+    function closeNoDemandPopup() {
+        document.getElementById('noDemandModal').classList.remove('active');
+    }
+
+    // =============================================================
+    // USER EDIT NO DEMAND POPUP (edits the editNoDemand field)
+    // =============================================================
+    let userEditNoDemandData = [];
+
+    function openUserEditNoDemandPopup() {
+        const existingVal = document.getElementById('editNoDemand').value;
+        userEditNoDemandData = [];
+        
+        if (existingVal && existingVal.trim() !== '') {
+            const parts = existingVal.split(',').map(s => s.trim()).filter(s => s);
+            parts.forEach(part => {
+                const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
+                if (match) {
+                    userEditNoDemandData.push({ size: match[1].trim(), qty: parseInt(match[2]) || 0 });
+                }
+            });
+        }
+        
+        if (userEditNoDemandData.length === 0) {
+            userEditNoDemandData.push({ size: '', qty: '' });
+        }
+        
+        renderUserEditNoDemandTable();
+        document.getElementById('noDemandModal').classList.add('active');
+        // Override the modal title temporarily
+        const modalTitle = document.querySelector('#noDemandModal h3');
+        modalTitle.dataset.orig = modalTitle.textContent;
+        modalTitle.textContent = '✏️ Edit No Demand — MC Size ও QTY';
+        
+        // Change the save button action
+        const saveBtn = document.querySelector('#noDemandModal .btn-save');
+        saveBtn.dataset.origOnclick = 'saveNoDemandPopup()';
+        saveBtn.onclick = function() { saveUserEditNoDemandPopup(); };
+    }
+
+    function renderUserEditNoDemandTable() {
+        const tbody = document.getElementById('noDemandTableBody');
+        tbody.innerHTML = '';
+        
+        userEditNoDemandData.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            
+            let sizeOptions = '<option value="">-- সিলেক্ট --</option>';
+            MC_SIZE_OPTIONS.forEach(s => {
+                sizeOptions += `<option value="${s}" ${row.size === s ? 'selected' : ''}>${s}</option>`;
+            });
+            
+            tr.innerHTML = `
+                <td style="padding:6px; border:1px solid #ddd;">
+                    <select onchange="updateUserEditNoDemandRow(${index}, 'size', this.value)" 
+                            style="width:100%; padding:6px;">
+                        ${sizeOptions}
+                    </select>
+                </td>
+                <td style="padding:6px; border:1px solid #ddd;">
+                    <input type="number" value="${row.qty}" min="0"
+                           onchange="updateUserEditNoDemandRow(${index}, 'qty', this.value)"
+                           style="width:100%; padding:6px;" placeholder="QTY">
+                </td>
+                <td style="padding:6px; border:1px solid #ddd; text-align:center;">
+                    <button type="button" onclick="removeUserEditNoDemandRow(${index})"
+                            style="background:#dc3545; color:#fff; border:none; border-radius:6px; 
+                                   padding:6px 10px; cursor:pointer; font-size:14px; width:auto; margin:0;">
+                        ❌
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function addNoDemandRowUserEdit() {
+        userEditNoDemandData.push({ size: '', qty: '' });
+        renderUserEditNoDemandTable();
+    }
+
+    function removeUserEditNoDemandRow(index) {
+        userEditNoDemandData.splice(index, 1);
+        if (userEditNoDemandData.length === 0) {
+            userEditNoDemandData.push({ size: '', qty: '' });
+        }
+        renderUserEditNoDemandTable();
+    }
+
+    function updateUserEditNoDemandRow(index, field, value) {
+        if (field === 'qty') {
+            userEditNoDemandData[index][field] = value === '' ? '' : (parseInt(value) || 0);
+        } else {
+            userEditNoDemandData[index][field] = value;
+        }
+    }
+
+    function saveUserEditNoDemandPopup() {
+        const validRows = [];
+        for (let i = 0; i < userEditNoDemandData.length; i++) {
+            const row = userEditNoDemandData[i];
+            if (row.size && row.qty !== '' && row.qty !== null) {
+                validRows.push(row);
+            }
+        }
+        
+        if (validRows.length === 0) {
+            document.getElementById('editNoDemand').value = '';
+            closeNoDemandPopupUserEdit();
+            return;
+        }
+        
+        const resultStr = validRows.map(r => `${r.size} - ${r.qty}`).join(', ');
+        document.getElementById('editNoDemand').value = resultStr;
+        
+        closeNoDemandPopupUserEdit();
+    }
+
+    function closeNoDemandPopupUserEdit() {
+        // Reset modal title and save button
+        const modalTitle = document.querySelector('#noDemandModal h3');
+        if (modalTitle.dataset.orig) {
+            modalTitle.textContent = modalTitle.dataset.orig;
+            delete modalTitle.dataset.orig;
+        }
+        const saveBtn = document.querySelector('#noDemandModal .btn-save');
+        saveBtn.onclick = function() { saveNoDemandPopup(); };
+        // Also reset Add Row button
+        const addBtn = document.querySelector('#noDemandModal button[onclick*="addNoDemandRow"]');
+        if (addBtn) addBtn.setAttribute('onclick', 'addNoDemandRow()');
+        
+        document.getElementById('noDemandModal').classList.remove('active');
+    }
+
+    // Override close button for user edit popup
+    const originalCloseNoDemand = window.closeNoDemandPopup;
+    window.closeNoDemandPopup = function() {
+        const modalTitle = document.querySelector('#noDemandModal h3');
+        if (modalTitle.dataset.orig) {
+            // We're in user edit mode
+            closeNoDemandPopupUserEdit();
+        } else {
+            originalCloseNoDemand();
+        }
+    };
+
+    // Override Add Row button
+    const origAddNoDemandRow = window.addNoDemandRow;
+    window.addNoDemandRow = function() {
+        const modalTitle = document.querySelector('#noDemandModal h3');
+        if (modalTitle.dataset.orig) {
+            addNoDemandRowUserEdit();
+        } else {
+            origAddNoDemandRow();
+        }
+    };
+
+    // =============================================================
+    // ADMIN LOGIN / EDIT
+    // =============================================================
     function openAdminLogin() {
         if (adminPasswordCache) { openAdminEdit(); return; }
         document.getElementById('adminPassword').value = '';
@@ -1565,12 +1837,6 @@
             }
 
             const d = result.data;
-            const sizeOptions = ['', '90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
-            let sizeOptHtml = '';
-            sizeOptions.forEach(s => {
-                sizeOptHtml += `<option value="${s}" ${d.mcSize===s?'selected':''}>${s===''?'-- সিলেক্ট --':s}</option>`;
-            });
-
             resultBox.innerHTML = `
                 <div style="background:#d4edda; padding:12px; border-radius:8px; margin-bottom:15px; font-weight:700; color:#155724;">
                     ✅ Entry পাওয়া গেছে
@@ -1591,11 +1857,7 @@
                     <div><label>MP Short</label><input type="number" id="adminEditMpShort" value="${d.mpShort||0}"></div>
                     <div><label>Mold Problem</label><input type="number" id="adminEditMoldProblem" value="${d.moldProblem||0}"></div>
                     <div><label>Mold Change</label><input type="number" id="adminEditMoldChange" value="${d.moldChange||0}"></div>
-                    <div><label>No Demand</label><input type="number" id="adminEditNoDemand" value="${d.noDemandQty||0}"></div>
-                    <div><label>MC Size</label>
-                        <select id="adminEditMcSize">${sizeOptHtml}</select>
-                    </div>
-                    <div><label>Size Qty</label><input type="number" id="adminEditSizeQty" value="${d.sizeQty||0}"></div>
+                    <div><label>No Demand (Text)</label><input type="text" id="adminEditNoDemand" value="${(d.noDemandQty||'').toString().replace(/"/g,'&quot;')}" placeholder="যেমন: 120 - 2, 160 - 1"></div>
                     <div><label>Material Short</label><input type="number" id="adminEditMaterialShort" value="${d.materialMBShortage||0}"></div>
                     <div><label>Under Sample</label><input type="number" id="adminEditUnderSample" value="${d.underSample||0}"></div>
                     <div><label>MC Problem</label><input type="number" id="adminEditMcProblem" value="${d.mcProblem||0}"></div>
@@ -1628,9 +1890,7 @@
             mpShort: parseInt(document.getElementById('adminEditMpShort').value) || 0,
             moldProblem: parseInt(document.getElementById('adminEditMoldProblem').value) || 0,
             moldChange: parseInt(document.getElementById('adminEditMoldChange').value) || 0,
-            noDemandQty: parseInt(document.getElementById('adminEditNoDemand').value) || 0,
-            mcSize: document.getElementById('adminEditMcSize').value,
-            sizeQty: parseInt(document.getElementById('adminEditSizeQty').value) || 0,
+            noDemandQty: document.getElementById('adminEditNoDemand').value || '',
             materialMBShortage: parseInt(document.getElementById('adminEditMaterialShort').value) || 0,
             underSample: parseInt(document.getElementById('adminEditUnderSample').value) || 0,
             mcProblem: parseInt(document.getElementById('adminEditMcProblem').value) || 0,
@@ -1709,7 +1969,7 @@
         msg += `📅 তারিখ: ${formattedDate}\n🕒 শিফট: ${p.shift}\n👤 IC: ${icName}\n━━━━━━━━━━━━━━━━━━━━\n\n`;
         msg += `🔧 *মেশিন ডেটা*\n• Total MC: ${p.totalMC || 0}\n• Running: ${p.mcRunning || 0} (${p.pctRunning || '0%'})\n• Stopped: ${p.mcStopped || 0} (${p.pctStopped || '0%'})\n\n`;
         msg += `👥 *এইচআর*\n• Total Present: ${p.totalPresent || 0}\n• Leave: ${p.leaveEmployee || 0}\n• Absent: ${p.absentEmployee || 0}\n\n`;
-        msg += `⛔ *স্টপের কারণ*\n• MP Short: ${p.mpShort || 0}\n• Mold Problem: ${p.moldProblem || 0}\n• Mold Change: ${p.moldChange || 0}\n• MC Problem: ${p.mcProblem || 0}\n• No Demand: ${p.noDemandQty || 0}\n• MC Size: ${p.mcSize || '-'}\n• Size Qty: ${p.sizeQty || 0}\n\n`;
+        msg += `⛔ *স্টপের কারণ*\n• MP Short: ${p.mpShort || 0}\n• Mold Problem: ${p.moldProblem || 0}\n• Mold Change: ${p.moldChange || 0}\n• MC Problem: ${p.mcProblem || 0}\n• No Demand: ${p.noDemandQty || '-'}\n\n`;
         msg += `━━━━━━━━━━━━━━━━━━━━\n✅ স্বয়ংক্রিয় রিপোর্ট`;
 
         const encodedMsg = encodeURIComponent(msg);
