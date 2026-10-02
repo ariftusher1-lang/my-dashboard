@@ -386,6 +386,18 @@
             </div>
             <div class="table-wrap" id="noDemandSizeTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
+            <!-- ============================================ -->
+            <!-- QA Department Report Section -->
+            <!-- ============================================ -->
+            <div class="section-title clearfix">
+                <span style="background:#00838f; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">🔬 Report For QA Department</span>
+                <div class="btn-group">
+                    <button class="btn-image" onclick="downloadQATableImage()">📷 ইমেজ ডাউনলোড</button>
+                    <button class="btn-excel" onclick="downloadQATableExcel()">⬇️ Excel ডাউনলোড</button>
+                </div>
+            </div>
+            <div class="table-wrap" id="qaTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+
             <div class="stats" id="statsContainer">
                 <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
                 <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
@@ -837,6 +849,7 @@
             renderStats(data);
             renderSaifuddinTable(data);
             renderNoDemandSizeTable(data);
+            renderQATable(data);
             renderMissing(data);
             renderRawData(data);
         }
@@ -1108,7 +1121,8 @@
         }
 
         // ============================================================
-        // Department Wise MC Size No Demand Table (Cyan Header)
+        // Department Wise MC Size No Demand Table
+        // Headers use colors, DATA cells are all white
         // ============================================================
         function renderNoDemandSizeTable(data) {
             const container = document.getElementById('noDemandSizeTableContainer');
@@ -1160,7 +1174,6 @@
 
             const rows = Object.values(deptMap);
 
-            // ====== COLORS ======
             const HEADER_COLOR = '#5ADFEF';
             const DEPT_COLORS = [
                 '#e3f2fd', '#fce4ec', '#e8f5e9', '#fff3e0', '#f3e5f5',
@@ -1203,7 +1216,7 @@
 
                 MC_SIZE_COLUMNS.forEach(s => {
                     const val = r.sizes[s] || 0;
-                    html += `<td style="background:${SIZE_COLORS[s] || '#fff'}; border:1px solid #999; text-align:center; font-weight:600;">${val}</td>`;
+                    html += `<td style="background:#ffffff; border:1px solid #999; text-align:center; font-weight:600;">${val}</td>`;
                     grandSizes[s] += val;
                 });
                 html += `</tr>`;
@@ -1217,7 +1230,7 @@
                 <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${grandTotalMC}</td>
                 <td style="background:#ffffff; font-weight:800; border:2px solid #333; text-align:center; width:70px;">${grandEntrySum}</td>`;
             MC_SIZE_COLUMNS.forEach(s => {
-                html += `<td style="background:${SIZE_COLORS[s] || '#fff'}; font-weight:800; border:2px solid #333; text-align:center;">${grandSizes[s]}</td>`;
+                html += `<td style="background:#ffffff; font-weight:800; border:2px solid #333; text-align:center;">${grandSizes[s]}</td>`;
             });
             html += `</tr></tbody></table>`;
 
@@ -1278,7 +1291,7 @@
         }
 
         // ============================================================
-        // No Demand Size Excel (with Cyan Header)
+        // No Demand Size Excel — Header have colors, Data cells white
         // ============================================================
         function downloadNoDemandSizeExcel() {
             const data = window._noDemandSizeData;
@@ -1325,7 +1338,7 @@
                 };
             }
 
-            // Row 0 — all cyan header
+            // Header Row 0 — all cyan
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const cellRef = XLSX.utils.encode_cell({ r: 0, c: C });
                 if (!ws[cellRef]) ws[cellRef] = { v: '' };
@@ -1336,7 +1349,7 @@
                 applyBorder(ws[cellRef]);
             }
 
-            // Row 1 — MC Size headers (size colors) + cyan for merged cells
+            // Header Row 1 — MC Sizes have size colors, other cyan
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const cellRef = XLSX.utils.encode_cell({ r: 1, c: C });
                 if (!ws[cellRef]) ws[cellRef] = { v: '' };
@@ -1354,7 +1367,7 @@
                 applyBorder(ws[cellRef]);
             }
 
-            // Data Rows
+            // Data Rows — MC Size cells are white now
             for (let R = 2; R < range.e.r; R++) {
                 for (let C = range.s.c; C <= range.e.c; C++) {
                     const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
@@ -1365,22 +1378,17 @@
                         const deptColor = (DEPT_COLORS[(R - 2) % DEPT_COLORS.length] || '#e3f2fd').replace('#', '').toUpperCase();
                         ws[cellRef].s.fill = { fgColor: { rgb: deptColor } };
                         ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 11 };
-                    } else if (C === 2) {
-                        // No Demand QTY (Sum) — WHITE
-                        ws[cellRef].s.fill = { fgColor: { rgb: 'FFFFFF' } };
-                        ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 11 };
                     } else {
-                        const size = MC_SIZE_COLUMNS[C - 3];
-                        const hexColor = (SIZE_COLORS[size] || '#e3f2fd').replace('#', '').toUpperCase();
-                        ws[cellRef].s.fill = { fgColor: { rgb: hexColor } };
-                        ws[cellRef].s.font = { color: { rgb: '000000' }, sz: 11 };
+                        // No Demand QTY (Sum) and MC Size cells — all WHITE
+                        ws[cellRef].s.fill = { fgColor: { rgb: 'FFFFFF' } };
+                        ws[cellRef].s.font = { color: { rgb: '000000' }, bold: false, sz: 11 };
                     }
                     ws[cellRef].s.alignment = { horizontal: 'center', vertical: 'center' };
                     applyBorder(ws[cellRef]);
                 }
             }
 
-            // Total Row
+            // Total Row — MC Size cells white
             const lastR = range.e.r;
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const cellRef = XLSX.utils.encode_cell({ r: lastR, c: C });
@@ -1390,13 +1398,8 @@
                 if (C === 0 || C === 1) {
                     ws[cellRef].s.fill = { fgColor: { rgb: 'FFF59D' } };
                     ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
-                } else if (C === 2) {
-                    ws[cellRef].s.fill = { fgColor: { rgb: 'FFFFFF' } };
-                    ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
                 } else {
-                    const size = MC_SIZE_COLUMNS[C - 3];
-                    const hexColor = (SIZE_COLORS[size] || '#fff').replace('#', '').toUpperCase();
-                    ws[cellRef].s.fill = { fgColor: { rgb: hexColor } };
+                    ws[cellRef].s.fill = { fgColor: { rgb: 'FFFFFF' } };
                     ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
                 }
                 ws[cellRef].s.alignment = { horizontal: 'center', vertical: 'center' };
@@ -1419,6 +1422,197 @@
 
             XLSX.utils.book_append_sheet(wb, ws, "No Demand Size Wise");
             XLSX.writeFile(wb, `NoDemand_Size_Wise_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        // ============================================================
+        // QA Department Report Table
+        // ============================================================
+        function renderQATable(data) {
+            const container = document.getElementById('qaTableContainer');
+            if (!container) return;
+
+            const QA_COLUMNS = [
+                { label: 'Department' },
+                { label: 'Total MC' },
+                { label: 'Total MC (Count)' },
+                { label: 'Target MC Run' },
+                { label: 'MC Run %' },
+                { label: 'MC Will off' },
+                { label: 'Export MC' },
+                { label: 'Domestic MC' }
+            ];
+
+            const qaRows = (data || []).filter(r => {
+                const d = getVal(r, ['Department', 'department']);
+                return d === 'DPL-QA' || d === 'QA';
+            });
+
+            let totalMC = 0;
+            let targetMCRun = 0;
+            let mcWillOff = 0;
+            let exportMC = 0;
+            let domesticMC = 0;
+            let rowCount = 0;
+
+            qaRows.forEach(r => {
+                totalMC += getNum(r, ['Total MC', 'totalMC']);
+                targetMCRun += getNum(r, ['MC Running', 'mcRunning']);
+                mcWillOff += getNum(r, ['MC Stopped', 'mcStopped']);
+                exportMC += getNum(r, ['Export MC', 'exportMC']);
+                domesticMC += getNum(r, ['Domestic MC', 'domesticMC']);
+                rowCount++;
+            });
+
+            const mcRunPct = totalMC > 0 ? ((targetMCRun / totalMC) * 100).toFixed(1) + '%' : '0%';
+
+            let html = `<table class="saifuddin-table" style="border-collapse:collapse;">
+                <thead>
+                    <tr>`;
+            QA_COLUMNS.forEach(c => {
+                html += `<th style="background:#00838f; color:#fff; font-weight:700; border:1px solid #666; padding:8px 10px;">${c.label}</th>`;
+            });
+            html += `</tr></thead><tbody>`;
+
+            html += `<tr>
+                <td style="background:#e0f7fa; font-weight:700; border:1px solid #999; text-align:left; padding-left:15px;">DPL-QA</td>
+                <td style="background:#ffffff; font-weight:700; border:1px solid #999; text-align:center;">${totalMC}</td>
+                <td style="background:#ffffff; font-weight:700; border:1px solid #999; text-align:center;">${rowCount > 0 ? 1 : 0}</td>
+                <td style="background:#ffffff; font-weight:700; border:1px solid #999; text-align:center;">${targetMCRun}</td>
+                <td style="background:#ffffff; font-weight:700; border:1px solid #999; text-align:center;">${mcRunPct}</td>
+                <td style="background:#ffffff; font-weight:700; border:1px solid #999; text-align:center;">${mcWillOff}</td>
+                <td style="background:#ffffff; font-weight:700; border:1px solid #999; text-align:center;">${exportMC}</td>
+                <td style="background:#ffffff; font-weight:700; border:1px solid #999; text-align:center;">${domesticMC}</td>
+            </tr>`;
+
+            html += `<tr>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:left; padding-left:15px;">📌 Summary Report</td>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${totalMC}</td>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${rowCount}</td>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${targetMCRun}</td>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${mcRunPct}</td>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${mcWillOff}</td>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${exportMC}</td>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${domesticMC}</td>
+            </tr>`;
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+
+            window._qaTableData = {
+                columns: QA_COLUMNS.map(c => c.label),
+                row: ['DPL-QA', totalMC, rowCount > 0 ? 1 : 0, targetMCRun, mcRunPct, mcWillOff, exportMC, domesticMC],
+                total: ['📌 Summary Report', totalMC, rowCount, targetMCRun, mcRunPct, mcWillOff, exportMC, domesticMC]
+            };
+        }
+
+        function downloadQATableImage() {
+            const container = document.getElementById('qaTableContainer');
+            if (!container || container.innerText.includes('লোড হচ্ছে')) {
+                alert('⚠️ ডেটা নেই!');
+                return;
+            }
+            const btn = document.querySelector('button[onclick="downloadQATableImage()"]');
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
+
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('td, th').forEach(el => {
+                el.style.whiteSpace = 'nowrap';
+            });
+
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `width: 1600px; padding: 25px; background: white; border: 4px solid #00838f; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto; box-shadow: 0 8px 30px rgba(0,0,0,0.12);`;
+
+            const title = document.createElement('h2');
+            title.style.cssText = `color: #00838f; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #00838f; padding-bottom: 12px; font-size: 24px;`;
+            title.innerText = '🔬 Report For QA Department';
+            wrapper.appendChild(title);
+            wrapper.appendChild(clone);
+
+            const footer = document.createElement('p');
+            footer.style.cssText = `text-align: right; color: #555; font-size: 13px; margin-top: 18px; border-top: 1px solid #eee; padding-top: 10px;`;
+            footer.innerText = `📅 Generated: ${new Date().toLocaleString('bn-BD')}`;
+            wrapper.appendChild(footer);
+            document.body.appendChild(wrapper);
+
+            html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true, allowTaint: true })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `QA_Report_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(wrapper);
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
+                });
+        }
+
+        function downloadQATableExcel() {
+            const data = window._qaTableData;
+            if (!data) { alert('ডেটা নেই!'); return; }
+
+            const aoa = [data.columns, data.row, data.total];
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+            ws['!cols'] = [
+                { wch: 22 }, { wch: 10 }, { wch: 14 },
+                { wch: 14 }, { wch: 10 }, { wch: 12 },
+                { wch: 10 }, { wch: 12 }
+            ];
+
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const ref = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (!ws[ref]) ws[ref] = { v: '' };
+                if (!ws[ref].s) ws[ref].s = {};
+                ws[ref].s.fill = { fgColor: { rgb: '00838F' } };
+                ws[ref].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
+                ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                ws[ref].s.border = {
+                    top: { style: 'thin', color: { rgb: '000000' } },
+                    bottom: { style: 'thin', color: { rgb: '000000' } },
+                    left: { style: 'thin', color: { rgb: '000000' } },
+                    right: { style: 'thin', color: { rgb: '000000' } }
+                };
+            }
+
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const ref = XLSX.utils.encode_cell({ r: 1, c: C });
+                if (!ws[ref]) ws[ref] = { v: '' };
+                if (!ws[ref].s) ws[ref].s = {};
+                ws[ref].s.fill = { fgColor: { rgb: 'E0F7FA' } };
+                ws[ref].s.font = { color: { rgb: '000000' }, bold: true, sz: 11 };
+                ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                ws[ref].s.border = {
+                    top: { style: 'thin', color: { rgb: '000000' } },
+                    bottom: { style: 'thin', color: { rgb: '000000' } },
+                    left: { style: 'thin', color: { rgb: '000000' } },
+                    right: { style: 'thin', color: { rgb: '000000' } }
+                };
+            }
+
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const ref = XLSX.utils.encode_cell({ r: 2, c: C });
+                if (!ws[ref]) ws[ref] = { v: '' };
+                if (!ws[ref].s) ws[ref].s = {};
+                ws[ref].s.fill = { fgColor: { rgb: 'FFF59D' } };
+                ws[ref].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+                ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                ws[ref].s.border = {
+                    top: { style: 'medium', color: { rgb: '000000' } },
+                    bottom: { style: 'medium', color: { rgb: '000000' } },
+                    left: { style: 'medium', color: { rgb: '000000' } },
+                    right: { style: 'medium', color: { rgb: '000000' } }
+                };
+            }
+
+            XLSX.utils.book_append_sheet(wb, ws, "QA Report");
+            XLSX.writeFile(wb, `QA_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function renderMissing(data) {
@@ -1600,7 +1794,7 @@
         }
 
         function showError(msg) {
-            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','missingContainer','rawDataTable'];
+            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','qaTableContainer','missingContainer','rawDataTable'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
