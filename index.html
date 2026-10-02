@@ -455,7 +455,35 @@
                     <div><label>Sample</label><input type="number" id="underSample" placeholder="Typ QTY"></div>
                     <div><label>MC prob</label><input type="number" id="mcProblem" placeholder="Typ QTY"></div>
                     <div><label>Preventive</label><input type="number" id="preventiveMaintenance" placeholder="Typ QTY"></div>
-                    <div><label>No demand</label><input type="number" id="noDemandQty" placeholder="Typ QTY"></div>
+                    <div style="display:flex; gap:6px; align-items:flex-end; flex-wrap:wrap; grid-column: span 2;">
+                        <div style="flex:1; min-width:90px;">
+                            <label>No demand</label>
+                            <input type="number" id="noDemandQty" placeholder="Typ QTY">
+                        </div>
+                        <div style="flex:1; min-width:110px;">
+                            <label>MC Size</label>
+                            <select id="mcSize">
+                                <option value="">-- সিলেক্ট --</option>
+                                <option value="90">90</option>
+                                <option value="120">120</option>
+                                <option value="160">160</option>
+                                <option value="250">250</option>
+                                <option value="270">270</option>
+                                <option value="280">280</option>
+                                <option value="330">330</option>
+                                <option value="380">380</option>
+                                <option value="470">470</option>
+                                <option value="530">530</option>
+                                <option value="800">800</option>
+                                <option value="IMB">IMB</option>
+                                <option value="BM">BM</option>
+                            </select>
+                        </div>
+                        <div style="flex:1; min-width:90px;">
+                            <label>Size Qty</label>
+                            <input type="number" id="sizeQty" placeholder="Typ QTY">
+                        </div>
+                    </div>
                     <div><label>Material short &amp; MB</label><input type="number" id="materialMBShortage" placeholder="Typ QTY"></div>
                     <div><label>Over Stock</label><input type="number" id="overStockWIP" placeholder="Typ QTY"></div>
                     <div><label>Acc short</label><input type="number" id="accessoriesShort" placeholder="Typ QTY"></div>
@@ -1184,6 +1212,8 @@
             mpShort: getNum('mpShort'), moldProblem: getNum('moldProblem'), moldChange: getNum('moldChange'),
             underSample: getNum('underSample'), mcProblem: getNum('mcProblem'),
             preventiveMaintenance: getNum('preventiveMaintenance'), noDemandQty: getNum('noDemandQty'),
+            mcSize: getVal('mcSize'),
+            sizeQty: getNum('sizeQty'),
             materialMBShortage: getNum('materialMBShortage'), overStockWIP: getNum('overStockWIP'),
             accessoriesShort: getNum('accessoriesShort'),
             totalHR: totalHRValue, totalPresent: totalHRValue,
@@ -1224,7 +1254,7 @@
             updateEntryCounter();
 
             setTimeout(() => {
-                const ids = ['totalMC','mcRunning','mcStopped','pctRunning','pctStopped','mpShort','moldProblem','moldChange','underSample','mcProblem','preventiveMaintenance','noDemandQty','materialMBShortage','overStockWIP','accessoriesShort','totalPresent','leaveEmployee','absentEmployee','exportMC','domesticMC','singleMC','doubleMC','prodIC','sic','mcOperator','packagingOperator','foreman','seniorOperator','shrinkOperator','printingOperator','moldChangeOperator','mixRecycle','subStore','inventoryOperator','fgDelivery','sharpTools','psi','erp','floorHousekeeping','rework','welding','hrTransfer'];
+                const ids = ['totalMC','mcRunning','mcStopped','pctRunning','pctStopped','mpShort','moldProblem','moldChange','underSample','mcProblem','preventiveMaintenance','noDemandQty','mcSize','sizeQty','materialMBShortage','overStockWIP','accessoriesShort','totalPresent','leaveEmployee','absentEmployee','exportMC','domesticMC','singleMC','doubleMC','prodIC','sic','mcOperator','packagingOperator','foreman','seniorOperator','shrinkOperator','printingOperator','moldChangeOperator','mixRecycle','subStore','inventoryOperator','fgDelivery','sharpTools','psi','erp','floorHousekeeping','rework','welding','hrTransfer'];
                 ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
                 document.getElementById('department').value = '';
                 document.getElementById('icName').value = '';
@@ -1259,6 +1289,8 @@
             { label: '👥 Total Present', value: totalHR || 0 },
             { label: '❌ Total Absent', value: payload.absentEmployee || 0 },
             { label: '📊 Total No Demand', value: payload.noDemandQty || 0 },
+            { label: '🔧 MC Size', value: payload.mcSize || '-' },
+            { label: '🔧 Size Qty', value: payload.sizeQty || 0 },
             { label: '🔧 Total Mold Change QTY', value: payload.moldChange || 0 },
             { label: '⛔ MC Stop (Manpower)', value: payload.mpShort || 0 },
         ];
@@ -1270,6 +1302,8 @@
             { label: 'MC Problem', value: payload.mcProblem || 0 },
             { label: 'Preventive Maintenance', value: payload.preventiveMaintenance || 0 },
             { label: 'No Demand', value: payload.noDemandQty || 0 },
+            { label: 'MC Size', value: payload.mcSize || '-' },
+            { label: 'Size Qty', value: payload.sizeQty || 0 },
             { label: 'Material & MB Shortage', value: payload.materialMBShortage || 0 },
             { label: 'Over Stock (WIP)', value: payload.overStockWIP || 0 },
             { label: 'Accessories Short', value: payload.accessoriesShort || 0 },
@@ -1359,6 +1393,12 @@
         const modal = document.getElementById('userEditModal');
         const p = lastEntryPayload;
 
+        const sizeOptions = ['', '90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
+        let sizeOptHtml = '';
+        sizeOptions.forEach(s => {
+            sizeOptHtml += `<option value="${s}" ${p.mcSize===s?'selected':''}>${s===''?'-- সিলেক্ট --':s}</option>`;
+        });
+
         let html = `
             <div class="row">
                 <div><label>Shift</label>
@@ -1377,6 +1417,10 @@
                 <div><label>Mold Problem</label><input type="number" id="editMoldProblem" value="${p.moldProblem||0}"></div>
                 <div><label>Mold Change</label><input type="number" id="editMoldChange" value="${p.moldChange||0}"></div>
                 <div><label>No Demand</label><input type="number" id="editNoDemand" value="${p.noDemandQty||0}"></div>
+                <div><label>MC Size</label>
+                    <select id="editMcSize" style="padding:8px;">${sizeOptHtml}</select>
+                </div>
+                <div><label>Size Qty</label><input type="number" id="editSizeQty" value="${p.sizeQty||0}"></div>
                 <div><label>Material Short</label><input type="number" id="editMaterialShort" value="${p.materialMBShortage||0}"></div>
             </div>
         `;
@@ -1424,6 +1468,8 @@
         newData.moldProblem = parseInt(document.getElementById('editMoldProblem').value) || 0;
         newData.moldChange = parseInt(document.getElementById('editMoldChange').value) || 0;
         newData.noDemandQty = parseInt(document.getElementById('editNoDemand').value) || 0;
+        newData.mcSize = document.getElementById('editMcSize').value;
+        newData.sizeQty = parseInt(document.getElementById('editSizeQty').value) || 0;
         newData.materialMBShortage = parseInt(document.getElementById('editMaterialShort').value) || 0;
 
         const total = newData.totalMC || 0;
@@ -1519,6 +1565,12 @@
             }
 
             const d = result.data;
+            const sizeOptions = ['', '90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
+            let sizeOptHtml = '';
+            sizeOptions.forEach(s => {
+                sizeOptHtml += `<option value="${s}" ${d.mcSize===s?'selected':''}>${s===''?'-- সিলেক্ট --':s}</option>`;
+            });
+
             resultBox.innerHTML = `
                 <div style="background:#d4edda; padding:12px; border-radius:8px; margin-bottom:15px; font-weight:700; color:#155724;">
                     ✅ Entry পাওয়া গেছে
@@ -1540,6 +1592,10 @@
                     <div><label>Mold Problem</label><input type="number" id="adminEditMoldProblem" value="${d.moldProblem||0}"></div>
                     <div><label>Mold Change</label><input type="number" id="adminEditMoldChange" value="${d.moldChange||0}"></div>
                     <div><label>No Demand</label><input type="number" id="adminEditNoDemand" value="${d.noDemandQty||0}"></div>
+                    <div><label>MC Size</label>
+                        <select id="adminEditMcSize">${sizeOptHtml}</select>
+                    </div>
+                    <div><label>Size Qty</label><input type="number" id="adminEditSizeQty" value="${d.sizeQty||0}"></div>
                     <div><label>Material Short</label><input type="number" id="adminEditMaterialShort" value="${d.materialMBShortage||0}"></div>
                     <div><label>Under Sample</label><input type="number" id="adminEditUnderSample" value="${d.underSample||0}"></div>
                     <div><label>MC Problem</label><input type="number" id="adminEditMcProblem" value="${d.mcProblem||0}"></div>
@@ -1573,6 +1629,8 @@
             moldProblem: parseInt(document.getElementById('adminEditMoldProblem').value) || 0,
             moldChange: parseInt(document.getElementById('adminEditMoldChange').value) || 0,
             noDemandQty: parseInt(document.getElementById('adminEditNoDemand').value) || 0,
+            mcSize: document.getElementById('adminEditMcSize').value,
+            sizeQty: parseInt(document.getElementById('adminEditSizeQty').value) || 0,
             materialMBShortage: parseInt(document.getElementById('adminEditMaterialShort').value) || 0,
             underSample: parseInt(document.getElementById('adminEditUnderSample').value) || 0,
             mcProblem: parseInt(document.getElementById('adminEditMcProblem').value) || 0,
@@ -1651,7 +1709,7 @@
         msg += `📅 তারিখ: ${formattedDate}\n🕒 শিফট: ${p.shift}\n👤 IC: ${icName}\n━━━━━━━━━━━━━━━━━━━━\n\n`;
         msg += `🔧 *মেশিন ডেটা*\n• Total MC: ${p.totalMC || 0}\n• Running: ${p.mcRunning || 0} (${p.pctRunning || '0%'})\n• Stopped: ${p.mcStopped || 0} (${p.pctStopped || '0%'})\n\n`;
         msg += `👥 *এইচআর*\n• Total Present: ${p.totalPresent || 0}\n• Leave: ${p.leaveEmployee || 0}\n• Absent: ${p.absentEmployee || 0}\n\n`;
-        msg += `⛔ *স্টপের কারণ*\n• MP Short: ${p.mpShort || 0}\n• Mold Problem: ${p.moldProblem || 0}\n• Mold Change: ${p.moldChange || 0}\n• MC Problem: ${p.mcProblem || 0}\n• No Demand: ${p.noDemandQty || 0}\n\n`;
+        msg += `⛔ *স্টপের কারণ*\n• MP Short: ${p.mpShort || 0}\n• Mold Problem: ${p.moldProblem || 0}\n• Mold Change: ${p.moldChange || 0}\n• MC Problem: ${p.mcProblem || 0}\n• No Demand: ${p.noDemandQty || 0}\n• MC Size: ${p.mcSize || '-'}\n• Size Qty: ${p.sizeQty || 0}\n\n`;
         msg += `━━━━━━━━━━━━━━━━━━━━\n✅ স্বয়ংক্রিয় রিপোর্ট`;
 
         const encodedMsg = encodeURIComponent(msg);
