@@ -234,38 +234,27 @@
         .factory-image-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .factory-image-box .placeholder-text { color: #64748b; font-size: 13px; text-align: center; padding: 10px; }
 
-        /* ============================================================ */
-        /* Department Wise MC Size No Demand — COMPACT ROW STYLES */
-        /* ============================================================ */
+        /* ===== No Demand Size Table Compact Styles ===== */
         #noDemandSizeTableContainer .saifuddin-table {
-            font-size: 11px !important;
+            font-size: 12px !important;
+            border-collapse: collapse !important;
         }
         #noDemandSizeTableContainer .saifuddin-table thead th {
-            padding: 5px 6px !important;
-            font-size: 10px !important;
+            padding: 6px 8px !important;
+            font-size: 11px !important;
             font-weight: 700 !important;
-            white-space: nowrap !important;
+            text-align: center !important;
+            border: 1px solid #999 !important;
         }
         #noDemandSizeTableContainer .saifuddin-table tbody td {
-            padding: 4px 6px !important;
-            font-size: 11px !important;
-            line-height: 1.2 !important;
-            height: 22px !important;
+            padding: 6px 8px !important;
+            font-size: 12px !important;
+            border: 1px solid #999 !important;
+            text-align: center !important;
         }
         #noDemandSizeTableContainer .saifuddin-table .dept-name {
-            padding-left: 10px !important;
-            font-size: 11px !important;
-        }
-        #noDemandSizeTableContainer .saifuddin-table .highlight-number {
-            font-size: 11px !important;
-        }
-        #noDemandSizeTableContainer .saifuddin-table tbody tr {
-            height: 22px !important;
-        }
-        #noDemandSizeTableContainer .saifuddin-table tbody tr.total-row td {
-            padding: 5px 6px !important;
-            font-size: 11px !important;
-            height: 24px !important;
+            text-align: left !important;
+            padding-left: 12px !important;
         }
     </style>
 </head>
@@ -440,7 +429,7 @@
             <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
             <!-- ============================================ -->
-            <!-- NEW SECTION: Department Wise MC Size No Demand -->
+            <!-- Department Wise MC Size No Demand (Color Coded) -->
             <!-- ============================================ -->
             <div class="section-title clearfix">
                 <span style="background:#6a1b9a; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📦 Department Wise MC Size No Demand</span>
@@ -473,6 +462,10 @@
                 <div class="card"><div class="label">🏃 মোট Target Run</div><div class="value" id="totalTargetRun">0</div></div>
                 <div class="card"><div class="label">📈 গড় % Running</div><div class="value" id="avgRunningPct">0.0%</div></div>
             </div>
+
+            <div class="section-title">📊 ডেইলি সারাংশ (Summary)</div>
+            <div class="sub-title">🏢 RIP DPL টোটাল (Overall)</div>
+            <div class="table-wrap" id="overallTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
             <div class="section-title">🔴 মিসিং ডিপার্টমেন্ট (এন্ট্রি নেই)</div>
             <div id="missingContainer" class="missing-list"><div class="no-data">লোড হচ্ছে...</div></div>
@@ -613,7 +606,6 @@
 
         const FIXED_SN_LIST = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-        // No Demand Size Table এ শুধু এই ডিপার্টমেন্টগুলো দেখাবে (Plastic-1 বাদ)
         const NO_DEMAND_SIZE_DEPTS = [
             'RIP> DPL> Plastic-3',
             'RIP> DPL> Plastic-6.1',
@@ -625,7 +617,6 @@
             'Silicon Project'
         ];
 
-        // Fixed MC Sizes — সবসময় এই কলামগুলোই দেখাবে
         const MC_SIZE_COLUMNS = ['90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
 
         const DEPT_MAP = {
@@ -885,6 +876,7 @@
             renderSaifuddinTable(data);
             renderNoDemandSizeTable(data);
             renderScorecard(data);
+            renderOverall(data);
             renderMissing(data);
             renderRawData(data);
         }
@@ -1188,7 +1180,7 @@
         }
 
         // ============================================================
-        // Department Wise MC Size No Demand Table
+        // Department Wise MC Size No Demand Table (Color Coded)
         // ============================================================
         function renderNoDemandSizeTable(data) {
             const container = document.getElementById('noDemandSizeTableContainer');
@@ -1243,11 +1235,39 @@
 
             const rows = Object.values(deptMap);
 
-            let html = `<table class="saifuddin-table"><thead><tr>
-                <th>Department Name</th>
-                <th>Total MC</th>
-                <th>No Demand QTY (Entry Sum)</th>`;
-            MC_SIZE_COLUMNS.forEach(s => { html += `<th>${s}</th>`; });
+            // Color palettes
+            const DEPT_COLORS = [
+                '#e3f2fd', '#fce4ec', '#e8f5e9', '#fff3e0', '#f3e5f5',
+                '#e0f7fa', '#fff9c4', '#ffebee', '#ede7f6'
+            ];
+            const SIZE_COLORS = {
+                '90':  '#bbdefb',
+                '120': '#f8bbd0',
+                '160': '#c8e6c9',
+                '250': '#ffe0b2',
+                '270': '#e1bee7',
+                '280': '#b2ebf2',
+                '330': '#fff9c4',
+                '380': '#ffcdd2',
+                '470': '#d1c4e9',
+                '530': '#b2dfdb',
+                '800': '#f0f4c3',
+                'IMB': '#ffccbc',
+                'BM':  '#d7ccc8'
+            };
+
+            let html = `<table class="saifuddin-table" style="border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999;">Department Name</th>
+                        <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999;">Total MC</th>
+                        <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999;">No Demand QTY (Entry Sum)</th>
+                        <th colspan="${MC_SIZE_COLUMNS.length}" style="background:#1a237e; color:#fff; text-align:center; border:1px solid #999;">Size Wise MC List</th>
+                    </tr>
+                    <tr>`;
+            MC_SIZE_COLUMNS.forEach(s => {
+                html += `<th style="background:${SIZE_COLORS[s] || '#e3f2fd'}; color:#000; font-weight:700; border:1px solid #999;">${s}</th>`;
+            });
             html += `</tr></thead><tbody>`;
 
             let grandTotalMC = 0;
@@ -1255,15 +1275,18 @@
             const grandSizes = {};
             MC_SIZE_COLUMNS.forEach(s => { grandSizes[s] = 0; });
 
-            rows.forEach(r => {
+            rows.forEach((r, idx) => {
+                const deptColor = DEPT_COLORS[idx % DEPT_COLORS.length];
                 const totalNoDemand = r.entrySum;
+                
                 html += `<tr>
-                    <td class="dept-name"><strong>${r.dept}</strong></td>
-                    <td><span class="highlight-number">${r.totalMC}</span></td>
-                    <td><span class="highlight-number">${totalNoDemand > 0 ? totalNoDemand : '-'}</span></td>`;
+                    <td class="dept-name" style="background:${deptColor}; font-weight:700; border:1px solid #999;"><strong>${r.dept}</strong></td>
+                    <td style="background:${deptColor}; font-weight:700; border:1px solid #999; text-align:center;">${r.totalMC}</td>
+                    <td style="background:${deptColor}; font-weight:700; border:1px solid #999; text-align:center;">${totalNoDemand}</td>`;
+                
                 MC_SIZE_COLUMNS.forEach(s => {
                     const val = r.sizes[s] || 0;
-                    html += `<td>${val > 0 ? val : '-'}</td>`;
+                    html += `<td style="background:${SIZE_COLORS[s] || '#e3f2fd'}; border:1px solid #999; text-align:center; font-weight:600;">${val}</td>`;
                     grandSizes[s] += val;
                 });
                 html += `</tr>`;
@@ -1273,11 +1296,11 @@
             });
 
             html += `<tr class="total-row">
-                <td><strong>📌 Total</strong></td>
-                <td><strong>${grandTotalMC}</strong></td>
-                <td><strong>${grandEntrySum > 0 ? grandEntrySum : '-'}</strong></td>`;
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">📌 Total</td>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${grandTotalMC}</td>
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${grandEntrySum}</td>`;
             MC_SIZE_COLUMNS.forEach(s => {
-                html += `<td><strong>${grandSizes[s] > 0 ? grandSizes[s] : '-'}</strong></td>`;
+                html += `<td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${grandSizes[s]}</td>`;
             });
             html += `</tr></tbody></table>`;
 
@@ -1287,7 +1310,9 @@
                 rows: rows,
                 grandTotalMC: grandTotalMC,
                 grandEntrySum: grandEntrySum,
-                grandSizes: grandSizes
+                grandSizes: grandSizes,
+                sizeColors: SIZE_COLORS,
+                deptColors: DEPT_COLORS
             };
         }
 
@@ -1305,7 +1330,7 @@
                 el.style.whiteSpace = 'nowrap';
             });
             const wrapper = document.createElement('div');
-            wrapper.style.cssText = `width: 1800px; padding: 25px; background: white; border: 4px solid #6a1b9a; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto; box-shadow: 0 8px 30px rgba(0,0,0,0.12);`;
+            wrapper.style.cssText = `width: 1900px; padding: 25px; background: white; border: 4px solid #6a1b9a; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto; box-shadow: 0 8px 30px rgba(0,0,0,0.12);`;
             const title = document.createElement('h2');
             title.style.cssText = `color: #6a1b9a; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #8e24aa; padding-bottom: 12px; font-size: 24px;`;
             title.innerText = '📦 Department Wise MC Size No Demand';
@@ -1355,6 +1380,73 @@
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            const SIZE_COLORS = data.sizeColors || {};
+            const DEPT_COLORS = data.deptColors || [];
+
+            // Header styling
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const cellRef = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (!ws[cellRef]) ws[cellRef] = { v: '' };
+                if (!ws[cellRef].s) ws[cellRef].s = {};
+                if (C < 3) {
+                    ws[cellRef].s.fill = { fgColor: { rgb: '0D47A1' } };
+                    ws[cellRef].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
+                } else {
+                    const size = MC_SIZE_COLUMNS[C - 3];
+                    const hexColor = (SIZE_COLORS[size] || '#e3f2fd').replace('#', '').toUpperCase();
+                    ws[cellRef].s.fill = { fgColor: { rgb: hexColor } };
+                    ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+                }
+                ws[cellRef].s.alignment = { horizontal: 'center', vertical: 'center' };
+                ws[cellRef].s.border = {
+                    top: { style: 'thin', color: { rgb: '000000' } },
+                    bottom: { style: 'thin', color: { rgb: '000000' } },
+                    left: { style: 'thin', color: { rgb: '000000' } },
+                    right: { style: 'thin', color: { rgb: '000000' } }
+                };
+            }
+
+            // Body styling
+            for (let R = 1; R <= range.e.r; R++) {
+                const isTotalRow = (R === range.e.r);
+                
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellRef]) ws[cellRef] = { v: '' };
+                    if (!ws[cellRef].s) ws[cellRef].s = {};
+
+                    if (isTotalRow) {
+                        ws[cellRef].s.fill = { fgColor: { rgb: 'FFF59D' } };
+                        ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+                    } else if (C < 3) {
+                        const deptColor = (DEPT_COLORS[(R - 1) % DEPT_COLORS.length] || '#e3f2fd').replace('#', '').toUpperCase();
+                        ws[cellRef].s.fill = { fgColor: { rgb: deptColor } };
+                        ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 11 };
+                    } else {
+                        const size = MC_SIZE_COLUMNS[C - 3];
+                        const hexColor = (SIZE_COLORS[size] || '#e3f2fd').replace('#', '').toUpperCase();
+                        ws[cellRef].s.fill = { fgColor: { rgb: hexColor } };
+                        ws[cellRef].s.font = { color: { rgb: '000000' }, bold: false, sz: 11 };
+                    }
+                    ws[cellRef].s.alignment = { horizontal: 'center', vertical: 'center' };
+                    ws[cellRef].s.border = {
+                        top: { style: 'thin', color: { rgb: '000000' } },
+                        bottom: { style: 'thin', color: { rgb: '000000' } },
+                        left: { style: 'thin', color: { rgb: '000000' } },
+                        right: { style: 'thin', color: { rgb: '000000' } }
+                    };
+                }
+            }
+
+            ws['!cols'] = [
+                { wch: 28 },
+                { wch: 10 },
+                { wch: 22 },
+                ...MC_SIZE_COLUMNS.map(() => ({ wch: 7 }))
+            ];
+
             XLSX.utils.book_append_sheet(wb, ws, "No Demand Size Wise");
             XLSX.writeFile(wb, `NoDemand_Size_Wise_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
@@ -1491,6 +1583,34 @@
             html += `</tbody></table>`;
             container.innerHTML = html;
             window._scorecardData = scoreData;
+        }
+
+        function renderOverall(data) {
+            const container = document.getElementById('overallTable');
+            if (!container) return;
+            let totalHR = 0,
+                leave = 0,
+                absent = 0;
+            data.forEach(r => {
+                totalHR += getNum(r, ['Total HR', 'totalHR']);
+                leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
+                absent += getNum(r, ['Absent Employee', 'absentEmployee']);
+            });
+            const present = totalHR;
+            const pctPresent = totalHR > 0 ? ((present / totalHR) * 100) : 0;
+            const pctAbsent = totalHR > 0 ? ((absent / totalHR) * 100) : 0;
+            let rawDate = data.length > 0 ? getVal(data[0], ['entryDate', 'Date']) : '-';
+            const date = formatDate(rawDate);
+            const shift = data.length > 0 ? getVal(data[0], ['Shift', 'shift']) : '-';
+            if (data.length === 0) {
+                container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
+                return;
+            }
+            container.innerHTML = `<table>
+                <thead><tr><th>Date</th><th>Shift</th><th>Total HR</th><th>Total Present</th><th>Total Absent</th><th>% Present</th><th>% Absent</th></tr></thead>
+                <tbody><tr><td>${date}</td><td>${shift}</td><td><strong>${totalHR}</strong></td><td><strong>${present}</strong></td><td>${absent}</td>
+                    <td>${pctPresent.toFixed(1)}%</td><td>${pctAbsent.toFixed(1)}%</td></tr></tbody>
+            </table>`;
         }
 
         function renderMissing(data) {
@@ -1672,7 +1792,7 @@
         }
 
         function showError(msg) {
-            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','scorecardContainer','missingContainer','rawDataTable'];
+            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','scorecardContainer','overallTable','missingContainer','rawDataTable'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
