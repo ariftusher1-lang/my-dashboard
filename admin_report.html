@@ -191,13 +191,6 @@
         .btn-sm-image:hover { background: #5a6268; }
         .btn-sm-excel { background: #1e7e34; color: white; }
         .btn-sm-excel:hover { background: #136b2a; }
-        .summary-data-table { width: 100%; border-collapse: collapse; font-size: 15px; font-family: 'Segoe UI', Tahoma, sans-serif; background: #fafcff; border-radius: 8px; overflow: hidden; }
-        .summary-data-table td { padding: 10px 14px; border-bottom: 1px solid #e8ecf1; vertical-align: middle; }
-        .summary-data-table .label-cell { font-weight: 600; color: #1a3a5c; width: 40%; background: #f0f5fe; white-space: nowrap; }
-        .summary-data-table .value-cell { font-weight: 700; color: #0d47a1; width: 60%; background: #ffffff; }
-        .summary-data-table tr:last-child td { border-bottom: none; }
-        .summary-data-table .highlight-row td { background: #e3f2fd; }
-        .summary-data-table .greeting-row td { background: #fff8e1; font-weight: 700; color: #e65100; text-align: center; font-size: 16px; padding: 14px; border-bottom: 2px solid #ffb300; }
         #whatsappMessageBox { border-left-color: #25D366 !important; }
         #whatsappMessageBox .summary-header-text { color: #075E54; }
         #whatsappMessageBox .btn-sm-excel { background: #25D366; color: white; }
@@ -359,36 +352,12 @@
                 <div class="summary-header-text">
                     <span>💬 হোয়াটসঅ্যাপ মেসেজ কপি করে পাঠান (জাহিদ স্যার এর জন্য)</span>
                     <div class="btn-group-sm">
+                        <button class="btn-sm-image" id="whatsappToggleBtn" onclick="toggleWhatsAppBox()">👁️ Show</button>
                         <button class="btn-sm-excel" onclick="copyWhatsAppMessage()">📋 কপি করুন</button>
                     </div>
                 </div>
-                <div id="whatsappMessageContent"></div>
-            </div>
-
-            <div class="summary-table-wrap" id="summaryTableWrap">
-                <div class="summary-header-text">
-                    <span>📌 Current Date &amp; Shift Summery Report</span>
-                    <div class="btn-group-sm">
-                        <button class="btn-sm-image" onclick="downloadSummaryImage()">📷 ইমেজ</button>
-                        <button class="btn-sm-excel" onclick="downloadSummaryExcel()">⬇️ Excel</button>
-                    </div>
-                </div>
-                <div id="summaryTableContainer">
-                    <table class="summary-data-table" id="summaryDataTable">
-                        <tbody>
-                            <tr class="greeting-row"><td colspan="2">Dear @ DPL DGM Sir, Below is Current Date &amp; Shift Summery Report. You Can Check The report</td></tr>
-                            <tr><td class="label-cell">📅 Total MC</td><td class="value-cell" id="sumtotalmc">-</td></tr>
-                            <tr><td class="label-cell">📅 Targert MC Run</td><td class="value-cell" id="sumtargetMC Run">-</td></tr>
-                            <tr><td class="label-cell">📅 Date</td><td class="value-cell" id="sumDate">-</td></tr>
-                            <tr><td class="label-cell">🕒 Shift</td><td class="value-cell" id="sumShift">-</td></tr>
-                            <tr><td class="label-cell">👥 Total Present</td><td class="value-cell" id="sumPresent">0</td></tr>
-                            <tr><td class="label-cell">❌ Total Absent</td><td class="value-cell" id="sumAbsent">0</td></tr>
-                            <tr><td class="label-cell">📊 Total No Demand</td><td class="value-cell" id="sumNoDemand">0</td></tr>
-                            <tr><td class="label-cell">🔧 Total Mold Change QTY</td><td class="value-cell" id="sumMoldChange">0</td></tr>
-                            <tr><td class="label-cell">⛔ MC Stop (Manpower)</td><td class="value-cell" id="sumMCStopManpower">0</td></tr>
-                            <tr><td class="label-cell">⛔ MC Stop (No Demand)</td><td class="value-cell" id="sumMCStopNoDemand">0</td></tr>
-                        </tbody>
-                    </table>
+                <div id="whatsappMessageContentWrap" style="display:none;">
+                    <div id="whatsappMessageContent"></div>
                 </div>
             </div>
 
@@ -406,7 +375,7 @@
             <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
             <!-- ============================================ -->
-            <!-- Department Wise MC Size No Demand (Color Coded) -->
+            <!-- Department Wise MC Size No Demand -->
             <!-- ============================================ -->
             <div class="section-title clearfix">
                 <span style="background:#6a1b9a; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📦 Department Wise MC Size No Demand</span>
@@ -433,10 +402,13 @@
             <div id="missingContainer" class="missing-list"><div class="no-data">লোড হচ্ছে...</div></div>
 
             <div class="section-title clearfix">
-                📋 র-ডেটা (Raw Data) - প্রতিটি এন্ট্রি আলাদা
-                <button class="btn-excel" onclick="downloadExcel()">⬇️ Excel ডাউনলোড করুন</button>
+                <span>📋 র-ডেটা (Raw Data) - প্রতিটি এন্ট্রি আলাদা</span>
+                <div class="btn-group">
+                    <button class="btn-image" id="rawDataToggleBtn" onclick="toggleRawData()">👁️ Show</button>
+                    <button class="btn-excel" onclick="downloadExcel()">⬇️ Excel ডাউনলোড করুন</button>
+                </div>
             </div>
-            <div class="table-wrap" id="rawDataTable"><div class="no-data">লোড হচ্ছে...</div></div>
+            <div class="table-wrap" id="rawDataTable" style="display:none;"><div class="no-data">লোড হচ্ছে...</div></div>
         </div>
     </div>
 
@@ -511,6 +483,35 @@
             if (typeof stopAutoRefresh === 'function') stopAutoRefresh();
             dashboardInitialized = false;
             showLogin();
+        }
+
+        // ============================================================
+        // Toggle Functions — Show/Hide
+        // ============================================================
+        function toggleWhatsAppBox() {
+            const wrap = document.getElementById('whatsappMessageContentWrap');
+            const btn = document.getElementById('whatsappToggleBtn');
+            if (!wrap || !btn) return;
+            if (wrap.style.display === 'none') {
+                wrap.style.display = 'block';
+                btn.innerText = '🙈 Hide';
+            } else {
+                wrap.style.display = 'none';
+                btn.innerText = '👁️ Show';
+            }
+        }
+
+        function toggleRawData() {
+            const container = document.getElementById('rawDataTable');
+            const btn = document.getElementById('rawDataToggleBtn');
+            if (!container || !btn) return;
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                btn.innerText = '🙈 Hide';
+            } else {
+                container.style.display = 'none';
+                btn.innerText = '👁️ Show';
+            }
         }
 
         // ============================================================
@@ -833,44 +834,11 @@
         }
 
         function renderDashboard(data) {
-            renderCurrentSummary(data);
             renderStats(data);
             renderSaifuddinTable(data);
             renderNoDemandSizeTable(data);
             renderMissing(data);
             renderRawData(data);
-        }
-
-        function renderCurrentSummary(data) {
-            let totalPresent = 0, totalAbsent = 0, totalNoDemand = 0;
-            let mcStopManpower = 0, mcStopNoDemand = 0, totalMoldChange = 0;
-            let totalMC = 0, targetRun = 0;
-
-            data.forEach(row => {
-                totalPresent += getNum(row, ['Total HR', 'totalHR']);
-                totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
-                totalNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
-                mcStopManpower += getNum(row, ['MP Short', 'mpShort']);
-                mcStopNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
-                totalMoldChange += getNum(row, ['Mold Change', 'moldChange']);
-                totalMC += getNum(row, ['Total MC', 'totalMC']);
-                targetRun += getNum(row, ['MC Running', 'mcRunning']);
-            });
-
-            const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-            setTxt('sumPresent', totalPresent);
-            setTxt('sumAbsent', totalAbsent);
-            setTxt('sumNoDemand', totalNoDemand);
-            setTxt('sumMCStopManpower', mcStopManpower);
-            setTxt('sumMCStopNoDemand', mcStopNoDemand);
-            setTxt('sumMoldChange', totalMoldChange);
-            setTxt('sumtotalmc', totalMC);
-            setTxt('sumtargetMC Run', targetRun);
-
-            const date = document.getElementById('filterDate').value;
-            const shift = document.getElementById('filterShift').value;
-            setTxt('sumDate', date ? formatDate(date) : 'সব তারিখ');
-            setTxt('sumShift', shift !== 'All' ? shift : 'সব শিফট');
         }
 
         function renderStats(data) {
@@ -1211,7 +1179,7 @@
                     <tr>
                         <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999;">Department Name</th>
                         <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999;">Total MC</th>
-                        <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999;">No Demand QTY (Entry Sum)</th>
+                        <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999; width:70px; font-size:10px; line-height:1.2; padding:4px;">No Demand QTY (Sum)</th>
                         <th colspan="${MC_SIZE_COLUMNS.length}" style="background:#1a237e; color:#fff; text-align:center; border:1px solid #999;">Size Wise MC List</th>
                     </tr>
                     <tr>`;
@@ -1232,7 +1200,7 @@
                 html += `<tr>
                     <td class="dept-name" style="background:${deptColor}; font-weight:700; border:1px solid #999;"><strong>${r.dept}</strong></td>
                     <td style="background:${deptColor}; font-weight:700; border:1px solid #999; text-align:center;">${r.totalMC}</td>
-                    <td style="background:${deptColor}; font-weight:700; border:1px solid #999; text-align:center;">${totalNoDemand}</td>`;
+                    <td style="background:${deptColor}; font-weight:700; border:1px solid #999; text-align:center; width:70px;">${totalNoDemand}</td>`;
                 
                 MC_SIZE_COLUMNS.forEach(s => {
                     const val = r.sizes[s] || 0;
@@ -1248,7 +1216,7 @@
             html += `<tr class="total-row">
                 <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">📌 Total</td>
                 <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${grandTotalMC}</td>
-                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${grandEntrySum}</td>`;
+                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center; width:70px;">${grandEntrySum}</td>`;
             MC_SIZE_COLUMNS.forEach(s => {
                 html += `<td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${grandSizes[s]}</td>`;
             });
@@ -1319,22 +1287,18 @@
             const SIZE_COLORS = data.sizeColors || {};
             const DEPT_COLORS = data.deptColors || [];
 
-            // Row 1: merged header row
-            const row1 = ['Department Name', 'Total MC', 'No Demand QTY (Entry Sum)'];
+            const row1 = ['Department Name', 'Total MC', 'No Demand QTY (Sum)'];
             for (let i = 0; i < MC_SIZE_COLUMNS.length; i++) row1.push('');
-            row1[3] = 'Size Wise MC List'; // will be merged across
+            row1[3] = 'Size Wise MC List';
 
-            // Row 2: MC Size headers
             const row2 = ['', '', '', ...MC_SIZE_COLUMNS];
 
-            // Data rows
             const dataRows = data.rows.map(r => {
                 const rowData = [r.dept, r.totalMC, r.entrySum];
                 MC_SIZE_COLUMNS.forEach(s => rowData.push(r.sizes[s] || 0));
                 return rowData;
             });
 
-            // Total row
             const totalRow = ['📌 Total', data.grandTotalMC, data.grandEntrySum];
             MC_SIZE_COLUMNS.forEach(s => totalRow.push(data.grandSizes[s] || 0));
 
@@ -1342,12 +1306,11 @@
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-            // ===== MERGES =====
             ws['!merges'] = [
-                { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } }, // Department Name
-                { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } }, // Total MC
-                { s: { r: 0, c: 2 }, e: { r: 1, c: 2 } }, // No Demand QTY
-                { s: { r: 0, c: 3 }, e: { r: 0, c: 2 + MC_SIZE_COLUMNS.length } } // Size Wise MC List
+                { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } },
+                { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } },
+                { s: { r: 0, c: 2 }, e: { r: 1, c: 2 } },
+                { s: { r: 0, c: 3 }, e: { r: 0, c: 2 + MC_SIZE_COLUMNS.length } }
             ];
 
             const range = XLSX.utils.decode_range(ws['!ref']);
@@ -1361,7 +1324,6 @@
                 };
             }
 
-            // ====== Header Row 0 ======
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const cellRef = XLSX.utils.encode_cell({ r: 0, c: C });
                 if (!ws[cellRef]) ws[cellRef] = { v: '' };
@@ -1377,7 +1339,6 @@
                 applyBorder(ws[cellRef]);
             }
 
-            // ====== Header Row 1 (MC Sizes) ======
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const cellRef = XLSX.utils.encode_cell({ r: 1, c: C });
                 if (!ws[cellRef]) ws[cellRef] = { v: '' };
@@ -1395,7 +1356,6 @@
                 applyBorder(ws[cellRef]);
             }
 
-            // ====== Body Rows ======
             for (let R = 2; R < range.e.r; R++) {
                 for (let C = range.s.c; C <= range.e.c; C++) {
                     const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
@@ -1417,7 +1377,6 @@
                 }
             }
 
-            // ====== Total Row ======
             const lastR = range.e.r;
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const cellRef = XLSX.utils.encode_cell({ r: lastR, c: C });
@@ -1429,15 +1388,13 @@
                 applyBorder(ws[cellRef], 'medium');
             }
 
-            // Column widths
             ws['!cols'] = [
                 { wch: 28 },
                 { wch: 10 },
-                { wch: 22 },
+                { wch: 14 },
                 ...MC_SIZE_COLUMNS.map(() => ({ wch: 8 }))
             ];
 
-            // Row heights
             ws['!rows'] = [
                 { hpt: 24 },
                 { hpt: 20 },
@@ -1633,50 +1590,6 @@
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
             });
-        }
-
-        function downloadSummaryImage() {
-            const container = document.getElementById('summaryTableWrap');
-            if (!container) return;
-            const btn = document.querySelector('.summary-header-text .btn-sm-image');
-            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-                .then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = `Summary_Report_${new Date().toISOString().slice(0,10)}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
-                });
-        }
-
-        function downloadSummaryExcel() {
-            const date = document.getElementById('sumDate').innerText;
-            const shift = document.getElementById('sumShift').innerText;
-            const present = document.getElementById('sumPresent').innerText;
-            const absent = document.getElementById('sumAbsent').innerText;
-            const noDemand = document.getElementById('sumNoDemand').innerText;
-            const moldChange = document.getElementById('sumMoldChange').innerText;
-            const stopManpower = document.getElementById('sumMCStopManpower').innerText;
-            const stopNoDemand = document.getElementById('sumMCStopNoDemand').innerText;
-
-            const headers = ['Description', 'Value'];
-            const rows = [
-                ['Date', date], ['Shift', shift],
-                ['Total Present', present], ['Total Absent', absent],
-                ['Total No Demand', noDemand], ['Total Mold Change QTY', moldChange],
-                ['MC Stop (Manpower)', stopManpower], ['MC Stop (No Demand)', stopNoDemand]
-            ];
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-            XLSX.utils.book_append_sheet(wb, ws, 'Summary');
-            XLSX.writeFile(wb, `Summary_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function downloadSaifuddinImage() {
