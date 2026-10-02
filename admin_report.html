@@ -405,6 +405,18 @@
             </div>
             <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
 
+            <!-- ============================================ -->
+            <!-- NEW SECTION: Department Wise MC Size No Demand -->
+            <!-- ============================================ -->
+            <div class="section-title clearfix">
+                <span style="background:#6a1b9a; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📦 Department Wise MC Size No Demand</span>
+                <div class="btn-group">
+                    <button class="btn-image" onclick="downloadNoDemandSizeImage()">📷 ইমেজ ডাউনলোড</button>
+                    <button class="btn-excel" onclick="downloadNoDemandSizeExcel()">⬇️ Excel ডাউনলোড</button>
+                </div>
+            </div>
+            <div class="table-wrap" id="noDemandSizeTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+
             <div class="scorecard-wrap" id="scorecardWrap">
                 <div class="scorecard-header">
                     <span>🏆 পারফরম্যান্স স্কোরকার্ড (MC ডিপার্টমেন্ট)</span>
@@ -426,23 +438,6 @@
             </div>
             <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
-            <div class="section-title clearfix">
-                <div class="weekly-filter-area">
-                    <span style="background:#1a237e; color:white; padding:8px 20px; border-radius:6px; display:inline-block; font-weight:600;">📅 সাপ্তাহিক সারাংশ</span>
-                    <select id="weeklyDaysFilter" onchange="renderWeeklySummaryFromData()">
-                        <option value="7">শেষ ৭ দিনের গড়</option>
-                        <option value="14">শেষ ১৪ দিনের গড়</option>
-                        <option value="21">শেষ ২১ দিনের গড়</option>
-                        <option value="30">শেষ ৩০ দিনের গড়</option>
-                    </select>
-                </div>
-                <div class="btn-group">
-                    <button class="btn-image" onclick="downloadWeeklyImage()">📷 ইমেজ ডাউনলোড</button>
-                    <button class="btn-excel" onclick="downloadWeeklyExcel()">⬇️ Excel ডাউনলোড</button>
-                </div>
-            </div>
-            <div class="table-wrap" id="weeklySummaryContainer"><div class="no-data">লোড হচ্ছে...</div></div>
-
             <div class="stats" id="statsContainer">
                 <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
                 <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
@@ -456,10 +451,6 @@
             </div>
 
             <div class="section-title">📊 ডেইলি সারাংশ (Summary)</div>
-            <div class="sub-title">🟢 প্রোডাকশন ডিপার্টমেন্ট (Group A)</div>
-            <div class="table-wrap" id="groupATable"><div class="no-data">লোড হচ্ছে...</div></div>
-            <div class="sub-title">🟡 সাপোর্ট ডিপার্টমেন্ট (Group B)</div>
-            <div class="table-wrap" id="groupBTable"><div class="no-data">লোড হচ্ছে...</div></div>
             <div class="sub-title">🏢 RIP DPL টোটাল (Overall)</div>
             <div class="table-wrap" id="overallTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
@@ -781,7 +772,6 @@
         async function loadData() {
             const ct = document.getElementById('currentTime');
             const fs = document.getElementById('filterStatus');
-            // ⚠️ "লোড হচ্ছে..." লেখা সরানো হয়েছে — Auto-refresh এ flicker হবে না
             try {
                 const res = await fetch(API_URL);
                 if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
@@ -791,7 +781,6 @@
                 console.log('📦 মোট ডেটা:', allData.length);
                 populateDeptFilter();
                 applyFilters();
-                renderWeeklySummaryFromData();
                 if (ct) ct.innerText = '📅 ' + new Date().toLocaleString('bn-BD');
                 setTimeout(updateWhatsAppMessage, 300);
             } catch (e) {
@@ -866,10 +855,9 @@
             renderCurrentSummary(data);
             renderStats(data);
             renderSaifuddinTable(data);
+            renderNoDemandSizeTable(data);
             renderScorecard(data);
             renderMcSummaryTable(data);
-            renderGroupTable(data, 'groupATable', 'A');
-            renderGroupTable(data, 'groupBTable', 'B');
             renderOverall(data);
             renderMissing(data);
             renderRawData(data);
@@ -1171,6 +1159,200 @@
             container.innerHTML = html;
             window._saifuddinRows = rows;
             window._saifuddinHeaders = headers;
+        }
+
+        // ============================================================
+        // NEW: Department Wise MC Size No Demand Table
+        // ============================================================
+        function renderNoDemandSizeTable(data) {
+            const container = document.getElementById('noDemandSizeTableContainer');
+            if (!container) return;
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
+                return;
+            }
+
+            const MC_SIZES = ['90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
+            const deptMap = {};
+
+            function parseNoDemand(str) {
+                const result = {};
+                if (!str) return result;
+                const parts = String(str).split(',').map(s => s.trim()).filter(s => s);
+                parts.forEach(part => {
+                    const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
+                    if (match) {
+                        const size = match[1].trim();
+                        const qty = parseInt(match[2]) || 0;
+                        if (!result[size]) result[size] = 0;
+                        result[size] += qty;
+                    }
+                });
+                return result;
+            }
+
+            data.forEach(row => {
+                const dept = getVal(row, ['Department', 'department']);
+                if (!dept) return;
+
+                const icName = getVal(row, ['IC Name', 'icName']) || '-';
+                const totalMC = getNum(row, ['Total MC', 'totalMC']);
+                const noDemandStr = getVal(row, ['No Demand (QTY)', 'noDemandQty']) || '';
+                const parsed = parseNoDemand(noDemandStr);
+
+                if (!deptMap[dept]) {
+                    deptMap[dept] = {
+                        dept: dept,
+                        icName: icName,
+                        totalMC: 0,
+                        entrySum: 0,
+                        sizes: {}
+                    };
+                    MC_SIZES.forEach(s => { deptMap[dept].sizes[s] = 0; });
+                }
+
+                const d = deptMap[dept];
+                d.totalMC += totalMC;
+
+                Object.keys(parsed).forEach(size => {
+                    if (!d.sizes[size]) d.sizes[size] = 0;
+                    d.sizes[size] += parsed[size];
+                    d.entrySum += parsed[size];
+                });
+
+                if (icName && icName !== '-') d.icName = icName;
+            });
+
+            const rows = Object.values(deptMap);
+
+            if (rows.length === 0) {
+                container.innerHTML = `<div class="no-data">কোনো No Demand ডেটা নেই</div>`;
+                return;
+            }
+
+            const activeSizes = MC_SIZES.filter(size => {
+                return rows.some(r => (r.sizes[size] || 0) > 0);
+            });
+
+            let html = `<table class="saifuddin-table"><thead><tr>
+                <th>Department Name</th>
+                <th>Prod IC</th>
+                <th>Total MC</th>
+                <th>No Demand QTY (Entry Sum)</th>`;
+            activeSizes.forEach(s => { html += `<th>${s}</th>`; });
+            html += `</tr></thead><tbody>`;
+
+            let grandTotalMC = 0;
+            let grandEntrySum = 0;
+            const grandSizes = {};
+            activeSizes.forEach(s => { grandSizes[s] = 0; });
+
+            rows.forEach(r => {
+                const totalNoDemand = r.entrySum;
+                html += `<tr>
+                    <td class="dept-name"><strong>${r.dept}</strong></td>
+                    <td>${r.icName}</td>
+                    <td><span class="highlight-number">${r.totalMC}</span></td>
+                    <td><span class="highlight-number">${totalNoDemand}</span></td>`;
+                activeSizes.forEach(s => {
+                    const val = r.sizes[s] || 0;
+                    html += `<td>${val > 0 ? val : '-'}</td>`;
+                    grandSizes[s] += val;
+                });
+                html += `</tr>`;
+
+                grandTotalMC += r.totalMC;
+                grandEntrySum += r.entrySum;
+            });
+
+            html += `<tr class="total-row">
+                <td><strong>📌 Total</strong></td>
+                <td>-</td>
+                <td><strong>${grandTotalMC}</strong></td>
+                <td><strong>${grandEntrySum}</strong></td>`;
+            activeSizes.forEach(s => {
+                html += `<td><strong>${grandSizes[s]}</strong></td>`;
+            });
+            html += `</tr></tbody></table>`;
+
+            container.innerHTML = html;
+
+            window._noDemandSizeData = {
+                rows: rows,
+                activeSizes: activeSizes,
+                grandTotalMC: grandTotalMC,
+                grandEntrySum: grandEntrySum,
+                grandSizes: grandSizes
+            };
+        }
+
+        function downloadNoDemandSizeImage() {
+            const container = document.getElementById('noDemandSizeTableContainer');
+            if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+                alert('⚠️ ডেটা নেই!');
+                return;
+            }
+            const btn = document.querySelector('button[onclick="downloadNoDemandSizeImage()"]');
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
+
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('td, th').forEach(el => {
+                el.style.whiteSpace = 'nowrap';
+            });
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `width: 1800px; padding: 25px; background: white; border: 4px solid #6a1b9a; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto; box-shadow: 0 8px 30px rgba(0,0,0,0.12);`;
+            const title = document.createElement('h2');
+            title.style.cssText = `color: #6a1b9a; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #8e24aa; padding-bottom: 12px; font-size: 24px;`;
+            title.innerText = '📦 Department Wise MC Size No Demand';
+            wrapper.appendChild(title);
+            wrapper.appendChild(clone);
+            const footer = document.createElement('p');
+            footer.style.cssText = `text-align: right; color: #555; font-size: 13px; margin-top: 18px; border-top: 1px solid #eee; padding-top: 10px;`;
+            footer.innerText = `📅 Generated: ${new Date().toLocaleString('bn-BD')}`;
+            wrapper.appendChild(footer);
+            document.body.appendChild(wrapper);
+
+            html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true, allowTaint: true })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `NoDemand_Size_Report_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(wrapper);
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
+                });
+        }
+
+        function downloadNoDemandSizeExcel() {
+            const data = window._noDemandSizeData;
+            if (!data || data.rows.length === 0) { alert('ডেটা নেই!'); return; }
+
+            const headers = ['Department Name', 'Prod IC', 'Total MC', 'No Demand QTY (Entry Sum)', ...data.activeSizes];
+            const rows = data.rows.map(r => {
+                const rowData = [r.dept, r.icName, r.totalMC, r.entrySum];
+                data.activeSizes.forEach(s => {
+                    rowData.push(r.sizes[s] || 0);
+                });
+                return rowData;
+            });
+
+            const totalRow = ['📌 Total', '-', data.grandTotalMC, data.grandEntrySum];
+            data.activeSizes.forEach(s => {
+                totalRow.push(data.grandSizes[s] || 0);
+            });
+            rows.push(totalRow);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            XLSX.utils.book_append_sheet(wb, ws, "No Demand Size Wise");
+            XLSX.writeFile(wb, `NoDemand_Size_Wise_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function renderScorecard(data) {
@@ -1487,94 +1669,6 @@
             };
         }
 
-        function renderGroupTable(data, containerId, groupType) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            const isGroupA = (groupType === 'A');
-            let depts = isGroupA ? MASTER_DEPARTMENTS.filter(d => !SUPPORT_DEPTS.includes(d)) : SUPPORT_DEPTS;
-            let rows = [];
-            depts.forEach(dept => {
-                const items = data.filter(r => {
-                    let d = getVal(r, ['Department', 'department']);
-                    return d === dept;
-                });
-                if (items.length === 0) return;
-                let totalHR = 0,
-                    leave = 0,
-                    absent = 0,
-                    totalMC = 0,
-                    running = 0,
-                    stopped = 0;
-                items.forEach(r => {
-                    totalHR += getNum(r, ['Total HR', 'totalHR']);
-                    leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
-                    absent += getNum(r, ['Absent Employee', 'absentEmployee']);
-                    if (isGroupA) {
-                        totalMC += getNum(r, ['Total MC', 'totalMC']);
-                        running += getNum(r, ['MC Running', 'mcRunning']);
-                        stopped += getNum(r, ['MC Stopped', 'mcStopped']);
-                    }
-                });
-                const present = totalHR;
-                const runPct = totalMC > 0 ? ((running / totalMC) * 100) : 0;
-                const stopPct = totalMC > 0 ? ((stopped / totalMC) * 100) : 0;
-                rows.push({ dept, items, totalHR, leave, absent, present, totalMC, running, stopped, runPct, stopPct });
-            });
-
-            if (rows.length === 0) {
-                container.innerHTML = `<div class="no-data">এই গ্রুপে কোনো ডেটা নেই</div>`;
-                return;
-            }
-
-            let html = `<table><thead><tr>`;
-            html += `<th>ডিপার্টমেন্ট</th><th>Date</th><th>Shift</th>`;
-            html += `<th>Total HR</th><th>Leave</th><th>Absent</th><th>Present</th>`;
-            if (isGroupA) {
-                html += `<th>Total MC</th><th>Running</th><th>Stopped</th><th>Run %</th><th>Stop %</th>`;
-            }
-            html += `</tr></thead><tbody>`;
-
-            let sumHR = 0,
-                sumLeave = 0,
-                sumAbsent = 0,
-                sumMC = 0,
-                sumRunning = 0,
-                sumStopped = 0;
-            rows.forEach(row => {
-                let rawDate = getVal(row.items[0], ['entryDate', 'Date']) || '-';
-                const date = formatDate(rawDate);
-                const shift = getVal(row.items[0], ['Shift', 'shift']) || '-';
-                html += `<tr><td><strong>${row.dept}</strong></td><td>${date}</td><td>${shift}</td>`;
-                html += `<td>${row.totalHR}</td><td>${row.leave}</td><td>${row.absent}</td><td>${row.present}</td>`;
-                if (isGroupA) {
-                    html += `<td>${row.totalMC}</td><td>${row.running}</td><td>${row.stopped}</td>`;
-                    html += `<td>${row.runPct.toFixed(1)}%</td><td>${row.stopPct.toFixed(1)}%</td>`;
-                }
-                html += `</tr>`;
-                sumHR += row.totalHR;
-                sumLeave += row.leave;
-                sumAbsent += row.absent;
-                if (isGroupA) {
-                    sumMC += row.totalMC;
-                    sumRunning += row.running;
-                    sumStopped += row.stopped;
-                }
-            });
-
-            const totalPresent = sumHR;
-            const totalRunPct = sumMC > 0 ? ((sumRunning / sumMC) * 100) : 0;
-            const totalStopPct = sumMC > 0 ? ((sumStopped / sumMC) * 100) : 0;
-
-            html += `<tr class="total-row"><td><strong>📌 মোট (Group ${groupType})</strong></td><td>-</td><td>-</td>`;
-            html += `<td><strong>${sumHR}</strong></td><td>${sumLeave}</td><td>${sumAbsent}</td><td><strong>${totalPresent}</strong></td>`;
-            if (isGroupA) {
-                html += `<td><strong>${sumMC}</strong></td><td><strong>${sumRunning}</strong></td><td><strong>${sumStopped}</strong></td>`;
-                html += `<td><strong>${totalRunPct.toFixed(1)}%</strong></td><td><strong>${totalStopPct.toFixed(1)}%</strong></td>`;
-            }
-            html += `</tr></tbody></table>`;
-            container.innerHTML = html;
-        }
-
         function renderOverall(data) {
             const container = document.getElementById('overallTable');
             if (!container) return;
@@ -1669,126 +1763,6 @@
             });
             html += `</tbody></table>`;
             container.innerHTML = html;
-        }
-
-        function renderWeeklySummaryFromData() {
-            const days = parseInt(document.getElementById('weeklyDaysFilter').value) || 7;
-            renderWeeklySummary(allData, days, 'weeklySummaryContainer');
-        }
-
-        function renderWeeklySummary(data, days, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            if (!data || data.length === 0) {
-                container.innerHTML = `<div class="no-data">পর্যাপ্ত ডেটা নেই</div>`;
-                return;
-            }
-
-            const today = new Date();
-            const startDate = new Date(today);
-            startDate.setDate(today.getDate() - days);
-
-            const filteredData = data.filter(row => {
-                const dateStr = row.entryDate || row.Date || '';
-                const d = new Date(dateStr);
-                if (isNaN(d.getTime())) return false;
-                const dDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-                const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-                return dDate >= start && dDate <= new Date(today.getFullYear(), today.getMonth(), today.getDate());
-            });
-
-            const rows = [];
-            FIXED_DEPTS.forEach(fixed => {
-                const deptName = fixed.name;
-                const possibleNames = DEPT_MAP[deptName] || [deptName];
-                let deptRows = [];
-                for (let pn of possibleNames) {
-                    const found = filteredData.filter(r => {
-                        let d = getVal(r, ['Department', 'department']);
-                        return d === pn;
-                    });
-                    deptRows = deptRows.concat(found);
-                }
-
-                let icName = '';
-                if (deptRows.length > 0) {
-                    const sorted = deptRows.sort((a, b) => {
-                        const da = new Date(a.entryDate || a.Date || 0);
-                        const db = new Date(b.entryDate || b.Date || 0);
-                        return db - da;
-                    });
-                    icName = getVal(sorted[0], ['IC Name', 'icName']) || '';
-                }
-
-                let sumPresent = 0,
-                    sumRun = 0,
-                    count = 0;
-                deptRows.forEach(r => {
-                    const hr = getNum(r, ['Total HR', 'totalHR']);
-                    sumPresent += hr;
-                    sumRun += getNum(r, ['MC Running', 'mcRunning']);
-                    count++;
-                });
-                const avgPresent = count > 0 ? sumPresent / count : 0;
-                const avgRun = count > 0 ? sumRun / count : 0;
-                const fixedMC = FIXED_MC_QTY[deptName] || 0;
-
-                rows.push({
-                    sn: fixed.sn,
-                    dept: deptName,
-                    icName: icName,
-                    fixedMC: fixedMC,
-                    avgPresent: avgPresent,
-                    avgRun: avgRun,
-                    count: count
-                });
-            });
-
-            let totalFixedMC = 0,
-                totalAvgPresent = 0,
-                totalAvgRun = 0,
-                totalCount = 0;
-            rows.forEach(r => {
-                totalFixedMC += r.fixedMC;
-                totalAvgPresent += r.avgPresent;
-                totalAvgRun += r.avgRun;
-                totalCount += r.count;
-            });
-            const overallAvgPresent = rows.length > 0 ? totalAvgPresent / rows.length : 0;
-            const overallAvgRun = rows.length > 0 ? totalAvgRun / rows.length : 0;
-
-            let html = `<table class="weekly-table"><thead><tr>
-                <th>SN</th><th>Department</th><th>Prod IC</th><th>Fixed MC QTY</th>
-                <th>Avg Present (Last ${days} Days)</th>
-                <th>Avg MC Run (Last ${days} Days)</th>
-                <th>Entries Count</th>
-            </tr></thead><tbody>`;
-
-            rows.forEach(row => {
-                html += `<tr>
-                    <td><strong>${row.sn}</strong></td>
-                    <td class="dept-name"><strong>${row.dept}</strong></td>
-                    <td>${row.icName || '-'}</td>
-                    <td>${row.fixedMC}</td>
-                    <td>${row.avgPresent.toFixed(1)}</td>
-                    <td>${row.avgRun.toFixed(1)}</td>
-                    <td>${row.count}</td>
-                </tr>`;
-            });
-
-            html += `<tr class="total-row">
-                <td><strong>📌</strong></td>
-                <td><strong>Total / Average</strong></td>
-                <td>-</td>
-                <td><strong>${totalFixedMC}</strong></td>
-                <td><strong>${overallAvgPresent.toFixed(1)}</strong></td>
-                <td><strong>${overallAvgRun.toFixed(1)}</strong></td>
-                <td><strong>${totalCount}</strong></td>
-            </tr>`;
-
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-            window._currentWeeklyData = { rows, totalFixedMC, overallAvgPresent, overallAvgRun, totalCount, days };
         }
 
         function updateWhatsAppMessage() {
@@ -1902,7 +1876,7 @@
         }
 
         function showError(msg) {
-            const ids = ['saifuddinTableContainer','mcSummaryTable','weeklySummaryContainer','groupATable','groupBTable','overallTable','missingContainer','rawDataTable'];
+            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','mcSummaryTable','overallTable','missingContainer','rawDataTable'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
@@ -2215,48 +2189,6 @@
                     alert('❌ PDF তৈরি ব্যর্থ!');
                     if (btn) { btn.innerText = '📄 PDF ডাউনলোড'; btn.disabled = false; }
                 });
-        }
-
-        function downloadWeeklyImage() {
-            const container = document.getElementById('weeklySummaryContainer');
-            if (!container || container.innerText.includes('পর্যাপ্ত ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-                alert('⚠️ ডেটা নেই!');
-                return;
-            }
-            const btn = document.querySelector('.btn-image');
-            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
-            html2canvas(container, { scale: 2.5, backgroundColor: '#ffffff', logging: false })
-                .then(canvas => {
-                    const link = document.createElement('a');
-                    const days = document.getElementById('weeklyDaysFilter').value;
-                    link.download = `Weekly_Summary_${days}days_${new Date().toISOString().slice(0,10)}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
-                });
-        }
-
-        function downloadWeeklyExcel() {
-            const data = window._currentWeeklyData;
-            if (!data || data.rows.length === 0) { alert('ডেটা নেই!'); return; }
-            const headers = ['SN', 'Department', 'Prod IC', 'Fixed MC QTY',
-                `Avg Present (Last ${data.days} Days)`, `Avg MC Run (Last ${data.days} Days)`, 'Entries Count'
-            ];
-            const rows = data.rows.map(row => [row.sn, row.dept, row.icName || '-', row.fixedMC, row.avgPresent.toFixed(1),
-                row.avgRun.toFixed(1), row.count
-            ]);
-            rows.push(['📌', 'Total / Average', '-', data.totalFixedMC, data.overallAvgPresent.toFixed(1), data
-                .overallAvgRun.toFixed(1), data.totalCount
-            ]);
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-            XLSX.utils.book_append_sheet(wb, ws, `Weekly ${data.days} Days`);
-            XLSX.writeFile(wb, `Weekly_Summary_${data.days}days_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function downloadExcel() {
