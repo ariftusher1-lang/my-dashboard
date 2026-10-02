@@ -214,7 +214,7 @@
             font-size: 11px !important;
             font-weight: 700 !important;
             text-align: center !important;
-            border: 1px solid #999 !important;
+            border: 1px solid #666 !important;
         }
         #noDemandSizeTableContainer .saifuddin-table tbody td {
             padding: 6px 8px !important;
@@ -1108,7 +1108,7 @@
         }
 
         // ============================================================
-        // Department Wise MC Size No Demand Table (Color Coded)
+        // Department Wise MC Size No Demand Table (Cyan Header)
         // ============================================================
         function renderNoDemandSizeTable(data) {
             const container = document.getElementById('noDemandSizeTableContainer');
@@ -1146,13 +1146,10 @@
                     const dept = getVal(row, ['Department', 'department']);
                     if (!dept) return;
                     if (!NO_DEMAND_SIZE_DEPTS.includes(dept)) return;
-
                     const noDemandStr = getVal(row, ['No Demand (QTY)', 'noDemandQty']) || '';
                     const parsed = parseNoDemand(noDemandStr);
-
                     const d = deptMap[dept];
                     if (!d) return;
-
                     Object.keys(parsed).forEach(size => {
                         if (!d.sizes[size]) d.sizes[size] = 0;
                         d.sizes[size] += parsed[size];
@@ -1163,6 +1160,8 @@
 
             const rows = Object.values(deptMap);
 
+            // ====== COLORS ======
+            const HEADER_COLOR = '#5ADFEF';
             const DEPT_COLORS = [
                 '#e3f2fd', '#fce4ec', '#e8f5e9', '#fff3e0', '#f3e5f5',
                 '#e0f7fa', '#fff9c4', '#ffebee', '#ede7f6'
@@ -1177,14 +1176,14 @@
             let html = `<table class="saifuddin-table" style="border-collapse:collapse;">
                 <thead>
                     <tr>
-                        <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999;">Department Name</th>
-                        <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999;">Total MC</th>
-                        <th rowspan="2" style="vertical-align:middle; background:#0d47a1; color:#fff; border:1px solid #999; width:70px; font-size:10px; line-height:1.2; padding:4px;">No Demand QTY (Sum)</th>
-                        <th colspan="${MC_SIZE_COLUMNS.length}" style="background:#1a237e; color:#fff; text-align:center; border:1px solid #999;">Size Wise MC List</th>
+                        <th rowspan="2" style="vertical-align:middle; background:${HEADER_COLOR}; color:#000; font-weight:800; border:1px solid #666;">Department Name</th>
+                        <th rowspan="2" style="vertical-align:middle; background:${HEADER_COLOR}; color:#000; font-weight:800; border:1px solid #666;">Total MC</th>
+                        <th rowspan="2" style="vertical-align:middle; background:${HEADER_COLOR}; color:#000; font-weight:800; border:1px solid #666; width:70px; font-size:10px; line-height:1.2; padding:4px;">No Demand QTY (Sum)</th>
+                        <th colspan="${MC_SIZE_COLUMNS.length}" style="background:${HEADER_COLOR}; color:#000; font-weight:800; text-align:center; border:1px solid #666;">Size Wise MC List</th>
                     </tr>
                     <tr>`;
             MC_SIZE_COLUMNS.forEach(s => {
-                html += `<th style="background:${SIZE_COLORS[s] || '#e3f2fd'}; color:#000; font-weight:700; border:1px solid #999;">${s}</th>`;
+                html += `<th style="background:${SIZE_COLORS[s] || HEADER_COLOR}; color:#000; font-weight:700; border:1px solid #666;">${s}</th>`;
             });
             html += `</tr></thead><tbody>`;
 
@@ -1196,15 +1195,15 @@
             rows.forEach((r, idx) => {
                 const deptColor = DEPT_COLORS[idx % DEPT_COLORS.length];
                 const totalNoDemand = r.entrySum;
-                
+
                 html += `<tr>
                     <td class="dept-name" style="background:${deptColor}; font-weight:700; border:1px solid #999;"><strong>${r.dept}</strong></td>
                     <td style="background:${deptColor}; font-weight:700; border:1px solid #999; text-align:center;">${r.totalMC}</td>
-                    <td style="background:${deptColor}; font-weight:700; border:1px solid #999; text-align:center; width:70px;">${totalNoDemand}</td>`;
-                
+                    <td style="background:#ffffff; font-weight:700; border:1px solid #999; text-align:center; width:70px;">${totalNoDemand}</td>`;
+
                 MC_SIZE_COLUMNS.forEach(s => {
                     const val = r.sizes[s] || 0;
-                    html += `<td style="background:${SIZE_COLORS[s] || '#e3f2fd'}; border:1px solid #999; text-align:center; font-weight:600;">${val}</td>`;
+                    html += `<td style="background:${SIZE_COLORS[s] || '#fff'}; border:1px solid #999; text-align:center; font-weight:600;">${val}</td>`;
                     grandSizes[s] += val;
                 });
                 html += `</tr>`;
@@ -1216,9 +1215,9 @@
             html += `<tr class="total-row">
                 <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">📌 Total</td>
                 <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${grandTotalMC}</td>
-                <td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center; width:70px;">${grandEntrySum}</td>`;
+                <td style="background:#ffffff; font-weight:800; border:2px solid #333; text-align:center; width:70px;">${grandEntrySum}</td>`;
             MC_SIZE_COLUMNS.forEach(s => {
-                html += `<td style="background:#fff59d; font-weight:800; border:2px solid #333; text-align:center;">${grandSizes[s]}</td>`;
+                html += `<td style="background:${SIZE_COLORS[s] || '#fff'}; font-weight:800; border:2px solid #333; text-align:center;">${grandSizes[s]}</td>`;
             });
             html += `</tr></tbody></table>`;
 
@@ -1230,7 +1229,8 @@
                 grandEntrySum: grandEntrySum,
                 grandSizes: grandSizes,
                 sizeColors: SIZE_COLORS,
-                deptColors: DEPT_COLORS
+                deptColors: DEPT_COLORS,
+                headerColor: HEADER_COLOR
             };
         }
 
@@ -1278,7 +1278,7 @@
         }
 
         // ============================================================
-        // No Demand Size Excel (with 2-Row Merged Header)
+        // No Demand Size Excel (with Cyan Header)
         // ============================================================
         function downloadNoDemandSizeExcel() {
             const data = window._noDemandSizeData;
@@ -1286,6 +1286,7 @@
 
             const SIZE_COLORS = data.sizeColors || {};
             const DEPT_COLORS = data.deptColors || [];
+            const HEADER_COLOR = '5ADFEF';
 
             const row1 = ['Department Name', 'Total MC', 'No Demand QTY (Sum)'];
             for (let i = 0; i < MC_SIZE_COLUMNS.length; i++) row1.push('');
@@ -1324,28 +1325,25 @@
                 };
             }
 
+            // Row 0 — all cyan header
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const cellRef = XLSX.utils.encode_cell({ r: 0, c: C });
                 if (!ws[cellRef]) ws[cellRef] = { v: '' };
                 if (!ws[cellRef].s) ws[cellRef].s = {};
-                if (C < 3) {
-                    ws[cellRef].s.fill = { fgColor: { rgb: '0D47A1' } };
-                    ws[cellRef].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
-                } else {
-                    ws[cellRef].s.fill = { fgColor: { rgb: '1A237E' } };
-                    ws[cellRef].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
-                }
+                ws[cellRef].s.fill = { fgColor: { rgb: HEADER_COLOR } };
+                ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
                 ws[cellRef].s.alignment = { horizontal: 'center', vertical: 'center', wrapText: true };
                 applyBorder(ws[cellRef]);
             }
 
+            // Row 1 — MC Size headers (size colors) + cyan for merged cells
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const cellRef = XLSX.utils.encode_cell({ r: 1, c: C });
                 if (!ws[cellRef]) ws[cellRef] = { v: '' };
                 if (!ws[cellRef].s) ws[cellRef].s = {};
                 if (C < 3) {
-                    ws[cellRef].s.fill = { fgColor: { rgb: '0D47A1' } };
-                    ws[cellRef].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
+                    ws[cellRef].s.fill = { fgColor: { rgb: HEADER_COLOR } };
+                    ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
                 } else {
                     const size = MC_SIZE_COLUMNS[C - 3];
                     const hexColor = (SIZE_COLORS[size] || '#e3f2fd').replace('#', '').toUpperCase();
@@ -1356,15 +1354,20 @@
                 applyBorder(ws[cellRef]);
             }
 
+            // Data Rows
             for (let R = 2; R < range.e.r; R++) {
                 for (let C = range.s.c; C <= range.e.c; C++) {
                     const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
                     if (!ws[cellRef]) ws[cellRef] = { v: '' };
                     if (!ws[cellRef].s) ws[cellRef].s = {};
 
-                    if (C < 3) {
+                    if (C === 0 || C === 1) {
                         const deptColor = (DEPT_COLORS[(R - 2) % DEPT_COLORS.length] || '#e3f2fd').replace('#', '').toUpperCase();
                         ws[cellRef].s.fill = { fgColor: { rgb: deptColor } };
+                        ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 11 };
+                    } else if (C === 2) {
+                        // No Demand QTY (Sum) — WHITE
+                        ws[cellRef].s.fill = { fgColor: { rgb: 'FFFFFF' } };
                         ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 11 };
                     } else {
                         const size = MC_SIZE_COLUMNS[C - 3];
@@ -1377,13 +1380,25 @@
                 }
             }
 
+            // Total Row
             const lastR = range.e.r;
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const cellRef = XLSX.utils.encode_cell({ r: lastR, c: C });
                 if (!ws[cellRef]) ws[cellRef] = { v: '' };
                 if (!ws[cellRef].s) ws[cellRef].s = {};
-                ws[cellRef].s.fill = { fgColor: { rgb: 'FFF59D' } };
-                ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+
+                if (C === 0 || C === 1) {
+                    ws[cellRef].s.fill = { fgColor: { rgb: 'FFF59D' } };
+                    ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+                } else if (C === 2) {
+                    ws[cellRef].s.fill = { fgColor: { rgb: 'FFFFFF' } };
+                    ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+                } else {
+                    const size = MC_SIZE_COLUMNS[C - 3];
+                    const hexColor = (SIZE_COLORS[size] || '#fff').replace('#', '').toUpperCase();
+                    ws[cellRef].s.fill = { fgColor: { rgb: hexColor } };
+                    ws[cellRef].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+                }
                 ws[cellRef].s.alignment = { horizontal: 'center', vertical: 'center' };
                 applyBorder(ws[cellRef], 'medium');
             }
