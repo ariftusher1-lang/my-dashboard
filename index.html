@@ -287,6 +287,28 @@
         @media (max-width:600px) { 
             .admin-panel-btn { font-size: 12px; padding: 6px 10px; }
         }
+
+        /* ===== NO DEMAND FIXED TABLE STYLES ===== */
+        #noDemandTable {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        #noDemandTable thead th {
+            font-size: 14px !important;
+            padding: 10px !important;
+        }
+        #noDemandTableBody tr:hover {
+            background: #f5f9ff !important;
+        }
+        #noDemandTableBody input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        #noDemandTableBody input[type="number"]::-webkit-outer-spin-button,
+        #noDemandTableBody input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -605,20 +627,19 @@
         </div>
     </div>
 
-    <!-- ===================== NO DEMAND POPUP MODAL ===================== -->
+    <!-- ===================== NO DEMAND POPUP MODAL (Fixed Table) ===================== -->
     <div class="modal-overlay" id="noDemandModal">
         <div class="modal-box" style="max-width:550px;">
             <button class="modal-close" onclick="closeNoDemandPopup()">×</button>
-            <h3>📊 No Demand — MC Size ও QTY</h3>
-            <p style="font-size:13px; color:#666; margin-top:6px;">প্রতিটি MC Size অনুযায়ী QTY ইনপুট দিন। একাধিক রো যোগ করতে <strong>➕ Add Row</strong> চাপুন।</p>
+            <h3>📊 No Demand — MC Size &amp; QTY</h3>
+            <p style="font-size:13px; color:#666; margin-top:6px;">প্রতিটি MC Size অনুযায়ী QTY ইনপুট দিন। সব ইনপুট শেষে <strong>💾 Save</strong> চাপুন।</p>
             
-            <div style="max-height:300px; overflow-y:auto; margin-top:15px;">
+            <div style="max-height:420px; overflow-y:auto; margin-top:15px;">
                 <table style="width:100%; border-collapse:collapse;" id="noDemandTable">
                     <thead>
                         <tr style="background:#0d47a1; color:#fff;">
-                            <th style="padding:8px; border:1px solid #ddd;">MC Size</th>
-                            <th style="padding:8px; border:1px solid #ddd;">QTY</th>
-                            <th style="padding:8px; border:1px solid #ddd; width:70px;">Action</th>
+                            <th style="padding:10px; border:1px solid #ddd; width:40%;">MC Size</th>
+                            <th style="padding:10px; border:1px solid #ddd; width:60%;">QTY</th>
                         </tr>
                     </thead>
                     <tbody id="noDemandTableBody">
@@ -626,11 +647,6 @@
                     </tbody>
                 </table>
             </div>
-
-            <button type="button" onclick="addNoDemandRow()" 
-                    style="background:#28a745; margin-top:12px; padding:10px; font-size:15px;">
-                ➕ Add Row
-            </button>
 
             <div class="btn-row">
                 <button class="btn-save" onclick="saveNoDemandPopup()">💾 Save</button>
@@ -775,10 +791,11 @@
     ];
 
     // =============================================================
-    // NO DEMAND POPUP CONFIG
+    // NO DEMAND POPUP CONFIG (Fixed Table)
     // =============================================================
     const MC_SIZE_OPTIONS = ['90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
-    let noDemandData = [];
+    let noDemandData = {}; // { '90': 2, '120': 1, ... } — empty string মানে ইনপুট নেই
+    window._noDemandTargetField = null;
 
     let lastEntryPayload = null;
     let lastEntryTimestamp = null;
@@ -1425,7 +1442,7 @@
                 <div><label>No Demand</label>
                     <input type="text" id="editNoDemand" value="${p.noDemandQty||''}" readonly 
                            style="cursor:pointer; color:#d32f2f; font-weight:700;" 
-                           onclick="openUserEditNoDemandPopup()">
+                           onclick="openNoDemandPopupForEdit()">
                 </div>
                 <div><label>Material Short</label><input type="number" id="editMaterialShort" value="${p.materialMBShortage||0}"></div>
             </div>
@@ -1449,6 +1466,31 @@
             const secs = Math.floor((remaining % 60000) / 1000);
             timerEl.textContent = `⏱️ সময় বাকি: ${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
         }, 1000);
+    }
+
+    // No Demand Popup ওপেন (Edit Modal এর জন্য)
+    function openNoDemandPopupForEdit() {
+        window._noDemandTargetField = 'editNoDemand';
+        noDemandData = {};
+        MC_SIZE_OPTIONS.forEach(s => { noDemandData[s] = ''; });
+        
+        const existingVal = document.getElementById('editNoDemand').value;
+        if (existingVal && existingVal.trim() !== '') {
+            const parts = existingVal.split(',').map(s => s.trim()).filter(s => s);
+            parts.forEach(part => {
+                const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
+                if (match) {
+                    const size = match[1].trim();
+                    const qty = parseInt(match[2]) || 0;
+                    if (MC_SIZE_OPTIONS.includes(size)) {
+                        noDemandData[size] = qty;
+                    }
+                }
+            });
+        }
+        
+        renderNoDemandTable();
+        document.getElementById('noDemandModal').classList.add('active');
     }
 
     function closeUserEdit() { document.getElementById('userEditModal').classList.remove('active'); }
@@ -1508,24 +1550,26 @@
     }
 
     // =============================================================
-    // NO DEMAND POPUP FUNCTIONS
+    // NO DEMAND POPUP (Fixed MC Size Table)
     // =============================================================
     function openNoDemandPopup() {
-        const existingVal = document.getElementById('noDemandQty').value;
-        noDemandData = [];
+        window._noDemandTargetField = 'noDemandQty';
+        noDemandData = {};
+        MC_SIZE_OPTIONS.forEach(s => { noDemandData[s] = ''; });
         
+        const existingVal = document.getElementById('noDemandQty').value;
         if (existingVal && existingVal.trim() !== '') {
             const parts = existingVal.split(',').map(s => s.trim()).filter(s => s);
             parts.forEach(part => {
                 const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
                 if (match) {
-                    noDemandData.push({ size: match[1].trim(), qty: parseInt(match[2]) || 0 });
+                    const size = match[1].trim();
+                    const qty = parseInt(match[2]) || 0;
+                    if (MC_SIZE_OPTIONS.includes(size)) {
+                        noDemandData[size] = qty;
+                    }
                 }
             });
-        }
-        
-        if (noDemandData.length === 0) {
-            noDemandData.push({ size: '', qty: '' });
         }
         
         renderNoDemandTable();
@@ -1536,241 +1580,62 @@
         const tbody = document.getElementById('noDemandTableBody');
         tbody.innerHTML = '';
         
-        noDemandData.forEach((row, index) => {
+        MC_SIZE_OPTIONS.forEach(size => {
             const tr = document.createElement('tr');
-            
-            let sizeOptions = '<option value="">-- সিলেক্ট --</option>';
-            MC_SIZE_OPTIONS.forEach(s => {
-                sizeOptions += `<option value="${s}" ${row.size === s ? 'selected' : ''}>${s}</option>`;
-            });
-            
             tr.innerHTML = `
+                <td style="padding:8px 12px; border:1px solid #ddd; background:#e3f2fd; font-weight:700; color:#0d47a1; text-align:center; font-size:15px;">${size}</td>
                 <td style="padding:6px; border:1px solid #ddd;">
-                    <select onchange="updateNoDemandRow(${index}, 'size', this.value)" 
-                            style="width:100%; padding:6px;">
-                        ${sizeOptions}
-                    </select>
-                </td>
-                <td style="padding:6px; border:1px solid #ddd;">
-                    <input type="number" value="${row.qty}" min="0"
-                           onchange="updateNoDemandRow(${index}, 'qty', this.value)"
-                           style="width:100%; padding:6px;" placeholder="QTY">
-                </td>
-                <td style="padding:6px; border:1px solid #ddd; text-align:center;">
-                    <button type="button" onclick="removeNoDemandRow(${index})"
-                            style="background:#dc3545; color:#fff; border:none; border-radius:6px; 
-                                   padding:6px 10px; cursor:pointer; font-size:14px; width:auto; margin:0;">
-                        ❌
-                    </button>
+                    <input type="number" min="0" value="${noDemandData[size] !== '' && noDemandData[size] !== undefined ? noDemandData[size] : ''}"
+                           oninput="updateNoDemandQty('${size}', this.value)"
+                           onfocus="this.select()"
+                           style="width:100%; padding:8px; text-align:center; font-weight:700; font-size:15px; color:#d32f2f;"
+                           placeholder="QTY">
                 </td>
             `;
             tbody.appendChild(tr);
         });
     }
 
-    function addNoDemandRow() {
-        noDemandData.push({ size: '', qty: '' });
-        renderNoDemandTable();
-    }
-
-    function removeNoDemandRow(index) {
-        noDemandData.splice(index, 1);
-        if (noDemandData.length === 0) {
-            noDemandData.push({ size: '', qty: '' });
-        }
-        renderNoDemandTable();
-    }
-
-    function updateNoDemandRow(index, field, value) {
-        if (field === 'qty') {
-            noDemandData[index][field] = value === '' ? '' : (parseInt(value) || 0);
+    function updateNoDemandQty(size, value) {
+        if (value === '' || value === null) {
+            noDemandData[size] = '';
         } else {
-            noDemandData[index][field] = value;
+            const num = parseInt(value);
+            noDemandData[size] = isNaN(num) ? '' : num;
         }
     }
 
     function saveNoDemandPopup() {
-        const validRows = [];
-        for (let i = 0; i < noDemandData.length; i++) {
-            const row = noDemandData[i];
-            if (row.size && row.qty !== '' && row.qty !== null) {
-                validRows.push(row);
+        const parts = [];
+        MC_SIZE_OPTIONS.forEach(size => {
+            const qty = noDemandData[size];
+            if (qty !== '' && qty !== null && qty > 0) {
+                parts.push(`${size} - ${qty}`);
             }
-        }
+        });
         
-        if (validRows.length === 0) {
-            document.getElementById('noDemandQty').value = '';
-            closeNoDemandPopup();
-            return;
-        }
+        const resultStr = parts.join(', ');
         
-        const resultStr = validRows.map(r => `${r.size} - ${r.qty}`).join(', ');
-        document.getElementById('noDemandQty').value = resultStr;
+        const targetField = window._noDemandTargetField || 'noDemandQty';
+        const targetEl = document.getElementById(targetField);
+        if (targetEl) targetEl.value = resultStr;
+        
+        window._noDemandTargetField = null;
         
         closeNoDemandPopup();
         
         setTimeout(() => {
-            const nextField = document.getElementById('materialMBShortage');
-            if (nextField) nextField.focus();
+            if (targetField === 'noDemandQty') {
+                const nextField = document.getElementById('materialMBShortage');
+                if (nextField) nextField.focus();
+            }
         }, 200);
     }
 
     function closeNoDemandPopup() {
         document.getElementById('noDemandModal').classList.remove('active');
+        window._noDemandTargetField = null;
     }
-
-    // =============================================================
-    // USER EDIT NO DEMAND POPUP (edits the editNoDemand field)
-    // =============================================================
-    let userEditNoDemandData = [];
-
-    function openUserEditNoDemandPopup() {
-        const existingVal = document.getElementById('editNoDemand').value;
-        userEditNoDemandData = [];
-        
-        if (existingVal && existingVal.trim() !== '') {
-            const parts = existingVal.split(',').map(s => s.trim()).filter(s => s);
-            parts.forEach(part => {
-                const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
-                if (match) {
-                    userEditNoDemandData.push({ size: match[1].trim(), qty: parseInt(match[2]) || 0 });
-                }
-            });
-        }
-        
-        if (userEditNoDemandData.length === 0) {
-            userEditNoDemandData.push({ size: '', qty: '' });
-        }
-        
-        renderUserEditNoDemandTable();
-        document.getElementById('noDemandModal').classList.add('active');
-        // Override the modal title temporarily
-        const modalTitle = document.querySelector('#noDemandModal h3');
-        modalTitle.dataset.orig = modalTitle.textContent;
-        modalTitle.textContent = '✏️ Edit No Demand — MC Size ও QTY';
-        
-        // Change the save button action
-        const saveBtn = document.querySelector('#noDemandModal .btn-save');
-        saveBtn.dataset.origOnclick = 'saveNoDemandPopup()';
-        saveBtn.onclick = function() { saveUserEditNoDemandPopup(); };
-    }
-
-    function renderUserEditNoDemandTable() {
-        const tbody = document.getElementById('noDemandTableBody');
-        tbody.innerHTML = '';
-        
-        userEditNoDemandData.forEach((row, index) => {
-            const tr = document.createElement('tr');
-            
-            let sizeOptions = '<option value="">-- সিলেক্ট --</option>';
-            MC_SIZE_OPTIONS.forEach(s => {
-                sizeOptions += `<option value="${s}" ${row.size === s ? 'selected' : ''}>${s}</option>`;
-            });
-            
-            tr.innerHTML = `
-                <td style="padding:6px; border:1px solid #ddd;">
-                    <select onchange="updateUserEditNoDemandRow(${index}, 'size', this.value)" 
-                            style="width:100%; padding:6px;">
-                        ${sizeOptions}
-                    </select>
-                </td>
-                <td style="padding:6px; border:1px solid #ddd;">
-                    <input type="number" value="${row.qty}" min="0"
-                           onchange="updateUserEditNoDemandRow(${index}, 'qty', this.value)"
-                           style="width:100%; padding:6px;" placeholder="QTY">
-                </td>
-                <td style="padding:6px; border:1px solid #ddd; text-align:center;">
-                    <button type="button" onclick="removeUserEditNoDemandRow(${index})"
-                            style="background:#dc3545; color:#fff; border:none; border-radius:6px; 
-                                   padding:6px 10px; cursor:pointer; font-size:14px; width:auto; margin:0;">
-                        ❌
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    function addNoDemandRowUserEdit() {
-        userEditNoDemandData.push({ size: '', qty: '' });
-        renderUserEditNoDemandTable();
-    }
-
-    function removeUserEditNoDemandRow(index) {
-        userEditNoDemandData.splice(index, 1);
-        if (userEditNoDemandData.length === 0) {
-            userEditNoDemandData.push({ size: '', qty: '' });
-        }
-        renderUserEditNoDemandTable();
-    }
-
-    function updateUserEditNoDemandRow(index, field, value) {
-        if (field === 'qty') {
-            userEditNoDemandData[index][field] = value === '' ? '' : (parseInt(value) || 0);
-        } else {
-            userEditNoDemandData[index][field] = value;
-        }
-    }
-
-    function saveUserEditNoDemandPopup() {
-        const validRows = [];
-        for (let i = 0; i < userEditNoDemandData.length; i++) {
-            const row = userEditNoDemandData[i];
-            if (row.size && row.qty !== '' && row.qty !== null) {
-                validRows.push(row);
-            }
-        }
-        
-        if (validRows.length === 0) {
-            document.getElementById('editNoDemand').value = '';
-            closeNoDemandPopupUserEdit();
-            return;
-        }
-        
-        const resultStr = validRows.map(r => `${r.size} - ${r.qty}`).join(', ');
-        document.getElementById('editNoDemand').value = resultStr;
-        
-        closeNoDemandPopupUserEdit();
-    }
-
-    function closeNoDemandPopupUserEdit() {
-        // Reset modal title and save button
-        const modalTitle = document.querySelector('#noDemandModal h3');
-        if (modalTitle.dataset.orig) {
-            modalTitle.textContent = modalTitle.dataset.orig;
-            delete modalTitle.dataset.orig;
-        }
-        const saveBtn = document.querySelector('#noDemandModal .btn-save');
-        saveBtn.onclick = function() { saveNoDemandPopup(); };
-        // Also reset Add Row button
-        const addBtn = document.querySelector('#noDemandModal button[onclick*="addNoDemandRow"]');
-        if (addBtn) addBtn.setAttribute('onclick', 'addNoDemandRow()');
-        
-        document.getElementById('noDemandModal').classList.remove('active');
-    }
-
-    // Override close button for user edit popup
-    const originalCloseNoDemand = window.closeNoDemandPopup;
-    window.closeNoDemandPopup = function() {
-        const modalTitle = document.querySelector('#noDemandModal h3');
-        if (modalTitle.dataset.orig) {
-            // We're in user edit mode
-            closeNoDemandPopupUserEdit();
-        } else {
-            originalCloseNoDemand();
-        }
-    };
-
-    // Override Add Row button
-    const origAddNoDemandRow = window.addNoDemandRow;
-    window.addNoDemandRow = function() {
-        const modalTitle = document.querySelector('#noDemandModal h3');
-        if (modalTitle.dataset.orig) {
-            addNoDemandRowUserEdit();
-        } else {
-            origAddNoDemandRow();
-        }
-    };
 
     // =============================================================
     // ADMIN LOGIN / EDIT
