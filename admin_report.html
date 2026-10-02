@@ -428,16 +428,6 @@
                 <div id="scorecardContainer"><div class="no-data">লোড হচ্ছে...</div></div>
             </div>
 
-            <div class="section-title clearfix">
-                <span class="mc-badge" style="font-size:18px;">🟦 মেশিন ডিপার্টমেন্ট (MC Department) - ভিজুয়াল রিপোর্ট</span>
-                <div class="btn-group">
-                    <button class="btn-image" onclick="downloadMCImage()">📷 ইমেজ ডাউনলোড</button>
-                    <button class="btn-excel" onclick="downloadMCExcel()">⬇️ Excel ডাউনলোড</button>
-                    <button class="btn-pdf" onclick="downloadMCPDF()">📄 PDF ডাউনলোড</button>
-                </div>
-            </div>
-            <div class="table-wrap" id="mcSummaryTable"><div class="no-data">লোড হচ্ছে...</div></div>
-
             <div class="stats" id="statsContainer">
                 <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
                 <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
@@ -449,10 +439,6 @@
                 <div class="card"><div class="label">🏃 মোট Target Run</div><div class="value" id="totalTargetRun">0</div></div>
                 <div class="card"><div class="label">📈 গড় % Running</div><div class="value" id="avgRunningPct">0.0%</div></div>
             </div>
-
-            <div class="section-title">📊 ডেইলি সারাংশ (Summary)</div>
-            <div class="sub-title">🏢 RIP DPL টোটাল (Overall)</div>
-            <div class="table-wrap" id="overallTable"><div class="no-data">লোড হচ্ছে...</div></div>
 
             <div class="section-title">🔴 মিসিং ডিপার্টমেন্ট (এন্ট্রি নেই)</div>
             <div id="missingContainer" class="missing-list"><div class="no-data">লোড হচ্ছে...</div></div>
@@ -593,6 +579,21 @@
 
         const FIXED_SN_LIST = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+        // NEW: No Demand Size Table এ শুধু এই ডিপার্টমেন্টগুলো দেখাবে (Plastic-1 বাদ)
+        const NO_DEMAND_SIZE_DEPTS = [
+            'RIP> DPL> Plastic-3',
+            'RIP> DPL> Plastic-6.1',
+            'RIP> DPL> Plastic-6.2',
+            'RIP> DPL> Plastic-7.1',
+            'RIP> DPL> Plastic-7.2',
+            'RIP> DPL> Plastic-7.3',
+            'RIP> DPL> Plastic-7.4',
+            'Silicon Project'
+        ];
+
+        // Fixed MC Sizes — সবসময় এই কলামগুলোই দেখাবে
+        const MC_SIZE_COLUMNS = ['90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
+
         const DEPT_MAP = {
             'RIP> DPL> Plastic-3': ['RIP> DPL> Plastic-3', 'Plastic Prod-3.1'],
             'RIP> DPL> Plastic-6.1': ['RIP> DPL> Plastic-6.1'],
@@ -632,13 +633,6 @@
             'Plastic Inventory & Delivery', 'Corporate sales Production.',
             'Plastics-Recycle & Silo', 'Product Development & Mold Change',
             'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
-        ];
-
-        const SUPPORT_DEPTS = [
-            'Plastic Inventory & Delivery', 'Corporate sales Production.',
-            'Plastics-Recycle & Silo', 'Product Development & Mold Change',
-            'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store',
-            'Plastic-Maintenance.', 'Tool Room Maintenance'
         ];
 
         let allData = [];
@@ -857,8 +851,6 @@
             renderSaifuddinTable(data);
             renderNoDemandSizeTable(data);
             renderScorecard(data);
-            renderMcSummaryTable(data);
-            renderOverall(data);
             renderMissing(data);
             renderRawData(data);
         }
@@ -1162,20 +1154,16 @@
         }
 
         // ============================================================
-        // NEW: Department Wise MC Size No Demand Table
+        // Department Wise MC Size No Demand Table
+        // - Prod IC কলাম বাদ
+        // - শুধু NO_DEMAND_SIZE_DEPTS দেখাবে
+        // - সব MC Size Fixed কলাম থাকবে; ডেটা না থাকলে "-" দেখাবে
         // ============================================================
         function renderNoDemandSizeTable(data) {
             const container = document.getElementById('noDemandSizeTableContainer');
             if (!container) return;
 
-            if (!data || data.length === 0) {
-                container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
-                return;
-            }
-
-            const MC_SIZES = ['90', '120', '160', '250', '270', '280', '330', '380', '470', '530', '800', 'IMB', 'BM'];
-            const deptMap = {};
-
+            // Helper: parse "120 - 2, 160 - 1"
             function parseNoDemand(str) {
                 const result = {};
                 if (!str) return result;
@@ -1192,70 +1180,63 @@
                 return result;
             }
 
-            data.forEach(row => {
-                const dept = getVal(row, ['Department', 'department']);
-                if (!dept) return;
-
-                const icName = getVal(row, ['IC Name', 'icName']) || '-';
-                const totalMC = getNum(row, ['Total MC', 'totalMC']);
-                const noDemandStr = getVal(row, ['No Demand (QTY)', 'noDemandQty']) || '';
-                const parsed = parseNoDemand(noDemandStr);
-
-                if (!deptMap[dept]) {
-                    deptMap[dept] = {
-                        dept: dept,
-                        icName: icName,
-                        totalMC: 0,
-                        entrySum: 0,
-                        sizes: {}
-                    };
-                    MC_SIZES.forEach(s => { deptMap[dept].sizes[s] = 0; });
-                }
-
-                const d = deptMap[dept];
-                d.totalMC += totalMC;
-
-                Object.keys(parsed).forEach(size => {
-                    if (!d.sizes[size]) d.sizes[size] = 0;
-                    d.sizes[size] += parsed[size];
-                    d.entrySum += parsed[size];
-                });
-
-                if (icName && icName !== '-') d.icName = icName;
+            // ডেটা না থাকলেও Fixed ডিপার্টমেন্ট লিস্ট দেখাবে
+            const deptMap = {};
+            NO_DEMAND_SIZE_DEPTS.forEach(dept => {
+                deptMap[dept] = {
+                    dept: dept,
+                    totalMC: FIXED_MC_QTY[dept] !== undefined ? FIXED_MC_QTY[dept] : 0,
+                    entrySum: 0,
+                    sizes: {}
+                };
+                MC_SIZE_COLUMNS.forEach(s => { deptMap[dept].sizes[s] = 0; });
             });
+
+            if (data && data.length > 0) {
+                data.forEach(row => {
+                    const dept = getVal(row, ['Department', 'department']);
+                    if (!dept) return;
+                    if (!NO_DEMAND_SIZE_DEPTS.includes(dept)) return;
+
+                    const noDemandStr = getVal(row, ['No Demand (QTY)', 'noDemandQty']) || '';
+                    const parsed = parseNoDemand(noDemandStr);
+
+                    const d = deptMap[dept];
+                    if (!d) return;
+
+                    // Total MC ডেটা থেকে না নিয়ে FIXED_MC_QTY থেকে নিচ্ছি (Fixed Display)
+                    // তবে ডেটাতে থাকলে সেটাই থাকবে (FIXED_MC_QTY তে না থাকলে)
+
+                    Object.keys(parsed).forEach(size => {
+                        if (!d.sizes[size]) d.sizes[size] = 0;
+                        d.sizes[size] += parsed[size];
+                        d.entrySum += parsed[size];
+                    });
+                });
+            }
 
             const rows = Object.values(deptMap);
 
-            if (rows.length === 0) {
-                container.innerHTML = `<div class="no-data">কোনো No Demand ডেটা নেই</div>`;
-                return;
-            }
-
-            const activeSizes = MC_SIZES.filter(size => {
-                return rows.some(r => (r.sizes[size] || 0) > 0);
-            });
-
+            // হেডার — Prod IC বাদ দেওয়া হয়েছে
             let html = `<table class="saifuddin-table"><thead><tr>
                 <th>Department Name</th>
-                <th>Prod IC</th>
                 <th>Total MC</th>
                 <th>No Demand QTY (Entry Sum)</th>`;
-            activeSizes.forEach(s => { html += `<th>${s}</th>`; });
+            MC_SIZE_COLUMNS.forEach(s => { html += `<th>${s}</th>`; });
             html += `</tr></thead><tbody>`;
 
             let grandTotalMC = 0;
             let grandEntrySum = 0;
             const grandSizes = {};
-            activeSizes.forEach(s => { grandSizes[s] = 0; });
+            MC_SIZE_COLUMNS.forEach(s => { grandSizes[s] = 0; });
 
             rows.forEach(r => {
                 const totalNoDemand = r.entrySum;
                 html += `<tr>
                     <td class="dept-name"><strong>${r.dept}</strong></td>
-                    <td>${r.icName}</td>
                     <td><span class="highlight-number">${r.totalMC}</span></td>
-                    <td><span class="highlight-number">${totalNoDemand}</span></td>`;
-                activeSizes.forEach(s => {
+                    <td><span class="highlight-number">${totalNoDemand > 0 ? totalNoDemand : '-'}</span></td>`;
+                MC_SIZE_COLUMNS.forEach(s => {
                     const val = r.sizes[s] || 0;
                     html += `<td>${val > 0 ? val : '-'}</td>`;
                     grandSizes[s] += val;
@@ -1268,11 +1249,10 @@
 
             html += `<tr class="total-row">
                 <td><strong>📌 Total</strong></td>
-                <td>-</td>
                 <td><strong>${grandTotalMC}</strong></td>
-                <td><strong>${grandEntrySum}</strong></td>`;
-            activeSizes.forEach(s => {
-                html += `<td><strong>${grandSizes[s]}</strong></td>`;
+                <td><strong>${grandEntrySum > 0 ? grandEntrySum : '-'}</strong></td>`;
+            MC_SIZE_COLUMNS.forEach(s => {
+                html += `<td><strong>${grandSizes[s] > 0 ? grandSizes[s] : '-'}</strong></td>`;
             });
             html += `</tr></tbody></table>`;
 
@@ -1280,7 +1260,6 @@
 
             window._noDemandSizeData = {
                 rows: rows,
-                activeSizes: activeSizes,
                 grandTotalMC: grandTotalMC,
                 grandEntrySum: grandEntrySum,
                 grandSizes: grandSizes
@@ -1289,7 +1268,7 @@
 
         function downloadNoDemandSizeImage() {
             const container = document.getElementById('noDemandSizeTableContainer');
-            if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
+            if (!container || container.innerText.includes('লোড হচ্ছে')) {
                 alert('⚠️ ডেটা নেই!');
                 return;
             }
@@ -1334,17 +1313,17 @@
             const data = window._noDemandSizeData;
             if (!data || data.rows.length === 0) { alert('ডেটা নেই!'); return; }
 
-            const headers = ['Department Name', 'Prod IC', 'Total MC', 'No Demand QTY (Entry Sum)', ...data.activeSizes];
+            const headers = ['Department Name', 'Total MC', 'No Demand QTY (Entry Sum)', ...MC_SIZE_COLUMNS];
             const rows = data.rows.map(r => {
-                const rowData = [r.dept, r.icName, r.totalMC, r.entrySum];
-                data.activeSizes.forEach(s => {
+                const rowData = [r.dept, r.totalMC, r.entrySum];
+                MC_SIZE_COLUMNS.forEach(s => {
                     rowData.push(r.sizes[s] || 0);
                 });
                 return rowData;
             });
 
-            const totalRow = ['📌 Total', '-', data.grandTotalMC, data.grandEntrySum];
-            data.activeSizes.forEach(s => {
+            const totalRow = ['📌 Total', data.grandTotalMC, data.grandEntrySum];
+            MC_SIZE_COLUMNS.forEach(s => {
                 totalRow.push(data.grandSizes[s] || 0);
             });
             rows.push(totalRow);
@@ -1487,214 +1466,6 @@
             html += `</tbody></table>`;
             container.innerHTML = html;
             window._scorecardData = scoreData;
-        }
-
-        function renderMcSummaryTable(data) {
-            const container = document.getElementById('mcSummaryTable');
-            if (!container) return;
-            const mcData = data.filter(row => {
-                const dept = getVal(row, ['Department', 'department']);
-                return MC_DEPARTMENTS.includes(dept);
-            });
-
-            if (mcData.length === 0) {
-                container.innerHTML = `<div class="no-data">কোনো মেশিন ডিপার্টমেন্টের ডেটা নেই</div>`;
-                return;
-            }
-
-            const causeKeys = [
-                { key: 'mpShort', label: 'MP Short' },
-                { key: 'moldProblem', label: 'Mold Problem' },
-                { key: 'moldChange', label: 'Mold Change' },
-                { key: 'underSample', label: 'Sample' },
-                { key: 'mcProblem', label: 'MC Problem' },
-                { key: 'preventiveMaintenance', label: 'Preventive' },
-                { key: 'noDemandQty', label: 'No Demand' },
-                { key: 'materialMBShortage', label: 'Material & MB Shortage' },
-                { key: 'overStockWIP', label: 'Over Stock (WIP)' },
-                { key: 'accessoriesShort', label: 'Acc Short' }
-            ];
-
-            const deptMap = {};
-            mcData.forEach(row => {
-                const dept = getVal(row, ['Department', 'department']);
-                if (!dept) return;
-                if (!deptMap[dept]) {
-                    deptMap[dept] = {
-                        icName: getVal(row, ['IC Name', 'icName']),
-                        totalMC: 0,
-                        totalHR: 0,
-                        totalLeave: 0,
-                        totalAbsent: 0,
-                        mcOperator: 0,
-                        packagingOperator: 0,
-                        running: 0,
-                        stopped: 0,
-                        count: 0,
-                        causes: {}
-                    };
-                    causeKeys.forEach(c => { deptMap[dept].causes[c.key] = 0; });
-                }
-                const d = deptMap[dept];
-                d.totalMC += getNum(row, ['Total MC', 'totalMC']);
-                d.totalHR += getNum(row, ['Total HR', 'totalHR']);
-                d.totalLeave += getNum(row, ['Leave Employee', 'leaveEmployee']);
-                d.totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
-                d.mcOperator += getNum(row, ['MC Operator', 'mcOperator']);
-                d.packagingOperator += getNum(row, ['Packaging Operator', 'packagingOperator']);
-                d.running += getNum(row, ['MC Running', 'mcRunning']);
-                d.stopped += getNum(row, ['MC Stopped', 'mcStopped']);
-                d.count += 1;
-                causeKeys.forEach(c => {
-                    d.causes[c.key] += getNum(row, [c.key]);
-                });
-            });
-
-            let activeCauseKeys = causeKeys.filter(c => {
-                let hasData = false;
-                Object.values(deptMap).forEach(d => {
-                    if (d.causes[c.key] > 0) hasData = true;
-                });
-                return hasData;
-            });
-
-            let html = `<table class="mc-table"><thead><tr>
-                <th>ডিপার্টমেন্ট</th><th>Prod IC</th><th>Total Present</th><th>Total MC</th>
-                <th>MC Operator</th><th>Packaging Operator</th><th>MC Running</th><th>MC Stopped</th>
-                <th>MC Running %</th><th>MC Stopped %</th>`;
-            activeCauseKeys.forEach(c => { html += `<th>${c.label}</th>`; });
-            html += `</tr></thead><tbody>`;
-
-            let grandTotalMC = 0,
-                grandTotalPresent = 0,
-                grandMCOp = 0,
-                grandPackOp = 0,
-                grandRunning = 0,
-                grandStopped = 0;
-            let grandCauses = {};
-            activeCauseKeys.forEach(c => { grandCauses[c.key] = 0; });
-
-            for (const [dept, d] of Object.entries(deptMap)) {
-                const totalPresent = d.totalHR;
-                const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100) : 0;
-                const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100) : 0;
-
-                let runClass = 'mc-run-pct-mid';
-                if (runPct >= 80) runClass = 'mc-run-pct-high';
-                else if (runPct < 50) runClass = 'mc-run-pct-low';
-
-                let stopClass = 'mc-run-pct-mid';
-                if (stopPct <= 20) stopClass = 'mc-run-pct-high';
-                else if (stopPct > 50) stopClass = 'mc-run-pct-low';
-
-                const runBarColor = runPct >= 80 ? 'green' : (runPct >= 50 ? 'yellow' : 'red');
-                const stopBarColor = stopPct <= 20 ? 'green' : (stopPct <= 50 ? 'yellow' : 'red');
-
-                html += `<tr>
-                    <td class="dept-name"><strong>${dept}</strong></td>
-                    <td>${d.icName || '-'}</td>
-                    <td><strong>${totalPresent}</strong></td>
-                    <td>${d.totalMC}</td>
-                    <td>${d.mcOperator}</td>
-                    <td>${d.packagingOperator}</td>
-                    <td>${d.running}</td>
-                    <td>${d.stopped}</td>
-                    <td class="${runClass}">
-                        <div class="mc-bar-wrap">
-                            <span class="pct-text">${runPct.toFixed(1)}%</span>
-                            <div class="bar-bg">
-                                <div class="bar-fill ${runBarColor}" style="width: ${Math.min(runPct, 100)}%;"></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="${stopClass}">
-                        <div class="mc-bar-wrap">
-                            <span class="pct-text">${stopPct.toFixed(1)}%</span>
-                            <div class="bar-bg">
-                                <div class="bar-fill ${stopBarColor}" style="width: ${Math.min(stopPct, 100)}%;"></div>
-                            </div>
-                        </div>
-                    </td>`;
-
-                activeCauseKeys.forEach(c => {
-                    const val = d.causes[c.key];
-                    html += `<td>${val > 0 ? val : ''}</td>`;
-                    grandCauses[c.key] += val;
-                });
-
-                html += `</tr>`;
-
-                grandTotalMC += d.totalMC;
-                grandTotalPresent += totalPresent;
-                grandMCOp += d.mcOperator;
-                grandPackOp += d.packagingOperator;
-                grandRunning += d.running;
-                grandStopped += d.stopped;
-            }
-
-            const grandRunPct = grandTotalMC > 0 ? ((grandRunning / grandTotalMC) * 100) : 0;
-            const grandStopPct = grandTotalMC > 0 ? ((grandStopped / grandTotalMC) * 100) : 0;
-
-            html += `<tr class="total-row">
-                <td><strong>📌 মোট</strong></td>
-                <td>-</td>
-                <td><strong>${grandTotalPresent}</strong></td>
-                <td><strong>${grandTotalMC}</strong></td>
-                <td><strong>${grandMCOp}</strong></td>
-                <td><strong>${grandPackOp}</strong></td>
-                <td><strong>${grandRunning}</strong></td>
-                <td><strong>${grandStopped}</strong></td>
-                <td><strong>${grandRunPct.toFixed(1)}%</strong></td>
-                <td><strong>${grandStopPct.toFixed(1)}%</strong></td>`;
-
-            activeCauseKeys.forEach(c => {
-                html += `<td><strong>${grandCauses[c.key]}</strong></td>`;
-            });
-
-            html += `</tr></tbody></table>`;
-            container.innerHTML = html;
-
-            window._mcTableData = {
-                rows: deptMap,
-                activeCauseKeys: activeCauseKeys,
-                grandTotalMC,
-                grandTotalPresent,
-                grandMCOp,
-                grandPackOp,
-                grandRunning,
-                grandStopped,
-                grandRunPct,
-                grandStopPct,
-                grandCauses
-            };
-        }
-
-        function renderOverall(data) {
-            const container = document.getElementById('overallTable');
-            if (!container) return;
-            let totalHR = 0,
-                leave = 0,
-                absent = 0;
-            data.forEach(r => {
-                totalHR += getNum(r, ['Total HR', 'totalHR']);
-                leave += getNum(r, ['Leave Employee', 'leaveEmployee']);
-                absent += getNum(r, ['Absent Employee', 'absentEmployee']);
-            });
-            const present = totalHR;
-            const pctPresent = totalHR > 0 ? ((present / totalHR) * 100) : 0;
-            const pctAbsent = totalHR > 0 ? ((absent / totalHR) * 100) : 0;
-            let rawDate = data.length > 0 ? getVal(data[0], ['entryDate', 'Date']) : '-';
-            const date = formatDate(rawDate);
-            const shift = data.length > 0 ? getVal(data[0], ['Shift', 'shift']) : '-';
-            if (data.length === 0) {
-                container.innerHTML = `<div class="no-data">কোনো ডেটা নেই</div>`;
-                return;
-            }
-            container.innerHTML = `<table>
-                <thead><tr><th>Date</th><th>Shift</th><th>Total HR</th><th>Total Present</th><th>Total Absent</th><th>% Present</th><th>% Absent</th></tr></thead>
-                <tbody><tr><td>${date}</td><td>${shift}</td><td><strong>${totalHR}</strong></td><td><strong>${present}</strong></td><td>${absent}</td>
-                    <td>${pctPresent.toFixed(1)}%</td><td>${pctAbsent.toFixed(1)}%</td></tr></tbody>
-            </table>`;
         }
 
         function renderMissing(data) {
@@ -1876,7 +1647,7 @@
         }
 
         function showError(msg) {
-            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','mcSummaryTable','overallTable','missingContainer','rawDataTable'];
+            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','scorecardContainer','missingContainer','rawDataTable'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
@@ -1966,93 +1737,6 @@
             const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
             XLSX.utils.book_append_sheet(wb, ws, 'Summary');
             XLSX.writeFile(wb, `Summary_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
-        }
-
-        function downloadMCImage() {
-            const container = document.getElementById('mcSummaryTable');
-            if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-                alert('⚠️ ডেটা নেই!');
-                return;
-            }
-            const btn = document.querySelector('.btn-image');
-            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-                .then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = `MC_Summary_${new Date().toISOString().slice(0,10)}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
-                    if (btn) { btn.innerText = '📷 ইমেজ ডাউনলোড'; btn.disabled = false; }
-                });
-        }
-
-        function downloadMCExcel() {
-            const data = window._mcTableData;
-            if (!data) { alert('ডেটা নেই!'); return; }
-            const headers = ['Department', 'Prod IC', 'Total Present', 'Total MC', 'MC Operator', 'Packaging Operator',
-                'MC Running', 'MC Stopped', 'MC Running %', 'MC Stopped %'
-            ];
-            data.activeCauseKeys.forEach(c => { headers.push(c.label); });
-
-            const rows = [];
-            Object.entries(data.rows).forEach(([dept, d]) => {
-                const totalPresent = d.totalHR;
-                const runPct = d.totalMC > 0 ? ((d.running / d.totalMC) * 100).toFixed(1) : 0;
-                const stopPct = d.totalMC > 0 ? ((d.stopped / d.totalMC) * 100).toFixed(1) : 0;
-                const rowData = [dept, d.icName || '-', totalPresent, d.totalMC, d.mcOperator, d.packagingOperator,
-                    d.running, d.stopped, runPct + '%', stopPct + '%'
-                ];
-                data.activeCauseKeys.forEach(c => {
-                    rowData.push(d.causes[c.key] || 0);
-                });
-                rows.push(rowData);
-            });
-
-            const totalRow = ['📌 মোট', '-', data.grandTotalPresent, data.grandTotalMC, data.grandMCOp, data.grandPackOp,
-                data.grandRunning, data.grandStopped,
-                data.grandRunPct.toFixed(1) + '%', data.grandStopPct.toFixed(1) + '%'
-            ];
-            data.activeCauseKeys.forEach(c => {
-                totalRow.push(data.grandCauses[c.key] || 0);
-            });
-            rows.push(totalRow);
-
-            const wbData = [headers, ...rows];
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(wbData);
-            XLSX.utils.book_append_sheet(wb, ws, "MC Summary");
-            XLSX.writeFile(wb, `MC_Summary_${new Date().toISOString().slice(0,10)}.xlsx`);
-        }
-
-        function downloadMCPDF() {
-            const container = document.getElementById('mcSummaryTable');
-            if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) {
-                alert('⚠️ ডেটা নেই!');
-                return;
-            }
-            const btn = document.querySelector('.btn-pdf');
-            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
-            html2canvas(container, { scale: 2, backgroundColor: '#ffffff', logging: false })
-                .then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF('l', 'mm', 'a4');
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    pdf.save(`MC_Summary_${new Date().toISOString().slice(0,10)}.pdf`);
-                    if (btn) { btn.innerText = '📄 PDF ডাউনলোড'; btn.disabled = false; }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('❌ PDF তৈরি ব্যর্থ!');
-                    if (btn) { btn.innerText = '📄 PDF ডাউনলোড'; btn.disabled = false; }
-                });
         }
 
         function downloadSaifuddinImage() {
