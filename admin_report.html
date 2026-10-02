@@ -233,6 +233,40 @@
         .factory-image-box { margin-top: 20px; border: 3px solid #00ff00; border-radius: 8px; overflow: hidden; width: 100%; height: 300px; display: flex; align-items: center; justify-content: center; background: #0f172a; }
         .factory-image-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .factory-image-box .placeholder-text { color: #64748b; font-size: 13px; text-align: center; padding: 10px; }
+
+        /* ============================================================ */
+        /* Department Wise MC Size No Demand — COMPACT ROW STYLES */
+        /* ============================================================ */
+        #noDemandSizeTableContainer .saifuddin-table {
+            font-size: 11px !important;
+        }
+        #noDemandSizeTableContainer .saifuddin-table thead th {
+            padding: 5px 6px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            white-space: nowrap !important;
+        }
+        #noDemandSizeTableContainer .saifuddin-table tbody td {
+            padding: 4px 6px !important;
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+            height: 22px !important;
+        }
+        #noDemandSizeTableContainer .saifuddin-table .dept-name {
+            padding-left: 10px !important;
+            font-size: 11px !important;
+        }
+        #noDemandSizeTableContainer .saifuddin-table .highlight-number {
+            font-size: 11px !important;
+        }
+        #noDemandSizeTableContainer .saifuddin-table tbody tr {
+            height: 22px !important;
+        }
+        #noDemandSizeTableContainer .saifuddin-table tbody tr.total-row td {
+            padding: 5px 6px !important;
+            font-size: 11px !important;
+            height: 24px !important;
+        }
     </style>
 </head>
 <body>
@@ -579,7 +613,7 @@
 
         const FIXED_SN_LIST = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-        // NEW: No Demand Size Table এ শুধু এই ডিপার্টমেন্টগুলো দেখাবে (Plastic-1 বাদ)
+        // No Demand Size Table এ শুধু এই ডিপার্টমেন্টগুলো দেখাবে (Plastic-1 বাদ)
         const NO_DEMAND_SIZE_DEPTS = [
             'RIP> DPL> Plastic-3',
             'RIP> DPL> Plastic-6.1',
@@ -1155,15 +1189,11 @@
 
         // ============================================================
         // Department Wise MC Size No Demand Table
-        // - Prod IC কলাম বাদ
-        // - শুধু NO_DEMAND_SIZE_DEPTS দেখাবে
-        // - সব MC Size Fixed কলাম থাকবে; ডেটা না থাকলে "-" দেখাবে
         // ============================================================
         function renderNoDemandSizeTable(data) {
             const container = document.getElementById('noDemandSizeTableContainer');
             if (!container) return;
 
-            // Helper: parse "120 - 2, 160 - 1"
             function parseNoDemand(str) {
                 const result = {};
                 if (!str) return result;
@@ -1180,7 +1210,6 @@
                 return result;
             }
 
-            // ডেটা না থাকলেও Fixed ডিপার্টমেন্ট লিস্ট দেখাবে
             const deptMap = {};
             NO_DEMAND_SIZE_DEPTS.forEach(dept => {
                 deptMap[dept] = {
@@ -1204,9 +1233,6 @@
                     const d = deptMap[dept];
                     if (!d) return;
 
-                    // Total MC ডেটা থেকে না নিয়ে FIXED_MC_QTY থেকে নিচ্ছি (Fixed Display)
-                    // তবে ডেটাতে থাকলে সেটাই থাকবে (FIXED_MC_QTY তে না থাকলে)
-
                     Object.keys(parsed).forEach(size => {
                         if (!d.sizes[size]) d.sizes[size] = 0;
                         d.sizes[size] += parsed[size];
@@ -1217,7 +1243,6 @@
 
             const rows = Object.values(deptMap);
 
-            // হেডার — Prod IC বাদ দেওয়া হয়েছে
             let html = `<table class="saifuddin-table"><thead><tr>
                 <th>Department Name</th>
                 <th>Total MC</th>
