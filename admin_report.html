@@ -145,12 +145,9 @@
         .auto-status.on { background: #e8f5e9; color: #1b5e20; }
         #countdownDisplay { font-size: 13.5px; font-weight: 600; color: #0d47a1; background: #e3f2fd; padding: 6px 16px; border-radius: 20px; border: 1px solid #bbdefb; white-space: nowrap; }
 
-        /* Stats Card - HIDDEN */
         .stats { display: none !important; }
 
-        /* ============================================================ */
-        /* ADMIN NAVIGATION MENU - Bigger & Green */
-        /* ============================================================ */
+        /* ADMIN NAVIGATION MENU */
         .admin-nav {
             position: relative;
             display: inline-block;
@@ -433,7 +430,6 @@
                 </div>
             </div>
 
-            <!-- NAVIGATION MENU -->
             <nav class="admin-nav" id="adminNav">
                 <button class="admin-nav-btn" onclick="toggleAdminNav(event)">
                     <span>⚙️</span> Administration Report <span class="caret">▾</span>
@@ -497,7 +493,6 @@
             <div id="filterStatus" class="filter-status" style="display:none;">⏳ ডেটা লোড হচ্ছে...</div>
             <div id="summaryHeader" class="summary-header">📌 বর্তমান তারিখ: -- | শিফট: --</div>
 
-            <!-- SECTIONS -->
             <div class="admin-section" id="section-saifuddin">
                 <div class="section-title sec-saifuddin">
                     <span><span class="sec-icon">📊</span>Summery Table For Mr. Saifuddin</span>
@@ -745,7 +740,6 @@
 
         const FIXED_SN_LIST = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-        // Serial with Plastic-1 included
         const NO_DEMAND_SIZE_DEPTS = [
             'RIP> DPL> Plastic-1',
             'RIP> DPL> Plastic-3',
@@ -896,6 +890,22 @@
             return parseFloat(v) || 0;
         }
 
+        // Helper: No Demand string থেকে Total QTY বের করা
+        // উদাহরণ: "90 - 1, 120 - 2" → 3
+        function parseNoDemandTotal(str) {
+            if (!str && str !== 0) return 0;
+            if (typeof str === 'number') return str;
+            let total = 0;
+            const parts = String(str).split(',').map(s => s.trim()).filter(s => s);
+            parts.forEach(part => {
+                const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
+                if (match) {
+                    total += parseInt(match[2]) || 0;
+                }
+            });
+            return total;
+        }
+
         async function loadData() {
             const ct = document.getElementById('currentTime');
             const fs = document.getElementById('filterStatus');
@@ -1042,7 +1052,8 @@
                         sample += getNum(r, ['Under Sample', 'underSample']);
                         mcProb += getNum(r, ['MC Problem', 'mcProblem']);
                         preventive += getNum(r, ['Preventive Maintenance', 'preventiveMaintenance']);
-                        noDemand += getNum(r, ['No Demand (QTY)', 'noDemandQty']);
+                        // ★ FIX: No Demand Total QTY যোগফল
+                        noDemand += parseNoDemandTotal(getVal(r, ['No Demand (QTY)', 'noDemandQty']));
                         materialShort += getNum(r, ['Material & MB Shortage', 'materialMBShortage']);
                         overStock += getNum(r, ['Over Stock (WIP)', 'overStockWIP']);
                         accShort += getNum(r, ['Accessories Short', 'accessoriesShort']);
@@ -1179,7 +1190,6 @@
                 });
             }
 
-            // Serial order (with Plastic-1)
             const rows = NO_DEMAND_SIZE_DEPTS.map(d => deptMap[d]).filter(Boolean);
             const HEADER_COLOR = '#5ADFEF';
             const DEPT_COLORS = ['#e3f2fd', '#fce4ec', '#e8f5e9', '#fff3e0', '#f3e5f5', '#e0f7fa', '#fff9c4', '#ffebee', '#ede7f6'];
@@ -1417,7 +1427,6 @@
         function renderQATable(data) {
             const container = document.getElementById('qaTableContainer');
             if (!container) return;
-            // Serial with Plastic-1
             const QA_FIXED_DEPTS = [
                 'RIP> DPL> Plastic-1',
                 'RIP> DPL> Plastic-3',
@@ -1654,7 +1663,8 @@
                 const hr = getNum(row, ['Total HR', 'totalHR']);
                 totalPresent += hr;
                 totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
-                totalNoDemand += getNum(row, ['No Demand (QTY)', 'noDemandQty']);
+                // ★ FIX: No Demand Total QTY
+                totalNoDemand += parseNoDemandTotal(getVal(row, ['No Demand (QTY)', 'noDemandQty']));
                 totalMoldChange += getNum(row, ['Mold Change', 'moldChange']);
                 mcStopManpower += getNum(row, ['MP Short', 'mpShort']);
                 totalMC += getNum(row, ['Total MC', 'totalMC']);
