@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #e9ecef; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #1a233a; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         
         .login-container { display: flex; width: 100%; max-width: 1100px; height: 650px; background: #ffffff; border-radius: 20px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); overflow: hidden; }
         .left-panel { flex: 1; background: #1a233a; color: #ffffff; padding: 45px 40px; display: flex; flex-direction: column; justify-content: center; position: relative; }
@@ -56,125 +56,265 @@
         .btn-login:active { transform: scale(0.98); }
         .error-msg { color: #dc3545; font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px; font-weight: 500; }
 
+        /* ============================================================ */
+        /* DASHBOARD STYLES */
+        /* ============================================================ */
         #dashboardContainer { display: none; width: 100%; max-width: 100%; margin: 0 auto; padding: 0 10px; }
         #dashboardContainer.active { display: block; }
         .login-container.hidden { display: none; }
         
         #dashboardContainer * { box-sizing: border-box; margin: 0; padding: 0; }
-        #dashboardContainer body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 10px 20px; }
-        #dashboardContainer .container { max-width: 100%; margin: 0 auto; padding: 0 10px; padding-top: 100px; }
-
-        .header { background: linear-gradient(135deg, #0d47a1, #1976d2); color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .header h1 { font-size: 24px; }
-        .header span { font-size: 14px; opacity: 0.9; }
+        #dashboardContainer body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #1a233a; padding: 10px 20px; }
+        #dashboardContainer .container { max-width: 100%; margin: 0 auto; padding: 20px 15px 40px; }
 
         .scrolling-message-dashboard { position: fixed; top: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.98); color: #ff0000; padding: 14px 0; font-weight: 800; font-size: 42px; white-space: nowrap; overflow: hidden; z-index: 99999; text-shadow: 0 0 4px rgba(255, 0, 0, 0.4); border-bottom: 3px solid #dc3545; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); }
         .scrolling-message-dashboard span { display: inline-block; padding-left: 100%; animation: scroll-left 100s linear infinite; }
 
-        /* ============================================================ */
-        /* TOP BAR - Administration + Filter Nav Row */
-        /* ============================================================ */
-        .top-nav-row {
+        /* DASHBOARD TOP BAR (Logout Row) */
+        .dash-top-bar {
             display: flex;
-            align-items: flex-start;
-            gap: 18px;
-            margin: 0 0 18px 0;
+            justify-content: space-between;
+            align-items: center;
             flex-wrap: wrap;
-            position: relative;
-            z-index: 100;
-        }
-
-        /* ADMIN NAV */
-        .admin-nav {
-            position: relative;
-            display: inline-block;
-            z-index: 100;
-        }
-        .admin-nav-btn {
-            background: linear-gradient(135deg, #2e7d32, #1b5e20);
-            color: #ffffff;
-            border: 2px solid #1b5e20;
-            padding: 16px 38px;
-            font-size: 20px;
-            font-weight: 800;
+            margin-bottom: 20px;
+            padding: 14px 22px;
+            background: linear-gradient(135deg, #0d47a1, #1976d2);
             border-radius: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            letter-spacing: 0.5px;
-            box-shadow: 0 5px 16px rgba(46, 125, 50, 0.45);
-            transition: all 0.25s;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-            white-space: nowrap;
+            color: #fff;
         }
-        .admin-nav-btn:hover {
-            background: linear-gradient(135deg, #388e3c, #2e7d32);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(46, 125, 50, 0.55);
-        }
-        .admin-nav-btn .caret { font-size: 16px; transition: transform 0.25s; }
-        .admin-nav.open .admin-nav-btn .caret { transform: rotate(180deg); }
+        .dash-top-bar strong { font-size: 16px; }
+        .dash-top-bar .right-side { display: flex; align-items: center; gap: 15px; }
+        .dash-top-bar .right-side span { font-size: 13px; }
+        .logout-btn { background: #dc3545; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .logout-btn:hover { background: #b02a37; }
 
-        .admin-nav-dropdown {
-            display: none;
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 0;
-            min-width: 480px;
+        /* ============================================================ */
+        /* QUICK ACCESS LAYOUT */
+        /* ============================================================ */
+        .quick-access-wrapper {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        /* LEFT - WELCOME CARD */
+        .welcome-card {
+            flex: 0 0 380px;
             background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
-            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 32px 30px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+            min-height: 620px;
+            display: flex;
+            flex-direction: column;
+        }
+        .welcome-card .welcome-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 22px;
+        }
+        .welcome-card .welcome-badge {
+            background: #fff5e6;
+            color: #ff7043;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1.2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .welcome-card .welcome-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #f5b041;
+            background: #e3f2fd url('https://i.ibb.co/vQxN4Kq/avatar-placeholder.png') center/cover;
             overflow: hidden;
-            animation: navFade 0.2s ease;
-            z-index: 200;
+            flex-shrink: 0;
         }
-        .admin-nav.open .admin-nav-dropdown { display: block; }
-        @keyframes navFade {
-            from { opacity: 0; transform: translateY(-6px); }
-            to { opacity: 1; transform: translateY(0); }
+        .welcome-card .welcome-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .welcome-card .user-name {
+            color: #0d47a1;
+            font-size: 30px;
+            font-weight: 800;
+            margin-bottom: 22px;
+            letter-spacing: 0.5px;
+            word-break: break-word;
         }
-        .admin-nav-dropdown a {
+
+        .welcome-card .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 18px;
+            margin-bottom: 20px;
+        }
+        .welcome-card .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .welcome-card .info-item .info-label {
+            font-size: 12px;
+            font-weight: 800;
+            color: #ff7043;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 18px 26px;
-            color: #1a3a5c;
-            text-decoration: none;
-            font-size: 18px;
+            gap: 5px;
+        }
+        .welcome-card .info-item .info-value {
+            font-size: 15px;
             font-weight: 700;
-            border-bottom: 1px solid #f1f5f9;
-            transition: all 0.15s;
+            color: #1a233a;
+        }
+        .welcome-card .info-item.full-width { grid-column: 1 / -1; }
+
+        .welcome-card .info-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a233a;
+            word-break: break-word;
+        }
+        .welcome-card .info-box.mono {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.5px;
+        }
+
+        .welcome-card .card-bottom-space {
+            flex: 1;
+            margin-top: 20px;
+            border-left: 3px solid #ff7043;
+            min-height: 60px;
+        }
+
+        /* RIGHT - QUICK ACCESS */
+        .quick-access-area {
+            flex: 1;
+            min-width: 320px;
+            background: #1e2a47;
+            border-radius: 20px;
+            padding: 32px 30px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .quick-access-area .qa-header {
+            margin-bottom: 28px;
+        }
+        .quick-access-area .qa-header h2 {
+            color: #ffffff;
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .quick-access-area .qa-header p {
+            color: #94a3b8;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .quick-access-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 18px;
+        }
+
+        .qa-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 24px 16px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
             cursor: pointer;
+            transition: all 0.22s;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+            border: 2px solid transparent;
+            min-height: 165px;
+            user-select: none;
+        }
+        .qa-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+            border-color: #0d47a1;
+        }
+        .qa-card .qa-icon {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            background: #e8f0fe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            font-size: 30px;
+            transition: 0.22s;
+        }
+        .qa-card:hover .qa-icon {
+            background: #d2e3fc;
+            transform: scale(1.08);
+        }
+        .qa-card .qa-title {
+            color: #0d47a1;
+            font-size: 13px;
+            font-weight: 800;
+            line-height: 1.4;
             letter-spacing: 0.2px;
         }
-        .admin-nav-dropdown a:last-child { border-bottom: none; }
-        .admin-nav-dropdown a:hover { background: #e3f2fd; color: #0d47a1; padding-left: 32px; }
-        .admin-nav-dropdown a.active { background: #2e7d32; color: #ffffff; }
-        .admin-nav-dropdown a.active:hover { background: #1b5e20; color: #ffffff; }
-        .admin-nav-dropdown a span:first-child { font-size: 24px; }
+
+        /* LOGOUT CARD - Special Orange */
+        .qa-card.qa-logout {
+            background: #ff7043;
+            border-color: #ff7043;
+        }
+        .qa-card.qa-logout .qa-icon {
+            background: #ffffff;
+        }
+        .qa-card.qa-logout .qa-title {
+            color: #ffffff;
+        }
+        .qa-card.qa-logout:hover {
+            background: #e85a2e;
+            border-color: #e85a2e;
+        }
+        .qa-card.qa-logout:hover .qa-icon {
+            background: #fff5e6;
+        }
 
         /* ============================================================ */
-        /* FILTER NAV - Dropdown Button Style */
+        /* FILTER NAV (kept above sections) */
         /* ============================================================ */
         .filter-nav {
             position: relative;
             display: inline-block;
             z-index: 90;
+            margin: 0 0 18px 0;
         }
         .filter-nav-btn {
             background: linear-gradient(135deg, #1976d2, #0d47a1);
             color: #ffffff;
             border: 2px solid #0d47a1;
-            padding: 16px 32px;
-            font-size: 18px;
+            padding: 12px 26px;
+            font-size: 16px;
             font-weight: 800;
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             letter-spacing: 0.5px;
             box-shadow: 0 5px 16px rgba(25, 118, 210, 0.45);
             transition: all 0.25s;
@@ -186,7 +326,7 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 22px rgba(25, 118, 210, 0.55);
         }
-        .filter-nav-btn .caret { font-size: 16px; transition: transform 0.25s; }
+        .filter-nav-btn .caret { font-size: 14px; transition: transform 0.25s; }
         .filter-nav.open .filter-nav-btn .caret { transform: rotate(180deg); }
 
         .filter-nav-dropdown {
@@ -204,8 +344,42 @@
             z-index: 190;
         }
         .filter-nav.open .filter-nav-dropdown { display: block; }
+        @keyframes navFade {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        /* Filter body - 3 filters in row */
+        .filter-nav-auto-corner {
+            position: absolute;
+            top: 12px;
+            right: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            padding: 8px 14px;
+            border-radius: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e8ecf1;
+        }
+        .filter-nav-auto-corner .auto-label {
+            font-weight: 700;
+            font-size: 12.5px;
+            color: #37474f;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #b0bec5; border-radius: 24px; transition: 0.3s; }
+        .slider::before { content: ""; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: #ffffff; border-radius: 50%; transition: 0.3s; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); }
+        .switch input:checked + .slider { background: linear-gradient(135deg, #1976d2, #0d47a1); }
+        .switch input:checked + .slider::before { transform: translateX(20px); }
+        .auto-status { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: #ffebee; color: #b71c1c; transition: all 0.3s; }
+        .auto-status.on { background: #e8f5e9; color: #1b5e20; }
+        #countdownDisplay { font-size: 12px; font-weight: 700; color: #0d47a1; background: #e3f2fd; padding: 5px 12px; border-radius: 20px; border: 1px solid #bbdefb; white-space: nowrap; }
+
         .filter-nav-body {
             display: flex;
             flex-wrap: wrap;
@@ -248,8 +422,6 @@
             border-color: #1976d2;
             box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
         }
-
-        /* Filter actions row */
         .filter-nav-actions-row {
             display: flex;
             gap: 10px;
@@ -279,47 +451,32 @@
         .btn-success { background: linear-gradient(135deg, #2e7d32, #1b5e20); color: #ffffff; box-shadow: 0 2px 8px rgba(46, 125, 50, 0.35); }
         .btn-success:hover { background: linear-gradient(135deg, #1b5e20, #0d4d12); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(46, 125, 50, 0.45); }
 
-        /* Auto refresh corner - top right of filter dropdown */
-        .filter-nav-auto-corner {
-            position: absolute;
-            top: 12px;
-            right: 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #fff;
-            padding: 8px 14px;
-            border-radius: 30px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e8ecf1;
-        }
-        .filter-nav-auto-corner .auto-label {
-            font-weight: 700;
-            font-size: 12.5px;
-            color: #37474f;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #b0bec5; border-radius: 24px; transition: 0.3s; }
-        .slider::before { content: ""; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: #ffffff; border-radius: 50%; transition: 0.3s; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); }
-        .switch input:checked + .slider { background: linear-gradient(135deg, #1976d2, #0d47a1); }
-        .switch input:checked + .slider::before { transform: translateX(20px); }
-        .auto-status { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: #ffebee; color: #b71c1c; transition: all 0.3s; }
-        .auto-status.on { background: #e8f5e9; color: #1b5e20; }
-        #countdownDisplay { font-size: 12px; font-weight: 700; color: #0d47a1; background: #e3f2fd; padding: 5px 12px; border-radius: 20px; border: 1px solid #bbdefb; white-space: nowrap; }
-
-        @media (max-width: 900px) {
-            .filter-nav-dropdown { min-width: 90vw; left: auto; right: 0; }
-            .filter-nav-auto-corner { position: static; margin: 10px 22px 0; justify-content: center; }
-        }
-
+        /* SECTIONS */
         .stats { display: none !important; }
 
         .admin-section { display: none; }
-        .admin-section.active { display: block; }
+        .admin-section.active { display: block; background: #ffffff; border-radius: 14px; padding: 16px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15); }
+
+        .back-to-qa-btn {
+            background: linear-gradient(135deg, #37474f, #263238);
+            color: #ffffff;
+            border: none;
+            padding: 10px 22px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 14px 0;
+            box-shadow: 0 3px 10px rgba(55, 71, 79, 0.35);
+            transition: all 0.2s;
+        }
+        .back-to-qa-btn:hover {
+            background: linear-gradient(135deg, #263238, #101820);
+            transform: translateY(-1px);
+        }
 
         .section-title {
             font-size: 14px;
@@ -376,7 +533,7 @@
         .missing-item { background: #e53935; color: white; padding: 4px 14px; border-radius: 20px; font-size: 13px; }
         .clearfix::after { content: ""; display: table; clear: both; }
         .summary-header { background: #fff3e0; padding: 12px 20px; border-radius: 8px; margin: 15px 0; font-size: 16px; font-weight: 600; color: #e65100; border-left: 4px solid #ff9800; }
-        .saifuddin-title { background: #1a237e; color: white; padding: 6px 14px; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 13px; }
+
         .saifuddin-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03); }
         .saifuddin-table thead th { background: #0d47a1; color: white; padding: 12px 8px; font-weight: 700; font-size: 12px; letter-spacing: 0.3px; border-bottom: 3px solid #1565c0; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
         .saifuddin-table tbody td { padding: 10px 8px; border-bottom: 1px solid #e8ecf1; vertical-align: middle; white-space: nowrap; }
@@ -420,9 +577,6 @@
         #smsMessageBox .btn-sm-excel { background: #25D366; color: white; }
         #smsMessageBox .btn-sm-excel:hover { background: #1da851; }
         #smsMessageContent { font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 15px; line-height: 1.8; padding: 10px 0; white-space: pre-wrap; background: #f8fafc; border-radius: 8px; padding: 15px; border: 1px solid #e2e8f0; }
-        
-        .logout-btn { background: #dc3545; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; margin-left: 15px; }
-        .logout-btn:hover { background: #b02a37; }
 
         .factory-image-box { margin-top: 20px; border: 3px solid #00ff00; border-radius: 8px; overflow: hidden; width: 100%; height: 300px; display: flex; align-items: center; justify-content: center; background: #0f172a; }
         .factory-image-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -450,7 +604,13 @@
         #qaTableContainer .saifuddin-table tbody td:first-child { text-align: left !important; padding-left: 6px !important; font-size: 10px !important; }
 
         .filter-status { display: none !important; }
-        .header { display: none !important; }
+
+        @media (max-width: 900px) {
+            .filter-nav-dropdown { min-width: 90vw; left: auto; right: 0; }
+            .filter-nav-auto-corner { position: static; margin: 10px 22px 0; justify-content: center; }
+            .welcome-card { flex: 1 1 100%; min-height: auto; }
+            .quick-access-area .qa-header h2 { font-size: 26px; }
+        }
     </style>
 </head>
 <body>
@@ -459,6 +619,7 @@
         <span>প্রোডাকশন টিম মানেই কারখানার জ্যান্ত ইঞ্জিন, কারণ অবিরাম চাকা ঘুরিয়ে কোম্পানি কে সচল রাখাই যাদের নেশা, তারা রাতকে দিন বানিয়ে দিন কে রাত বানিয়ে সাফল্য ছিনিয়ে আনতে জানে!ফ্লোরে টার্গেট মেলাতে গিয়ে হাজারো সমস্যা কিংবা ব্রেকডাউন আসে, তবুও প্রোডাকশন লাইন কখনো থামার নাম নেয় না।</span>
     </div>
 
+    <!-- LOGIN PAGE -->
     <div class="login-container" id="loginContainer">
         <div class="left-panel">
             <div class="logo-area">
@@ -510,65 +671,108 @@
         </div>
     </div>
 
+    <!-- DASHBOARD -->
     <div id="dashboardContainer">
         <div class="scrolling-message-dashboard" id="dashboardScrollMessage">
             <span>প্রোডাকশন টিম মানেই কারখানার জ্যান্ত ইঞ্জিন, কারণ অবিরাম চাকা ঘুরিয়ে কোম্পানি কে সচল রাখাই যাদের নেশা, তারা রাতকে দিন বানিয়ে দিন কে রাত বানিয়ে সাফল্য ছিনিয়ে আনতে জানে!ফ্লোরে টার্গেট মেলাতে গিয়ে হাজারো সমস্যা কিংবা ব্রেকডাউন আসে, তবুও প্রোডাকশন লাইন কখনো থামার নাম নেয় না।</span>
         </div>
 
         <div class="container" id="app">
-            <div class="header" style="display:none;">
-                <h1>🏭 DPL ডিটেইলড অ্যাডমিন রিপোর্ট</h1>
-                <div style="display: flex; align-items: center;">
+            <!-- Top Bar (Logout) -->
+            <div class="dash-top-bar">
+                <strong>⚙️ DPL Administration Panel</strong>
+                <div class="right-side">
                     <span id="currentTime">📅 লোড হচ্ছে...</span>
                     <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button>
                 </div>
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:15px; padding:12px 18px; background:linear-gradient(135deg,#0d47a1,#1976d2); border-radius:10px; color:#fff;">
-                <strong style="font-size:15px;">⚙️ Administration Report Panel</strong>
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <span id="currentTime" style="font-size:13px;">📅 লোড হচ্ছে...</span>
-                    <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button>
+            <!-- QUICK ACCESS WRAPPER -->
+            <div class="quick-access-wrapper" id="quickAccessWrapper">
+                <!-- LEFT - WELCOME CARD -->
+                <div class="welcome-card">
+                    <div class="welcome-top">
+                        <div class="welcome-badge">✦ WELCOME BACK ✦</div>
+                        <div class="welcome-avatar">
+                            <img src="https://i.ibb.co/7y7Q6hM/user-avatar.png" alt="User" onerror="this.src='https://i.ibb.co/qj0Q5YR/default-avatar.png';">
+                        </div>
+                    </div>
+
+                    <div class="user-name">MD.ARIFUZZAMAN</div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">📆 Batch</span>
+                            <span class="info-value">94F</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">🕒 Shift</span>
+                            <span class="info-value">Evening</span>
+                        </div>
+                        <div class="info-item full-width">
+                            <span class="info-label">🎓 Program</span>
+                            <span class="info-value">B.Sc in Electrical &amp; Electronic Engineering</span>
+                        </div>
+                        <div class="info-item full-width">
+                            <span class="info-label">🆔 Student ID</span>
+                            <div class="info-box mono">WUB09/25/94/6327</div>
+                        </div>
+                    </div>
+
+                    <div class="card-bottom-space"></div>
+                </div>
+
+                <!-- RIGHT - QUICK ACCESS -->
+                <div class="quick-access-area">
+                    <div class="qa-header">
+                        <h2>Quick Access</h2>
+                        <p>Navigate to your most-used features instantly</p>
+                    </div>
+
+                    <div class="quick-access-grid">
+                        <div class="qa-card" onclick="showAdminSection('saifuddin')">
+                            <div class="qa-icon">📊</div>
+                            <div class="qa-title">Summery Table<br>For Mr. Saifuddin</div>
+                        </div>
+
+                        <div class="qa-card" onclick="showAdminSection('nodemand')">
+                            <div class="qa-icon">📦</div>
+                            <div class="qa-title">Department Wise<br>MC Size No Demand</div>
+                        </div>
+
+                        <div class="qa-card" onclick="showAdminSection('qa')">
+                            <div class="qa-icon">🔬</div>
+                            <div class="qa-title">Report For<br>QA Department</div>
+                        </div>
+
+                        <div class="qa-card" onclick="showAdminSection('missing')">
+                            <div class="qa-icon">🔴</div>
+                            <div class="qa-title">মিসিং ডিপার্টমেন্ট<br>(এন্ট্রি নেই)</div>
+                        </div>
+
+                        <div class="qa-card" onclick="showAdminSection('sms')">
+                            <div class="qa-icon">💬</div>
+                            <div class="qa-title">SMS For<br>DGM Sir</div>
+                        </div>
+
+                        <div class="qa-card qa-logout" onclick="handleLogout()">
+                            <div class="qa-icon">🚪</div>
+                            <div class="qa-title">Logout</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- ============================================ -->
-            <!-- TOP NAV ROW: Administration + Filter -->
-            <!-- ============================================ -->
-            <div class="top-nav-row">
-                <!-- ADMIN NAV -->
-                <nav class="admin-nav" id="adminNav">
-                    <button class="admin-nav-btn" onclick="toggleAdminNav(event)">
-                        <span>⚙️</span> Administration Report <span class="caret">▾</span>
-                    </button>
-                    <div class="admin-nav-dropdown" id="adminNavDropdown">
-                        <a href="javascript:void(0)" onclick="showAdminSection('saifuddin', this)">
-                            <span>📊</span> Summery Table For Mr. Saifuddin
-                        </a>
-                        <a href="javascript:void(0)" onclick="showAdminSection('nodemand', this)">
-                            <span>📦</span> Department Wise MC Size No Demand
-                        </a>
-                        <a href="javascript:void(0)" onclick="showAdminSection('qa', this)">
-                            <span>🔬</span> Report For QA Department
-                        </a>
-                        <a href="javascript:void(0)" onclick="showAdminSection('missing', this)">
-                            <span>🔴</span> মিসিং ডিপার্টমেন্ট (এন্ট্রি নেই)
-                        </a>
-                        <a href="javascript:void(0)" onclick="showAdminSection('sms', this)">
-                            <span>💬</span> SMS For DGM Sir
-                        </a>
-                    </div>
-                </nav>
-
-                <!-- FILTER NAV -->
+            <!-- SECTIONS VIEW WRAPPER -->
+            <div id="sectionsWrapper" style="display:none;">
+                <!-- Filter Nav -->
                 <div class="filter-nav" id="filterNav">
                     <button class="filter-nav-btn" onclick="toggleFilterNav(event)">
                         <span>🔍</span> Filter &amp; Auto-Refresh <span class="caret">▾</span>
                     </button>
                     <div class="filter-nav-dropdown" id="filterNavDropdown">
-                        <!-- Auto Refresh Corner -->
                         <div class="filter-nav-auto-corner">
-                            <span class="auto-label">🔄 অটো-রিফ্রেশ:</span>
+                            <span class="auto-label">🔄 অটো:</span>
                             <div class="switch">
                                 <input type="checkbox" id="autoRefreshToggle">
                                 <span class="slider"></span>
@@ -576,8 +780,6 @@
                             <span id="autoStatusText" class="auto-status">বন্ধ</span>
                             <span id="countdownDisplay">বন্ধ</span>
                         </div>
-
-                        <!-- Filter Body -->
                         <div class="filter-nav-body">
                             <div class="filter-group">
                                 <label>📅 তারিখ (Date)</label>
@@ -598,95 +800,95 @@
                                 </select>
                             </div>
                         </div>
-
-                        <!-- Filter Actions Row -->
                         <div class="filter-nav-actions-row">
                             <button class="btn-primary" onclick="applyFilters()">🔍 ফিল্টার প্রয়োগ</button>
                             <button class="btn-success" onclick="loadData()">🔄 রিফ্রেশ</button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="filterStatus" class="filter-status" style="display:none;">⏳ ডেটা লোড হচ্ছে...</div>
-            <div id="summaryHeader" class="summary-header">📌 বর্তমান তারিখ: -- | শিফট: --</div>
+                <button class="back-to-qa-btn" onclick="backToQuickAccess()">⬅️ Back to Quick Access</button>
 
-            <div class="admin-section" id="section-saifuddin">
-                <div class="section-title sec-saifuddin">
-                    <span><span class="sec-icon">📊</span>Summery Table For Mr. Saifuddin</span>
-                    <div class="btn-group">
-                        <button class="btn-image" onclick="downloadSaifuddinImage()">📷 ইমেজ</button>
-                        <button class="btn-excel" onclick="downloadSaifuddinExcel()">⬇️ Excel</button>
-                        <button class="btn-pdf" onclick="downloadSaifuddinPDF()">📄 PDF</button>
-                    </div>
-                </div>
-                <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
-            </div>
+                <div id="filterStatus" class="filter-status" style="display:none;">⏳ ডেটা লোড হচ্ছে...</div>
+                <div id="summaryHeader" class="summary-header">📌 বর্তমান তারিখ: -- | শিফট: --</div>
 
-            <div class="admin-section" id="section-nodemand">
-                <div class="section-title sec-nodemand">
-                    <span><span class="sec-icon">📦</span>Department Wise MC Size No Demand</span>
-                    <div class="btn-group">
-                        <button class="btn-image" onclick="downloadNoDemandSizeImage()">📷 ইমেজ</button>
-                        <button class="btn-excel" onclick="downloadNoDemandSizeExcel()">⬇️ Excel</button>
-                    </div>
-                </div>
-                <div class="table-wrap" id="noDemandSizeTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
-            </div>
-
-            <div class="admin-section" id="section-qa">
-                <div class="section-title sec-qa">
-                    <span><span class="sec-icon">🔬</span>Report For QA Department</span>
-                    <div class="btn-group">
-                        <button class="btn-image" onclick="downloadQATableImage()">📷 ইমেজ</button>
-                        <button class="btn-excel" onclick="downloadQATableExcel()">⬇️ Excel</button>
-                    </div>
-                </div>
-                <div class="table-wrap" id="qaTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
-            </div>
-
-            <div class="admin-section" id="section-missing">
-                <div class="section-title sec-missing">
-                    <span><span class="sec-icon">🔴</span>মিসিং ডিপার্টমেন্ট (এন্ট্রি নেই)</span>
-                </div>
-                <div id="missingContainer" class="missing-list"><div class="no-data">লোড হচ্ছে...</div></div>
-            </div>
-
-            <div class="admin-section" id="section-sms">
-                <div class="summary-table-wrap" id="smsMessageBox">
-                    <div class="summary-header-text">
-                        <span>💬 SMS For DGM Sir</span>
-                        <div class="btn-group-sm">
-                            <button class="btn-sm-image" id="smsToggleBtn" onclick="toggleSmsBox()">👁️ Show</button>
-                            <button class="btn-sm-excel" onclick="copySmsMessage()">📋 কপি করুন</button>
+                <div class="admin-section" id="section-saifuddin">
+                    <div class="section-title sec-saifuddin">
+                        <span><span class="sec-icon">📊</span>Summery Table For Mr. Saifuddin</span>
+                        <div class="btn-group">
+                            <button class="btn-image" onclick="downloadSaifuddinImage()">📷 ইমেজ</button>
+                            <button class="btn-excel" onclick="downloadSaifuddinExcel()">⬇️ Excel</button>
+                            <button class="btn-pdf" onclick="downloadSaifuddinPDF()">📄 PDF</button>
                         </div>
                     </div>
-                    <div id="smsMessageContentWrap" style="display:none;">
-                        <div id="smsMessageContent"></div>
+                    <div class="table-wrap" id="saifuddinTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+                </div>
+
+                <div class="admin-section" id="section-nodemand">
+                    <div class="section-title sec-nodemand">
+                        <span><span class="sec-icon">📦</span>Department Wise MC Size No Demand</span>
+                        <div class="btn-group">
+                            <button class="btn-image" onclick="downloadNoDemandSizeImage()">📷 ইমেজ</button>
+                            <button class="btn-excel" onclick="downloadNoDemandSizeExcel()">⬇️ Excel</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap" id="noDemandSizeTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+                </div>
+
+                <div class="admin-section" id="section-qa">
+                    <div class="section-title sec-qa">
+                        <span><span class="sec-icon">🔬</span>Report For QA Department</span>
+                        <div class="btn-group">
+                            <button class="btn-image" onclick="downloadQATableImage()">📷 ইমেজ</button>
+                            <button class="btn-excel" onclick="downloadQATableExcel()">⬇️ Excel</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap" id="qaTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+                </div>
+
+                <div class="admin-section" id="section-missing">
+                    <div class="section-title sec-missing">
+                        <span><span class="sec-icon">🔴</span>মিসিং ডিপার্টমেন্ট (এন্ট্রি নেই)</span>
+                    </div>
+                    <div id="missingContainer" class="missing-list"><div class="no-data">লোড হচ্ছে...</div></div>
+                </div>
+
+                <div class="admin-section" id="section-sms">
+                    <div class="summary-table-wrap" id="smsMessageBox">
+                        <div class="summary-header-text">
+                            <span>💬 SMS For DGM Sir</span>
+                            <div class="btn-group-sm">
+                                <button class="btn-sm-image" id="smsToggleBtn" onclick="toggleSmsBox()">👁️ Show</button>
+                                <button class="btn-sm-excel" onclick="copySmsMessage()">📋 কপি করুন</button>
+                            </div>
+                        </div>
+                        <div id="smsMessageContentWrap" style="display:none;">
+                            <div id="smsMessageContent"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="stats" id="statsContainer" style="display:none;">
-                <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
-                <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
-                <div class="card"><div class="label">✅ মোট Present</div><div class="value" id="totalPresent">0</div></div>
-                <div class="card"><div class="label">📤 মোট Leave</div><div class="value" id="totalLeave">0</div></div>
-                <div class="card"><div class="label">❌ মোট Absent</div><div class="value" id="totalAbsent">0</div></div>
-                <div class="card"><div class="label">👥 মোট Manpower</div><div class="value" id="totalManpower">0</div></div>
-                <div class="card"><div class="label">⚙️ মোট MC</div><div class="value" id="totalMC">0</div></div>
-                <div class="card"><div class="label">🏃 মোট Target Run</div><div class="value" id="totalTargetRun">0</div></div>
-                <div class="card"><div class="label">📈 গড় % Running</div><div class="value" id="avgRunningPct">0.0%</div></div>
-            </div>
-
-            <div class="section-title sec-raw">
-                <span><span class="sec-icon">📋</span>র-ডেটা (Raw Data) - প্রতিটি এন্ট্রি আলাদা</span>
-                <div class="btn-group">
-                    <button class="btn-toggle-sec" id="rawDataToggleBtn" onclick="toggleRawData()">👁️ Show</button>
-                    <button class="btn-excel" onclick="downloadExcel()">⬇️ Excel</button>
+                <div class="stats" id="statsContainer" style="display:none;">
+                    <div class="card"><div class="label">📋 মোট এন্ট্রি</div><div class="value" id="totalEntries">0</div></div>
+                    <div class="card"><div class="label">👷 মোট HR</div><div class="value" id="totalHr">0</div></div>
+                    <div class="card"><div class="label">✅ মোট Present</div><div class="value" id="totalPresent">0</div></div>
+                    <div class="card"><div class="label">📤 মোট Leave</div><div class="value" id="totalLeave">0</div></div>
+                    <div class="card"><div class="label">❌ মোট Absent</div><div class="value" id="totalAbsent">0</div></div>
+                    <div class="card"><div class="label">👥 মোট Manpower</div><div class="value" id="totalManpower">0</div></div>
+                    <div class="card"><div class="label">⚙️ মোট MC</div><div class="value" id="totalMC">0</div></div>
+                    <div class="card"><div class="label">🏃 মোট Target Run</div><div class="value" id="totalTargetRun">0</div></div>
+                    <div class="card"><div class="label">📈 গড় % Running</div><div class="value" id="avgRunningPct">0.0%</div></div>
                 </div>
+
+                <div class="section-title sec-raw">
+                    <span><span class="sec-icon">📋</span>র-ডেটা (Raw Data) - প্রতিটি এন্ট্রি আলাদা</span>
+                    <div class="btn-group">
+                        <button class="btn-toggle-sec" id="rawDataToggleBtn" onclick="toggleRawData()">👁️ Show</button>
+                        <button class="btn-excel" onclick="downloadExcel()">⬇️ Excel</button>
+                    </div>
+                </div>
+                <div class="table-wrap" id="rawDataTable" style="display:none;"><div class="no-data">লোড হচ্ছে...</div></div>
             </div>
-            <div class="table-wrap" id="rawDataTable" style="display:none;"><div class="no-data">লোড হচ্ছে...</div></div>
         </div>
     </div>
 
@@ -756,9 +958,9 @@
             document.getElementById('loginContainer').classList.add('hidden');
             document.getElementById('dashboardContainer').classList.add('active');
             document.getElementById('loginScrollMessage').style.display = 'none';
-            document.getElementById('dashboardScrollMessage').style.display = 'block';
             document.body.style.display = 'block';
             document.body.style.padding = '0';
+            document.body.style.background = '#1a233a';
             window.dispatchEvent(new Event('resize'));
         }
 
@@ -766,9 +968,9 @@
             document.getElementById('loginContainer').classList.remove('hidden');
             document.getElementById('dashboardContainer').classList.remove('active');
             document.getElementById('loginScrollMessage').style.display = 'block';
-            document.getElementById('dashboardScrollMessage').style.display = 'none';
             document.body.style.display = 'flex';
             document.body.style.padding = '20px';
+            document.body.style.background = '#1a233a';
         }
 
         function handleLogout() {
@@ -779,21 +981,32 @@
         }
 
         // ============================================================
-        // ADMIN NAV
+        // QUICK ACCESS FLOW
         // ============================================================
-        function toggleAdminNav(event) {
-            event.stopPropagation();
-            document.getElementById('adminNav').classList.toggle('open');
-            document.getElementById('filterNav').classList.remove('open');
-        }
+        function showAdminSection(sectionKey) {
+            // Hide Quick Access
+            document.getElementById('quickAccessWrapper').style.display = 'none';
+            document.getElementById('sectionsWrapper').style.display = 'block';
 
-        function showAdminSection(sectionKey, linkEl) {
+            // Show selected section only
             document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));
-            document.querySelectorAll('.admin-nav-dropdown a').forEach(a => a.classList.remove('active'));
             const target = document.getElementById('section-' + sectionKey);
             if (target) target.classList.add('active');
-            if (linkEl) linkEl.classList.add('active');
-            document.getElementById('adminNav').classList.remove('open');
+
+            // Load data if not loaded
+            if (typeof allData !== 'undefined' && allData.length === 0) {
+                loadData();
+            }
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function backToQuickAccess() {
+            document.getElementById('quickAccessWrapper').style.display = 'flex';
+            document.getElementById('sectionsWrapper').style.display = 'none';
+            document.getElementById('filterNav').classList.remove('open');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // ============================================================
@@ -802,13 +1015,10 @@
         function toggleFilterNav(event) {
             event.stopPropagation();
             document.getElementById('filterNav').classList.toggle('open');
-            document.getElementById('adminNav').classList.remove('open');
         }
 
         document.addEventListener('click', function(e) {
-            const adminNav = document.getElementById('adminNav');
             const filterNav = document.getElementById('filterNav');
-            if (adminNav && !adminNav.contains(e.target)) adminNav.classList.remove('open');
             if (filterNav && !filterNav.contains(e.target)) filterNav.classList.remove('open');
         });
 
@@ -1098,7 +1308,6 @@
             updateSummaryHeader();
             renderDashboard(filteredData);
             setTimeout(updateSmsMessage, 200);
-            // Close filter dropdown after applying
             document.getElementById('filterNav').classList.remove('open');
         }
 
