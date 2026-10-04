@@ -1180,60 +1180,55 @@
         // JSONP DATA LOADER (fixes CORS/404)
         // ============================================================
         async function loadData() {
-            const ct = document.getElementById('currentTime');
-            const fs = document.getElementById('filterStatus');
-            
-            try {
-                const callbackName = 'jsonpCallback_' + Date.now();
-                const jsonpURL = API_URL + '?action=getData&callback=' + callbackName;
-                
-                const data = await new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    const timeout = setTimeout(() => {
-                        delete window[callbackName];
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                        reject(new Error('Timeout'));
-                    }, 30000);
-                    
-                    window[callbackName] = function(json) {
-                        clearTimeout(timeout);
-                        delete window[callbackName];
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                        resolve(json);
-                    };
-                    
-                    script.src = jsonpURL;
-                    script.onerror = function() {
-                        clearTimeout(timeout);
-                        delete window[callbackName];
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                        reject(new Error('Script load error'));
-                    };
-                    document.head.appendChild(script);
-                });
-                
-                if (data.error) throw new Error(data.error);
-                allData = data.data || [];
-                populateDeptFilter();
-                applyFilters();
-                if (ct) ct.innerText = '📅 ' + new Date().toLocaleString('bn-BD');
-                setTimeout(updateSmsMessage, 300);
-                
-            } catch (e) {
-                console.error('❌ লোড ব্যর্থ:', e);
-                let errMsg = '❌ ডেটা লোড ব্যর্থ!';
-                if (e.message) errMsg += ' ' + e.message;
-                if (ct) ct.innerText = '❌ লোড ব্যর্থ!';
-                if (fs) fs.innerHTML = `❌ ${errMsg} <br>API URL বা CORS চেক করুন।`;
-                showError(errMsg);
-                
-                allData = [];
-                filteredData = [];
-                applyFilters();
-                renderDashboard([]);
+    const ct = document.getElementById('currentTime');
+    const fs = document.getElementById('filterStatus');
+    
+    try {
+        const url = API_URL + '?action=getData&_=' + Date.now();
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            redirect: 'follow'
+        });
+        
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        
+        const text = await response.text();
+        let data;
+        
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            const match = text.match(/^[^(]*\((.*)\)[^)]*$/s);
+            if (match) {
+                data = JSON.parse(match[1]);
+            } else {
+                throw new Error('Invalid JSON response');
             }
         }
-
+        
+        if (data.error) throw new Error(data.error);
+        
+        allData = data.data || [];
+        populateDeptFilter();
+        applyFilters();
+        if (ct) ct.innerText = '📅 ' + new Date().toLocaleString('bn-BD');
+        setTimeout(updateSmsMessage, 300);
+        
+    } catch (e) {
+        console.error('❌ লোড ব্যর্থ:', e);
+        let errMsg = '❌ ডেটা লোড ব্যর্থ!';
+        if (e.message) errMsg += ' ' + e.message;
+        if (ct) ct.innerText = '❌ লোড ব্যর্থ!';
+        if (fs) fs.innerHTML = `❌ ${errMsg}`;
+        showError(errMsg);
+        
+        allData = [];
+        filteredData = [];
+        applyFilters();
+        renderDashboard([]);
+    }
+}
         function populateDeptFilter() {
             const select = document.getElementById('filterDept');
             if (!select) return;
