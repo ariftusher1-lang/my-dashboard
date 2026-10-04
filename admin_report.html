@@ -71,12 +71,12 @@
         .scrolling-message-dashboard span { display: inline-block; padding-left: 100%; animation: scroll-left 100s linear infinite; }
 
         /* ============================================================ */
-        /* SPACER — guarantees real gap below fixed slider              */
+        /* SPACER — landing-page only gap below fixed slider            */
         /* ============================================================ */
         .slider-spacer {
             display: block;
             width: 100%;
-            height: 140px;   /* ~90px slider + ~50px clean gap */
+            height: 120px;   /* slightly reduced from 140px */
             pointer-events: none;
         }
 
@@ -112,12 +112,12 @@
             flex-wrap: wrap;
             max-width: 100%;
             margin: 0 auto;
-            padding-top: 0;   /* spacer above handles the top gap */
+            padding-top: 0;
         }
 
-        /* LEFT - WELCOME CARD — now GROWS to absorb freed horizontal space */
+        /* LEFT — WELCOME CARD : 45% */
         .welcome-card {
-            flex: 1 1 0;
+            flex: 0 0 45%;
             min-width: 0;
             background: #ffffff;
             border-radius: 60px;
@@ -136,9 +136,9 @@
             display: none !important;
         }
 
-        /* RIGHT - QUICK ACCESS — fixed comfortable width for 3 columns */
+        /* RIGHT — QUICK ACCESS : 55% */
         .quick-access-area {
-            flex: 0 0 620px;
+            flex: 1 1 55%;
             min-width: 0;
             background: #1e2a47;
             border-radius: 20px;
@@ -151,8 +151,8 @@
 
         .quick-access-area .qa-header {
             margin-bottom: 25px;
-            margin-top: 30px;
-            text-align: right;
+            margin-top: 0;
+            text-align: center;
         }
         .quick-access-area .qa-header h2 {
             color: #ffffff;
@@ -168,14 +168,16 @@
             font-weight: 500;
         }
 
-        /* Grid: forced 3 columns × 2 rows, right aligned */
+        /* Grid: forced 3 columns × 2 rows, vertically centered.
+           align-content: center vertically centers the 2 rows inside the
+           available panel height so there is no phantom 3rd row. */
         .quick-access-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 30px;
             flex: 1;
-            align-content: start;
-            justify-content: end;
+            align-content: center;
+            justify-content: stretch;
         }
 
         .qa-card {
@@ -571,9 +573,6 @@
 
         .filter-status { display: none !important; }
 
-        @media (max-width: 1200px) {
-            .quick-access-area { flex: 0 0 520px; }
-        }
         @media (max-width: 1000px) {
             .filter-nav-dropdown { min-width: 90vw; left: auto; right: 0; }
             .filter-nav-auto-corner { position: static; margin: 10px 22px 0; justify-content: center; }
@@ -584,7 +583,6 @@
         @media (max-width: 600px) {
             .quick-access-grid { grid-template-columns: repeat(2, 1fr); }
             .quick-access-area .qa-header h2 { font-size: 22px; }
-            .quick-access-area .qa-header { text-align: left; }
         }
     </style>
 </head>
@@ -661,12 +659,12 @@
                 </div>
             </div>
 
-            <!-- SLIDER SPACER — real gap below the fixed slider -->
-            <div class="slider-spacer"></div>
+            <!-- SLIDER SPACER — landing-page only -->
+            <div class="slider-spacer" id="sliderSpacer"></div>
 
             <!-- QUICK ACCESS VIEW -->
             <div class="quick-access-wrapper" id="quickAccessWrapper">
-                <!-- LEFT WELCOME CARD (GROWS to fill space) -->
+                <!-- LEFT WELCOME CARD -->
                 <div class="welcome-card">
                     <!-- intentionally empty -->
                 </div>
@@ -939,6 +937,10 @@
             document.getElementById('quickAccessWrapper').style.display = 'none';
             document.getElementById('sectionsWrapper').style.display = 'block';
 
+            /* Hide the landing-only spacer when viewing a report section */
+            const spacer = document.getElementById('sliderSpacer');
+            if (spacer) spacer.style.display = 'none';
+
             document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));
             const target = document.getElementById('section-' + sectionKey);
             if (target) target.classList.add('active');
@@ -952,6 +954,11 @@
         function backToQuickAccess() {
             document.getElementById('quickAccessWrapper').style.display = 'flex';
             document.getElementById('sectionsWrapper').style.display = 'none';
+
+            /* Restore landing spacer when returning to the landing page */
+            const spacer = document.getElementById('sliderSpacer');
+            if (spacer) spacer.style.display = 'block';
+
             document.getElementById('filterNav').classList.remove('open');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
