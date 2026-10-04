@@ -104,19 +104,19 @@
 
         /* ============================================================ */
         /* QUICK ACCESS LAYOUT — 45/55 ratio, gap-safe (Option B)       */
+        /* align-items: flex-start so panels keep their own heights     */
         /* ============================================================ */
         .quick-access-wrapper {
             display: flex;
             gap: 25px;
-            align-items: stretch;
+            align-items: flex-start;
             flex-wrap: wrap;
             max-width: 100%;
             margin: 0 auto;
             padding-top: 0;
         }
 
-        /* LEFT — WELCOME CARD : 45 flex-grow, no fixed basis
-           Now holds an image edge-to-edge, no padding, rounded corners. */
+        /* LEFT — WELCOME CARD : 45 flex-grow, self-height capped */
         .welcome-card {
             flex: 45 1 0;
             min-width: 0;
@@ -129,6 +129,7 @@
             flex-direction: column;
             position: relative;
             min-height: 600px;
+            max-height: 660px;
         }
         .welcome-card img {
             width: 100%;
@@ -177,7 +178,7 @@
             font-weight: 500;
         }
 
-        /* Grid: forced 3 columns × 2 rows, vertically centered. */
+        /* Grid: forced 3 columns × 2 rows */
         .quick-access-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -583,7 +584,7 @@
         @media (max-width: 1000px) {
             .filter-nav-dropdown { min-width: 90vw; left: auto; right: 0; }
             .filter-nav-auto-corner { position: static; margin: 10px 22px 0; justify-content: center; }
-            .welcome-card { flex: 1 1 100%; min-height: auto; }
+            .welcome-card { flex: 1 1 100%; min-height: auto; max-height: none; }
             .quick-access-area { flex: 1 1 100%; min-width: 100%; }
             #sectionsWrapper { width: 100%; margin-left: 0; }
         }
@@ -671,7 +672,7 @@
 
             <!-- QUICK ACCESS VIEW -->
             <div class="quick-access-wrapper" id="quickAccessWrapper">
-                <!-- LEFT WELCOME CARD — now contains the image -->
+                <!-- LEFT WELCOME CARD — contains the image -->
                 <div class="welcome-card">
                     <img src="https://i.postimg.cc/WpQ8P5Vk/images-(1)-Copy.jpg" alt="Major General Amjad Khan Chowdhury">
                 </div>
@@ -1476,6 +1477,11 @@
         function renderNoDemandSizeTable(data) {
             const container = document.getElementById('noDemandSizeTableContainer');
             if (!container) return;
+            if (!data || !Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই। তারিখ / শিফট পরিবর্তন করে দেখুন।</div>`;
+                window._noDemandSizeData = null;
+                return;
+            }
             function parseNoDemand(str) {
                 const result = {};
                 if (!str) return result;
@@ -1498,21 +1504,19 @@
                 MC_SIZE_COLUMNS.forEach(s => { deptMap[dept].sizes[s] = 0; });
             });
 
-            if (data && data.length > 0) {
-                data.forEach(row => {
-                    const dept = getVal(row, ['Department', 'department']);
-                    if (!dept || !NO_DEMAND_SIZE_DEPTS.includes(dept)) return;
-                    const noDemandStr = getVal(row, ['No Demand (QTY)', 'noDemandQty']) || '';
-                    const parsed = parseNoDemand(noDemandStr);
-                    const d = deptMap[dept];
-                    if (!d) return;
-                    Object.keys(parsed).forEach(size => {
-                        if (!d.sizes[size]) d.sizes[size] = 0;
-                        d.sizes[size] += parsed[size];
-                        d.entrySum += parsed[size];
-                    });
+            data.forEach(row => {
+                const dept = getVal(row, ['Department', 'department']);
+                if (!dept || !NO_DEMAND_SIZE_DEPTS.includes(dept)) return;
+                const noDemandStr = getVal(row, ['No Demand (QTY)', 'noDemandQty']) || '';
+                const parsed = parseNoDemand(noDemandStr);
+                const d = deptMap[dept];
+                if (!d) return;
+                Object.keys(parsed).forEach(size => {
+                    if (!d.sizes[size]) d.sizes[size] = 0;
+                    d.sizes[size] += parsed[size];
+                    d.entrySum += parsed[size];
                 });
-            }
+            });
 
             const rows = NO_DEMAND_SIZE_DEPTS.map(d => deptMap[d]).filter(Boolean);
             const HEADER_COLOR = '#5ADFEF';
