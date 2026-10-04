@@ -70,7 +70,17 @@
         .scrolling-message-dashboard { position: fixed; top: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.98); color: #ff0000; padding: 10px 0 20px 0; font-weight: 800; font-size: 36px; white-space: nowrap; overflow: hidden; z-index: 99999; text-shadow: 0 0 4px rgba(255, 0, 0, 0.4); border-bottom: 3px solid #dc3545; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); }
         .scrolling-message-dashboard span { display: inline-block; padding-left: 100%; animation: scroll-left 100s linear infinite; }
 
-        /* DASHBOARD TOP BAR - POSITION ABSOLUTE SO IT DOESN'T TAKE SPACE */
+        /* ============================================================ */
+        /* SPACER — guarantees real gap below fixed slider              */
+        /* ============================================================ */
+        .slider-spacer {
+            display: block;
+            width: 100%;
+            height: 140px;   /* ~90px slider + ~50px clean gap */
+            pointer-events: none;
+        }
+
+        /* DASHBOARD TOP BAR */
         .dash-top-bar {
             display: flex;
             justify-content: flex-end;
@@ -93,7 +103,7 @@
         .logout-btn:hover { background: #b02a37; }
 
         /* ============================================================ */
-        /* QUICK ACCESS LAYOUT - 1 INCH GAP FROM SCROLLING MESSAGE */
+        /* QUICK ACCESS LAYOUT                                          */
         /* ============================================================ */
         .quick-access-wrapper {
             display: flex;
@@ -102,12 +112,13 @@
             flex-wrap: wrap;
             max-width: 100%;
             margin: 0 auto;
-            padding-top: 500px; /* 1 inch gap from top */
+            padding-top: 0;   /* spacer above handles the top gap */
         }
 
-        /* LEFT - WELCOME CARD (EMPTY BOX) */
+        /* LEFT - WELCOME CARD — now GROWS to absorb freed horizontal space */
         .welcome-card {
-            flex: 0 0 340px;
+            flex: 1 1 0;
+            min-width: 0;
             background: #ffffff;
             border-radius: 60px;
             padding: 70px 70px;
@@ -125,10 +136,10 @@
             display: none !important;
         }
 
-        /* RIGHT - QUICK ACCESS */
+        /* RIGHT - QUICK ACCESS — fixed comfortable width for 3 columns */
         .quick-access-area {
-            flex: 1;
-            min-width: 500px;
+            flex: 0 0 620px;
+            min-width: 0;
             background: #1e2a47;
             border-radius: 20px;
             padding: 28px 26px;
@@ -141,6 +152,7 @@
         .quick-access-area .qa-header {
             margin-bottom: 25px;
             margin-top: 30px;
+            text-align: right;
         }
         .quick-access-area .qa-header h2 {
             color: #ffffff;
@@ -156,13 +168,14 @@
             font-weight: 500;
         }
 
+        /* Grid: forced 3 columns × 2 rows, right aligned */
         .quick-access-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 30px;
             flex: 1;
             align-content: start;
-            justify-content: space-between;
+            justify-content: end;
         }
 
         .qa-card {
@@ -232,7 +245,7 @@
         }
 
         /* ============================================================ */
-        /* REPORT SECTIONS - MOVED TO RIGHT SIDE */
+        /* REPORT SECTIONS */
         /* ============================================================ */
         #sectionsWrapper {
             display: none;
@@ -558,16 +571,20 @@
 
         .filter-status { display: none !important; }
 
+        @media (max-width: 1200px) {
+            .quick-access-area { flex: 0 0 520px; }
+        }
         @media (max-width: 1000px) {
             .filter-nav-dropdown { min-width: 90vw; left: auto; right: 0; }
             .filter-nav-auto-corner { position: static; margin: 10px 22px 0; justify-content: center; }
             .welcome-card { flex: 1 1 100%; min-height: auto; }
-            .quick-access-area { min-width: 100%; }
+            .quick-access-area { flex: 1 1 100%; min-width: 100%; }
             #sectionsWrapper { width: 100%; margin-left: 0; }
         }
         @media (max-width: 600px) {
             .quick-access-grid { grid-template-columns: repeat(2, 1fr); }
             .quick-access-area .qa-header h2 { font-size: 22px; }
+            .quick-access-area .qa-header { text-align: left; }
         }
     </style>
 </head>
@@ -636,7 +653,7 @@
         </div>
 
         <div class="container" id="app">
-            <!-- Top Bar (DPL Admin Line REMOVED) -->
+            <!-- Top Bar -->
             <div class="dash-top-bar">
                 <div class="right-side">
                     <span id="currentTime">📅 লোড হচ্ছে...</span>
@@ -644,11 +661,14 @@
                 </div>
             </div>
 
+            <!-- SLIDER SPACER — real gap below the fixed slider -->
+            <div class="slider-spacer"></div>
+
             <!-- QUICK ACCESS VIEW -->
             <div class="quick-access-wrapper" id="quickAccessWrapper">
-                <!-- LEFT WELCOME CARD (EMPTY BOX) -->
+                <!-- LEFT WELCOME CARD (GROWS to fill space) -->
                 <div class="welcome-card">
-                    <!-- All text removed as requested -->
+                    <!-- intentionally empty -->
                 </div>
 
                 <!-- RIGHT QUICK ACCESS -->
@@ -852,7 +872,6 @@
         const VALID_PASSWORD = "DPL";
         const SESSION_KEY = "RIP-DPL_logged_in";
 
-        // API URL — new deployment URL
         const API_URL = 'https://script.google.com/macros/s/AKfycbzCqPfQdTnXKHWTyvdZGowT4mbvPNXmDQAEFJbW2sK6-OacPyYsvdJ39QbM52ni3m1ZqA/exec';
 
         window.onload = function() {
@@ -916,9 +935,6 @@
             showLogin();
         }
 
-        // ============================================================
-        // QUICK ACCESS FLOW
-        // ============================================================
         function showAdminSection(sectionKey) {
             document.getElementById('quickAccessWrapper').style.display = 'none';
             document.getElementById('sectionsWrapper').style.display = 'block';
@@ -940,9 +956,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // ============================================================
-        // FILTER NAV
-        // ============================================================
         function toggleFilterNav(event) {
             event.stopPropagation();
             document.getElementById('filterNav').classList.toggle('open');
@@ -1176,9 +1189,6 @@
             return total;
         }
 
-        // ============================================================
-        // JSONP DATA LOADER (fixes CORS/404)
-        // ============================================================
         async function loadData() {
     const ct = document.getElementById('currentTime');
     const fs = document.getElementById('filterStatus');
