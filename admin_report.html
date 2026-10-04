@@ -880,6 +880,23 @@
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbzCqPfQdTnXKHWTyvdZGowT4mbvPNXmDQAEFJbW2sK6-OacPyYsvdJ39QbM52ni3m1ZqA/exec';
 
+        // ============================================================
+        // 🔑 No Demand key aliases — supports BOTH old & new sheet headers
+        // ============================================================
+        const NO_DEMAND_SIZE_KEYS = [
+            '10 MC J Stop Kon Sizer Koto QTy Stipped',  // ← আপনার বর্তমান sheet header
+            'No Demand (M)',
+            'No Demand (Size)',
+            'No Demand',
+            'noDemandQty'
+        ];
+        const NO_DEMAND_QTY_KEYS = [
+            'Dhoro 10 Bondho No Demand',                 // ← আপনার বর্তমান sheet header
+            'No Demand (QTY)',
+            'noDemandQty',
+            'No Demand'
+        ];
+
         window.onload = function() {
             const loggedIn = sessionStorage.getItem(SESSION_KEY);
             if (loggedIn === 'true') {
@@ -945,7 +962,6 @@
             document.getElementById('quickAccessWrapper').style.display = 'none';
             document.getElementById('sectionsWrapper').style.display = 'block';
 
-            /* Hide the landing-only spacer when viewing a report section */
             const spacer = document.getElementById('sliderSpacer');
             if (spacer) spacer.style.display = 'none';
 
@@ -963,7 +979,6 @@
             document.getElementById('quickAccessWrapper').style.display = 'flex';
             document.getElementById('sectionsWrapper').style.display = 'none';
 
-            /* Restore landing spacer when returning to the landing page */
             const spacer = document.getElementById('sliderSpacer');
             if (spacer) spacer.style.display = 'block';
 
@@ -1205,55 +1220,56 @@
         }
 
         async function loadData() {
-    const ct = document.getElementById('currentTime');
-    const fs = document.getElementById('filterStatus');
-    
-    try {
-        const url = API_URL + '?action=getData&_=' + Date.now();
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            redirect: 'follow'
-        });
-        
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        
-        const text = await response.text();
-        let data;
-        
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            const match = text.match(/^[^(]*\((.*)\)[^)]*$/s);
-            if (match) {
-                data = JSON.parse(match[1]);
-            } else {
-                throw new Error('Invalid JSON response');
+            const ct = document.getElementById('currentTime');
+            const fs = document.getElementById('filterStatus');
+            
+            try {
+                const url = API_URL + '?action=getData&_=' + Date.now();
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+                
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                
+                const text = await response.text();
+                let data;
+                
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    const match = text.match(/^[^(]*\((.*)\)[^)]*$/s);
+                    if (match) {
+                        data = JSON.parse(match[1]);
+                    } else {
+                        throw new Error('Invalid JSON response');
+                    }
+                }
+                
+                if (data.error) throw new Error(data.error);
+                
+                allData = data.data || [];
+                populateDeptFilter();
+                applyFilters();
+                if (ct) ct.innerText = '📅 ' + new Date().toLocaleString('bn-BD');
+                setTimeout(updateSmsMessage, 300);
+                
+            } catch (e) {
+                console.error('❌ লোড ব্যর্থ:', e);
+                let errMsg = '❌ ডেটা লোড ব্যর্থ!';
+                if (e.message) errMsg += ' ' + e.message;
+                if (ct) ct.innerText = '❌ লোড ব্যর্থ!';
+                if (fs) fs.innerHTML = `❌ ${errMsg}`;
+                showError(errMsg);
+                
+                allData = [];
+                filteredData = [];
+                applyFilters();
+                renderDashboard([]);
             }
         }
-        
-        if (data.error) throw new Error(data.error);
-        
-        allData = data.data || [];
-        populateDeptFilter();
-        applyFilters();
-        if (ct) ct.innerText = '📅 ' + new Date().toLocaleString('bn-BD');
-        setTimeout(updateSmsMessage, 300);
-        
-    } catch (e) {
-        console.error('❌ লোড ব্যর্থ:', e);
-        let errMsg = '❌ ডেটা লোড ব্যর্থ!';
-        if (e.message) errMsg += ' ' + e.message;
-        if (ct) ct.innerText = '❌ লোড ব্যর্থ!';
-        if (fs) fs.innerHTML = `❌ ${errMsg}`;
-        showError(errMsg);
-        
-        allData = [];
-        filteredData = [];
-        applyFilters();
-        renderDashboard([]);
-    }
-}
+
         function populateDeptFilter() {
             const select = document.getElementById('filterDept');
             if (!select) return;
@@ -1378,7 +1394,8 @@
                         sample += getNum(r, ['Under Sample', 'underSample']);
                         mcProb += getNum(r, ['MC Problem', 'mcProblem']);
                         preventive += getNum(r, ['Preventive Maintenance', 'preventiveMaintenance']);
-                        noDemand += parseNoDemandTotal(getVal(r, ['No Demand (QTY)', 'noDemandQty']));
+                        // 🔑 No Demand QTY — uses current sheet header alias
+                        noDemand += parseNoDemandTotal(getVal(r, NO_DEMAND_SIZE_KEYS));
                         materialShort += getNum(r, ['Material & MB Shortage', 'materialMBShortage']);
                         overStock += getNum(r, ['Over Stock (WIP)', 'overStockWIP']);
                         accShort += getNum(r, ['Accessories Short', 'accessoriesShort']);
@@ -1507,7 +1524,8 @@
             data.forEach(row => {
                 const dept = getVal(row, ['Department', 'department']);
                 if (!dept || !NO_DEMAND_SIZE_DEPTS.includes(dept)) return;
-                const noDemandStr = getVal(row, ['No Demand (QTY)', 'noDemandQty']) || '';
+                // 🔑 No Demand SIZE — reads the SIZE string from current sheet header
+                const noDemandStr = getVal(row, NO_DEMAND_SIZE_KEYS) || '';
                 const parsed = parseNoDemand(noDemandStr);
                 const d = deptMap[dept];
                 if (!d) return;
@@ -1959,7 +1977,7 @@
             headers.forEach(h => html += `<th>${h}</th>`);
             html += `</tr></thead><tbody>`;
             data.forEach((row, idx) => {
-                html += `<tr><td>${idx + 1}</td><td>${formatTime(row.timestamp || '')}</td><td>${formatDate(row.entryDate || '')}</td>`;
+                html += `<tr><td>${idx + 1}</td><td>${formatTime(row.Timestamp || row.timestamp || '')}</td><td>${formatDate(row.Date || row.entryDate || '')}</td>`;
                 for (let i = 2; i < keys.length; i++) {
                     const k = keys[i];
                     let val = row[k] !== undefined && row[k] !== null ? row[k] : '';
@@ -1991,7 +2009,8 @@
                 const hr = getNum(row, ['Total HR', 'totalHR']);
                 totalPresent += hr;
                 totalAbsent += getNum(row, ['Absent Employee', 'absentEmployee']);
-                totalNoDemand += parseNoDemandTotal(getVal(row, ['No Demand (QTY)', 'noDemandQty']));
+                // 🔑 No Demand QTY — reads from current sheet header
+                totalNoDemand += parseNoDemandTotal(getVal(row, NO_DEMAND_SIZE_KEYS));
                 totalMoldChange += getNum(row, ['Mold Change', 'moldChange']);
                 mcStopManpower += getNum(row, ['MP Short', 'mpShort']);
                 totalMC += getNum(row, ['Total MC', 'totalMC']);
@@ -2149,10 +2168,10 @@ Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Repo
         function downloadExcel() {
             if (filteredData.length === 0) { alert('ডেটা নেই!'); return; }
             const headers = ['#', 'Time', 'Date', 'Shift', 'Department', 'IC Name', 'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped', 'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem', 'Preventive Maintenance', 'No Demand (QTY)', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short', 'Total HR', 'Leave Employee', 'Absent Employee', 'Export MC', 'Domestic MC', 'Single MC', 'Double MC', 'No Demand (M)', 'Prod IC', 'SIC', 'MC Operator', 'Packaging Operator', 'Foreman', 'Senior Operator', 'Shrink-wrap Op', 'Printing Op', 'Mold Change Op', 'Mix/Recycle/Crush', 'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP', 'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'];
-            const keys = ['timestamp', 'entryDate', 'shift', 'department', 'icName', 'totalMC', 'mcRunning', 'mcStopped', 'pctRunning', 'pctStopped', 'mpShort', 'moldProblem', 'moldChange', 'underSample', 'mcProblem', 'preventiveMaintenance', 'noDemandQty', 'materialMBShortage', 'overStockWIP', 'accessoriesShort', 'totalHR', 'leaveEmployee', 'absentEmployee', 'exportMC', 'domesticMC', 'singleMC', 'doubleMC', 'noDemand', 'prodIC', 'sic', 'mcOperator', 'packagingOperator', 'foreman', 'seniorOperator', 'shrinkOperator', 'printingOperator', 'moldChangeOperator', 'mixRecycle', 'subStore', 'inventoryOperator', 'fgDelivery', 'sharpTools', 'psi', 'erp', 'floorHousekeeping', 'rework', 'welding', 'hrTransfer'];
+            const keys = ['Timestamp', 'Date', 'Shift', 'Department', 'IC Name', 'Total MC', 'MC Running', 'MC Stopped', '% Running', '% Stopped', 'MP Short', 'Mold Problem', 'Mold Change', 'Under Sample', 'MC Problem', 'Preventive Maintenance', 'Dhoro 10 Bondho No Demand', 'Material & MB Shortage', 'Over Stock (WIP)', 'Accessories Short', 'Total HR', 'Leave Employee', 'Absent Employee', 'Export MC', 'Domestic MC', 'Single MC', 'Double MC', '10 MC J Stop Kon Sizer Koto QTy Stipped', 'Prod IC', 'SIC', 'MC Operator', 'Packaging Operator', 'Foreman', 'Senior Operator', 'Shrink-wrap Op', 'Printing Op', 'Mold Change Op', 'Mix/Recycle/Crush', 'Sub Store', 'Inventory Op', 'FG Delivery', 'Sharp Tools', 'PSI', 'ERP', 'Floor Housekeeping', 'Rework', 'Welding', 'HR Transfer'];
             let csv = headers.join(',') + '\n';
             filteredData.forEach((row, idx) => {
-                const line = [idx + 1, formatTime(row.timestamp || ''), formatDate(row.entryDate || '')];
+                const line = [idx + 1, formatTime(row.Timestamp || ''), formatDate(row.Date || '')];
                 for (let i = 2; i < keys.length; i++) {
                     const k = keys[i];
                     let val = row[k] !== undefined && row[k] !== null ? row[k] : '';
