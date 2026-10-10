@@ -284,6 +284,11 @@
         .qa-card.qa-link.qa-printing { border-top-color: #e67e22; }
         .qa-card.qa-link.qa-smv { border-top-color: #8e44ad; }
         .qa-card.qa-link.qa-rm { border-top-color: #0d47a1; }
+        
+        /* 🆕 Late Entry Card Color */
+        .qa-card.qa-lateentry { border-top-color: #d32f2f; }
+        .qa-card.qa-lateentry .qa-icon { background: #ffebee; }
+        .qa-card.qa-lateentry:hover .qa-icon { background: #ffcdd2; }
 
         #sectionsWrapper {
             display: none;
@@ -513,6 +518,8 @@
         .section-title.sec-missing { background: linear-gradient(135deg, #c62828, #e53935); }
         .section-title.sec-sms { background: linear-gradient(135deg, #075E54, #128C7E); }
         .section-title.sec-raw { background: linear-gradient(135deg, #37474f, #546e7a); }
+        /* 🆕 Late Entry Section Title */
+        .section-title.sec-lateentry { background: linear-gradient(135deg, #b71c1c, #d32f2f); }
 
         .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
         .btn-excel { background: #1e7e34; color: white; border: none; padding: 6px 14px; border-radius: 5px; font-weight: 700; cursor: pointer; font-size: 11px; }
@@ -780,6 +787,13 @@
                             <div class="qa-icon">📊</div>
                             <div class="qa-title">Packaging<br>SMV & HR</div>
                         </a>
+                        
+                        <!-- 🆕 NEW LATE ENTRY PERFORMANCE CARD -->
+                        <div class="qa-card qa-link qa-lateentry" onclick="showAdminSection('lateentry')">
+                            <div class="qa-icon">⏰</div>
+                            <div class="qa-title">Late Entry<br>Performance</div>
+                        </div>
+
                         <div class="qa-card qa-logout" onclick="handleLogout()">
                             <div class="qa-icon">🚪</div>
                             <div class="qa-title">Logout</div>
@@ -899,6 +913,18 @@
                                 <div id="smsMessageContent"></div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- 🆕 Section 6: Late Entry Performance -->
+                    <div class="admin-section" id="section-lateentry">
+                        <div class="section-title sec-lateentry">
+                            <span><span class="sec-icon">⏰</span>Late Entry Performance (Night Shift After 8:30 PM)</span>
+                            <div class="btn-group">
+                                <button class="btn-image" onclick="downloadLateEntryImage()">📷 ইমেজ</button>
+                                <button class="btn-excel" onclick="downloadLateEntryExcel()">⬇️ Excel</button>
+                            </div>
+                        </div>
+                        <div class="table-wrap" id="lateEntryTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
                     </div>
 
                     <div class="stats" id="statsContainer" style="display:none;">
@@ -1399,6 +1425,7 @@
             renderQATable(data);
             renderMissing(data);
             renderRawData(data);
+            renderLateEntryTable(data); // 🆕 Added
         }
 
         function renderStats(data) {
@@ -1425,6 +1452,170 @@
             setTxt('totalMC', totalMC);
             setTxt('totalTargetRun', totalTargetRun);
             setTxt('avgRunningPct', data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%');
+        }
+
+        // 🆕 LATE ENTRY TABLE FUNCTION
+        function renderLateEntryTable(data) {
+            const container = document.getElementById('lateEntryTableContainer');
+            if (!container) return;
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
+                window._lateEntryData = null;
+                return;
+            }
+
+            const lateEntries = [];
+            
+            data.forEach(row => {
+                const shift = getVal(row, ['Shift', 'shift']);
+                // Only Night Shift
+                if (shift !== 'Night') return;
+
+                const timestampStr = getVal(row, ['Timestamp', 'timestamp', 'entryDate']);
+                if (!timestampStr) return;
+
+                const entryTime = new Date(timestampStr);
+                if (isNaN(entryTime.getTime())) return;
+
+                // Night Shift starts at 8:30 PM (20:30)
+                const entryHours = entryTime.getHours();
+                const entryMinutes = entryTime.getMinutes();
+                
+                // Check if time is after 20:30 (8:30 PM)
+                const isLate = (entryHours > 20) || (entryHours === 20 && entryMinutes >= 30);
+
+                if (isLate) {
+                    lateEntries.push({
+                        date: getVal(row, ['Date', 'date']) || formatDate(timestampStr).split(' ')[0],
+                        shift: shift,
+                        department: getVal(row, ['Department', 'department']),
+                        icName: getVal(row, ['IC Name', 'icName']),
+                        timestamp: formatTime(timestampStr),
+                        status: 'Late Entry'
+                    });
+                }
+            });
+
+            if (lateEntries.length === 0) {
+                container.innerHTML = `<div class="no-data" style="color:green;">✅ এই ফিল্টারে কোনো Late Entry পাওয়া যায়নি!</div>`;
+                window._lateEntryData = null;
+                return;
+            }
+
+            // Sort by timestamp descending
+            lateEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            let html = `<table class="saifuddin-table" style="border-collapse:collapse; width:100%;">
+                <thead>
+                    <tr>
+                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Date</th>
+                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Shift</th>
+                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Department</th>
+                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">IC Name</th>
+                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Timestamp</th>
+                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            lateEntries.forEach((entry, idx) => {
+                const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                html += `<tr style="background:${bgColor};">
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${entry.date}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600;">${entry.shift}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${entry.department}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${entry.icName}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600;">${entry.timestamp}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:700; color:#b71c1c;">${entry.status}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+            
+            // Add a summary row
+            html += `<div style="margin-top:15px; padding:12px 18px; background:#ffebee; border-radius:8px; border-left:5px solid #b71c1c; font-weight:700; color:#b71c1c; font-size:15px;">
+                ⏰ Total Late Entries (Night Shift After 8:30 PM): ${lateEntries.length}
+            </div>`;
+
+            container.innerHTML = html;
+            window._lateEntryData = lateEntries;
+        }
+
+        // 🆕 DOWNLOAD LATE ENTRY AS IMAGE
+        function downloadLateEntryImage() {
+            const container = document.getElementById('lateEntryTableContainer');
+            if (!container || container.innerText.includes('কোনো Late Entry')) { alert('⚠️ ডেটা নেই!'); return; }
+            const btn = document.querySelector('button[onclick="downloadLateEntryImage()"]');
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `width: 1400px; padding: 25px; background: white; border: 4px solid #b71c1c; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            const title = document.createElement('h2');
+            title.style.cssText = `color: #b71c1c; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #d32f2f; padding-bottom: 12px; font-size: 24px;`;
+            title.innerText = '⏰ Late Entry Performance (Night Shift After 8:30 PM)';
+            wrapper.appendChild(title);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `LateEntry_Report_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(wrapper);
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                });
+        }
+
+        // 🆕 DOWNLOAD LATE ENTRY AS EXCEL
+        function downloadLateEntryExcel() {
+            const data = window._lateEntryData;
+            if (!data || data.length === 0) { alert('ডেটা নেই!'); return; }
+            
+            const headers = ['Date', 'Shift', 'Department', 'IC Name', 'Timestamp', 'Status'];
+            const aoa = [headers];
+            data.forEach(entry => {
+                aoa.push([entry.date, entry.shift, entry.department, entry.icName, entry.timestamp, entry.status]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            
+            // Apply border and styling
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; R++) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[ref]) ws[ref] = { v: '' };
+                    if (!ws[ref].s) ws[ref].s = {};
+                    ws[ref].s.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+                    if (R === 0) {
+                        ws[ref].s.fill = { fgColor: { rgb: 'B71C1C' } };
+                        ws[ref].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
+                        ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                    } else {
+                        ws[ref].s.fill = { fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F8FAFC' } };
+                        ws[ref].s.font = { color: { rgb: '000000' }, sz: 11 };
+                        if (C === 5) {
+                            ws[ref].s.font = { color: { rgb: 'B71C1C' }, bold: true, sz: 11 };
+                        }
+                    }
+                }
+            }
+            
+            ws['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+            ws['!rows'] = [{ hpt: 25 }, ...data.map(() => ({ hpt: 20 }))];
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Late Entry Performance");
+            XLSX.writeFile(wb, `LateEntry_Performance_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function renderSaifuddinTable(data) {
@@ -2135,7 +2326,7 @@ Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Repo
         }
 
         function showError(msg) {
-            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','qaTableContainer','missingContainer','rawDataTable'];
+            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','qaTableContainer','missingContainer','rawDataTable','lateEntryTableContainer'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
