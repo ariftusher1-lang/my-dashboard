@@ -520,6 +520,8 @@
         .section-title.sec-raw { background: linear-gradient(135deg, #37474f, #546e7a); }
         /* 🆕 Late Entry Section Title */
         .section-title.sec-lateentry { background: linear-gradient(135deg, #b71c1c, #d32f2f); }
+        /* 🆕 Penalty Amount Section Title */
+        .section-title.sec-penalty { background: linear-gradient(135deg, #e65100, #f57c00); }
 
         .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
         .btn-excel { background: #1e7e34; color: white; border: none; padding: 6px 14px; border-radius: 5px; font-weight: 700; cursor: pointer; font-size: 11px; }
@@ -793,6 +795,12 @@
                             <div class="qa-icon">⏰</div>
                             <div class="qa-title">Late Entry<br>Performance</div>
                         </div>
+                        
+                        <!-- 🆕 NEW PENALTY AMOUNT CARD -->
+                        <div class="qa-card qa-link qa-penalty" onclick="showAdminSection('penalty')">
+                            <div class="qa-icon">💰</div>
+                            <div class="qa-title">As of<br>Penalty Amount</div>
+                        </div>
 
                         <div class="qa-card qa-logout" onclick="handleLogout()">
                             <div class="qa-icon">🚪</div>
@@ -918,13 +926,25 @@
                     <!-- 🆕 Section 6: Late Entry Performance -->
                     <div class="admin-section" id="section-lateentry">
                         <div class="section-title sec-lateentry">
-                            <span><span class="sec-icon">⏰</span>Late Entry Performance (Night Shift After 8:30 PM)</span>
+                            <span><span class="sec-icon">⏰</span>Late Entry Performance</span>
                             <div class="btn-group">
                                 <button class="btn-image" onclick="downloadLateEntryImage()">📷 ইমেজ</button>
                                 <button class="btn-excel" onclick="downloadLateEntryExcel()">⬇️ Excel</button>
                             </div>
                         </div>
                         <div class="table-wrap" id="lateEntryTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+                    </div>
+
+                    <!-- 🆕 Section 7: As of Penalty Amount -->
+                    <div class="admin-section" id="section-penalty">
+                        <div class="section-title sec-penalty">
+                            <span><span class="sec-icon">💰</span>As of Penalty Amount</span>
+                            <div class="btn-group">
+                                <button class="btn-image" onclick="downloadPenaltyImage()">📷 ইমেজ</button>
+                                <button class="btn-excel" onclick="downloadPenaltyExcel()">⬇️ Excel</button>
+                            </div>
+                        </div>
+                        <div class="table-wrap" id="penaltyTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
                     </div>
 
                     <div class="stats" id="statsContainer" style="display:none;">
@@ -1201,6 +1221,32 @@
             'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
         ];
 
+        // 🆕 FIXED LATE ENTRY DEPARTMENTS (as per image)
+        const FIXED_LATE_ENTRY_DEPTS = [
+            'RIP> DPL> Plastic-1',
+            'RIP> DPL> Plastic-3',
+            'RIP> DPL> Plastic-6.1',
+            'RIP> DPL> Plastic-6.2',
+            'RIP> DPL> Plastic-7.1',
+            'RIP> DPL> Plastic-7.2',
+            'RIP> DPL> Plastic-7.3',
+            'RIP> DPL> Plastic-7.4',
+            'Silicon Project',
+            'Total Production Team',
+            'Plastic Packaging-01',
+            'Plastic Packaging-02',
+            'Plastic Packaging-03',
+            'Total Packaging Team',
+            'Plastic-Maintenance.',
+            'Tool Room Maintenance',
+            'Plastic Inventory & Delivery',
+            'Corporate sales Production.',
+            'Plastics-Recycle & Silo',
+            'Product Development & Mold Change',
+            'RIP-DPL-Factory Support',
+            'DPL-QA'
+        ];
+
         let allData = [];
         let filteredData = [];
         let autoRefreshInterval = null;
@@ -1426,6 +1472,7 @@
             renderMissing(data);
             renderRawData(data);
             renderLateEntryTable(data); // 🆕 Added
+            renderPenaltyTable(data);     // 🆕 Added
         }
 
         function renderStats(data) {
@@ -1454,111 +1501,320 @@
             setTxt('avgRunningPct', data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%');
         }
 
-        // 🆕 LATE ENTRY TABLE FUNCTION (FIXED FOR TIMEZONE)
+        // 🆕 LATE ENTRY PERFORMANCE TABLE (FIXED DEPARTMENTS & COLORS)
         function renderLateEntryTable(data) {
             const container = document.getElementById('lateEntryTableContainer');
             if (!container) return;
 
-            if (!data || data.length === 0) {
-                container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
-                window._lateEntryData = null;
-                return;
-            }
-
-            const lateEntries = [];
+            // Determine the filter date and shift
+            const filterDate = document.getElementById('filterDate').value;
+            const filterShift = document.getElementById('filterShift').value;
             
-            data.forEach(row => {
-                const shift = getVal(row, ['Shift', 'shift']);
-                // Only Night Shift
-                if (shift !== 'Night') return;
+            // If no filter is applied, use today's date and current shift
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const defaultDate = `${year}-${month}-${day}`;
+            
+            const activeDate = filterDate || defaultDate;
+            const activeShift = filterShift !== 'All' ? filterShift : getCurrentShift();
 
-                const timestampStr = getVal(row, ['Timestamp', 'timestamp', 'entryDate']);
-                if (!timestampStr) return;
+            // Get all data (use filteredData if available, otherwise allData)
+            const sourceData = (filteredData && filteredData.length > 0) ? filteredData : allData;
 
-                // ✅ FIX: Parse time correctly for Asia/Dhaka (UTC+6)
-                const entryTime = new Date(timestampStr);
-                if (isNaN(entryTime.getTime())) return;
-
-                // Get hours and minutes in Asia/Dhaka timezone using Intl.DateTimeFormat
-                const formatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: 'Asia/Dhaka',
-                    hour: 'numeric',
-                    minute: 'numeric',
-                    hour12: false
-                });
+            // Group data by department for the selected date and shift
+            const deptDataMap = {};
+            
+            sourceData.forEach(row => {
+                const rowDate = row.Date || row.entryDate || '';
+                const rowShift = row.Shift || row.shift || '';
                 
-                const parts = formatter.formatToParts(entryTime);
-                let hours = 0, minutes = 0;
-                parts.forEach(part => {
-                    if (part.type === 'hour') hours = parseInt(part.value, 10);
-                    if (part.type === 'minute') minutes = parseInt(part.value, 10);
-                });
+                // Filter by selected date and shift
+                if (rowDate !== activeDate) return;
+                if (rowShift !== activeShift) return;
 
-                // Night Shift starts at 8:30 PM (20:30)
-                // Check if time is after 20:30 (8:30 PM)
-                const isLate = (hours > 20) || (hours === 20 && minutes >= 30);
+                const dept = getVal(row, ['Department', 'department']);
+                if (!dept) return;
 
-                if (isLate) {
-                    lateEntries.push({
-                        date: getVal(row, ['Date', 'date']) || formatDate(timestampStr).split(' ')[0],
-                        shift: shift,
-                        department: getVal(row, ['Department', 'department']),
-                        icName: getVal(row, ['IC Name', 'icName']),
-                        timestamp: formatTime(timestampStr), // formatTime already uses Asia/Dhaka
-                        status: 'Late Entry'
-                    });
+                if (!deptDataMap[dept]) {
+                    deptDataMap[dept] = [];
                 }
+                deptDataMap[dept].push(row);
             });
 
-            if (lateEntries.length === 0) {
-                container.innerHTML = `<div class="no-data" style="color:green;">✅ এই ফিল্টারে কোনো Late Entry পাওয়া যায়নি!</div>`;
-                window._lateEntryData = null;
-                return;
-            }
+            // Process each department
+            const rows = FIXED_LATE_ENTRY_DEPTS.map(deptName => {
+                let entry = null;
+                let isLate = false;
+                let penaltyAmount = 0;
 
-            // Sort by timestamp descending
-            lateEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                // Handle "Total Production Team", "Total Packaging Team" (these are summary names)
+                if (deptName === 'Total Production Team') {
+                    const prodDepts = ['RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1', 'RIP> DPL> Plastic-6.2', 'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2', 'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4', 'Silicon Project'];
+                    let latestEntry = null;
+                    prodDepts.forEach(d => {
+                        if (deptDataMap[d]) {
+                            deptDataMap[d].forEach(e => {
+                                const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
+                                if (ts) {
+                                    if (!latestEntry || new Date(ts) > new Date(latestEntry.timestamp)) {
+                                        latestEntry = { department: d, timestamp: ts, icName: getVal(e, ['IC Name', 'icName']), row: e };
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    if (latestEntry) {
+                        entry = { department: latestEntry.department, timestamp: latestEntry.timestamp, icName: latestEntry.icName, row: latestEntry.row };
+                    }
+                } else if (deptName === 'Total Packaging Team') {
+                    const packDepts = ['Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03'];
+                    let latestEntry = null;
+                    packDepts.forEach(d => {
+                        if (deptDataMap[d]) {
+                            deptDataMap[d].forEach(e => {
+                                const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
+                                if (ts) {
+                                    if (!latestEntry || new Date(ts) > new Date(latestEntry.timestamp)) {
+                                        latestEntry = { department: d, timestamp: ts, icName: getVal(e, ['IC Name', 'icName']), row: e };
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    if (latestEntry) {
+                        entry = { department: latestEntry.department, timestamp: latestEntry.timestamp, icName: latestEntry.icName, row: latestEntry.row };
+                    }
+                } else {
+                    // Normal department
+                    if (deptDataMap[deptName] && deptDataMap[deptName].length > 0) {
+                        let latest = deptDataMap[deptName][0];
+                        deptDataMap[deptName].forEach(e => {
+                            const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
+                            const latestTs = getVal(latest, ['Timestamp', 'timestamp', 'entryDate']);
+                            if (ts && (!latestTs || new Date(ts) > new Date(latestTs))) {
+                                latest = e;
+                            }
+                        });
+                        entry = {
+                            department: deptName,
+                            timestamp: getVal(latest, ['Timestamp', 'timestamp', 'entryDate']),
+                            icName: getVal(latest, ['IC Name', 'icName']),
+                            row: latest
+                        };
+                    }
+                }
 
+                // Check if late
+                let status = '-';
+                let statusColor = 'black';
+                let timestampDisplay = '-';
+                let icNameDisplay = '-';
+                let penalty = 0;
+
+                if (entry && entry.timestamp) {
+                    timestampDisplay = formatTime(entry.timestamp);
+                    icNameDisplay = entry.icName || '-';
+
+                    const entryTime = new Date(entry.timestamp);
+                    if (!isNaN(entryTime.getTime())) {
+                        const formatter = new Intl.DateTimeFormat('en-US', {
+                            timeZone: 'Asia/Dhaka',
+                            hour: 'numeric',
+                            minute: 'numeric',
+                            second: 'numeric',
+                            hour12: false
+                        });
+                        const parts = formatter.formatToParts(entryTime);
+                        let hours = 0, minutes = 0, seconds = 0;
+                        parts.forEach(part => {
+                            if (part.type === 'hour') hours = parseInt(part.value, 10);
+                            if (part.type === 'minute') minutes = parseInt(part.value, 10);
+                            if (part.type === 'second') seconds = parseInt(part.value, 10);
+                        });
+
+                        // Determine cutoff time based on shift
+                        let cutoffSeconds;
+                        if (activeShift === 'Night') {
+                            cutoffSeconds = (20 * 3600) + (30 * 60) + 0; // 8:30 PM = 20:30:00
+                        } else {
+                            cutoffSeconds = (8 * 3600) + (30 * 60) + 0;  // 8:30 AM = 08:30:00
+                        }
+
+                        const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+
+                        if (totalSeconds > cutoffSeconds) {
+                            isLate = true;
+                            status = 'Late Entry';
+                            statusColor = '#b71c1c'; // Red
+                            penalty = 10; // 10 Taka penalty
+                        } else {
+                            isLate = false;
+                            status = 'No late';
+                            statusColor = '#1b5e20'; // Green
+                            penalty = 0;
+                        }
+                    }
+                } else {
+                    status = '-';
+                    statusColor = 'black';
+                    timestampDisplay = '-';
+                    icNameDisplay = '-';
+                    penalty = 0;
+                }
+
+                return {
+                    date: activeDate,
+                    shift: activeShift,
+                    department: deptName,
+                    icName: icNameDisplay,
+                    timestamp: timestampDisplay,
+                    status: status,
+                    statusColor: statusColor,
+                    penalty: penalty,
+                    isLate: isLate
+                };
+            });
+
+            // Generate HTML Table
             let html = `<table class="saifuddin-table" style="border-collapse:collapse; width:100%;">
                 <thead>
                     <tr>
-                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Date</th>
-                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Shift</th>
-                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Department</th>
-                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">IC Name</th>
-                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Timestamp</th>
-                        <th style="background:#b71c1c; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Status</th>
+                        <th style="background:#0d47a1; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Date</th>
+                        <th style="background:#0d47a1; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Shift</th>
+                        <th style="background:#0d47a1; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Department</th>
+                        <th style="background:#0d47a1; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">IC Name</th>
+                        <th style="background:#0d47a1; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Timestamp</th>
+                        <th style="background:#0d47a1; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Status</th>
+                        <th style="background:#0d47a1; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Penalty Amount</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-            lateEntries.forEach((entry, idx) => {
+            let totalPenalty = 0;
+
+            rows.forEach((row, idx) => {
                 const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                
+                let statusDisplay = row.status;
+                let statusStyle = `color: ${row.statusColor}; font-weight: 700;`;
+                if (row.status === 'No late') {
+                    statusStyle = `color: #1b5e20; font-weight: 700;`;
+                } else if (row.status === 'Late Entry') {
+                    statusStyle = `color: #b71c1c; font-weight: 700;`;
+                } else {
+                    statusStyle = `color: #888; font-weight: 700;`;
+                }
+
+                let penaltyDisplay = '';
+                if (row.isLate) {
+                    penaltyDisplay = `<span style="color: #b71c1c; font-weight: 700;">${row.penalty} ৳</span>`;
+                    totalPenalty += row.penalty;
+                } else if (row.status === 'No late') {
+                    penaltyDisplay = `<span style="color: #1b5e20; font-weight: 700;">0 ৳</span>`;
+                } else {
+                    penaltyDisplay = '-';
+                }
+
                 html += `<tr style="background:${bgColor};">
-                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${entry.date}</td>
-                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600;">${entry.shift}</td>
-                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${entry.department}</td>
-                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${entry.icName}</td>
-                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600;">${entry.timestamp}</td>
-                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:700; color:#b71c1c;">${entry.status}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${row.date}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600;">${row.shift}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${row.department}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${row.icName}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600;">${row.timestamp}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; ${statusStyle}">${statusDisplay}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; text-align:center;">${penaltyDisplay}</td>
                 </tr>`;
             });
 
+            html += `<tr style="background:#fff59d; font-weight:800; border:2px solid #333;">
+                <td colspan="6" style="padding:10px; border:1px solid #333; text-align:right;">📌 Total Penalty Amount:</td>
+                <td style="padding:10px; border:1px solid #333; text-align:center; color: #b71c1c; font-weight:800; font-size:16px;">${totalPenalty} ৳</td>
+            </tr>`;
+
             html += `</tbody></table>`;
-            
-            // Add a summary row
+
             html += `<div style="margin-top:15px; padding:12px 18px; background:#ffebee; border-radius:8px; border-left:5px solid #b71c1c; font-weight:700; color:#b71c1c; font-size:15px;">
-                ⏰ Total Late Entries (Night Shift After 8:30 PM): ${lateEntries.length}
+                ⏰ Total Late Entries: <span style="font-size:18px;">${rows.filter(r => r.isLate).length}</span> | 
+                💰 Total Penalty Amount: <span style="font-size:18px;">${totalPenalty} ৳</span>
             </div>`;
 
             container.innerHTML = html;
-            window._lateEntryData = lateEntries;
+            
+            window._lateEntryData = rows.filter(r => r.isLate || r.status === 'No late');
+            window._totalPenalty = totalPenalty;
+        }
+
+        // 🆕 PENALTY AMOUNT TABLE (SUMMARY)
+        function renderPenaltyTable(data) {
+            const container = document.getElementById('penaltyTableContainer');
+            if (!container) return;
+
+            const lateData = window._lateEntryData || [];
+            const totalPenalty = window._totalPenalty || 0;
+
+            // Determine the filter date and shift
+            const filterDate = document.getElementById('filterDate').value;
+            const filterShift = document.getElementById('filterShift').value;
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const defaultDate = `${year}-${month}-${day}`;
+            const activeDate = filterDate || defaultDate;
+            const activeShift = filterShift !== 'All' ? filterShift : getCurrentShift();
+
+            // Generate Penalty Summary Table
+            let html = `<table class="saifuddin-table" style="border-collapse:collapse; width:100%;">
+                <thead>
+                    <tr>
+                        <th style="background:#e65100; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Date</th>
+                        <th style="background:#e65100; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Shift</th>
+                        <th style="background:#e65100; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Department</th>
+                        <th style="background:#e65100; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">IC Name</th>
+                        <th style="background:#e65100; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Status</th>
+                        <th style="background:#e65100; color:#fff; font-weight:700; border:1px solid #666; padding:10px;">Penalty Amount</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            const lateOnly = lateData.filter(r => r.isLate);
+
+            if (lateOnly.length === 0) {
+                html += `<tr><td colspan="6" style="padding:20px; text-align:center; color:#888; font-style:italic;">✅ এই ফিল্টারে কোনো Late Entry নেই, তাই কোনো Penalty Amount নেই।</td></tr>`;
+            } else {
+                lateOnly.forEach((row, idx) => {
+                    const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                    html += `<tr style="background:${bgColor};">
+                        <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${row.date}</td>
+                        <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600;">${row.shift}</td>
+                        <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${row.department}</td>
+                        <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; text-align:left;">${row.icName}</td>
+                        <td style="padding:8px 10px; border:1px solid #ddd; font-weight:700; color:#b71c1c;">Late Entry</td>
+                        <td style="padding:8px 10px; border:1px solid #ddd; text-align:center; color: #b71c1c; font-weight:700;">${row.penalty} ৳</td>
+                    </tr>`;
+                });
+            }
+
+            html += `<tr style="background:#fff59d; font-weight:800; border:2px solid #333;">
+                <td colspan="5" style="padding:10px; border:1px solid #333; text-align:right;">📌 Total Penalty Amount:</td>
+                <td style="padding:10px; border:1px solid #333; text-align:center; color: #b71c1c; font-weight:800; font-size:16px;">${totalPenalty} ৳</td>
+            </tr>`;
+
+            html += `</tbody></table>`;
+
+            html += `<div style="margin-top:15px; padding:12px 18px; background:#fff3e0; border-radius:8px; border-left:5px solid #e65100; font-weight:700; color:#e65100; font-size:15px;">
+                💰 Total Penalty Amount (As of ${activeDate} - ${activeShift} Shift): <span style="font-size:20px;">${totalPenalty} ৳</span>
+            </div>`;
+
+            container.innerHTML = html;
         }
 
         // 🆕 DOWNLOAD LATE ENTRY AS IMAGE
         function downloadLateEntryImage() {
             const container = document.getElementById('lateEntryTableContainer');
-            if (!container || container.innerText.includes('কোনো Late Entry')) { alert('⚠️ ডেটা নেই!'); return; }
+            if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
             const btn = document.querySelector('button[onclick="downloadLateEntryImage()"]');
             if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
             const clone = container.cloneNode(true);
@@ -1567,7 +1823,7 @@
             wrapper.style.cssText = `width: 1400px; padding: 25px; background: white; border: 4px solid #b71c1c; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
             const title = document.createElement('h2');
             title.style.cssText = `color: #b71c1c; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #d32f2f; padding-bottom: 12px; font-size: 24px;`;
-            title.innerText = '⏰ Late Entry Performance (Night Shift After 8:30 PM)';
+            title.innerText = '⏰ Late Entry Performance';
             wrapper.appendChild(title);
             wrapper.appendChild(clone);
             document.body.appendChild(wrapper);
@@ -1593,16 +1849,16 @@
             const data = window._lateEntryData;
             if (!data || data.length === 0) { alert('ডেটা নেই!'); return; }
             
-            const headers = ['Date', 'Shift', 'Department', 'IC Name', 'Timestamp', 'Status'];
+            const headers = ['Date', 'Shift', 'Department', 'IC Name', 'Timestamp', 'Status', 'Penalty Amount'];
             const aoa = [headers];
             data.forEach(entry => {
-                aoa.push([entry.date, entry.shift, entry.department, entry.icName, entry.timestamp, entry.status]);
+                const penalty = entry.isLate ? '10 ৳' : (entry.status === 'No late' ? '0 ৳' : '-');
+                aoa.push([entry.date, entry.shift, entry.department, entry.icName, entry.timestamp, entry.status, penalty]);
             });
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(aoa);
             
-            // Apply border and styling
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = range.s.r; R <= range.e.r; R++) {
                 for (let C = range.s.c; C <= range.e.c; C++) {
@@ -1618,17 +1874,107 @@
                         ws[ref].s.fill = { fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F8FAFC' } };
                         ws[ref].s.font = { color: { rgb: '000000' }, sz: 11 };
                         if (C === 5) {
+                            if (ws[ref].v === 'Late Entry') ws[ref].s.font = { color: { rgb: 'B71C1C' }, bold: true, sz: 11 };
+                            else if (ws[ref].v === 'No late') ws[ref].s.font = { color: { rgb: '1B5E20' }, bold: true, sz: 11 };
+                        }
+                        if (C === 6) {
                             ws[ref].s.font = { color: { rgb: 'B71C1C' }, bold: true, sz: 11 };
                         }
                     }
                 }
             }
             
-            ws['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+            ws['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
             ws['!rows'] = [{ hpt: 25 }, ...data.map(() => ({ hpt: 20 }))];
             
             XLSX.utils.book_append_sheet(wb, ws, "Late Entry Performance");
             XLSX.writeFile(wb, `LateEntry_Performance_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        // 🆕 DOWNLOAD PENALTY AS IMAGE
+        function downloadPenaltyImage() {
+            const container = document.getElementById('penaltyTableContainer');
+            if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
+            const btn = document.querySelector('button[onclick="downloadPenaltyImage()"]');
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `width: 1400px; padding: 25px; background: white; border: 4px solid #e65100; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            const title = document.createElement('h2');
+            title.style.cssText = `color: #e65100; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #f57c00; padding-bottom: 12px; font-size: 24px;`;
+            title.innerText = '💰 As of Penalty Amount';
+            wrapper.appendChild(title);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `Penalty_Report_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(wrapper);
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                });
+        }
+
+        // 🆕 DOWNLOAD PENALTY AS EXCEL
+        function downloadPenaltyExcel() {
+            const data = window._lateEntryData || [];
+            const totalPenalty = window._totalPenalty || 0;
+            if (!data || data.length === 0) { alert('ডেটা নেই!'); return; }
+            
+            const headers = ['Date', 'Shift', 'Department', 'IC Name', 'Status', 'Penalty Amount'];
+            const aoa = [headers];
+            const lateOnly = data.filter(r => r.isLate);
+            
+            if (lateOnly.length === 0) {
+                aoa.push(['-', '-', '-', '-', 'No Late Entry', '0 ৳']);
+            } else {
+                lateOnly.forEach(entry => {
+                    aoa.push([entry.date, entry.shift, entry.department, entry.icName, 'Late Entry', `${entry.penalty} ৳`]);
+                });
+            }
+            
+            aoa.push(['', '', '', '', '📌 Total Penalty Amount:', `${totalPenalty} ৳`]);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; R++) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[ref]) ws[ref] = { v: '' };
+                    if (!ws[ref].s) ws[ref].s = {};
+                    ws[ref].s.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+                    if (R === 0) {
+                        ws[ref].s.fill = { fgColor: { rgb: 'E65100' } };
+                        ws[ref].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
+                        ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                    } else if (R === range.e.r) {
+                        ws[ref].s.fill = { fgColor: { rgb: 'FFF59D' } };
+                        ws[ref].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+                    } else {
+                        ws[ref].s.fill = { fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F8FAFC' } };
+                        ws[ref].s.font = { color: { rgb: '000000' }, sz: 11 };
+                        if (C === 4) ws[ref].s.font = { color: { rgb: 'B71C1C' }, bold: true, sz: 11 };
+                        if (C === 5) ws[ref].s.font = { color: { rgb: 'B71C1C' }, bold: true, sz: 11 };
+                    }
+                }
+            }
+            
+            ws['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+            ws['!rows'] = [{ hpt: 25 }, ...data.map(() => ({ hpt: 20 })), { hpt: 25 }];
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Penalty Amount");
+            XLSX.writeFile(wb, `Penalty_Amount_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function renderSaifuddinTable(data) {
@@ -2339,7 +2685,7 @@ Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Repo
         }
 
         function showError(msg) {
-            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','qaTableContainer','missingContainer','rawDataTable','lateEntryTableContainer'];
+            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','qaTableContainer','missingContainer','rawDataTable','lateEntryTableContainer','penaltyTableContainer'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
