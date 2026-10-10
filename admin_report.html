@@ -290,6 +290,11 @@
         .qa-card.qa-lateentry .qa-icon { background: #ffebee; }
         .qa-card.qa-lateentry:hover .qa-icon { background: #ffcdd2; }
 
+        /* 🆕 Penalty Amount Card Color */
+        .qa-card.qa-penalty { border-top-color: #e65100; }
+        .qa-card.qa-penalty .qa-icon { background: #fff3e0; }
+        .qa-card.qa-penalty:hover .qa-icon { background: #ffe0b2; }
+
         #sectionsWrapper {
             display: none;
             margin-top: 30px;
@@ -1221,7 +1226,7 @@
             'RIP-DPL-Factory Support', 'DPL-QA', 'RIP RFL Store'
         ];
 
-        // 🆕 FIXED LATE ENTRY DEPARTMENTS (as per image)
+        // 🆕 FIXED LATE ENTRY DEPARTMENTS (Without Total Production Team & Total Packaging Team)
         const FIXED_LATE_ENTRY_DEPTS = [
             'RIP> DPL> Plastic-1',
             'RIP> DPL> Plastic-3',
@@ -1232,11 +1237,9 @@
             'RIP> DPL> Plastic-7.3',
             'RIP> DPL> Plastic-7.4',
             'Silicon Project',
-            'Total Production Team',
             'Plastic Packaging-01',
             'Plastic Packaging-02',
             'Plastic Packaging-03',
-            'Total Packaging Team',
             'Plastic-Maintenance.',
             'Tool Room Maintenance',
             'Plastic Inventory & Delivery',
@@ -1506,11 +1509,9 @@
             const container = document.getElementById('lateEntryTableContainer');
             if (!container) return;
 
-            // Determine the filter date and shift
             const filterDate = document.getElementById('filterDate').value;
             const filterShift = document.getElementById('filterShift').value;
             
-            // If no filter is applied, use today's date and current shift
             const today = new Date();
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -1520,17 +1521,14 @@
             const activeDate = filterDate || defaultDate;
             const activeShift = filterShift !== 'All' ? filterShift : getCurrentShift();
 
-            // Get all data (use filteredData if available, otherwise allData)
             const sourceData = (filteredData && filteredData.length > 0) ? filteredData : allData;
 
-            // Group data by department for the selected date and shift
             const deptDataMap = {};
             
             sourceData.forEach(row => {
                 const rowDate = row.Date || row.entryDate || '';
                 const rowShift = row.Shift || row.shift || '';
                 
-                // Filter by selected date and shift
                 if (rowDate !== activeDate) return;
                 if (rowShift !== activeShift) return;
 
@@ -1543,70 +1541,28 @@
                 deptDataMap[dept].push(row);
             });
 
-            // Process each department
             const rows = FIXED_LATE_ENTRY_DEPTS.map(deptName => {
                 let entry = null;
                 let isLate = false;
                 let penaltyAmount = 0;
 
-                // Handle "Total Production Team", "Total Packaging Team" (these are summary names)
-                if (deptName === 'Total Production Team') {
-                    const prodDepts = ['RIP> DPL> Plastic-1', 'RIP> DPL> Plastic-3', 'RIP> DPL> Plastic-6.1', 'RIP> DPL> Plastic-6.2', 'RIP> DPL> Plastic-7.1', 'RIP> DPL> Plastic-7.2', 'RIP> DPL> Plastic-7.3', 'RIP> DPL> Plastic-7.4', 'Silicon Project'];
-                    let latestEntry = null;
-                    prodDepts.forEach(d => {
-                        if (deptDataMap[d]) {
-                            deptDataMap[d].forEach(e => {
-                                const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
-                                if (ts) {
-                                    if (!latestEntry || new Date(ts) > new Date(latestEntry.timestamp)) {
-                                        latestEntry = { department: d, timestamp: ts, icName: getVal(e, ['IC Name', 'icName']), row: e };
-                                    }
-                                }
-                            });
+                if (deptDataMap[deptName] && deptDataMap[deptName].length > 0) {
+                    let latest = deptDataMap[deptName][0];
+                    deptDataMap[deptName].forEach(e => {
+                        const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
+                        const latestTs = getVal(latest, ['Timestamp', 'timestamp', 'entryDate']);
+                        if (ts && (!latestTs || new Date(ts) > new Date(latestTs))) {
+                            latest = e;
                         }
                     });
-                    if (latestEntry) {
-                        entry = { department: latestEntry.department, timestamp: latestEntry.timestamp, icName: latestEntry.icName, row: latestEntry.row };
-                    }
-                } else if (deptName === 'Total Packaging Team') {
-                    const packDepts = ['Plastic Packaging-01', 'Plastic Packaging-02', 'Plastic Packaging-03'];
-                    let latestEntry = null;
-                    packDepts.forEach(d => {
-                        if (deptDataMap[d]) {
-                            deptDataMap[d].forEach(e => {
-                                const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
-                                if (ts) {
-                                    if (!latestEntry || new Date(ts) > new Date(latestEntry.timestamp)) {
-                                        latestEntry = { department: d, timestamp: ts, icName: getVal(e, ['IC Name', 'icName']), row: e };
-                                    }
-                                }
-                            });
-                        }
-                    });
-                    if (latestEntry) {
-                        entry = { department: latestEntry.department, timestamp: latestEntry.timestamp, icName: latestEntry.icName, row: latestEntry.row };
-                    }
-                } else {
-                    // Normal department
-                    if (deptDataMap[deptName] && deptDataMap[deptName].length > 0) {
-                        let latest = deptDataMap[deptName][0];
-                        deptDataMap[deptName].forEach(e => {
-                            const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
-                            const latestTs = getVal(latest, ['Timestamp', 'timestamp', 'entryDate']);
-                            if (ts && (!latestTs || new Date(ts) > new Date(latestTs))) {
-                                latest = e;
-                            }
-                        });
-                        entry = {
-                            department: deptName,
-                            timestamp: getVal(latest, ['Timestamp', 'timestamp', 'entryDate']),
-                            icName: getVal(latest, ['IC Name', 'icName']),
-                            row: latest
-                        };
-                    }
+                    entry = {
+                        department: deptName,
+                        timestamp: getVal(latest, ['Timestamp', 'timestamp', 'entryDate']),
+                        icName: getVal(latest, ['IC Name', 'icName']),
+                        row: latest
+                    };
                 }
 
-                // Check if late
                 let status = '-';
                 let statusColor = 'black';
                 let timestampDisplay = '-';
@@ -1634,12 +1590,11 @@
                             if (part.type === 'second') seconds = parseInt(part.value, 10);
                         });
 
-                        // Determine cutoff time based on shift
                         let cutoffSeconds;
                         if (activeShift === 'Night') {
-                            cutoffSeconds = (20 * 3600) + (30 * 60) + 0; // 8:30 PM = 20:30:00
+                            cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
                         } else {
-                            cutoffSeconds = (8 * 3600) + (30 * 60) + 0;  // 8:30 AM = 08:30:00
+                            cutoffSeconds = (8 * 3600) + (30 * 60) + 0;
                         }
 
                         const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
@@ -1647,12 +1602,12 @@
                         if (totalSeconds > cutoffSeconds) {
                             isLate = true;
                             status = 'Late Entry';
-                            statusColor = '#b71c1c'; // Red
-                            penalty = 10; // 10 Taka penalty
+                            statusColor = '#b71c1c';
+                            penalty = 10;
                         } else {
                             isLate = false;
                             status = 'No late';
-                            statusColor = '#1b5e20'; // Green
+                            statusColor = '#1b5e20';
                             penalty = 0;
                         }
                     }
@@ -1677,7 +1632,6 @@
                 };
             });
 
-            // Generate HTML Table
             let html = `<table class="saifuddin-table" style="border-collapse:collapse; width:100%;">
                 <thead>
                     <tr>
@@ -1754,7 +1708,6 @@
             const lateData = window._lateEntryData || [];
             const totalPenalty = window._totalPenalty || 0;
 
-            // Determine the filter date and shift
             const filterDate = document.getElementById('filterDate').value;
             const filterShift = document.getElementById('filterShift').value;
             const today = new Date();
@@ -1765,7 +1718,6 @@
             const activeDate = filterDate || defaultDate;
             const activeShift = filterShift !== 'All' ? filterShift : getCurrentShift();
 
-            // Generate Penalty Summary Table
             let html = `<table class="saifuddin-table" style="border-collapse:collapse; width:100%;">
                 <thead>
                     <tr>
