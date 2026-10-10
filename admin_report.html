@@ -1454,7 +1454,7 @@
             setTxt('avgRunningPct', data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%');
         }
 
-        // 🆕 LATE ENTRY TABLE FUNCTION
+        // 🆕 LATE ENTRY TABLE FUNCTION (FIXED FOR TIMEZONE)
         function renderLateEntryTable(data) {
             const container = document.getElementById('lateEntryTableContainer');
             if (!container) return;
@@ -1475,15 +1475,28 @@
                 const timestampStr = getVal(row, ['Timestamp', 'timestamp', 'entryDate']);
                 if (!timestampStr) return;
 
+                // ✅ FIX: Parse time correctly for Asia/Dhaka (UTC+6)
                 const entryTime = new Date(timestampStr);
                 if (isNaN(entryTime.getTime())) return;
 
-                // Night Shift starts at 8:30 PM (20:30)
-                const entryHours = entryTime.getHours();
-                const entryMinutes = entryTime.getMinutes();
+                // Get hours and minutes in Asia/Dhaka timezone using Intl.DateTimeFormat
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'Asia/Dhaka',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    hour12: false
+                });
                 
+                const parts = formatter.formatToParts(entryTime);
+                let hours = 0, minutes = 0;
+                parts.forEach(part => {
+                    if (part.type === 'hour') hours = parseInt(part.value, 10);
+                    if (part.type === 'minute') minutes = parseInt(part.value, 10);
+                });
+
+                // Night Shift starts at 8:30 PM (20:30)
                 // Check if time is after 20:30 (8:30 PM)
-                const isLate = (entryHours > 20) || (entryHours === 20 && entryMinutes >= 30);
+                const isLate = (hours > 20) || (hours === 20 && minutes >= 30);
 
                 if (isLate) {
                     lateEntries.push({
@@ -1491,7 +1504,7 @@
                         shift: shift,
                         department: getVal(row, ['Department', 'department']),
                         icName: getVal(row, ['IC Name', 'icName']),
-                        timestamp: formatTime(timestampStr),
+                        timestamp: formatTime(timestampStr), // formatTime already uses Asia/Dhaka
                         status: 'Late Entry'
                     });
                 }
