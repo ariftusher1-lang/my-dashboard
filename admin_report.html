@@ -1566,103 +1566,101 @@
 
         // ✅ FIXED: rowShift is now properly defined
         function getLateEntryDataForDate(dateStr, shiftStr) {
-            const sourceData = allData;
-            const deptDataMap = {};
-            
-            sourceData.forEach(row => {
-                const rowDate = row.Date || row.entryDate || '';
-                const rowShift = row.Shift || row.shift || '';
-                const rowShift = row.Shift || row.shift || '';   // ✅ FIXED: Defined here
-                
-                if (rowDate !== dateStr) return;
-                if (shiftStr && shiftStr !== 'All' && rowShift !== shiftStr) return;
+    const sourceData = allData;
+    const deptDataMap = {};
+    
+    sourceData.forEach(row => {
+        const rowDate = row.Date || row.entryDate || '';
+        const rowShift = row.Shift || row.shift || '';
+        
+        if (rowDate !== dateStr) return;
+        if (shiftStr && shiftStr !== 'All' && rowShift !== shiftStr) return;
 
-                const dept = getVal(row, ['Department', 'department']);
-                if (!dept) return;
+        const dept = getVal(row, ['Department', 'department']);
+        if (!dept) return;
 
-                if (!deptDataMap[dept]) {
-                    deptDataMap[dept] = [];
-                }
-                deptDataMap[dept].push(row);
-            });
-
-            const result = [];
-            FIXED_LATE_ENTRY_DEPTS.forEach(deptName => {
-                if (deptDataMap[deptName] && deptDataMap[deptName].length > 0) {
-                    let latest = deptDataMap[deptName][0];
-                    deptDataMap[deptName].forEach(e => {
-                        const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
-                        const latestTs = getVal(latest, ['Timestamp', 'timestamp', 'entryDate']);
-                        if (ts && (!latestTs || new Date(ts) > new Date(latestTs))) {
-                            latest = e;
-                        }
-                    });
-                    
-                    const timestampStr = getVal(latest, ['Timestamp', 'timestamp', 'entryDate']);
-                    const entryTime = new Date(timestampStr);
-                    let isLate = false;
-                    let penalty = 0;
-                    
-                    if (!isNaN(entryTime.getTime())) {
-                        const formatter = new Intl.DateTimeFormat('en-US', {
-                            timeZone: 'Asia/Dhaka',
-                            hour: 'numeric',
-                            minute: 'numeric',
-                            second: 'numeric',
-                            hour12: false
-                        });
-                        const parts = formatter.formatToParts(entryTime);
-                        let hours = 0, minutes = 0, seconds = 0;
-                        parts.forEach(part => {
-                            if (part.type === 'hour') hours = parseInt(part.value, 10);
-                            if (part.type === 'minute') minutes = parseInt(part.value, 10);
-                            if (part.type === 'second') seconds = parseInt(part.value, 10);
-                        });
-                        
-                        let cutoffSeconds;
-                        if (shiftStr === 'Night') {
-                            cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
-                        } else if (shiftStr === 'Day') {
-                            cutoffSeconds = (8 * 3600) + (30 * 60) + 0;
-                        } else {
-                            cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
-                        }
-                        
-                        const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
-                        
-                        if (totalSeconds > cutoffSeconds) {
-                            isLate = true;
-                            penalty = 10;
-                        }
-                    }
-                    
-                    result.push({
-                        date: dateStr,
-                        shift: rowShift,
-                        department: deptName,
-                        icName: getVal(latest, ['IC Name', 'icName']),
-                        timestamp: formatTime(timestampStr),
-                        status: isLate ? 'Late Entry' : 'No late',
-                        penalty: penalty,
-                        isLate: isLate
-                    });
-                } else {
-                    result.push({
-                        date: dateStr,
-                        shift: shiftStr || '-',
-                        department: deptName,
-                        icName: '-',
-                        timestamp: '-',
-                        status: '-',
-                        penalty: 0,
-                        isLate: false
-                    });
-                }
-            });
-            
-            return result;
+        if (!deptDataMap[dept]) {
+            deptDataMap[dept] = [];
         }
+        deptDataMap[dept].push(row);
+    });
 
+    const result = [];
+    FIXED_LATE_ENTRY_DEPTS.forEach(deptName => {
+        if (deptDataMap[deptName] && deptDataMap[deptName].length > 0) {
+            let latest = deptDataMap[deptName][0];
+            deptDataMap[deptName].forEach(e => {
+                const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
+                const latestTs = getVal(latest, ['Timestamp', 'timestamp', 'entryDate']);
+                if (ts && (!latestTs || new Date(ts) > new Date(latestTs))) {
+                    latest = e;
+                }
+            });
+            
+            const timestampStr = getVal(latest, ['Timestamp', 'timestamp', 'entryDate']);
+            const entryTime = new Date(timestampStr);
+            let isLate = false;
+            let penalty = 0;
+            
+            if (!isNaN(entryTime.getTime())) {
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'Asia/Dhaka',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false
+                });
+                const parts = formatter.formatToParts(entryTime);
+                let hours = 0, minutes = 0, seconds = 0;
+                parts.forEach(part => {
+                    if (part.type === 'hour') hours = parseInt(part.value, 10);
+                    if (part.type === 'minute') minutes = parseInt(part.value, 10);
+                    if (part.type === 'second') seconds = parseInt(part.value, 10);
+                });
+                
+                let cutoffSeconds;
+                if (shiftStr === 'Night') {
+                    cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
+                } else if (shiftStr === 'Day') {
+                    cutoffSeconds = (8 * 3600) + (30 * 60) + 0;
+                } else {
+                    cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
+                }
+                
+                const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                
+                if (totalSeconds > cutoffSeconds) {
+                    isLate = true;
+                    penalty = 10;
+                }
+            }
+            
+            result.push({
+                date: dateStr,
+                shift: rowShift,
+                department: deptName,
+                icName: getVal(latest, ['IC Name', 'icName']),
+                timestamp: formatTime(timestampStr),
+                status: isLate ? 'Late Entry' : 'No late',
+                penalty: penalty,
+                isLate: isLate
+            });
+        } else {
+            result.push({
+                date: dateStr,
+                shift: shiftStr || '-',
+                department: deptName,
+                icName: '-',
+                timestamp: '-',
+                status: '-',
+                penalty: 0,
+                isLate: false
+            });
+        }
+    });
+    
+    return result;
+}
         function renderTop5Table(data) {
             const container = document.getElementById('top5TableContainer');
             if (!container) return;
