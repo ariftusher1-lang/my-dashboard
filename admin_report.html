@@ -295,6 +295,21 @@
         .qa-card.qa-penalty .qa-icon { background: #fff3e0; }
         .qa-card.qa-penalty:hover .qa-icon { background: #ffe0b2; }
 
+        /* 🆕 Top 5 Late Entry Card */
+        .qa-card.qa-top5 { border-top-color: #c62828; }
+        .qa-card.qa-top5 .qa-icon { background: #ffebee; }
+        .qa-card.qa-top5:hover .qa-icon { background: #ffcdd2; }
+
+        /* 🆕 Monthly Penalty Card */
+        .qa-card.qa-monthly { border-top-color: #6a1b9a; }
+        .qa-card.qa-monthly .qa-icon { background: #f3e5f5; }
+        .qa-card.qa-monthly:hover .qa-icon { background: #e1bee7; }
+
+        /* 🆕 Dept History Card */
+        .qa-card.qa-dept-history { border-top-color: #00695c; }
+        .qa-card.qa-dept-history .qa-icon { background: #e0f2f1; }
+        .qa-card.qa-dept-history:hover .qa-icon { background: #b2dfdb; }
+
         #sectionsWrapper {
             display: none;
             margin-top: 30px;
@@ -527,6 +542,12 @@
         .section-title.sec-lateentry { background: linear-gradient(135deg, #b71c1c, #d32f2f); }
         /* 🆕 Penalty Amount Section Title */
         .section-title.sec-penalty { background: linear-gradient(135deg, #e65100, #f57c00); }
+        /* 🆕 Top 5 Section Title */
+        .section-title.sec-top5 { background: linear-gradient(135deg, #c62828, #e53935); }
+        /* 🆕 Monthly Penalty Section Title */
+        .section-title.sec-monthly { background: linear-gradient(135deg, #6a1b9a, #8e24aa); }
+        /* 🆕 Dept History Section Title */
+        .section-title.sec-dept-history { background: linear-gradient(135deg, #00695c, #00838f); }
 
         .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
         .btn-excel { background: #1e7e34; color: white; border: none; padding: 6px 14px; border-radius: 5px; font-weight: 700; cursor: pointer; font-size: 11px; }
@@ -807,6 +828,24 @@
                             <div class="qa-title">As of<br>Penalty Amount</div>
                         </div>
 
+                        <!-- 🆕 NEW TOP 5 LATE ENTRY CARD -->
+                        <div class="qa-card qa-link qa-top5" onclick="showAdminSection('top5')">
+                            <div class="qa-icon">🔝</div>
+                            <div class="qa-title">Top 5 Late<br>Entry Depts</div>
+                        </div>
+
+                        <!-- 🆕 NEW MONTHLY PENALTY CARD -->
+                        <div class="qa-card qa-link qa-monthly" onclick="showAdminSection('monthly')">
+                            <div class="qa-icon">📅</div>
+                            <div class="qa-title">Monthly<br>Penalty Summary</div>
+                        </div>
+
+                        <!-- 🆕 NEW DEPT HISTORY CARD -->
+                        <div class="qa-card qa-link qa-dept-history" onclick="showAdminSection('deptHistory')">
+                            <div class="qa-icon">📜</div>
+                            <div class="qa-title">Department-wise<br>Penalty History</div>
+                        </div>
+
                         <div class="qa-card qa-logout" onclick="handleLogout()">
                             <div class="qa-icon">🚪</div>
                             <div class="qa-title">Logout</div>
@@ -950,6 +989,42 @@
                             </div>
                         </div>
                         <div class="table-wrap" id="penaltyTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+                    </div>
+
+                    <!-- 🆕 Section 8: Top 5 Late Entry Departments -->
+                    <div class="admin-section" id="section-top5">
+                        <div class="section-title sec-top5">
+                            <span><span class="sec-icon">🔝</span>Top 5 Late Entry Departments</span>
+                            <div class="btn-group">
+                                <button class="btn-image" onclick="downloadTop5Image()">📷 ইমেজ</button>
+                                <button class="btn-excel" onclick="downloadTop5Excel()">⬇️ Excel</button>
+                            </div>
+                        </div>
+                        <div class="table-wrap" id="top5TableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+                    </div>
+
+                    <!-- 🆕 Section 9: Monthly Penalty Summary -->
+                    <div class="admin-section" id="section-monthly">
+                        <div class="section-title sec-monthly">
+                            <span><span class="sec-icon">📅</span>Monthly Penalty Summary</span>
+                            <div class="btn-group">
+                                <button class="btn-image" onclick="downloadMonthlyImage()">📷 ইমেজ</button>
+                                <button class="btn-excel" onclick="downloadMonthlyExcel()">⬇️ Excel</button>
+                            </div>
+                        </div>
+                        <div class="table-wrap" id="monthlyTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+                    </div>
+
+                    <!-- 🆕 Section 10: Department-wise Penalty History -->
+                    <div class="admin-section" id="section-deptHistory">
+                        <div class="section-title sec-dept-history">
+                            <span><span class="sec-icon">📜</span>Department-wise Penalty History (Last 7 Days)</span>
+                            <div class="btn-group">
+                                <button class="btn-image" onclick="downloadDeptHistoryImage()">📷 ইমেজ</button>
+                                <button class="btn-excel" onclick="downloadDeptHistoryExcel()">⬇️ Excel</button>
+                            </div>
+                        </div>
+                        <div class="table-wrap" id="deptHistoryTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
                     </div>
 
                     <div class="stats" id="statsContainer" style="display:none;">
@@ -1474,8 +1549,11 @@
             renderQATable(data);
             renderMissing(data);
             renderRawData(data);
-            renderLateEntryTable(data); // 🆕 Added
-            renderPenaltyTable(data);     // 🆕 Added
+            renderLateEntryTable(data);
+            renderPenaltyTable(data);
+            renderTop5Table(data);         // 🆕 Added
+            renderMonthlyTable(data);      // 🆕 Added
+            renderDeptHistoryTable(data);  // 🆕 Added
         }
 
         function renderStats(data) {
@@ -1502,6 +1580,423 @@
             setTxt('totalMC', totalMC);
             setTxt('totalTargetRun', totalTargetRun);
             setTxt('avgRunningPct', data.length > 0 ? (sumPct / data.length).toFixed(1) + '%' : '0.0%');
+        }
+
+        // 🆕 Helper: Get Late Entry Data for a specific date
+        function getLateEntryDataForDate(dateStr, shiftStr) {
+            const sourceData = allData;
+            const deptDataMap = {};
+            
+            sourceData.forEach(row => {
+                const rowDate = row.Date || row.entryDate || '';
+                const rowShift = row.Shift || row.shift || '';
+                
+                if (rowDate !== dateStr) return;
+                if (shiftStr && shiftStr !== 'All' && rowShift !== shiftStr) return;
+
+                const dept = getVal(row, ['Department', 'department']);
+                if (!dept) return;
+
+                if (!deptDataMap[dept]) {
+                    deptDataMap[dept] = [];
+                }
+                deptDataMap[dept].push(row);
+            });
+
+            const result = [];
+            FIXED_LATE_ENTRY_DEPTS.forEach(deptName => {
+                if (deptDataMap[deptName] && deptDataMap[deptName].length > 0) {
+                    let latest = deptDataMap[deptName][0];
+                    deptDataMap[deptName].forEach(e => {
+                        const ts = getVal(e, ['Timestamp', 'timestamp', 'entryDate']);
+                        const latestTs = getVal(latest, ['Timestamp', 'timestamp', 'entryDate']);
+                        if (ts && (!latestTs || new Date(ts) > new Date(latestTs))) {
+                            latest = e;
+                        }
+                    });
+                    
+                    const timestampStr = getVal(latest, ['Timestamp', 'timestamp', 'entryDate']);
+                    const entryTime = new Date(timestampStr);
+                    let isLate = false;
+                    let penalty = 0;
+                    
+                    if (!isNaN(entryTime.getTime())) {
+                        const formatter = new Intl.DateTimeFormat('en-US', {
+                            timeZone: 'Asia/Dhaka',
+                            hour: 'numeric',
+                            minute: 'numeric',
+                            second: 'numeric',
+                            hour12: false
+                        });
+                        const parts = formatter.formatToParts(entryTime);
+                        let hours = 0, minutes = 0, seconds = 0;
+                        parts.forEach(part => {
+                            if (part.type === 'hour') hours = parseInt(part.value, 10);
+                            if (part.type === 'minute') minutes = parseInt(part.value, 10);
+                            if (part.type === 'second') seconds = parseInt(part.value, 10);
+                        });
+                        
+                        let cutoffSeconds;
+                        if (shiftStr === 'Night') {
+                            cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
+                        } else if (shiftStr === 'Day') {
+                            cutoffSeconds = (8 * 3600) + (30 * 60) + 0;
+                        } else {
+                            // Default: check both
+                            cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
+                        }
+                        
+                        const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                        
+                        if (totalSeconds > cutoffSeconds) {
+                            isLate = true;
+                            penalty = 10;
+                        }
+                    }
+                    
+                    result.push({
+                        date: dateStr,
+                        shift: rowShift,
+                        department: deptName,
+                        icName: getVal(latest, ['IC Name', 'icName']),
+                        timestamp: formatTime(timestampStr),
+                        status: isLate ? 'Late Entry' : 'No late',
+                        penalty: penalty,
+                        isLate: isLate
+                    });
+                } else {
+                    result.push({
+                        date: dateStr,
+                        shift: shiftStr || '-',
+                        department: deptName,
+                        icName: '-',
+                        timestamp: '-',
+                        status: '-',
+                        penalty: 0,
+                        isLate: false
+                    });
+                }
+            });
+            
+            return result;
+        }
+
+        // 🆕 TOP 5 LATE ENTRY DEPARTMENTS
+        function renderTop5Table(data) {
+            const container = document.getElementById('top5TableContainer');
+            if (!container) return;
+
+            const filterDate = document.getElementById('filterDate').value;
+            const filterShift = document.getElementById('filterShift').value;
+            
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const defaultDate = `${year}-${month}-${day}`;
+            
+            const activeDate = filterDate || defaultDate;
+            const activeShift = filterShift !== 'All' ? filterShift : getCurrentShift();
+
+            const lateData = getLateEntryDataForDate(activeDate, activeShift);
+            const lateOnly = lateData.filter(r => r.isLate);
+
+            // Count by department
+            const deptCount = {};
+            lateOnly.forEach(r => {
+                if (!deptCount[r.department]) deptCount[r.department] = 0;
+                deptCount[r.department]++;
+            });
+
+            // Sort by count descending, take top 5
+            const top5 = Object.entries(deptCount)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            let html = `<table class="saifuddin-table" style="border-collapse:collapse; width:100%;">
+                <thead>
+                    <tr>
+                        <th style="background:#c62828; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:center;">Rank</th>
+                        <th style="background:#c62828; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Department</th>
+                        <th style="background:#c62828; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:center;">Late Entry Count</th>
+                        <th style="background:#c62828; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:center;">Total Penalty (৳)</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            if (top5.length === 0) {
+                html += `<tr><td colspan="4" style="padding:20px; text-align:center; color:#888; font-style:italic;">✅ এই ফিল্টারে কোনো Late Entry নেই।</td></tr>`;
+            } else {
+                top5.forEach(([dept, count], idx) => {
+                    const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                    const rank = idx + 1;
+                    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                    const penaltyTotal = count * 10;
+                    html += `<tr style="background:${bgColor};">
+                        <td style="padding:10px; border:1px solid #ddd; font-weight:800; font-size:16px; text-align:center; color:#c62828;">${medal}</td>
+                        <td style="padding:10px; border:1px solid #ddd; font-weight:700; text-align:left;">${dept}</td>
+                        <td style="padding:10px; border:1px solid #ddd; font-weight:700; text-align:center; color:#c62828;">${count}</td>
+                        <td style="padding:10px; border:1px solid #ddd; font-weight:700; text-align:center; color:#c62828;">${penaltyTotal} ৳</td>
+                    </tr>`;
+                });
+            }
+
+            html += `</tbody></table>`;
+
+            if (top5.length > 0) {
+                const totalTop5Penalty = top5.reduce((sum, [_, count]) => sum + (count * 10), 0);
+                html += `<div style="margin-top:15px; padding:12px 18px; background:#ffebee; border-radius:8px; border-left:5px solid #c62828; font-weight:700; color:#c62828; font-size:15px;">
+                    🔝 Top 5 Departments Total Penalty: <span style="font-size:18px;">${totalTop5Penalty} ৳</span>
+                </div>`;
+            }
+
+            container.innerHTML = html;
+            window._top5Data = top5;
+        }
+
+        // 🆕 MONTHLY PENALTY SUMMARY
+        function renderMonthlyTable(data) {
+            const container = document.getElementById('monthlyTableContainer');
+            if (!container) return;
+
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const monthStart = `${year}-${month}-01`;
+            const monthEnd = `${year}-${month}-31`;
+            
+            // Get all data for the current month
+            const sourceData = allData;
+            const monthlyLateData = [];
+            
+            sourceData.forEach(row => {
+                const rowDate = row.Date || row.entryDate || '';
+                if (rowDate < monthStart || rowDate > monthEnd) return;
+                
+                const dept = getVal(row, ['Department', 'department']);
+                if (!dept || !FIXED_LATE_ENTRY_DEPTS.includes(dept)) return;
+                
+                const timestampStr = getVal(row, ['Timestamp', 'timestamp', 'entryDate']);
+                const entryTime = new Date(timestampStr);
+                if (isNaN(entryTime.getTime())) return;
+                
+                const shift = row.Shift || row.shift || '';
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'Asia/Dhaka',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false
+                });
+                const parts = formatter.formatToParts(entryTime);
+                let hours = 0, minutes = 0, seconds = 0;
+                parts.forEach(part => {
+                    if (part.type === 'hour') hours = parseInt(part.value, 10);
+                    if (part.type === 'minute') minutes = parseInt(part.value, 10);
+                    if (part.type === 'second') seconds = parseInt(part.value, 10);
+                });
+                
+                let cutoffSeconds;
+                if (shift === 'Night') {
+                    cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
+                } else if (shift === 'Day') {
+                    cutoffSeconds = (8 * 3600) + (30 * 60) + 0;
+                } else {
+                    cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
+                }
+                
+                const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                
+                if (totalSeconds > cutoffSeconds) {
+                    monthlyLateData.push({
+                        date: rowDate,
+                        shift: shift,
+                        department: dept,
+                        icName: getVal(row, ['IC Name', 'icName']),
+                        penalty: 10
+                    });
+                }
+            });
+
+            // Group by department
+            const deptSummary = {};
+            monthlyLateData.forEach(r => {
+                if (!deptSummary[r.department]) {
+                    deptSummary[r.department] = { count: 0, penalty: 0 };
+                }
+                deptSummary[r.department].count++;
+                deptSummary[r.department].penalty += 10;
+            });
+
+            const totalMonthlyPenalty = monthlyLateData.reduce((sum, r) => sum + r.penalty, 0);
+
+            let html = `<table class="saifuddin-table" style="border-collapse:collapse; width:100%;">
+                <thead>
+                    <tr>
+                        <th style="background:#6a1b9a; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:left;">Department</th>
+                        <th style="background:#6a1b9a; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:center;">Late Entry Count (Month)</th>
+                        <th style="background:#6a1b9a; color:#fff; font-weight:700; border:1px solid #666; padding:10px; text-align:center;">Total Penalty (৳)</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            const deptKeys = Object.keys(deptSummary).sort((a, b) => deptSummary[b].penalty - deptSummary[a].penalty);
+            
+            if (deptKeys.length === 0) {
+                html += `<tr><td colspan="3" style="padding:20px; text-align:center; color:#888; font-style:italic;">✅ এই মাসে কোনো Late Entry নেই।</td></tr>`;
+            } else {
+                deptKeys.forEach((dept, idx) => {
+                    const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                    html += `<tr style="background:${bgColor};">
+                        <td style="padding:10px; border:1px solid #ddd; font-weight:600; text-align:left;">${dept}</td>
+                        <td style="padding:10px; border:1px solid #ddd; font-weight:700; text-align:center; color:#6a1b9a;">${deptSummary[dept].count}</td>
+                        <td style="padding:10px; border:1px solid #ddd; font-weight:700; text-align:center; color:#6a1b9a;">${deptSummary[dept].penalty} ৳</td>
+                    </tr>`;
+                });
+            }
+
+            html += `<tr style="background:#fff59d; font-weight:800; border:2px solid #333;">
+                <td style="padding:10px; border:1px solid #333; text-align:right;">📌 Total Monthly Penalty:</td>
+                <td style="padding:10px; border:1px solid #333; text-align:center; color:#6a1b9a; font-size:16px;">${monthlyLateData.length}</td>
+                <td style="padding:10px; border:1px solid #333; text-align:center; color:#6a1b9a; font-size:16px;">${totalMonthlyPenalty} ৳</td>
+            </tr>`;
+
+            html += `</tbody></table>`;
+
+            html += `<div style="margin-top:15px; padding:12px 18px; background:#f3e5f5; border-radius:8px; border-left:5px solid #6a1b9a; font-weight:700; color:#6a1b9a; font-size:15px;">
+                📅 Monthly Penalty Summary (${monthStart} to ${monthEnd}): <span style="font-size:20px;">${totalMonthlyPenalty} ৳</span> (${monthlyLateData.length} Late Entries)
+            </div>`;
+
+            container.innerHTML = html;
+            window._monthlyData = deptSummary;
+            window._monthlyTotal = totalMonthlyPenalty;
+        }
+
+        // 🆕 DEPARTMENT-WISE PENALTY HISTORY (LAST 7 DAYS)
+        function renderDeptHistoryTable(data) {
+            const container = document.getElementById('deptHistoryTableContainer');
+            if (!container) return;
+
+            // Generate last 7 days (including today)
+            const today = new Date();
+            const last7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                last7Days.push(`${y}-${m}-${day}`);
+            }
+
+            // Collect late entry data for each day
+            const historyData = {};
+            FIXED_LATE_ENTRY_DEPTS.forEach(dept => {
+                historyData[dept] = {};
+                last7Days.forEach(date => {
+                    historyData[dept][date] = 0;
+                });
+            });
+
+            allData.forEach(row => {
+                const rowDate = row.Date || row.entryDate || '';
+                if (!last7Days.includes(rowDate)) return;
+
+                const dept = getVal(row, ['Department', 'department']);
+                if (!dept || !FIXED_LATE_ENTRY_DEPTS.includes(dept)) return;
+                
+                const timestampStr = getVal(row, ['Timestamp', 'timestamp', 'entryDate']);
+                const entryTime = new Date(timestampStr);
+                if (isNaN(entryTime.getTime())) return;
+                
+                const shift = row.Shift || row.shift || '';
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'Asia/Dhaka',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false
+                });
+                const parts = formatter.formatToParts(entryTime);
+                let hours = 0, minutes = 0, seconds = 0;
+                parts.forEach(part => {
+                    if (part.type === 'hour') hours = parseInt(part.value, 10);
+                    if (part.type === 'minute') minutes = parseInt(part.value, 10);
+                    if (part.type === 'second') seconds = parseInt(part.value, 10);
+                });
+                
+                let cutoffSeconds;
+                if (shift === 'Night') {
+                    cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
+                } else if (shift === 'Day') {
+                    cutoffSeconds = (8 * 3600) + (30 * 60) + 0;
+                } else {
+                    cutoffSeconds = (20 * 3600) + (30 * 60) + 0;
+                }
+                
+                const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                
+                if (totalSeconds > cutoffSeconds) {
+                    historyData[dept][rowDate] += 10; // 10 Taka penalty
+                }
+            });
+
+            let html = `<table class="saifuddin-table" style="border-collapse:collapse; width:100%; font-size:11px;">
+                <thead>
+                    <tr>
+                        <th style="background:#00695c; color:#fff; font-weight:700; border:1px solid #666; padding:6px; text-align:left; min-width:200px;">Department</th>`;
+            
+            last7Days.forEach(d => {
+                const parts = d.split('-');
+                const displayDate = `${parts[2]}-${parts[1]}`;
+                html += `<th style="background:#00695c; color:#fff; font-weight:700; border:1px solid #666; padding:6px; text-align:center; font-size:10px;">${displayDate}</th>`;
+            });
+            
+            html += `<th style="background:#00695c; color:#fff; font-weight:700; border:1px solid #666; padding:6px; text-align:center; font-size:10px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            let grandTotals = {};
+            last7Days.forEach(d => { grandTotals[d] = 0; });
+            let grandTotalAll = 0;
+
+            FIXED_LATE_ENTRY_DEPTS.forEach((dept, idx) => {
+                const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                let deptTotal = 0;
+                
+                html += `<tr style="background:${bgColor};">
+                    <td style="padding:6px; border:1px solid #ddd; font-weight:600; text-align:left;">${dept}</td>`;
+                
+                last7Days.forEach(date => {
+                    const val = historyData[dept][date];
+                    deptTotal += val;
+                    grandTotals[date] += val;
+                    const displayVal = val > 0 ? `<span style="color:#b71c1c; font-weight:700;">${val}৳</span>` : '<span style="color:#888;">0</span>';
+                    html += `<td style="padding:6px; border:1px solid #ddd; text-align:center;">${displayVal}</td>`;
+                });
+                
+                grandTotalAll += deptTotal;
+                html += `<td style="padding:6px; border:1px solid #ddd; text-align:center; font-weight:700; color:#00695c;">${deptTotal > 0 ? deptTotal + '৳' : '-'}</td>
+                    </tr>`;
+            });
+
+            // Grand total row
+            html += `<tr style="background:#fff59d; font-weight:800; border:2px solid #333;">
+                <td style="padding:6px; border:1px solid #333; text-align:right;">📌 Grand Total:</td>`;
+            last7Days.forEach(date => {
+                html += `<td style="padding:6px; border:1px solid #333; text-align:center; color:#00695c; font-weight:800;">${grandTotals[date]}৳</td>`;
+            });
+            html += `<td style="padding:6px; border:1px solid #333; text-align:center; color:#00695c; font-weight:800; font-size:14px;">${grandTotalAll}৳</td></tr>`;
+
+            html += `</tbody></table>`;
+
+            html += `<div style="margin-top:15px; padding:12px 18px; background:#e0f2f1; border-radius:8px; border-left:5px solid #00695c; font-weight:700; color:#00695c; font-size:15px;">
+                📜 Last 7 Days Total Penalty: <span style="font-size:20px;">${grandTotalAll} ৳</span>
+            </div>`;
+
+            container.innerHTML = html;
+            window._deptHistoryData = { historyData, last7Days, grandTotals, grandTotalAll };
         }
 
         // 🆕 LATE ENTRY PERFORMANCE TABLE (FIXED DEPARTMENTS & COLORS)
@@ -1761,6 +2256,252 @@
             </div>`;
 
             container.innerHTML = html;
+        }
+
+        // 🆕 DOWNLOAD TOP 5 AS IMAGE
+        function downloadTop5Image() {
+            const container = document.getElementById('top5TableContainer');
+            if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
+            const btn = document.querySelector('button[onclick="downloadTop5Image()"]');
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `width: 1200px; padding: 25px; background: white; border: 4px solid #c62828; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            const title = document.createElement('h2');
+            title.style.cssText = `color: #c62828; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #e53935; padding-bottom: 12px; font-size: 24px;`;
+            title.innerText = '🔝 Top 5 Late Entry Departments';
+            wrapper.appendChild(title);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `Top5_LateEntry_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(wrapper);
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                });
+        }
+
+        // 🆕 DOWNLOAD TOP 5 AS EXCEL
+        function downloadTop5Excel() {
+            const data = window._top5Data || [];
+            if (data.length === 0) { alert('ডেটা নেই!'); return; }
+            
+            const headers = ['Rank', 'Department', 'Late Entry Count', 'Total Penalty (৳)'];
+            const aoa = [headers];
+            data.forEach(([dept, count], idx) => {
+                aoa.push([idx + 1, dept, count, count * 10]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; R++) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[ref]) ws[ref] = { v: '' };
+                    if (!ws[ref].s) ws[ref].s = {};
+                    ws[ref].s.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+                    if (R === 0) {
+                        ws[ref].s.fill = { fgColor: { rgb: 'C62828' } };
+                        ws[ref].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
+                        ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                    } else {
+                        ws[ref].s.fill = { fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F8FAFC' } };
+                        ws[ref].s.font = { color: { rgb: '000000' }, sz: 11 };
+                    }
+                }
+            }
+            
+            ws['!cols'] = [{ wch: 8 }, { wch: 35 }, { wch: 18 }, { wch: 18 }];
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Top 5 Late Entry");
+            XLSX.writeFile(wb, `Top5_LateEntry_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        // 🆕 DOWNLOAD MONTHLY AS IMAGE
+        function downloadMonthlyImage() {
+            const container = document.getElementById('monthlyTableContainer');
+            if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
+            const btn = document.querySelector('button[onclick="downloadMonthlyImage()"]');
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `width: 1200px; padding: 25px; background: white; border: 4px solid #6a1b9a; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            const title = document.createElement('h2');
+            title.style.cssText = `color: #6a1b9a; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #8e24aa; padding-bottom: 12px; font-size: 24px;`;
+            title.innerText = '📅 Monthly Penalty Summary';
+            wrapper.appendChild(title);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `Monthly_Penalty_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(wrapper);
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                });
+        }
+
+        // 🆕 DOWNLOAD MONTHLY AS EXCEL
+        function downloadMonthlyExcel() {
+            const data = window._monthlyData || {};
+            const total = window._monthlyTotal || 0;
+            const keys = Object.keys(data);
+            if (keys.length === 0) { alert('ডেটা নেই!'); return; }
+            
+            const headers = ['Department', 'Late Entry Count', 'Total Penalty (৳)'];
+            const aoa = [headers];
+            keys.sort((a, b) => data[b].penalty - data[a].penalty).forEach(dept => {
+                aoa.push([dept, data[dept].count, data[dept].penalty]);
+            });
+            aoa.push(['📌 Total', '', total]);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; R++) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[ref]) ws[ref] = { v: '' };
+                    if (!ws[ref].s) ws[ref].s = {};
+                    ws[ref].s.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+                    if (R === 0) {
+                        ws[ref].s.fill = { fgColor: { rgb: '6A1B9A' } };
+                        ws[ref].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
+                        ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                    } else if (R === range.e.r) {
+                        ws[ref].s.fill = { fgColor: { rgb: 'FFF59D' } };
+                        ws[ref].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+                    } else {
+                        ws[ref].s.fill = { fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F8FAFC' } };
+                        ws[ref].s.font = { color: { rgb: '000000' }, sz: 11 };
+                    }
+                }
+            }
+            
+            ws['!cols'] = [{ wch: 35 }, { wch: 18 }, { wch: 18 }];
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Monthly Penalty");
+            XLSX.writeFile(wb, `Monthly_Penalty_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        // 🆕 DOWNLOAD DEPT HISTORY AS IMAGE
+        function downloadDeptHistoryImage() {
+            const container = document.getElementById('deptHistoryTableContainer');
+            if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
+            const btn = document.querySelector('button[onclick="downloadDeptHistoryImage()"]');
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `width: 1400px; padding: 25px; background: white; border: 4px solid #00695c; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            const title = document.createElement('h2');
+            title.style.cssText = `color: #00695c; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #00838f; padding-bottom: 12px; font-size: 24px;`;
+            title.innerText = '📜 Department-wise Penalty History (Last 7 Days)';
+            wrapper.appendChild(title);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `Dept_Penalty_History_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(wrapper);
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                });
+        }
+
+        // 🆕 DOWNLOAD DEPT HISTORY AS EXCEL
+        function downloadDeptHistoryExcel() {
+            const data = window._deptHistoryData;
+            if (!data || !data.last7Days || data.last7Days.length === 0) { alert('ডেটা নেই!'); return; }
+            
+            const { historyData, last7Days, grandTotals, grandTotalAll } = data;
+            
+            const headers = ['Department'];
+            last7Days.forEach(d => {
+                const parts = d.split('-');
+                headers.push(`${parts[2]}-${parts[1]}`);
+            });
+            headers.push('Total');
+            
+            const aoa = [headers];
+            FIXED_LATE_ENTRY_DEPTS.forEach(dept => {
+                const rowData = [dept];
+                let deptTotal = 0;
+                last7Days.forEach(date => {
+                    const val = historyData[dept][date] || 0;
+                    rowData.push(val);
+                    deptTotal += val;
+                });
+                rowData.push(deptTotal);
+                aoa.push(rowData);
+            });
+            
+            const totalRow = ['📌 Grand Total'];
+            last7Days.forEach(date => totalRow.push(grandTotals[date] || 0));
+            totalRow.push(grandTotalAll);
+            aoa.push(totalRow);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; R++) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[ref]) ws[ref] = { v: '' };
+                    if (!ws[ref].s) ws[ref].s = {};
+                    ws[ref].s.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+                    if (R === 0) {
+                        ws[ref].s.fill = { fgColor: { rgb: '00695C' } };
+                        ws[ref].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 11 };
+                        ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                    } else if (R === range.e.r) {
+                        ws[ref].s.fill = { fgColor: { rgb: 'FFF59D' } };
+                        ws[ref].s.font = { color: { rgb: '000000' }, bold: true, sz: 11 };
+                    } else {
+                        ws[ref].s.fill = { fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F8FAFC' } };
+                        ws[ref].s.font = { color: { rgb: '000000' }, sz: 10 };
+                    }
+                }
+            }
+            
+            const cols = [{ wch: 30 }];
+            last7Days.forEach(() => cols.push({ wch: 10 }));
+            cols.push({ wch: 12 });
+            ws['!cols'] = cols;
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Dept Penalty History");
+            XLSX.writeFile(wb, `Dept_Penalty_History_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         // 🆕 DOWNLOAD LATE ENTRY AS IMAGE
@@ -2637,7 +3378,7 @@ Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Repo
         }
 
         function showError(msg) {
-            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','qaTableContainer','missingContainer','rawDataTable','lateEntryTableContainer','penaltyTableContainer'];
+            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','qaTableContainer','missingContainer','rawDataTable','lateEntryTableContainer','penaltyTableContainer','top5TableContainer','monthlyTableContainer','deptHistoryTableContainer'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
