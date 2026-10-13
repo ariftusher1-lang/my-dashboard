@@ -609,7 +609,6 @@
         #qaTableContainer .saifuddin-table tbody td { padding: 3px 3px !important; font-size: 10px !important; border: 1px solid #999 !important; text-align: center !important; white-space: nowrap !important; line-height: 1.1 !important; }
         #qaTableContainer .saifuddin-table tbody td:first-child { text-align: left !important; padding-left: 6px !important; font-size: 10px !important; }
 
-        /* 🆕 Details Report Late Purpose — ছোট কলাম */
         #latePurposeReportContainer .saifuddin-table {
             font-size: 10px !important;
             border-collapse: collapse !important;
@@ -995,13 +994,25 @@
                             </div>
                         </div>
                         
+                        <!-- 🆕 Month Filter -->
+                        <div style="background:#fff8e1; padding:12px 18px; border-radius:10px; margin-bottom:15px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; border-left:5px solid #d4af37;">
+                            <label style="font-weight:800; color:#8b6914; font-size:14px; display:flex; align-items:center; gap:6px;">
+                                📅 Month Filter:
+                            </label>
+                            <select id="wallOfFameMonthFilter" onchange="renderWallOfFame()" style="padding:8px 14px; border:2px solid #d4af37; border-radius:8px; font-size:14px; font-weight:700; color:#8b6914; background:#ffffff; cursor:pointer; outline:none; min-width:200px;">
+                                <option value="last30">সর্বশেষ ৩০ দিন (Last 30 Days)</option>
+                                <option value="all">সব মাস (All Months)</option>
+                            </select>
+                            <span id="wallOfFameMonthInfo" style="font-size:12px; color:#8b6914; font-weight:700; margin-left:auto;"></span>
+                        </div>
+                        
                         <!-- Hall of Fame Cards -->
                         <div id="wallOfFameCards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:15px; margin-bottom:20px;"></div>
                         
                         <!-- Wall of Fame Table -->
                         <div class="summary-table-wrap" style="border-left-color: #d4af37;">
                             <div class="summary-header-text" style="color:#d4af37;">
-                                <span>🏅 Full Wall of Fame (Last 30 Days)</span>
+                                <span id="wallOfFameTableTitle">🏅 Full Wall of Fame (Last 30 Days)</span>
                                 <span id="wallOfFameHeaderInfo" style="font-size:12px; color:#555; font-weight:600;"></span>
                             </div>
                             <div id="wallOfFameContainer" class="table-wrap" style="box-shadow:none; padding:0;">
@@ -1057,7 +1068,6 @@
         </div>
     </div>
 
-    <!-- 🆕 Modal for Late Purpose Details -->
     <div class="modal-overlay" id="latePurposeModal">
         <div class="modal-box" style="max-width:700px;">
             <button class="modal-close" onclick="closeLatePurposeModal()">×</button>
@@ -1179,6 +1189,9 @@
 
             if (typeof allData !== 'undefined' && allData.length === 0) {
                 loadData();
+            }
+            if (sectionKey === 'wallOfFame') {
+                renderWallOfFame();
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1318,6 +1331,7 @@
         let secondsLeft = 300;
         let dashboardInitialized = false;
         let _latePurposeDetailsCache = {};
+        let _wallOfFameMonthOptionsLoaded = false;
 
         function startAutoRefresh() {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
@@ -1459,6 +1473,7 @@
                 if (data.error) throw new Error(data.error);
                 
                 allData = data.data || [];
+                _wallOfFameMonthOptionsLoaded = false;
                 populateDeptFilter();
                 applyFilters();
                 if (ct) ct.innerText = '📅 ' + new Date().toLocaleString('bn-BD');
@@ -1536,7 +1551,7 @@
             renderQATable(data);
             renderMissing(data);
             renderLateEntryTable(data);
-            renderWallOfFame(data);
+            renderWallOfFame();
             renderRawData(data);
         }
 
@@ -2269,7 +2284,6 @@
                 }
             });
 
-            // ========== Summary Box ==========
             if (summaryBox) {
                 if (grandTotalLate === 0) {
                     summaryBox.innerHTML = `<div style="background:#e8f5e9; color:#1b5e20; padding:15px; border-radius:10px; text-align:center; font-weight:700; border-left:5px solid #2e7d32;">✅ এই ফিল্টারে কোনো Late Entry পাওয়া যায়নি!</div>`;
@@ -2297,7 +2311,6 @@
                 }
             }
 
-            // ========== Details Report Late Purpose ==========
             if (purposeContainer) {
                 const filterDate = document.getElementById('filterDate').value;
                 const filterShift = document.getElementById('filterShift').value;
@@ -2384,7 +2397,6 @@
                 purposeContainer.innerHTML = tableHtml;
             }
 
-            // ========== Detailed Late Entry List (Date-wise) ==========
             const dateKeys = Object.keys(dateWiseList).sort((a, b) => new Date(b) - new Date(a));
             let html = '';
 
@@ -2446,9 +2458,6 @@
             };
         }
 
-        // ============================================================
-        // Modal Functions for Late Purpose Details
-        // ============================================================
         function showLatePurposeDetails(deptName) {
             const details = _latePurposeDetailsCache[deptName];
             if (!details || details.length === 0) {
@@ -2491,9 +2500,6 @@
             document.getElementById('latePurposeModal').classList.remove('active');
         }
 
-        // ============================================================
-        // Download: Late Purpose Image & Excel
-        // ============================================================
         function downloadLatePurposeImage() {
             const container = document.getElementById('latePurposeReportContainer');
             if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
@@ -2599,9 +2605,6 @@
             XLSX.writeFile(wb, `Late_Purpose_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
-        // ============================================================
-        // Download: Late Entry List Image & Excel
-        // ============================================================
         function downloadLateEntryImage() {
             const container = document.getElementById('lateEntryTableContainer');
             if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) { 
@@ -2680,23 +2683,97 @@
         }
 
         // ============================================================
-        // 🏆 Wall of Fame Functions
+        // 🏆 Wall of Fame Functions (with Month Filter)
         // ============================================================
-        function renderWallOfFame(data) {
+        function renderWallOfFame() {
             const container = document.getElementById('wallOfFameContainer');
             const cardsContainer = document.getElementById('wallOfFameCards');
             const headerInfo = document.getElementById('wallOfFameHeaderInfo');
+            const monthInfo = document.getElementById('wallOfFameMonthInfo');
+            const tableTitle = document.getElementById('wallOfFameTableTitle');
+            const monthFilter = document.getElementById('wallOfFameMonthFilter');
             if (!container) return;
 
+            const data = allData;
             if (!data || data.length === 0) {
-                container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
+                container.innerHTML = `<div class="no-data">⚠️ কোনো ডেটা নেই।</div>`;
                 if (cardsContainer) cardsContainer.innerHTML = '';
                 if (headerInfo) headerInfo.innerText = '';
+                if (monthInfo) monthInfo.innerText = '';
                 return;
             }
 
+            // Populate Month Filter Dropdown (Dynamic)
+            if (monthFilter && !_wallOfFameMonthOptionsLoaded) {
+                const monthSet = new Set();
+                data.forEach(row => {
+                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
+                    if (rowDateStr) {
+                        const d = new Date(rowDateStr);
+                        if (!isNaN(d.getTime())) {
+                            const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                            monthSet.add(key);
+                        }
+                    }
+                });
+                const sortedMonths = Array.from(monthSet).sort().reverse();
+                
+                // Clear old options (keep first 2)
+                while (monthFilter.options.length > 2) {
+                    monthFilter.remove(2);
+                }
+                
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                sortedMonths.forEach(mKey => {
+                    const [year, month] = mKey.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    const label = `${monthName} ${year}`;
+                    const opt = document.createElement('option');
+                    opt.value = mKey;
+                    opt.textContent = label;
+                    monthFilter.appendChild(opt);
+                });
+                _wallOfFameMonthOptionsLoaded = true;
+            }
+
+            const selectedFilter = monthFilter ? monthFilter.value : 'last30';
+            let filteredWallData = data;
+
+            if (selectedFilter === 'last30') {
+                const today = new Date();
+                const cutoff = new Date();
+                cutoff.setDate(today.getDate() - 30);
+                cutoff.setHours(0, 0, 0, 0);
+                filteredWallData = data.filter(row => {
+                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
+                    if (!rowDateStr) return false;
+                    const rowDate = new Date(rowDateStr);
+                    return !isNaN(rowDate.getTime()) && rowDate >= cutoff;
+                });
+                if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (Last 30 Days)';
+                if (monthInfo) monthInfo.innerText = `Filter: Last 30 Days`;
+            } else if (selectedFilter === 'all') {
+                filteredWallData = data;
+                if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (All Months)';
+                if (monthInfo) monthInfo.innerText = `Filter: All Data`;
+            } else {
+                filteredWallData = data.filter(row => {
+                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
+                    if (!rowDateStr) return false;
+                    const d = new Date(rowDateStr);
+                    if (isNaN(d.getTime())) return false;
+                    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                    return key === selectedFilter;
+                });
+                const [year, month] = selectedFilter.split('-');
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                const monthName = monthNames[parseInt(month) - 1];
+                if (tableTitle) tableTitle.innerText = `🏅 Full Wall of Fame (${monthName} ${year})`;
+                if (monthInfo) monthInfo.innerText = `Filter: ${monthName} ${year}`;
+            }
+
             const icStats = {};
-            data.forEach(row => {
+            filteredWallData.forEach(row => {
                 const icName = getVal(row, ['IC Name', 'icName']) || 'Unknown';
                 const dept = getVal(row, ['Department', 'department']) || '';
                 const shift = getVal(row, ['Shift', 'shift']) || '';
@@ -2711,14 +2788,12 @@
                         dept: dept,
                         shifts: new Set(),
                         entries: 0,
-                        lateCount: 0,
-                        totalHR: 0
+                        lateCount: 0
                     };
                 }
 
                 const stat = icStats[key];
                 stat.entries++;
-                stat.totalHR += getNum(row, ['Total HR', 'totalHR']);
                 if (shift) stat.shifts.add(shift);
 
                 if (timestampStr) {
@@ -2737,6 +2812,13 @@
                 }
             });
 
+            if (Object.keys(icStats).length === 0) {
+                container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
+                if (cardsContainer) cardsContainer.innerHTML = '';
+                if (headerInfo) headerInfo.innerText = '';
+                return;
+            }
+
             const noLateICs = Object.values(icStats).filter(s => s.lateCount === 0 && s.entries >= 3);
 
             const allICs = Object.values(icStats).map(s => {
@@ -2747,7 +2829,6 @@
                 return b.entries - a.entries;
             });
 
-            // ========== Top 3 Hall of Fame Cards ==========
             if (cardsContainer) {
                 const top3 = allICs.slice(0, 3);
                 const medals = ['🥇', '🥈', '🥉'];
@@ -2759,7 +2840,7 @@
                 
                 let cardsHtml = '';
                 if (top3.length === 0) {
-                    cardsHtml = `<div style="grid-column: 1/-1; text-align:center; padding:30px; background:#f8fafc; border-radius:12px; color:#888; font-style:italic;">এই ফিল্টারে এখনো কোনো পারফর্মার নেই</div>`;
+                    cardsHtml = `<div style="grid-column: 1/-1; text-align:center; padding:30px; background:#f8fafc; border-radius:12px; color:#888; font-style:italic;">এই ফিল্টারে কোনো পারফর্মার নেই</div>`;
                 } else {
                     top3.forEach((ic, idx) => {
                         const c = colors[idx];
@@ -2791,12 +2872,10 @@
                 cardsContainer.innerHTML = cardsHtml;
             }
 
-            // ========== Header Info ==========
             if (headerInfo) {
                 headerInfo.innerText = `Total Performers: ${noLateICs.length} | Total ICs: ${allICs.length}`;
             }
 
-            // ========== Full Wall of Fame Table ==========
             let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse;">
                 <thead>
                     <tr>
@@ -2806,7 +2885,6 @@
                         <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Entries</th>
                         <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Late Count</th>
                         <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Late %</th>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Present HR</th>
                         <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Badge</th>
                     </tr>
                 </thead>
@@ -2835,7 +2913,6 @@
                     <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#2980b9;">${ic.entries}</td>
                     <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:${ic.lateCount > 0 ? '#c62828' : '#1b5e20'};">${ic.lateCount}</td>
                     <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:${parseFloat(lateRatePct) > 0 ? '#e67e22' : '#1b5e20'};">${lateRatePct}%</td>
-                    <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#0d47a1;">${ic.totalHR}</td>
                     <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700;">${badge}</td>
                 </tr>`;
             });
@@ -2844,9 +2921,6 @@
             container.innerHTML = tableHtml;
         }
 
-        // ============================================================
-        // 🏆 Wall of Fame Image Download
-        // ============================================================
         function downloadWallOfFameImage() {
             const container = document.getElementById('wallOfFameContainer');
             const cardsContainer = document.getElementById('wallOfFameCards');
