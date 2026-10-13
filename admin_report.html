@@ -900,10 +900,6 @@
                     <div class="admin-section" id="section-lateEntry">
                         <div class="section-title sec-late">
                             <span><span class="sec-icon">⏰</span>Late Entry Report (After 8:30 AM / PM)</span>
-                            <div class="btn-group">
-                                <button class="btn-image" onclick="downloadLateEntryImage()">📷 ইমেজ</button>
-                                <button class="btn-excel" onclick="downloadLateEntryExcel()">⬇️ Excel</button>
-                            </div>
                         </div>
                         
                         <!-- Summary Box -->
@@ -913,27 +909,25 @@
                         <div class="summary-table-wrap" style="border-left-color: #2980b9;">
                             <div class="summary-header-text" style="color:#2980b9;">
                                 <span>📋 Details Report Late Purpose</span>
-                                <span id="latePurposeHeaderInfo" style="font-size:13px; color:#555; font-weight:600;"></span>
+                                <div class="btn-group-sm">
+                                    <span id="latePurposeHeaderInfo" style="font-size:12px; color:#555; font-weight:600; margin-right:10px;"></span>
+                                    <button onclick="downloadLatePurposeImage()" style="background:#546e7a; color:#fff;">📷 ইমেজ</button>
+                                    <button onclick="downloadLatePurposeExcel()" style="background:#1e7e34; color:#fff;">⬇️ Excel</button>
+                                </div>
                             </div>
                             <div id="latePurposeReportContainer" class="table-wrap" style="box-shadow:none; padding:0;">
                                 <div class="no-data">লোড হচ্ছে...</div>
                             </div>
                         </div>
                         
-                        <!-- 📈 Late Trend (Daily/Weekly) -->
-                        <div class="summary-table-wrap" style="border-left-color: #8e44ad;">
-                            <div class="summary-header-text" style="color:#8e44ad;">
-                                <span>📈 Late Trend (Daily/Weekly)</span>
-                            </div>
-                            <div id="lateTrendContainer" class="table-wrap" style="box-shadow:none; padding:0;">
-                                <div class="no-data">লোড হচ্ছে...</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Detailed Late Entry List -->
+                        <!-- 📋 Detailed Late Entry List (Date-wise) -->
                         <div class="summary-table-wrap" style="border-left-color: #e67e22;">
                             <div class="summary-header-text" style="color:#e67e22;">
-                                <span>📋 Detailed Late Entry List</span>
+                                <span>📋 Detailed Late Entry List (Date-wise)</span>
+                                <div class="btn-group-sm">
+                                    <button onclick="downloadLateEntryImage()" style="background:#546e7a; color:#fff;">📷 ইমেজ</button>
+                                    <button onclick="downloadLateEntryExcel()" style="background:#1e7e34; color:#fff;">⬇️ Excel</button>
+                                </div>
                             </div>
                             <div class="table-wrap" id="lateEntryTableContainer" style="box-shadow:none; padding:0;">
                                 <div class="no-data">লোড হচ্ছে...</div>
@@ -984,6 +978,33 @@
             </div>
             <div class="btn-row">
                 <button class="btn-cancel" onclick="closeNoDemandOverview()">❌ Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🆕 Modal for Late Purpose Details -->
+    <div class="modal-overlay" id="latePurposeModal">
+        <div class="modal-box" style="max-width:700px;">
+            <button class="modal-close" onclick="closeLatePurposeModal()">×</button>
+            <h3 id="latePurposeModalTitle" style="color:#2980b9;">📊 Late Purpose Details</h3>
+            <p style="font-size:13px; color:#666; margin-top:6px;" id="latePurposeModalSubtitle">Date, Shift & Time Breakdown</p>
+            <div style="max-height:400px; overflow-y:auto; margin-top:15px;">
+                <table style="width:100%; border-collapse:collapse;" id="latePurposeModalTable">
+                    <thead>
+                        <tr style="background:#2980b9; color:#fff;">
+                            <th style="padding:10px; border:1px solid #ddd; text-align:center;">#</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align:center;">Date</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align:center;">Shift</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align:center;">Time</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align:center;">IC Name</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align:center;">Penalty (৳)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="latePurposeModalTableBody"></tbody>
+                </table>
+            </div>
+            <div class="btn-row">
+                <button class="btn-cancel" onclick="closeLatePurposeModal()">❌ Close</button>
             </div>
         </div>
     </div>
@@ -1221,6 +1242,7 @@
         let countdownInterval = null;
         let secondsLeft = 300;
         let dashboardInitialized = false;
+        let _latePurposeDetailsCache = {};
 
         function startAutoRefresh() {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
@@ -2079,14 +2101,13 @@
         }
 
         // ============================================================
-        // Late Entry Report Functions (with Details Report Late Purpose & Trend)
+        // Late Entry Report Functions (Details Report Late Purpose + Date-wise List)
         // ============================================================
         function renderLateEntryTable(data) {
             const container = document.getElementById('lateEntryTableContainer');
             const summaryBox = document.getElementById('lateEntrySummaryBox');
             const purposeContainer = document.getElementById('latePurposeReportContainer');
             const purposeHeaderInfo = document.getElementById('latePurposeHeaderInfo');
-            const trendContainer = document.getElementById('lateTrendContainer');
             if (!container) return;
             
             if (!data || data.length === 0) {
@@ -2094,17 +2115,16 @@
                 if (summaryBox) summaryBox.innerHTML = '';
                 if (purposeContainer) purposeContainer.innerHTML = `<div class="no-data">⚠️ ডেটা নেই।</div>`;
                 if (purposeHeaderInfo) purposeHeaderInfo.innerText = '';
-                if (trendContainer) trendContainer.innerHTML = `<div class="no-data">⚠️ ডেটা নেই।</div>`;
                 window._lateEntryData = null;
+                _latePurposeDetailsCache = {};
                 return;
             }
 
             const lateEntries = [];
-            const LATE_FEE = 10; // ১০ টাকা
+            const LATE_FEE = 10;
 
             const deptSummary = {};
-            const icSummary = {};
-            const trendSummary = {};
+            const dateWiseList = {};
             let grandDayLate = 0, grandNightLate = 0, grandTotalLate = 0, grandTotalAmount = 0;
 
             data.forEach(row => {
@@ -2138,7 +2158,7 @@
                 }
 
                 if (isLate) {
-                    lateEntries.push({
+                    const entryObj = {
                         time: formatTime(timestampStr),
                         date: rowDate,
                         dateFormatted: formatDate(rowDate),
@@ -2147,33 +2167,26 @@
                         icName: icName,
                         reason: lateReason,
                         fee: LATE_FEE
-                    });
+                    };
+                    lateEntries.push(entryObj);
 
                     if (!deptSummary[dept]) {
-                        deptSummary[dept] = { dayLate: 0, nightLate: 0, totalLate: 0, totalAmount: 0 };
+                        deptSummary[dept] = { dayLate: 0, nightLate: 0, totalLate: 0, totalAmount: 0, details: [] };
                     }
                     if (shift === 'Day') { deptSummary[dept].dayLate++; grandDayLate++; }
                     else if (shift === 'Night') { deptSummary[dept].nightLate++; grandNightLate++; }
                     deptSummary[dept].totalLate++;
                     deptSummary[dept].totalAmount += LATE_FEE;
+                    deptSummary[dept].details.push(entryObj);
 
-                    const icKey = icName + '||' + dept;
-                    if (!icSummary[icKey]) {
-                        icSummary[icKey] = { icName: icName, dept: dept, dayLate: 0, nightLate: 0, totalLate: 0, totalAmount: 0 };
+                    if (!dateWiseList[rowDate]) {
+                        dateWiseList[rowDate] = { date: rowDate, dateFormatted: formatDate(rowDate), entries: [], dayLate: 0, nightLate: 0, totalLate: 0, totalAmount: 0 };
                     }
-                    if (shift === 'Day') icSummary[icKey].dayLate++;
-                    else if (shift === 'Night') icSummary[icKey].nightLate++;
-                    icSummary[icKey].totalLate++;
-                    icSummary[icKey].totalAmount += LATE_FEE;
-
-                    const trendKey = rowDate || 'Unknown';
-                    if (!trendSummary[trendKey]) {
-                        trendSummary[trendKey] = { date: rowDate, dateFormatted: formatDate(rowDate), dayLate: 0, nightLate: 0, totalLate: 0, totalAmount: 0 };
-                    }
-                    if (shift === 'Day') trendSummary[trendKey].dayLate++;
-                    else if (shift === 'Night') trendSummary[trendKey].nightLate++;
-                    trendSummary[trendKey].totalLate++;
-                    trendSummary[trendKey].totalAmount += LATE_FEE;
+                    dateWiseList[rowDate].entries.push(entryObj);
+                    if (shift === 'Day') dateWiseList[rowDate].dayLate++;
+                    else if (shift === 'Night') dateWiseList[rowDate].nightLate++;
+                    dateWiseList[rowDate].totalLate++;
+                    dateWiseList[rowDate].totalAmount += LATE_FEE;
 
                     grandTotalLate++;
                     grandTotalAmount += LATE_FEE;
@@ -2208,15 +2221,15 @@
                 }
             }
 
-            // ========== 🆕 Details Report Late Purpose (Department-wise) ==========
+            // ========== 📋 Details Report Late Purpose (Department-wise) ==========
             if (purposeContainer) {
                 const filterDate = document.getElementById('filterDate').value;
                 const filterShift = document.getElementById('filterShift').value;
-                const dateText = filterDate ? formatDate(filterDate) : 'সব তারিখ';
+                const dateText = filterDate ? formatDate(filterDate) : 'All Dates';
                 const shiftText = (filterShift !== 'All' && filterShift !== '') ? filterShift : 'All';
 
                 if (purposeHeaderInfo) {
-                    purposeHeaderInfo.innerText = `Date: ${dateText}  |  Shift: ${shiftText}`;
+                    purposeHeaderInfo.innerText = `Date: ${dateText} | Shift: ${shiftText}`;
                 }
 
                 const purposeDepts = SAIFUDDIN_DEPTS;
@@ -2236,17 +2249,20 @@
 
                 let totalLateQty = 0;
                 let totalPenaltyAmount = 0;
+                _latePurposeDetailsCache = {};
 
                 purposeDepts.forEach((item) => {
                     const deptName = item.name;
                     const possibleNames = DEPT_MAP[deptName] || [deptName];
                     let deptTotalLate = 0;
                     let deptTotalAmount = 0;
+                    let deptDetails = [];
 
                     possibleNames.forEach(pn => {
                         if (deptSummary[pn]) {
                             deptTotalLate += deptSummary[pn].totalLate;
                             deptTotalAmount += deptSummary[pn].totalAmount;
+                            deptDetails = deptDetails.concat(deptSummary[pn].details);
                         }
                     });
 
@@ -2258,6 +2274,14 @@
                     const penaltyAmount = isLate ? LATE_FEE : '';
                     const remarks = isLate ? `⚠️ ${deptTotalLate} Late Entry Detected` : '';
 
+                    if (isLate) {
+                        _latePurposeDetailsCache[deptName] = deptDetails;
+                    }
+
+                    const eyeBtn = isLate 
+                        ? `<button onclick="showLatePurposeDetails('${deptName.replace(/'/g, "\\'")}')" style="background:#2980b9; color:#fff; border:none; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:700; cursor:pointer; margin-left:6px;" title="View Details">👁️</button>` 
+                        : '';
+
                     tableHtml += `<tr style="background:${rowBg};">
                         <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700;">${item.sn}</td>
                         <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-weight:700; color:#1a3a5c;">${deptName}</td>
@@ -2265,7 +2289,7 @@
                         <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#c62828;">${penaltyAmount ? '৳ ' + penaltyAmount : ''}</td>
                         <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:800; color:#2980b9;">${deptTotalLate > 0 ? deptTotalLate : ''}</td>
                         <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:800; color:#b71c1c;">${deptTotalAmount > 0 ? '৳ ' + deptTotalAmount : ''}</td>
-                        <td style="border:1px solid #999; text-align:left; padding:6px 10px; color:#e67e22; font-weight:600; font-size:12px;">${remarks}</td>
+                        <td style="border:1px solid #999; text-align:left; padding:6px 10px; color:#e67e22; font-weight:600; font-size:12px;">${remarks}${eyeBtn}</td>
                     </tr>`;
 
                     totalLateQty += deptTotalLate;
@@ -2284,110 +2308,224 @@
                 purposeContainer.innerHTML = tableHtml;
             }
 
-            // ========== Late Trend (Daily/Weekly) ==========
-            if (trendContainer) {
-                const trendRows = Object.values(trendSummary).sort((a, b) => {
-                    return new Date(a.date) - new Date(b.date);
-                });
-                if (trendRows.length === 0) {
-                    trendContainer.innerHTML = `<div class="no-data">✅ কোনো Late Entry নেই।</div>`;
-                } else {
-                    let trendHtml = `<table class="saifuddin-table" style="border-collapse:collapse;">
-                        <thead>
-                            <tr>
-                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Date</th>
-                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Day Late</th>
-                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Night Late</th>
-                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Total Late</th>
-                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Penalty (৳)</th>
-                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Trend</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-                    let totalDayT = 0, totalNightT = 0, totalLateT = 0, totalAmtT = 0;
-                    trendRows.forEach((r, idx) => {
-                        totalDayT += r.dayLate;
-                        totalNightT += r.nightLate;
-                        totalLateT += r.totalLate;
-                        totalAmtT += r.totalAmount;
+            // ========== 📋 Detailed Late Entry List (Date-wise) ==========
+            const dateKeys = Object.keys(dateWiseList).sort((a, b) => new Date(b) - new Date(a));
+            let html = '';
 
-                        let trendIcon = '—';
-                        if (idx > 0) {
-                            const prev = trendRows[idx - 1].totalLate;
-                            if (r.totalLate > prev) trendIcon = '🔺 Up';
-                            else if (r.totalLate < prev) trendIcon = '🔻 Down';
-                            else trendIcon = '➖ Same';
-                        }
+            if (dateKeys.length === 0) {
+                html = `<div class="no-data">✅ কোনো Late Entry পাওয়া যায়নি!</div>`;
+            } else {
+                dateKeys.forEach((dateKey) => {
+                    const dayData = dateWiseList[dateKey];
+                    html += `
+                        <div style="margin-bottom: 20px; border: 2px solid #e67e22; border-radius: 10px; overflow: hidden;">
+                            <div style="background: linear-gradient(135deg, #e67e22, #f39c12); color: #fff; padding: 10px 15px; font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <span>📅 ${dayData.dateFormatted}</span>
+                                <span style="font-size: 12px; background: rgba(255,255,255,0.25); padding: 4px 12px; border-radius: 20px;">
+                                    🌞 Day: ${dayData.dayLate} &nbsp;|&nbsp; 🌙 Night: ${dayData.nightLate} &nbsp;|&nbsp; 📌 Total: ${dayData.totalLate} &nbsp;|&nbsp; 💰 ৳ ${dayData.totalAmount}
+                                </span>
+                            </div>
+                            <table class="saifuddin-table" style="border-collapse:collapse; margin:0;">
+                                <thead>
+                                    <tr>
+                                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:6px;">#</th>
+                                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:6px;">Time</th>
+                                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:6px;">Shift</th>
+                                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:6px;">Department</th>
+                                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:6px;">IC Name</th>
+                                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:6px;">Reason</th>
+                                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:6px;">Amount (৳)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
 
-                        trendHtml += `<tr>
-                            <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-weight:700; color:#8e44ad;">${r.dateFormatted}</td>
-                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#e67e22; font-weight:700;">${r.dayLate}</td>
-                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#8e44ad; font-weight:700;">${r.nightLate}</td>
-                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#c62828; font-weight:800;">${r.totalLate}</td>
-                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#b71c1c; font-weight:800;">৳ ${r.totalAmount}</td>
-                            <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700;">${trendIcon}</td>
+                    dayData.entries.forEach((entry, idx) => {
+                        html += `<tr>
+                            <td style="border:1px solid #999; text-align:center; padding:6px;">${idx + 1}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#d32f2f;">${entry.time}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700;">${entry.shift}</td>
+                            <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-weight:600;">${entry.dept}</td>
+                            <td style="border:1px solid #999; text-align:left; padding:6px 10px;">${entry.icName || '-'}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#e67e22; font-weight:600;">${entry.reason}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#c62828;">৳ ${entry.fee}</td>
                         </tr>`;
                     });
-                    trendHtml += `<tr style="background:#fff59d; font-weight:800;">
-                        <td style="border:2px solid #333; text-align:right; padding:8px 15px;">📌 Grand Total</td>
-                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#e67e22;">${totalDayT}</td>
-                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#8e44ad;">${totalNightT}</td>
-                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#c62828;">${totalLateT}</td>
-                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#b71c1c;">৳ ${totalAmtT}</td>
-                        <td style="border:2px solid #333; text-align:center; padding:6px;">—</td>
-                    </tr></tbody></table>`;
-                    trendContainer.innerHTML = trendHtml;
-                }
-            }
 
-            // ========== Detailed Late Entry List ==========
-            let html = `<table class="saifuddin-table" style="border-collapse:collapse;">
-                <thead>
-                    <tr>
-                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:8px;">#</th>
-                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:8px;">Time</th>
-                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:8px;">Date</th>
-                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:8px;">Shift</th>
-                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:8px;">Department</th>
-                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:8px;">IC Name</th>
-                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:8px;">Reason</th>
-                        <th style="background:#e67e22; color:#fff; border:1px solid #666; padding:8px;">Amount (৳)</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-            if (lateEntries.length === 0) {
-                html += `<tr><td colspan="8" style="text-align:center; padding:20px; color:green; font-weight:bold;">✅ কোনো Late Entry পাওয়া যায়নি!</td></tr>`;
-            } else {
-                lateEntries.forEach((entry, idx) => {
-                    html += `<tr>
-                        <td style="border:1px solid #999; text-align:center; padding:6px;">${idx + 1}</td>
-                        <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#d32f2f;">${entry.time}</td>
-                        <td style="border:1px solid #999; text-align:center; padding:6px;">${entry.dateFormatted}</td>
-                        <td style="border:1px solid #999; text-align:center; padding:6px;">${entry.shift}</td>
-                        <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-weight:600;">${entry.dept}</td>
-                        <td style="border:1px solid #999; text-align:left; padding:6px 10px;">${entry.icName || '-'}</td>
-                        <td style="border:1px solid #999; text-align:center; padding:6px; color:#e67e22; font-weight:600;">${entry.reason}</td>
-                        <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#c62828;">৳ ${entry.fee}</td>
-                    </tr>`;
+                    html += `</tbody></table></div>`;
                 });
-                html += `<tr style="background:#fff59d; font-weight:800;">
-                    <td colspan="7" style="border:2px solid #333; text-align:right; padding:8px 15px; font-size:14px;">📌 Grand Total (${lateEntries.length} Late Entries)</td>
-                    <td style="border:2px solid #333; text-align:center; padding:8px; font-size:14px; color:#c62828;">৳ ${grandTotalAmount}</td>
-                </tr>`;
+
+                html += `
+                    <div style="background:#fff59d; font-weight:800; padding: 12px 20px; border: 2px solid #333; border-radius: 10px; text-align: right; font-size: 15px;">
+                        📌 Grand Total: ${grandTotalLate} Late Entries &nbsp;|&nbsp; Total Penalty: <span style="color:#c62828;">৳ ${grandTotalAmount}</span>
+                    </div>`;
             }
 
-            html += `</tbody></table>`;
             container.innerHTML = html;
-            
+
             window._lateEntryData = {
                 headers: ['#', 'Time', 'Date', 'Shift', 'Department', 'IC Name', 'Reason', 'Amount (৳)'],
                 rows: lateEntries.map((e, i) => [i + 1, e.time, e.dateFormatted, e.shift, e.dept, e.icName, e.reason, e.fee]),
                 total: lateEntries.length > 0 ? ['📌 Grand Total', '', '', '', '', '', `${lateEntries.length} Entries`, grandTotalAmount] : null,
-                summary: { grandDayLate, grandNightLate, grandTotalLate, grandTotalAmount, deptSummary, icSummary, trendSummary }
+                summary: { grandDayLate, grandNightLate, grandTotalLate, grandTotalAmount, deptSummary, dateWiseList }
             };
         }
 
+        // ============================================================
+        // 🆕 Modal Functions for Late Purpose Details
+        // ============================================================
+        function showLatePurposeDetails(deptName) {
+            const details = _latePurposeDetailsCache[deptName];
+            if (!details || details.length === 0) {
+                alert('এই ডিপার্টমেন্টে কোনো Late Entry নেই!');
+                return;
+            }
+            document.getElementById('latePurposeModalTitle').innerText = '📊 ' + deptName;
+            document.getElementById('latePurposeModalSubtitle').innerText = `Total ${details.length} Late Entries — Date, Shift & Time Breakdown`;
+            const tbody = document.getElementById('latePurposeModalTableBody');
+            tbody.innerHTML = '';
+
+            const sorted = [...details].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sorted.forEach((e, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding:8px 10px; border:1px solid #ddd; text-align:center; font-weight:700;">${idx + 1}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; text-align:center; color:#2980b9; font-weight:700;">${e.dateFormatted}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; text-align:center; font-weight:700;">${e.shift}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; text-align:center; color:#d32f2f; font-weight:800;">${e.time}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; text-align:left;">${e.icName || '-'}</td>
+                    <td style="padding:8px 10px; border:1px solid #ddd; text-align:center; color:#c62828; font-weight:700;">৳ ${e.fee}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const totalPenalty = details.reduce((s, e) => s + e.fee, 0);
+            const trTotal = document.createElement('tr');
+            trTotal.style.background = '#fff59d';
+            trTotal.innerHTML = `
+                <td colspan="5" style="padding:8px 10px; border:2px solid #333; text-align:right; font-weight:800;">📌 Total (${details.length} Entries)</td>
+                <td style="padding:8px 10px; border:2px solid #333; text-align:center; font-weight:800; color:#c62828;">৳ ${totalPenalty}</td>
+            `;
+            tbody.appendChild(trTotal);
+
+            document.getElementById('latePurposeModal').classList.add('active');
+        }
+
+        function closeLatePurposeModal() {
+            document.getElementById('latePurposeModal').classList.remove('active');
+        }
+
+        // ============================================================
+        // Download: Late Purpose Image & Excel
+        // ============================================================
+        function downloadLatePurposeImage() {
+            const container = document.getElementById('latePurposeReportContainer');
+            if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
+            const btn = document.querySelector('button[onclick="downloadLatePurposeImage()"]');
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
+            
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `width: 1400px; padding: 25px; background: white; border: 4px solid #2980b9; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            const title = document.createElement('h2');
+            title.style.cssText = `color: #2980b9; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2980b9; padding-bottom: 12px; font-size: 22px;`;
+            const filterDate = document.getElementById('filterDate').value;
+            const filterShift = document.getElementById('filterShift').value;
+            const dateText = filterDate ? formatDate(filterDate) : 'All Dates';
+            const shiftText = (filterShift !== 'All') ? filterShift : 'All';
+            title.innerText = `📋 Details Report Late Purpose (Date: ${dateText} | Shift: ${shiftText})`;
+            wrapper.appendChild(title);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            
+            html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `Late_Purpose_Report_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(wrapper);
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                });
+        }
+
+        function downloadLatePurposeExcel() {
+            const lateData = window._lateEntryData;
+            if (!lateData || !lateData.summary) { alert('ডেটা নেই!'); return; }
+            
+            const deptSummary = lateData.summary.deptSummary || {};
+            const aoa = [
+                ['SN', 'Department', 'Status', 'Penalty Amount', 'As of Late QTY', 'As of Penalty Amount', 'Remarks']
+            ];
+
+            let totalLateQty = 0, totalPenaltyAmount = 0;
+
+            SAIFUDDIN_DEPTS.forEach(item => {
+                const deptName = item.name;
+                const possibleNames = DEPT_MAP[deptName] || [deptName];
+                let deptTotalLate = 0;
+                let deptTotalAmount = 0;
+                possibleNames.forEach(pn => {
+                    if (deptSummary[pn]) {
+                        deptTotalLate += deptSummary[pn].totalLate;
+                        deptTotalAmount += deptSummary[pn].totalAmount;
+                    }
+                });
+                const isLate = deptTotalLate > 0;
+                aoa.push([
+                    item.sn,
+                    deptName,
+                    isLate ? 'Late' : 'No late',
+                    isLate ? 10 : '',
+                    deptTotalLate > 0 ? deptTotalLate : '',
+                    deptTotalAmount > 0 ? deptTotalAmount : '',
+                    isLate ? `${deptTotalLate} Late Entry Detected` : ''
+                ]);
+                totalLateQty += deptTotalLate;
+                totalPenaltyAmount += deptTotalAmount;
+            });
+
+            aoa.push(['', '📌 Grand Total', '', '', totalLateQty, totalPenaltyAmount, '']);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            ws['!cols'] = [{ wch: 6 }, { wch: 30 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 30 }];
+
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const ref = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (!ws[ref]) ws[ref] = { v: '' };
+                if (!ws[ref].s) ws[ref].s = {};
+                ws[ref].s.fill = { fgColor: { rgb: '2980B9' } };
+                ws[ref].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 11 };
+                ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                ws[ref].s.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+            }
+            const lastR = range.e.r;
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const ref = XLSX.utils.encode_cell({ r: lastR, c: C });
+                if (!ws[ref]) ws[ref] = { v: '' };
+                if (!ws[ref].s) ws[ref].s = {};
+                ws[ref].s.fill = { fgColor: { rgb: 'FFF59D' } };
+                ws[ref].s.font = { color: { rgb: '000000' }, bold: true, sz: 11 };
+                ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                ws[ref].s.border = { top: { style: 'medium' }, bottom: { style: 'medium' }, left: { style: 'medium' }, right: { style: 'medium' } };
+            }
+
+            XLSX.utils.book_append_sheet(wb, ws, "Late Purpose Report");
+            XLSX.writeFile(wb, `Late_Purpose_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        // ============================================================
+        // Download: Late Entry List (Detailed) Image & Excel
+        // ============================================================
         function downloadLateEntryImage() {
             const container = document.getElementById('lateEntryTableContainer');
             if (!container || container.innerText.includes('কোনো ডেটা নেই') || container.innerText.includes('লোড হচ্ছে')) { 
@@ -2399,10 +2537,10 @@
             const clone = container.cloneNode(true);
             clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
             const wrapper = document.createElement('div');
-            wrapper.style.cssText = `width: 1200px; padding: 25px; background: white; border: 4px solid #e67e22; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            wrapper.style.cssText = `width: 1400px; padding: 25px; background: white; border: 4px solid #e67e22; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
             const title = document.createElement('h2');
-            title.style.cssText = `color: #e67e22; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #f39c12; padding-bottom: 12px; font-size: 24px;`;
-            title.innerText = '⏰ Late Entry Report (After 8:30 AM / PM)';
+            title.style.cssText = `color: #e67e22; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #f39c12; padding-bottom: 12px; font-size: 22px;`;
+            title.innerText = '⏰ Detailed Late Entry List (Date-wise)';
             wrapper.appendChild(title);
             wrapper.appendChild(clone);
             document.body.appendChild(wrapper);
@@ -2410,7 +2548,7 @@
             html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true })
                 .then(canvas => {
                     const link = document.createElement('a');
-                    link.download = `Late_Entry_Report_${new Date().toISOString().slice(0,10)}.png`;
+                    link.download = `Late_Entry_List_${new Date().toISOString().slice(0,10)}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
                     document.body.removeChild(wrapper);
@@ -2426,16 +2564,30 @@
 
         function downloadLateEntryExcel() {
             const data = window._lateEntryData;
-            if (!data || data.rows.length === 0) { alert('ডেটা নেই!'); return; }
+            if (!data || !data.summary) { alert('ডেটা নেই!'); return; }
             
-            const aoa = [data.headers, ...data.rows];
-            if (data.total) aoa.push(data.total);
+            const dateWiseList = data.summary.dateWiseList || {};
+            const dateKeys = Object.keys(dateWiseList).sort((a, b) => new Date(b) - new Date(a));
             
+            if (dateKeys.length === 0) { alert('ডেটা নেই!'); return; }
+
+            const aoa = [
+                ['Date', 'Time', 'Shift', 'Department', 'IC Name', 'Reason', 'Amount (৳)']
+            ];
+
+            dateKeys.forEach(dateKey => {
+                const dayData = dateWiseList[dateKey];
+                dayData.entries.forEach(e => {
+                    aoa.push([e.dateFormatted, e.time, e.shift, e.dept, e.icName, e.reason, e.fee]);
+                });
+            });
+
+            aoa.push(['📌 Grand Total', '', '', '', '', `${data.summary.grandTotalLate} Entries`, data.summary.grandTotalAmount]);
+
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(aoa);
-            
-            ws['!cols'] = [{ wch: 5 }, { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 12 }];
-            
+            ws['!cols'] = [{ wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 28 }, { wch: 20 }, { wch: 18 }, { wch: 12 }];
+
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const ref = XLSX.utils.encode_cell({ r: 0, c: C });
@@ -2446,22 +2598,9 @@
                 ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
                 ws[ref].s.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
             }
-            
-            if (data.total) {
-                const lastR = range.e.r;
-                for (let C = range.s.c; C <= range.e.c; C++) {
-                    const ref = XLSX.utils.encode_cell({ r: lastR, c: C });
-                    if (!ws[ref]) ws[ref] = { v: '' };
-                    if (!ws[ref].s) ws[ref].s = {};
-                    ws[ref].s.fill = { fgColor: { rgb: 'FFF59D' } };
-                    ws[ref].s.font = { color: { rgb: '000000' }, bold: true, sz: 11 };
-                    ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
-                    ws[ref].s.border = { top: { style: 'medium' }, bottom: { style: 'medium' }, left: { style: 'medium' }, right: { style: 'medium' } };
-                }
-            }
-            
-            XLSX.utils.book_append_sheet(wb, ws, "Late Entry Report");
-            XLSX.writeFile(wb, `Late_Entry_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+            XLSX.utils.book_append_sheet(wb, ws, "Late Entry List");
+            XLSX.writeFile(wb, `Late_Entry_List_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function renderRawData(data) {
