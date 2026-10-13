@@ -2707,210 +2707,285 @@
         }
 
         // ============================================================
-        // 🏆 Wall of Fame Functions (শুধু টেবিল, Top 3 কার্ড ছাড়া)
-        // ============================================================
-        function renderWallOfFame() {
-            const container = document.getElementById('wallOfFameContainer');
-            const headerInfo = document.getElementById('wallOfFameHeaderInfo');
-            const monthInfo = document.getElementById('wallOfFameMonthInfo');
-            const tableTitle = document.getElementById('wallOfFameTableTitle');
-            const monthFilter = document.getElementById('wallOfFameMonthFilter');
-            if (!container) return;
+// 🏆 Wall of Fame — Updated (18 Columns, IC Photo ছাড়া)
+// ============================================================
+function renderWallOfFame() {
+    const container = document.getElementById('wallOfFameContainer');
+    const headerInfo = document.getElementById('wallOfFameHeaderInfo');
+    const monthInfo = document.getElementById('wallOfFameMonthInfo');
+    const tableTitle = document.getElementById('wallOfFameTableTitle');
+    const monthFilter = document.getElementById('wallOfFameMonthFilter');
+    if (!container) return;
 
-            const data = allData;
-            if (!data || data.length === 0) {
-                container.innerHTML = `<div class="no-data">⚠️ কোনো ডেটা নেই।</div>`;
-                if (headerInfo) headerInfo.innerText = '';
-                if (monthInfo) monthInfo.innerText = '';
-                return;
-            }
+    const data = allData;
+    if (!data || data.length === 0) {
+        container.innerHTML = `<div class="no-data">⚠️ কোনো ডেটা নেই।</div>`;
+        if (headerInfo) headerInfo.innerText = '';
+        if (monthInfo) monthInfo.innerText = '';
+        return;
+    }
 
-            // Populate Month Filter Dropdown (Dynamic)
-            if (monthFilter && !_wallOfFameMonthOptionsLoaded) {
-                const monthSet = new Set();
-                data.forEach(row => {
-                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
-                    if (rowDateStr) {
-                        const d = new Date(rowDateStr);
-                        if (!isNaN(d.getTime())) {
-                            const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-                            monthSet.add(key);
-                        }
-                    }
-                });
-                const sortedMonths = Array.from(monthSet).sort().reverse();
-                
-                // Clear old options (keep first 2)
-                while (monthFilter.options.length > 2) {
-                    monthFilter.remove(2);
-                }
-                
-                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                sortedMonths.forEach(mKey => {
-                    const [year, month] = mKey.split('-');
-                    const monthName = monthNames[parseInt(month) - 1];
-                    const label = `${monthName} ${year}`;
-                    const opt = document.createElement('option');
-                    opt.value = mKey;
-                    opt.textContent = label;
-                    monthFilter.appendChild(opt);
-                });
-                _wallOfFameMonthOptionsLoaded = true;
-            }
-
-            const selectedFilter = monthFilter ? monthFilter.value : 'last30';
-            let filteredWallData = data;
-
-            if (selectedFilter === 'last30') {
-                const today = new Date();
-                const cutoff = new Date();
-                cutoff.setDate(today.getDate() - 30);
-                cutoff.setHours(0, 0, 0, 0);
-                filteredWallData = data.filter(row => {
-                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
-                    if (!rowDateStr) return false;
-                    const rowDate = new Date(rowDateStr);
-                    return !isNaN(rowDate.getTime()) && rowDate >= cutoff;
-                });
-                if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (Last 30 Days)';
-                if (monthInfo) monthInfo.innerText = `Filter: Last 30 Days`;
-            } else if (selectedFilter === 'all') {
-                filteredWallData = data;
-                if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (All Months)';
-                if (monthInfo) monthInfo.innerText = `Filter: All Data`;
-            } else {
-                filteredWallData = data.filter(row => {
-                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
-                    if (!rowDateStr) return false;
-                    const d = new Date(rowDateStr);
-                    if (isNaN(d.getTime())) return false;
+    // Populate Month Filter Dropdown (Dynamic)
+    if (monthFilter && !_wallOfFameMonthOptionsLoaded) {
+        const monthSet = new Set();
+        data.forEach(row => {
+            const rowDateStr = getVal(row, ['Date', 'entryDate']);
+            if (rowDateStr) {
+                const d = new Date(rowDateStr);
+                if (!isNaN(d.getTime())) {
                     const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-                    return key === selectedFilter;
-                });
-                const [year, month] = selectedFilter.split('-');
-                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                const monthName = monthNames[parseInt(month) - 1];
-                if (tableTitle) tableTitle.innerText = `🏅 Full Wall of Fame (${monthName} ${year})`;
-                if (monthInfo) monthInfo.innerText = `Filter: ${monthName} ${year}`;
-            }
-
-            const icStats = {};
-            filteredWallData.forEach(row => {
-                const icName = getVal(row, ['IC Name', 'icName']) || 'Unknown';
-                const dept = getVal(row, ['Department', 'department']) || '';
-                const shift = getVal(row, ['Shift', 'shift']) || '';
-                const timestampStr = getVal(row, ['Timestamp', 'timestamp']);
-
-                if (!icName || icName === 'Unknown') return;
-
-                const key = icName + '||' + dept;
-                if (!icStats[key]) {
-                    icStats[key] = {
-                        icName: icName,
-                        dept: dept,
-                        shifts: new Set(),
-                        entries: 0,
-                        lateCount: 0
-                    };
+                    monthSet.add(key);
                 }
-
-                const stat = icStats[key];
-                stat.entries++;
-                if (shift) stat.shifts.add(shift);
-
-                if (timestampStr) {
-                    const entryTime = new Date(timestampStr);
-                    if (!isNaN(entryTime.getTime())) {
-                        const hours = entryTime.getHours();
-                        const minutes = entryTime.getMinutes();
-                        let isLate = false;
-                        if (shift === 'Day') {
-                            if (hours > 8 || (hours === 8 && minutes > 30)) isLate = true;
-                        } else if (shift === 'Night') {
-                            if (hours > 20 || (hours === 20 && minutes > 30)) isLate = true;
-                        }
-                        if (isLate) stat.lateCount++;
-                    }
-                }
-            });
-
-            if (Object.keys(icStats).length === 0) {
-                container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
-                if (headerInfo) headerInfo.innerText = '';
-                return;
             }
+        });
+        const sortedMonths = Array.from(monthSet).sort().reverse();
 
-            const noLateICs = Object.values(icStats).filter(s => s.lateCount === 0 && s.entries >= 3);
-
-            const allICs = Object.values(icStats).map(s => {
-                const lateRate = s.entries > 0 ? (s.lateCount / s.entries) : 0;
-                return { ...s, lateRate };
-            }).sort((a, b) => {
-                if (a.lateCount !== b.lateCount) return a.lateCount - b.lateCount;
-                return b.entries - a.entries;
-            });
-
-            if (headerInfo) {
-                headerInfo.innerText = `Total Performers: ${noLateICs.length} | Total ICs: ${allICs.length}`;
-            }
-
-            // 🆕 টেবিলে IC Photo ও Penalty Amount কলাম যোগ করা হয়েছে
-            let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse;">
-                <thead>
-                    <tr>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Rank</th>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">IC Name</th>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">IC Photo</th>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Department</th>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Entries</th>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Late Count</th>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Late %</th>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Badge</th>
-                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:6px;">Penalty Amount</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-            const medalsSmall = ['🥇', '🥈', '🥉'];
-            allICs.forEach((ic, idx) => {
-                const hasNoLate = ic.lateCount === 0 && ic.entries >= 3;
-                const lateRatePct = (ic.lateRate * 100).toFixed(1);
-                const penaltyAmount = ic.lateCount * 10; // 10 টাকা per late entry
-                
-                let rowBg = '#ffffff';
-                let badge = '';
-                if (idx === 0) { rowBg = '#fff8e1'; badge = '🥇 Gold'; }
-                else if (idx === 1) { rowBg = '#f5f5f5'; badge = '🥈 Silver'; }
-                else if (idx === 2) { rowBg = '#fbe9e7'; badge = '🥉 Bronze'; }
-                else if (hasNoLate) { rowBg = '#e8f5e9'; badge = '⭐ No Late'; }
-                else if (ic.lateCount === 0) { rowBg = '#f1f8e9'; badge = '✅ Clean'; }
-                else { badge = '⚠️ ' + ic.lateCount + ' Late'; }
-
-                const rankDisplay = idx < 3 ? medalsSmall[idx] + ' ' + (idx + 1) : idx + 1;
-
-                // IC Photo রিট্রিভ করা — DEPARTMENT_IC_MAP থেকে
-                const photoData = DEPARTMENT_IC_MAP[ic.dept];
-                const photoUrl = photoData ? photoData.photo : '';
-                const photoHtml = photoUrl 
-                    ? `<img src="${photoUrl}" alt="${ic.icName}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #d4af37;" onerror="this.style.display='none'; this.parentNode.innerHTML='<span style=\\'font-size:20px;\\'>👤</span>';">` 
-                    : `<span style="font-size:20px;">👤</span>`;
-
-                tableHtml += `<tr style="background:${rowBg};">
-                    <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:800;">${rankDisplay}</td>
-                    <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-weight:700; color:#1a3a5c;">${ic.icName}</td>
-                    <td style="border:1px solid #999; text-align:center; padding:4px;">${photoHtml}</td>
-                    <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-size:12px;">${ic.dept}</td>
-                    <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#2980b9;">${ic.entries}</td>
-                    <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:${ic.lateCount > 0 ? '#c62828' : '#1b5e20'};">${ic.lateCount}</td>
-                    <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:${parseFloat(lateRatePct) > 0 ? '#e67e22' : '#1b5e20'};">${lateRatePct}%</td>
-                    <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700;">${badge}</td>
-                    <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:800; color:${penaltyAmount > 0 ? '#c62828' : '#1b5e20'};">৳ ${penaltyAmount}</td>
-                </tr>`;
-            });
-
-            tableHtml += `</tbody></table>`;
-            container.innerHTML = tableHtml;
+        while (monthFilter.options.length > 2) {
+            monthFilter.remove(2);
         }
+
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        sortedMonths.forEach(mKey => {
+            const [year, month] = mKey.split('-');
+            const monthName = monthNames[parseInt(month) - 1];
+            const label = `${monthName} ${year}`;
+            const opt = document.createElement('option');
+            opt.value = mKey;
+            opt.textContent = label;
+            monthFilter.appendChild(opt);
+        });
+        _wallOfFameMonthOptionsLoaded = true;
+    }
+
+    const selectedFilter = monthFilter ? monthFilter.value : 'last30';
+    let filteredWallData = data;
+
+    if (selectedFilter === 'last30') {
+        const today = new Date();
+        const cutoff = new Date();
+        cutoff.setDate(today.getDate() - 30);
+        cutoff.setHours(0, 0, 0, 0);
+        filteredWallData = data.filter(row => {
+            const rowDateStr = getVal(row, ['Date', 'entryDate']);
+            if (!rowDateStr) return false;
+            const rowDate = new Date(rowDateStr);
+            return !isNaN(rowDate.getTime()) && rowDate >= cutoff;
+        });
+        if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (Last 30 Days)';
+        if (monthInfo) monthInfo.innerText = `Filter: Last 30 Days`;
+    } else if (selectedFilter === 'all') {
+        filteredWallData = data;
+        if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (All Months)';
+        if (monthInfo) monthInfo.innerText = `Filter: All Data`;
+    } else {
+        filteredWallData = data.filter(row => {
+            const rowDateStr = getVal(row, ['Date', 'entryDate']);
+            if (!rowDateStr) return false;
+            const d = new Date(rowDateStr);
+            if (isNaN(d.getTime())) return false;
+            const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+            return key === selectedFilter;
+        });
+        const [year, month] = selectedFilter.split('-');
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthName = monthNames[parseInt(month) - 1];
+        if (tableTitle) tableTitle.innerText = `🏅 Full Wall of Fame (${monthName} ${year})`;
+        if (monthInfo) monthInfo.innerText = `Filter: ${monthName} ${year}`;
+    }
+
+    // ============================================================
+    // IC Stats Collect করা
+    // ============================================================
+    const icStats = {};
+    filteredWallData.forEach(row => {
+        const icName = getVal(row, ['IC Name', 'icName']) || 'Unknown';
+        const dept = getVal(row, ['Department', 'department']) || '';
+        const shift = getVal(row, ['Shift', 'shift']) || '';
+        const timestampStr = getVal(row, ['Timestamp', 'timestamp']);
+        const rowDate = getVal(row, ['Date', 'entryDate']);
+
+        if (!icName || icName === 'Unknown') return;
+
+        const key = icName + '||' + dept;
+        if (!icStats[key]) {
+            icStats[key] = {
+                icName: icName,
+                dept: dept,
+                shifts: new Set(),
+                dates: new Set(),
+                entries: 0,
+                lateCount: 0,
+                firstDate: null,
+                lastDate: null,
+                dayCount: 0,
+                nightCount: 0
+            };
+        }
+
+        const stat = icStats[key];
+        stat.entries++;
+        if (shift) {
+            stat.shifts.add(shift);
+            if (shift === 'Day') stat.dayCount++;
+            else if (shift === 'Night') stat.nightCount++;
+        }
+        if (rowDate) {
+            stat.dates.add(rowDate);
+            if (!stat.firstDate || rowDate < stat.firstDate) stat.firstDate = rowDate;
+            if (!stat.lastDate || rowDate > stat.lastDate) stat.lastDate = rowDate;
+        }
+
+        if (timestampStr) {
+            const entryTime = new Date(timestampStr);
+            if (!isNaN(entryTime.getTime())) {
+                const hours = entryTime.getHours();
+                const minutes = entryTime.getMinutes();
+                let isLate = false;
+                if (shift === 'Day') {
+                    if (hours > 8 || (hours === 8 && minutes > 30)) isLate = true;
+                } else if (shift === 'Night') {
+                    if (hours > 20 || (hours === 20 && minutes > 30)) isLate = true;
+                }
+                if (isLate) stat.lateCount++;
+            }
+        }
+    });
+
+    if (Object.keys(icStats).length === 0) {
+        container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
+        if (headerInfo) headerInfo.innerText = '';
+        return;
+    }
+
+    const noLateICs = Object.values(icStats).filter(s => s.lateCount === 0 && s.entries >= 3);
+
+    const allICs = Object.values(icStats).map(s => {
+        const lateRate = s.entries > 0 ? (s.lateCount / s.entries) : 0;
+        return { ...s, lateRate };
+    }).sort((a, b) => {
+        if (a.lateCount !== b.lateCount) return a.lateCount - b.lateCount;
+        return b.entries - a.entries;
+    });
+
+    if (headerInfo) {
+        headerInfo.innerText = `Total Performers: ${noLateICs.length} | Total ICs: ${allICs.length}`;
+    }
+
+    // ============================================================
+    // 🆕 টেবিল তৈরি — ১৮ কলাম
+    // ============================================================
+    let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse; font-size:11px;">
+        <thead>
+            <tr>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Rank</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">IC Name</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Department</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Entries</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late Count</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late %</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Performance Score</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Grade</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Rating</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Total Shift</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Day Shift</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Night Shift</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Active Days</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">First Entry</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Last Entry</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Penalty Amount</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Status</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Badge</th>
+                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Remarks</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    const medalsSmall = ['🥇', '🥈', '🥉'];
+    allICs.forEach((ic, idx) => {
+        const hasNoLate = ic.lateCount === 0 && ic.entries >= 3;
+        const lateRatePct = (ic.lateRate * 100).toFixed(1);
+        const lateRateNum = parseFloat(lateRatePct);
+        const penaltyAmount = ic.lateCount * 10;
+
+        // 🆕 Performance Score
+        const perfScore = Math.max(0, 100 - (lateRateNum * 2)).toFixed(0);
+        let perfColor = '#1b5e20';
+        if (perfScore < 50) perfColor = '#c62828';
+        else if (perfScore < 75) perfColor = '#e67e22';
+
+        // 🆕 Grade
+        let grade = '';
+        if (lateRateNum === 0) grade = 'A+';
+        else if (lateRateNum <= 5) grade = 'A';
+        else if (lateRateNum <= 15) grade = 'B';
+        else if (lateRateNum <= 30) grade = 'C';
+        else grade = 'D';
+
+        // 🆕 Rating
+        let rating = '';
+        if (lateRateNum === 0) rating = '⭐⭐⭐⭐⭐';
+        else if (lateRateNum <= 10) rating = '⭐⭐⭐⭐';
+        else if (lateRateNum <= 25) rating = '⭐⭐⭐';
+        else if (lateRateNum <= 50) rating = '⭐⭐';
+        else rating = '⭐';
+
+        // 🆕 Status
+        let status = '';
+        let statusColor = '#1b5e20';
+        if (ic.lateCount === 0) { status = '🟢 Active'; }
+        else if (ic.lateCount <= 2) { status = '🟡 Warning'; statusColor = '#e67e22'; }
+        else { status = '🔴 Critical'; statusColor = '#c62828'; }
+
+        // 🆕 Remarks
+        let remarks = '';
+        if (ic.lateCount === 0 && ic.entries >= 3) remarks = '✅ Excellent';
+        else if (ic.lateCount === 0) remarks = '✅ Good';
+        else if (ic.lateCount <= 2) remarks = '⚠️ Need Improvement';
+        else remarks = '❌ Poor Performance';
+
+        // 🆕 Badge
+        let rowBg = '#ffffff';
+        let badge = '';
+        if (idx === 0) { rowBg = '#fff8e1'; badge = '🥇 Gold'; }
+        else if (idx === 1) { rowBg = '#f5f5f5'; badge = '🥈 Silver'; }
+        else if (idx === 2) { rowBg = '#fbe9e7'; badge = '🥉 Bronze'; }
+        else if (hasNoLate) { rowBg = '#e8f5e9'; badge = '⭐ No Late'; }
+        else if (ic.lateCount === 0) { rowBg = '#f1f8e9'; badge = '✅ Clean'; }
+        else { badge = '⚠️ ' + ic.lateCount + ' Late'; }
+
+        const rankDisplay = idx < 3 ? medalsSmall[idx] + ' ' + (idx + 1) : idx + 1;
+
+        // 🆕 Active Days / First Entry / Last Entry
+        const activeDays = ic.dates ? ic.dates.size : 0;
+        const firstDate = ic.firstDate ? formatDate(ic.firstDate).split('(')[0].trim() : '-';
+        const lastDate = ic.lastDate ? formatDate(ic.lastDate).split('(')[0].trim() : '-';
+
+        tableHtml += `<tr style="background:${rowBg};">
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${rankDisplay}</td>
+            <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-weight:700; color:#1a3a5c;">${ic.icName}</td>
+            <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px;">${ic.dept}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:#2980b9;">${ic.entries}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${ic.lateCount > 0 ? '#c62828' : '#1b5e20'};">${ic.lateCount}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${lateRateNum > 0 ? '#e67e22' : '#1b5e20'};">${lateRatePct}%</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${perfColor};">${perfScore}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${grade}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-size:12px;">${rating}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:#0d47a1;">${ic.shifts.size}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px;">${ic.dayCount}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px;">${ic.nightCount}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700;">${activeDays}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-size:10px;">${firstDate}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-size:10px;">${lastDate}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${penaltyAmount > 0 ? '#c62828' : '#1b5e20'};">৳${penaltyAmount}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${statusColor};">${status}</td>
+            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700;">${badge}</td>
+            <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px; font-weight:600;">${remarks}</td>
+        </tr>`;
+    });
+
+    tableHtml += `</tbody></table>`;
+    container.innerHTML = tableHtml;
+}
 
         function downloadWallOfFameImage() {
             const container = document.getElementById('wallOfFameContainer');
