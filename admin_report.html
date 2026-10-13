@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
@@ -906,7 +906,7 @@
                         </div>
                     </div>
 
-                    <!-- Section 6: Late Entry Report (New) -->
+                    <!-- Section 6: Late Entry Report -->
                     <div class="admin-section" id="section-lateEntry">
                         <div class="section-title sec-late">
                             <span><span class="sec-icon">⏰</span>Late Entry Report (After 8:30 AM / PM)</span>
@@ -915,7 +915,39 @@
                                 <button class="btn-excel" onclick="downloadLateEntryExcel()">⬇️ Excel</button>
                             </div>
                         </div>
-                        <div class="table-wrap" id="lateEntryTableContainer"><div class="no-data">লোড হচ্ছে...</div></div>
+                        
+                        <!-- Summary Box -->
+                        <div id="lateEntrySummaryBox" style="margin-bottom: 15px;"></div>
+                        
+                        <!-- 🆕 IC-wise Late Summary -->
+                        <div class="summary-table-wrap" style="border-left-color: #2980b9;">
+                            <div class="summary-header-text" style="color:#2980b9;">
+                                <span>👤 IC-wise Late Summary</span>
+                            </div>
+                            <div id="icWiseLateSummaryContainer" class="table-wrap" style="box-shadow:none; padding:0;">
+                                <div class="no-data">লোড হচ্ছে...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 🆕 Late Trend (Daily/Weekly) -->
+                        <div class="summary-table-wrap" style="border-left-color: #8e44ad;">
+                            <div class="summary-header-text" style="color:#8e44ad;">
+                                <span>📈 Late Trend (Daily/Weekly)</span>
+                            </div>
+                            <div id="lateTrendContainer" class="table-wrap" style="box-shadow:none; padding:0;">
+                                <div class="no-data">লোড হচ্ছে...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Detailed Late Entry List -->
+                        <div class="summary-table-wrap" style="border-left-color: #e67e22;">
+                            <div class="summary-header-text" style="color:#e67e22;">
+                                <span>📋 Detailed Late Entry List</span>
+                            </div>
+                            <div class="table-wrap" id="lateEntryTableContainer" style="box-shadow:none; padding:0;">
+                                <div class="no-data">লোড হচ্ছে...</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="stats" id="statsContainer" style="display:none;">
@@ -1415,7 +1447,7 @@
             renderNoDemandSizeTable(data);
             renderQATable(data);
             renderMissing(data);
-            renderLateEntryTable(data); // <-- নতুন যোগ করা হয়েছে
+            renderLateEntryTable(data); // <-- নতুন যোগ করা হয়েছে
             renderRawData(data);
         }
 
@@ -2056,14 +2088,20 @@
         }
 
         // ============================================================
-        // NEW: Late Entry Report Functions
+        // NEW: Late Entry Report Functions (with IC-wise & Trend)
         // ============================================================
         function renderLateEntryTable(data) {
             const container = document.getElementById('lateEntryTableContainer');
+            const summaryBox = document.getElementById('lateEntrySummaryBox');
+            const icWiseContainer = document.getElementById('icWiseLateSummaryContainer');
+            const trendContainer = document.getElementById('lateTrendContainer');
             if (!container) return;
             
             if (!data || data.length === 0) {
                 container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
+                if (summaryBox) summaryBox.innerHTML = '';
+                if (icWiseContainer) icWiseContainer.innerHTML = `<div class="no-data">⚠️ ডেটা নেই।</div>`;
+                if (trendContainer) trendContainer.innerHTML = `<div class="no-data">⚠️ ডেটা নেই।</div>`;
                 window._lateEntryData = null;
                 return;
             }
@@ -2071,33 +2109,36 @@
             const lateEntries = [];
             const LATE_FEE = 10; // ১০ টাকা
 
+            // Summary Structures
+            const deptSummary = {};
+            const icSummary = {};  // 🆕 IC-wise
+            const trendSummary = {}; // 🆕 Daily Trend
+            let grandDayLate = 0, grandNightLate = 0, grandTotalLate = 0, grandTotalAmount = 0;
+
             data.forEach(row => {
                 const timestampStr = getVal(row, ['Timestamp', 'timestamp']);
                 const dept = getVal(row, ['Department', 'department']);
-                const icName = getVal(row, ['IC Name', 'icName']);
+                const icName = getVal(row, ['IC Name', 'icName']) || 'Unknown';
                 const shift = getVal(row, ['Shift', 'shift']);
+                const rowDate = getVal(row, ['Date', 'entryDate']);
                 
                 if (!timestampStr || !dept) return;
 
                 const entryTime = new Date(timestampStr);
                 if (isNaN(entryTime.getTime())) return;
 
-                // শিফট অনুযায়ী ৮:৩০ AM বা ৮:৩০ PM চেক করা
                 const hours = entryTime.getHours();
                 const minutes = entryTime.getMinutes();
                 
                 let isLate = false;
                 let lateReason = '';
 
-                // Day Shift (সকাল ৮:৩০ এর পরে)
                 if (shift === 'Day') {
                     if (hours > 8 || (hours === 8 && minutes > 30)) {
                         isLate = true;
                         lateReason = 'After 8:30 AM';
                     }
-                } 
-                // Night Shift (রাত ৮:৩০ এর পরে)
-                else if (shift === 'Night') {
+                } else if (shift === 'Night') {
                     if (hours > 20 || (hours === 20 && minutes > 30)) {
                         isLate = true;
                         lateReason = 'After 8:30 PM';
@@ -2107,17 +2148,182 @@
                 if (isLate) {
                     lateEntries.push({
                         time: formatTime(timestampStr),
-                        date: formatDate(getVal(row, ['Date', 'entryDate'])),
+                        date: rowDate,
+                        dateFormatted: formatDate(rowDate),
                         shift: shift,
                         dept: dept,
                         icName: icName,
                         reason: lateReason,
                         fee: LATE_FEE
                     });
+
+                    // Department-wise
+                    if (!deptSummary[dept]) {
+                        deptSummary[dept] = { dayLate: 0, nightLate: 0, totalLate: 0, totalAmount: 0 };
+                    }
+                    if (shift === 'Day') { deptSummary[dept].dayLate++; grandDayLate++; }
+                    else if (shift === 'Night') { deptSummary[dept].nightLate++; grandNightLate++; }
+                    deptSummary[dept].totalLate++;
+                    deptSummary[dept].totalAmount += LATE_FEE;
+
+                    // 🆕 IC-wise Summary
+                    const icKey = icName + '||' + dept;
+                    if (!icSummary[icKey]) {
+                        icSummary[icKey] = { icName: icName, dept: dept, dayLate: 0, nightLate: 0, totalLate: 0, totalAmount: 0 };
+                    }
+                    if (shift === 'Day') icSummary[icKey].dayLate++;
+                    else if (shift === 'Night') icSummary[icKey].nightLate++;
+                    icSummary[icKey].totalLate++;
+                    icSummary[icKey].totalAmount += LATE_FEE;
+
+                    // 🆕 Daily Trend Summary
+                    const trendKey = rowDate || 'Unknown';
+                    if (!trendSummary[trendKey]) {
+                        trendSummary[trendKey] = { date: rowDate, dateFormatted: formatDate(rowDate), dayLate: 0, nightLate: 0, totalLate: 0, totalAmount: 0 };
+                    }
+                    if (shift === 'Day') trendSummary[trendKey].dayLate++;
+                    else if (shift === 'Night') trendSummary[trendKey].nightLate++;
+                    trendSummary[trendKey].totalLate++;
+                    trendSummary[trendKey].totalAmount += LATE_FEE;
+
+                    grandTotalLate++;
+                    grandTotalAmount += LATE_FEE;
                 }
             });
 
-            // টেবিল তৈরি
+            // ========== Summary Box ==========
+            if (summaryBox) {
+                if (grandTotalLate === 0) {
+                    summaryBox.innerHTML = `<div style="background:#e8f5e9; color:#1b5e20; padding:15px; border-radius:10px; text-align:center; font-weight:700; border-left:5px solid #2e7d32;">✅ এই ফিল্টারে কোনো Late Entry পাওয়া যায়নি!</div>`;
+                } else {
+                    summaryBox.innerHTML = `
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; background:#fff8e1; padding:15px; border-radius:12px; border-left:5px solid #f39c12; margin-bottom:15px;">
+                            <div style="background:#ffffff; padding:12px; border-radius:8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+                                <div style="font-size:11px; color:#666; font-weight:700;">🌞 DAY LATE</div>
+                                <div style="font-size:22px; color:#e67e22; font-weight:800;">${grandDayLate}</div>
+                            </div>
+                            <div style="background:#ffffff; padding:12px; border-radius:8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+                                <div style="font-size:11px; color:#666; font-weight:700;">🌙 NIGHT LATE</div>
+                                <div style="font-size:22px; color:#8e44ad; font-weight:800;">${grandNightLate}</div>
+                            </div>
+                            <div style="background:#ffffff; padding:12px; border-radius:8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+                                <div style="font-size:11px; color:#666; font-weight:700;">📌 TOTAL LATE</div>
+                                <div style="font-size:22px; color:#c62828; font-weight:800;">${grandTotalLate}</div>
+                            </div>
+                            <div style="background:#ffffff; padding:12px; border-radius:8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+                                <div style="font-size:11px; color:#666; font-weight:700;">💰 TOTAL PENALTY</div>
+                                <div style="font-size:22px; color:#b71c1c; font-weight:800;">৳ ${grandTotalAmount}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // ========== 🆕 IC-wise Late Summary ==========
+            if (icWiseContainer) {
+                const icRows = Object.values(icSummary).sort((a, b) => b.totalLate - a.totalLate);
+                if (icRows.length === 0) {
+                    icWiseContainer.innerHTML = `<div class="no-data">✅ কোনো Late Entry নেই।</div>`;
+                } else {
+                    let icHtml = `<table class="saifuddin-table" style="border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th style="background:#2980b9; color:#fff; border:1px solid #666; padding:8px;">Rank</th>
+                                <th style="background:#2980b9; color:#fff; border:1px solid #666; padding:8px;">IC Name</th>
+                                <th style="background:#2980b9; color:#fff; border:1px solid #666; padding:8px;">Department</th>
+                                <th style="background:#2980b9; color:#fff; border:1px solid #666; padding:8px;">Day Late</th>
+                                <th style="background:#2980b9; color:#fff; border:1px solid #666; padding:8px;">Night Late</th>
+                                <th style="background:#2980b9; color:#fff; border:1px solid #666; padding:8px;">Total Late</th>
+                                <th style="background:#2980b9; color:#fff; border:1px solid #666; padding:8px;">Penalty (৳)</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    icRows.forEach((r, idx) => {
+                        let rankBadge = '';
+                        let rowBg = '#ffffff';
+                        if (idx === 0) { rankBadge = '🔴 1'; rowBg = '#ffebee'; }
+                        else if (idx === 1) { rankBadge = '🟡 2'; rowBg = '#fff8e1'; }
+                        else if (idx === 2) { rankBadge = '🟢 3'; rowBg = '#e8f5e9'; }
+                        else rankBadge = `⚪ ${idx + 1}`;
+
+                        icHtml += `<tr style="background:${rowBg};">
+                            <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:800;">${rankBadge}</td>
+                            <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-weight:700; color:#2980b9;">${r.icName}</td>
+                            <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-weight:600;">${r.dept}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#e67e22; font-weight:700;">${r.dayLate}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#8e44ad; font-weight:700;">${r.nightLate}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#c62828; font-weight:800;">${r.totalLate}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#b71c1c; font-weight:800;">৳ ${r.totalAmount}</td>
+                        </tr>`;
+                    });
+                    icHtml += `<tr style="background:#fff59d; font-weight:800;">
+                        <td colspan="3" style="border:2px solid #333; text-align:right; padding:8px 15px;">📌 Grand Total</td>
+                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#e67e22;">${grandDayLate}</td>
+                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#8e44ad;">${grandNightLate}</td>
+                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#c62828;">${grandTotalLate}</td>
+                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#b71c1c;">৳ ${grandTotalAmount}</td>
+                    </tr></tbody></table>`;
+                    icWiseContainer.innerHTML = icHtml;
+                }
+            }
+
+            // ========== 🆕 Late Trend (Daily) ==========
+            if (trendContainer) {
+                const trendRows = Object.values(trendSummary).sort((a, b) => {
+                    return new Date(a.date) - new Date(b.date);
+                });
+                if (trendRows.length === 0) {
+                    trendContainer.innerHTML = `<div class="no-data">✅ কোনো Late Entry নেই।</div>`;
+                } else {
+                    let trendHtml = `<table class="saifuddin-table" style="border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Date</th>
+                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Day Late</th>
+                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Night Late</th>
+                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Total Late</th>
+                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Penalty (৳)</th>
+                                <th style="background:#8e44ad; color:#fff; border:1px solid #666; padding:8px;">Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    let totalDayT = 0, totalNightT = 0, totalLateT = 0, totalAmtT = 0;
+                    trendRows.forEach((r, idx) => {
+                        totalDayT += r.dayLate;
+                        totalNightT += r.nightLate;
+                        totalLateT += r.totalLate;
+                        totalAmtT += r.totalAmount;
+
+                        let trendIcon = '—';
+                        if (idx > 0) {
+                            const prev = trendRows[idx - 1].totalLate;
+                            if (r.totalLate > prev) trendIcon = '🔺 Up';
+                            else if (r.totalLate < prev) trendIcon = '🔻 Down';
+                            else trendIcon = '➖ Same';
+                        }
+
+                        trendHtml += `<tr>
+                            <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-weight:700; color:#8e44ad;">${r.dateFormatted}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#e67e22; font-weight:700;">${r.dayLate}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#8e44ad; font-weight:700;">${r.nightLate}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#c62828; font-weight:800;">${r.totalLate}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; color:#b71c1c; font-weight:800;">৳ ${r.totalAmount}</td>
+                            <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700;">${trendIcon}</td>
+                        </tr>`;
+                    });
+                    trendHtml += `<tr style="background:#fff59d; font-weight:800;">
+                        <td style="border:2px solid #333; text-align:right; padding:8px 15px;">📌 Grand Total</td>
+                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#e67e22;">${totalDayT}</td>
+                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#8e44ad;">${totalNightT}</td>
+                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#c62828;">${totalLateT}</td>
+                        <td style="border:2px solid #333; text-align:center; padding:6px; color:#b71c1c;">৳ ${totalAmtT}</td>
+                        <td style="border:2px solid #333; text-align:center; padding:6px;">—</td>
+                    </tr></tbody></table>`;
+                    trendContainer.innerHTML = trendHtml;
+                }
+            }
+
+            // ========== Detailed Late Entry List ==========
             let html = `<table class="saifuddin-table" style="border-collapse:collapse;">
                 <thead>
                     <tr>
@@ -2136,13 +2342,11 @@
             if (lateEntries.length === 0) {
                 html += `<tr><td colspan="8" style="text-align:center; padding:20px; color:green; font-weight:bold;">✅ কোনো Late Entry পাওয়া যায়নি!</td></tr>`;
             } else {
-                let totalAmount = 0;
                 lateEntries.forEach((entry, idx) => {
-                    totalAmount += entry.fee;
                     html += `<tr>
                         <td style="border:1px solid #999; text-align:center; padding:6px;">${idx + 1}</td>
                         <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#d32f2f;">${entry.time}</td>
-                        <td style="border:1px solid #999; text-align:center; padding:6px;">${entry.date}</td>
+                        <td style="border:1px solid #999; text-align:center; padding:6px;">${entry.dateFormatted}</td>
                         <td style="border:1px solid #999; text-align:center; padding:6px;">${entry.shift}</td>
                         <td style="border:1px solid #999; text-align:left; padding:6px 10px; font-weight:600;">${entry.dept}</td>
                         <td style="border:1px solid #999; text-align:left; padding:6px 10px;">${entry.icName || '-'}</td>
@@ -2150,21 +2354,20 @@
                         <td style="border:1px solid #999; text-align:center; padding:6px; font-weight:700; color:#c62828;">৳ ${entry.fee}</td>
                     </tr>`;
                 });
-                // Grand Total Row
                 html += `<tr style="background:#fff59d; font-weight:800;">
                     <td colspan="7" style="border:2px solid #333; text-align:right; padding:8px 15px; font-size:14px;">📌 Grand Total (${lateEntries.length} Late Entries)</td>
-                    <td style="border:2px solid #333; text-align:center; padding:8px; font-size:14px; color:#c62828;">৳ ${totalAmount}</td>
+                    <td style="border:2px solid #333; text-align:center; padding:8px; font-size:14px; color:#c62828;">৳ ${grandTotalAmount}</td>
                 </tr>`;
             }
 
             html += `</tbody></table>`;
             container.innerHTML = html;
             
-            // Store data for Excel/Image download
             window._lateEntryData = {
                 headers: ['#', 'Time', 'Date', 'Shift', 'Department', 'IC Name', 'Reason', 'Amount (৳)'],
-                rows: lateEntries.map((e, i) => [i + 1, e.time, e.date, e.shift, e.dept, e.icName, e.reason, e.fee]),
-                total: lateEntries.length > 0 ? ['📌 Grand Total', '', '', '', '', '', `${lateEntries.length} Entries`, lateEntries.reduce((s, e) => s + e.fee, 0)] : null
+                rows: lateEntries.map((e, i) => [i + 1, e.time, e.dateFormatted, e.shift, e.dept, e.icName, e.reason, e.fee]),
+                total: lateEntries.length > 0 ? ['📌 Grand Total', '', '', '', '', '', `${lateEntries.length} Entries`, grandTotalAmount] : null,
+                summary: { grandDayLate, grandNightLate, grandTotalLate, grandTotalAmount, deptSummary, icSummary, trendSummary }
             };
         }
 
