@@ -2706,8 +2706,10 @@
             XLSX.writeFile(wb, `Late_Entry_List_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
-   // ============================================================
-// 🏆 Wall of Fame — Updated (Rating ছাড়া, ১৭ কলাম)
+  // ============================================================
+// 🏆 Wall of Fame — Updated (Rating + 6টি কলাম বাদ)
+// Columns: Rank | IC Name | Department | Entries | Late Count | Late % |
+//          Performance Score | Grade | Penalty Amount | Status | Badge | Remarks
 // ============================================================
 function renderWallOfFame() {
     const container = document.getElementById('wallOfFameContainer');
@@ -2802,7 +2804,6 @@ function renderWallOfFame() {
         const dept = getVal(row, ['Department', 'department']) || '';
         const shift = getVal(row, ['Shift', 'shift']) || '';
         const timestampStr = getVal(row, ['Timestamp', 'timestamp']);
-        const rowDate = getVal(row, ['Date', 'entryDate']);
 
         if (!icName || icName === 'Unknown') return;
 
@@ -2811,29 +2812,13 @@ function renderWallOfFame() {
             icStats[key] = {
                 icName: icName,
                 dept: dept,
-                shifts: new Set(),
-                dates: new Set(),
                 entries: 0,
-                lateCount: 0,
-                firstDate: null,
-                lastDate: null,
-                dayCount: 0,
-                nightCount: 0
+                lateCount: 0
             };
         }
 
         const stat = icStats[key];
         stat.entries++;
-        if (shift) {
-            stat.shifts.add(shift);
-            if (shift === 'Day') stat.dayCount++;
-            else if (shift === 'Night') stat.nightCount++;
-        }
-        if (rowDate) {
-            stat.dates.add(rowDate);
-            if (!stat.firstDate || rowDate < stat.firstDate) stat.firstDate = rowDate;
-            if (!stat.lastDate || rowDate > stat.lastDate) stat.lastDate = rowDate;
-        }
 
         if (timestampStr) {
             const entryTime = new Date(timestampStr);
@@ -2872,7 +2857,7 @@ function renderWallOfFame() {
     }
 
     // ============================================================
-    // 🆕 টেবিল তৈরি — Rating ছাড়া (১৭ কলাম)
+    // 🆕 টেবিল তৈরি — ১২ কলাম (6টি কলাম বাদ)
     // ============================================================
     let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse; font-size:11px;">
         <thead>
@@ -2885,12 +2870,6 @@ function renderWallOfFame() {
                 <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late %</th>
                 <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Performance Score</th>
                 <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Grade</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Total Shift</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Day Shift</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Night Shift</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Active Days</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">First Entry</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Last Entry</th>
                 <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Penalty Amount</th>
                 <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Status</th>
                 <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Badge</th>
@@ -2946,11 +2925,6 @@ function renderWallOfFame() {
 
         const rankDisplay = idx < 3 ? medalsSmall[idx] + ' ' + (idx + 1) : idx + 1;
 
-        // Active Days / First Entry / Last Entry
-        const activeDays = ic.dates ? ic.dates.size : 0;
-        const firstDate = ic.firstDate ? formatDate(ic.firstDate).split('(')[0].trim() : '-';
-        const lastDate = ic.lastDate ? formatDate(ic.lastDate).split('(')[0].trim() : '-';
-
         tableHtml += `<tr style="background:${rowBg};">
             <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${rankDisplay}</td>
             <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-weight:700; color:#1a3a5c;">${ic.icName}</td>
@@ -2960,12 +2934,6 @@ function renderWallOfFame() {
             <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${lateRateNum > 0 ? '#e67e22' : '#1b5e20'};">${lateRatePct}%</td>
             <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${perfColor};">${perfScore}</td>
             <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${grade}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:#0d47a1;">${ic.shifts.size}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px;">${ic.dayCount}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px;">${ic.nightCount}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700;">${activeDays}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-size:10px;">${firstDate}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-size:10px;">${lastDate}</td>
             <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${penaltyAmount > 0 ? '#c62828' : '#1b5e20'};">৳${penaltyAmount}</td>
             <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${statusColor};">${status}</td>
             <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700;">${badge}</td>
