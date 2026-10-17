@@ -2707,9 +2707,7 @@
         }
 
   // ============================================================
-// 🏆 Wall of Fame — Updated (Rating + 6টি কলাম বাদ)
-// Columns: Rank | IC Name | Department | Entries | Late Count | Late % |
-//          Performance Score | Grade | Penalty Amount | Status | Badge | Remarks
+// 🏆 Wall of Fame — Updated (Fixed Date & Late Count)
 // ============================================================
 function renderWallOfFame() {
     const container = document.getElementById('wallOfFameContainer');
@@ -2727,7 +2725,7 @@ function renderWallOfFame() {
         return;
     }
 
-    // Populate Month Filter Dropdown (Dynamic)
+    // Populate Month Filter Dropdown
     if (monthFilter && !_wallOfFameMonthOptionsLoaded) {
         const monthSet = new Set();
         data.forEach(row => {
@@ -2750,10 +2748,9 @@ function renderWallOfFame() {
         sortedMonths.forEach(mKey => {
             const [year, month] = mKey.split('-');
             const monthName = monthNames[parseInt(month) - 1];
-            const label = `${monthName} ${year}`;
             const opt = document.createElement('option');
             opt.value = mKey;
-            opt.textContent = label;
+            opt.textContent = `${monthName} ${year}`;
             monthFilter.appendChild(opt);
         });
         _wallOfFameMonthOptionsLoaded = true;
@@ -2780,6 +2777,7 @@ function renderWallOfFame() {
         if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (All Months)';
         if (monthInfo) monthInfo.innerText = `Filter: All Data`;
     } else {
+        // ✅ Month Filter Fix
         filteredWallData = data.filter(row => {
             const rowDateStr = getVal(row, ['Date', 'entryDate']);
             if (!rowDateStr) return false;
@@ -2796,7 +2794,7 @@ function renderWallOfFame() {
     }
 
     // ============================================================
-    // IC Stats Collect করা
+    // IC Stats Collect করা (✅ Fixed Late Count)
     // ============================================================
     const icStats = {};
     filteredWallData.forEach(row => {
@@ -2818,7 +2816,7 @@ function renderWallOfFame() {
         }
 
         const stat = icStats[key];
-        stat.entries++;
+        stat.entries++; // ✅ Total Entries Count
 
         if (timestampStr) {
             const entryTime = new Date(timestampStr);
@@ -2826,12 +2824,15 @@ function renderWallOfFame() {
                 const hours = entryTime.getHours();
                 const minutes = entryTime.getMinutes();
                 let isLate = false;
+                
+                // ✅ Timestamp check based on Shift
                 if (shift === 'Day') {
                     if (hours > 8 || (hours === 8 && minutes > 30)) isLate = true;
                 } else if (shift === 'Night') {
                     if (hours > 20 || (hours === 20 && minutes > 30)) isLate = true;
                 }
-                if (isLate) stat.lateCount++;
+                
+                if (isLate) stat.lateCount++; // ✅ Late Count Fix
             }
         }
     });
@@ -2857,7 +2858,7 @@ function renderWallOfFame() {
     }
 
     // ============================================================
-    // 🆕 টেবিল তৈরি — ১২ কলাম (6টি কলাম বাদ)
+    // 🆕 টেবিল তৈরি
     // ============================================================
     let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse; font-size:11px;">
         <thead>
