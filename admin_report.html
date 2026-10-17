@@ -2706,10 +2706,7 @@
             XLSX.writeFile(wb, `Late_Entry_List_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
-  // ============================================================
-// 🏆 Wall of Fame — Updated (Fixed Date & Late Count)
-// ============================================================
-function renderWallOfFame() {
+  function renderWallOfFame() {
     const container = document.getElementById('wallOfFameContainer');
     const headerInfo = document.getElementById('wallOfFameHeaderInfo');
     const monthInfo = document.getElementById('wallOfFameMonthInfo');
@@ -2725,7 +2722,7 @@ function renderWallOfFame() {
         return;
     }
 
-    // Populate Month Filter Dropdown
+    // Populate Month Filter Dropdown (Dynamic)
     if (monthFilter && !_wallOfFameMonthOptionsLoaded) {
         const monthSet = new Set();
         data.forEach(row => {
@@ -2777,10 +2774,15 @@ function renderWallOfFame() {
         if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (All Months)';
         if (monthInfo) monthInfo.innerText = `Filter: All Data`;
     } else {
-        // ✅ Month Filter Fix
+        // ✅ Month Filter Fix (স্ট্রিং থেকে সরাসরি বছর ও মাস বের করা)
         filteredWallData = data.filter(row => {
             const rowDateStr = getVal(row, ['Date', 'entryDate']);
             if (!rowDateStr) return false;
+            const parts = String(rowDateStr).split('-');
+            if (parts.length === 3) {
+                const key = parts[0] + '-' + String(parts[1]).padStart(2, '0');
+                return key === selectedFilter;
+            }
             const d = new Date(rowDateStr);
             if (isNaN(d.getTime())) return false;
             const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -2794,7 +2796,7 @@ function renderWallOfFame() {
     }
 
     // ============================================================
-    // IC Stats Collect করা (✅ Fixed Late Count)
+    // IC Stats Collect করা (✅ টাইমজোন ইস্যু ফিক্সড)
     // ============================================================
     const icStats = {};
     filteredWallData.forEach(row => {
@@ -2816,24 +2818,58 @@ function renderWallOfFame() {
         }
 
         const stat = icStats[key];
-        stat.entries++; // ✅ Total Entries Count
+        stat.entries++;
 
+        // ✅ সরাসরি টাইম স্ট্রিং থেকে ঘণ্টা-মিনিট বের করা (যাতে ব্রাউজারের টাইমজোন সমস্যা না করে)
         if (timestampStr) {
-            const entryTime = new Date(timestampStr);
-            if (!isNaN(entryTime.getTime())) {
-                const hours = entryTime.getHours();
-                const minutes = entryTime.getMinutes();
-                let isLate = false;
-                
-                // ✅ Timestamp check based on Shift
-                if (shift === 'Day') {
-                    if (hours > 8 || (hours === 8 && minutes > 30)) isLate = true;
-                } else if (shift === 'Night') {
-                    if (hours > 20 || (hours === 20 && minutes > 30)) isLate = true;
+            let hours = 0, minutes = 0;
+            let timeParsed = false;
+            
+            const str = String(timestampStr);
+            
+            // ফরম্যাট ১: "10/1/2026 8:01:01" বা "10/1/2026, 8:01:01"
+            const match12hr = str.match(/\s(\d{1,2}):(\d{2}):\d{2}\s*(AM|PM)?/i);
+            if (match12hr) {
+                hours = parseInt(match12hr[1]);
+                minutes = parseInt(match12hr[2]);
+                if (match12hr[3] && match12hr[3].toUpperCase() === 'PM' && hours < 12) hours += 12;
+                if (match12hr[3] && match12hr[3].toUpperCase() === 'AM' && hours === 12) hours = 0;
+                timeParsed = true;
+            } else {
+                // ফরম্যাট ২: "2026-10-01T08:01:01.000Z" (ISO String)
+                const match24hr = str.match(/T(\d{2}):(\d{2}):\d{2}/);
+                if (match24hr) {
+                    hours = parseInt(match24hr[1]);
+                    minutes = parseInt(match24hr[2]);
+                    // Z টাইমজোন হলে বাংলাদেশের (+6) সাথে এডজাস্ট করা
+                    if (str.includes('Z') && !str.includes('+06')) {
+                        hours = (hours + 6) % 24;
+                    }
+                    timeParsed = true;
                 }
-                
-                if (isLate) stat.lateCount++; // ✅ Late Count Fix
             }
+
+            // যদি সরাসরি স্ট্রিং পার্স না হয়, তবে Date Object দিয়ে
+            if (!timeParsed) {
+                const entryTime = new Date(timestampStr);
+                if (!isNaN(entryTime.getTime())) {
+                    // Asia/Dhaka টাইমজোনে কনভার্ট করে ঘণ্টা বের করা
+                    const dhakaTimeStr = entryTime.toLocaleString('en-US', { timeZone: 'Asia/Dhaka', hour: 'numeric', minute: 'numeric', hour12: false });
+                    const parts = dhakaTimeStr.split(':');
+                    hours = parseInt(parts[0]);
+                    minutes = parseInt(parts[1]);
+                }
+            }
+
+            // লেট এন্ট্রি চেক
+            let isLate = false;
+            if (shift === 'Day') {
+                if (hours > 8 || (hours === 8 && minutes > 30)) isLate = true;
+            } else if (shift === 'Night') {
+                if (hours > 20 || (hours === 20 && minutes > 30)) isLate = true;
+            }
+
+            if (isLate) stat.lateCount++;
         }
     });
 
@@ -2858,7 +2894,7 @@ function renderWallOfFame() {
     }
 
     // ============================================================
-    // 🆕 টেবিল তৈরি
+    // 🆕 টেবিল তৈরি — ১২ কলাম
     // ============================================================
     let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse; font-size:11px;">
         <thead>
