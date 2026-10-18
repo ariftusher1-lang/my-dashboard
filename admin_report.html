@@ -2706,294 +2706,273 @@
             XLSX.writeFile(wb, `Late_Entry_List_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
-  function renderWallOfFame() {
-    const container = document.getElementById('wallOfFameContainer');
-    const headerInfo = document.getElementById('wallOfFameHeaderInfo');
-    const monthInfo = document.getElementById('wallOfFameMonthInfo');
-    const tableTitle = document.getElementById('wallOfFameTableTitle');
-    const monthFilter = document.getElementById('wallOfFameMonthFilter');
-    if (!container) return;
+        function renderWallOfFame() {
+            const container = document.getElementById('wallOfFameContainer');
+            const headerInfo = document.getElementById('wallOfFameHeaderInfo');
+            const monthInfo = document.getElementById('wallOfFameMonthInfo');
+            const tableTitle = document.getElementById('wallOfFameTableTitle');
+            const monthFilter = document.getElementById('wallOfFameMonthFilter');
+            if (!container) return;
 
-    const data = allData;
-    if (!data || data.length === 0) {
-        container.innerHTML = `<div class="no-data">⚠️ কোনো ডেটা নেই।</div>`;
-        if (headerInfo) headerInfo.innerText = '';
-        if (monthInfo) monthInfo.innerText = '';
-        return;
-    }
-
-    // Populate Month Filter Dropdown (Dynamic)
-    if (monthFilter && !_wallOfFameMonthOptionsLoaded) {
-        const monthSet = new Set();
-        data.forEach(row => {
-            const rowDateStr = getVal(row, ['Date', 'entryDate']);
-            if (rowDateStr) {
-                const d = new Date(rowDateStr);
-                if (!isNaN(d.getTime())) {
-                    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-                    monthSet.add(key);
-                }
+            // ১. সম্পূর্ণ ডেটা নেওয়া (allData)
+            const data = allData;
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="no-data">⚠️ কোনো ডেটা নেই।</div>`;
+                if (headerInfo) headerInfo.innerText = '';
+                if (monthInfo) monthInfo.innerText = '';
+                return;
             }
-        });
-        const sortedMonths = Array.from(monthSet).sort().reverse();
 
-        while (monthFilter.options.length > 2) {
-            monthFilter.remove(2);
-        }
-
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        sortedMonths.forEach(mKey => {
-            const [year, month] = mKey.split('-');
-            const monthName = monthNames[parseInt(month) - 1];
-            const opt = document.createElement('option');
-            opt.value = mKey;
-            opt.textContent = `${monthName} ${year}`;
-            monthFilter.appendChild(opt);
-        });
-        _wallOfFameMonthOptionsLoaded = true;
-    }
-
-    const selectedFilter = monthFilter ? monthFilter.value : 'last30';
-    let filteredWallData = data;
-
-    if (selectedFilter === 'last30') {
-        const today = new Date();
-        const cutoff = new Date();
-        cutoff.setDate(today.getDate() - 30);
-        cutoff.setHours(0, 0, 0, 0);
-        filteredWallData = data.filter(row => {
-            const rowDateStr = getVal(row, ['Date', 'entryDate']);
-            if (!rowDateStr) return false;
-            const rowDate = new Date(rowDateStr);
-            return !isNaN(rowDate.getTime()) && rowDate >= cutoff;
-        });
-        if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (Last 30 Days)';
-        if (monthInfo) monthInfo.innerText = `Filter: Last 30 Days`;
-    } else if (selectedFilter === 'all') {
-        filteredWallData = data;
-        if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (All Months)';
-        if (monthInfo) monthInfo.innerText = `Filter: All Data`;
-        } else {
-        // ✅ Month Filter Fix (স্ট্রিং থেকে সরাসরি বছর ও মাস বের করা)
-        filteredWallData = data.filter(row => {
-            const rowDateStr = getVal(row, ['Date', 'entryDate']);
-            if (!rowDateStr) return false;
-            
-            // ডেট ফরম্যাট নরমালাইজ করা (যেমন: 10/1/2026 বা 2026-10-01)
-            let normalizedDate = String(rowDateStr).replace(/\//g, '-'); 
-            const parts = normalizedDate.split('-');
-            
-            if (parts.length === 3) {
-                let year, month;
-                // যদি ফরম্যাট YYYY-MM-DD হয়
-                if (parts[0].length === 4) {
-                    year = parts[0];
-                    month = String(parts[1]).padStart(2, '0');
-                } 
-                // যদি ফরম্যাট MM-DD-YYYY হয়
-                else {
-                    year = parts[2];
-                    month = String(parts[0]).padStart(2, '0');
-                }
-                const key = year + '-' + month;
-                return key === selectedFilter;
-            }
-            return false;
-        });
-        
-        const [year, month] = selectedFilter.split('-');
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        const monthName = monthNames[parseInt(month) - 1];
-        if (tableTitle) tableTitle.innerText = `🏅 Full Wall of Fame (${monthName} ${year})`;
-        if (monthInfo) monthInfo.innerText = `Filter: ${monthName} ${year}`;
-    }
-
-    // ============================================================
-    // IC Stats Collect করা (✅ টাইমজোন ইস্যু ফিক্সড)
-    // ============================================================
-    const icStats = {};
-    filteredWallData.forEach(row => {
-        const icName = getVal(row, ['IC Name', 'icName']) || 'Unknown';
-        const dept = getVal(row, ['Department', 'department']) || '';
-        const shift = getVal(row, ['Shift', 'shift']) || '';
-        const timestampStr = getVal(row, ['Timestamp', 'timestamp']);
-
-        if (!icName || icName === 'Unknown') return;
-
-        const key = icName + '||' + dept;
-        if (!icStats[key]) {
-            icStats[key] = {
-                icName: icName,
-                dept: dept,
-                entries: 0,
-                lateCount: 0
-            };
-        }
-
-        const stat = icStats[key];
-        stat.entries++;
-
-        // ✅ সরাসরি টাইম স্ট্রিং থেকে ঘণ্টা-মিনিট বের করা (যাতে ব্রাউজারের টাইমজোন সমস্যা না করে)
-        if (timestampStr) {
-            let hours = 0, minutes = 0;
-            let timeParsed = false;
-            
-            const str = String(timestampStr);
-            
-            // ফরম্যাট ১: "10/1/2026 8:01:01" বা "10/1/2026, 8:01:01"
-            const match12hr = str.match(/\s(\d{1,2}):(\d{2}):\d{2}\s*(AM|PM)?/i);
-            if (match12hr) {
-                hours = parseInt(match12hr[1]);
-                minutes = parseInt(match12hr[2]);
-                if (match12hr[3] && match12hr[3].toUpperCase() === 'PM' && hours < 12) hours += 12;
-                if (match12hr[3] && match12hr[3].toUpperCase() === 'AM' && hours === 12) hours = 0;
-                timeParsed = true;
-            } else {
-                // ফরম্যাট ২: "2026-10-01T08:01:01.000Z" (ISO String)
-                const match24hr = str.match(/T(\d{2}):(\d{2}):\d{2}/);
-                if (match24hr) {
-                    hours = parseInt(match24hr[1]);
-                    minutes = parseInt(match24hr[2]);
-                    // Z টাইমজোন হলে বাংলাদেশের (+6) সাথে এডজাস্ট করা
-                    if (str.includes('Z') && !str.includes('+06')) {
-                        hours = (hours + 6) % 24;
+            // ২. Month Filter Dropdown (Dynamic) তৈরি করা
+            if (monthFilter && !_wallOfFameMonthOptionsLoaded) {
+                const monthSet = new Set();
+                data.forEach(row => {
+                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
+                    if (rowDateStr) {
+                        const d = new Date(rowDateStr);
+                        if (!isNaN(d.getTime())) {
+                            const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                            monthSet.add(key);
+                        }
                     }
-                    timeParsed = true;
+                });
+                const sortedMonths = Array.from(monthSet).sort().reverse();
+
+                while (monthFilter.options.length > 2) {
+                    monthFilter.remove(2);
                 }
+
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                sortedMonths.forEach(mKey => {
+                    const [year, month] = mKey.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    const opt = document.createElement('option');
+                    opt.value = mKey;
+                    opt.textContent = `${monthName} ${year}`;
+                    monthFilter.appendChild(opt);
+                });
+                _wallOfFameMonthOptionsLoaded = true;
             }
 
-            // যদি সরাসরি স্ট্রিং পার্স না হয়, তবে Date Object দিয়ে
-            if (!timeParsed) {
-                const entryTime = new Date(timestampStr);
-                if (!isNaN(entryTime.getTime())) {
-                    // Asia/Dhaka টাইমজোনে কনভার্ট করে ঘণ্টা বের করা
-                    const dhakaTimeStr = entryTime.toLocaleString('en-US', { timeZone: 'Asia/Dhaka', hour: 'numeric', minute: 'numeric', hour12: false });
-                    const parts = dhakaTimeStr.split(':');
-                    hours = parseInt(parts[0]);
-                    minutes = parseInt(parts[1]);
+            const selectedFilter = monthFilter ? monthFilter.value : 'last30';
+            let filteredWallData = data;
+
+            // ৩. ফিল্টার লজিক (সবচেয়ে গুরুত্বপূর্ণ)
+            if (selectedFilter === 'last30') {
+                // ✅ ফিক্স: গত ৩০ দিনের হিসাব (টাইমজোন ইস্যু এড়াতে Date.UTC ব্যবহার)
+                const today = new Date();
+                // টাইমজোন ইস্যু এড়াতে শুধু তারিখ নেওয়া হচ্ছে (UTC)
+                const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+                const cutoffUTC = todayUTC - (30 * 24 * 60 * 60 * 1000);
+                
+                filteredWallData = data.filter(row => {
+                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
+                    if (!rowDateStr) return false;
+                    
+                    // ডেট নরমালাইজ করা (10/1/2026 বা 2026-10-01)
+                    let parts = String(rowDateStr).replace(/\//g, '-').split('-');
+                    let year, month, day;
+                    if (parts.length === 3) {
+                        if (parts[0].length === 4) { year = parseInt(parts[0]); month = parseInt(parts[1]) - 1; day = parseInt(parts[2]); }
+                        else { year = parseInt(parts[2]); month = parseInt(parts[0]) - 1; day = parseInt(parts[1]); }
+                        
+                        const rowUTC = Date.UTC(year, month, day);
+                        return rowUTC >= cutoffUTC && rowUTC <= todayUTC;
+                    }
+                    return false;
+                });
+                if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (Last 30 Days)';
+                if (monthInfo) monthInfo.innerText = `Filter: Last 30 Days`;
+            } else if (selectedFilter === 'all') {
+                filteredWallData = data;
+                if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (All Months)';
+                if (monthInfo) monthInfo.innerText = `Filter: All Data`;
+            } else {
+                // ✅ ফিক্স: নির্দিষ্ট মাস (যেমন October 2026)
+                filteredWallData = data.filter(row => {
+                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
+                    if (!rowDateStr) return false;
+                    
+                    let parts = String(rowDateStr).replace(/\//g, '-').split('-');
+                    if (parts.length === 3) {
+                        let year, month;
+                        if (parts[0].length === 4) { year = parts[0]; month = String(parts[1]).padStart(2, '0'); }
+                        else { year = parts[2]; month = String(parts[0]).padStart(2, '0'); }
+                        
+                        const key = year + '-' + month;
+                        return key === selectedFilter;
+                    }
+                    return false;
+                });
+                
+                const [year, month] = selectedFilter.split('-');
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                const monthName = monthNames[parseInt(month) - 1];
+                if (tableTitle) tableTitle.innerText = `🏅 Full Wall of Fame (${monthName} ${year})`;
+                if (monthInfo) monthInfo.innerText = `Filter: ${monthName} ${year}`;
+            }
+
+            // ৪. IC Stats কালেক্ট করা
+            const icStats = {};
+            filteredWallData.forEach(row => {
+                const icName = getVal(row, ['IC Name', 'icName']) || 'Unknown';
+                const dept = getVal(row, ['Department', 'department']) || '';
+                const shift = getVal(row, ['Shift', 'shift']) || '';
+                const timestampStr = getVal(row, ['Timestamp', 'timestamp']);
+
+                if (!icName || icName === 'Unknown') return;
+
+                const key = icName + '||' + dept;
+                if (!icStats[key]) {
+                    icStats[key] = { icName: icName, dept: dept, entries: 0, lateCount: 0 };
                 }
+
+                const stat = icStats[key];
+                stat.entries++;
+
+                // লেট এন্ট্রি চেক
+                if (timestampStr) {
+                    let hours = 0, minutes = 0;
+                    let timeParsed = false;
+                    
+                    const str = String(timestampStr);
+                    const match12hr = str.match(/\s(\d{1,2}):(\d{2}):\d{2}\s*(AM|PM)?/i);
+                    if (match12hr) {
+                        hours = parseInt(match12hr[1]);
+                        minutes = parseInt(match12hr[2]);
+                        if (match12hr[3] && match12hr[3].toUpperCase() === 'PM' && hours < 12) hours += 12;
+                        if (match12hr[3] && match12hr[3].toUpperCase() === 'AM' && hours === 12) hours = 0;
+                        timeParsed = true;
+                    } else {
+                        const match24hr = str.match(/T(\d{2}):(\d{2}):\d{2}/);
+                        if (match24hr) {
+                            hours = parseInt(match24hr[1]);
+                            minutes = parseInt(match24hr[2]);
+                            if (str.includes('Z') && !str.includes('+06')) hours = (hours + 6) % 24;
+                            timeParsed = true;
+                        }
+                    }
+
+                    if (!timeParsed) {
+                        const entryTime = new Date(timestampStr);
+                        if (!isNaN(entryTime.getTime())) {
+                            const dhakaTimeStr = entryTime.toLocaleString('en-US', { timeZone: 'Asia/Dhaka', hour: 'numeric', minute: 'numeric', hour12: false });
+                            const parts = dhakaTimeStr.split(':');
+                            hours = parseInt(parts[0]);
+                            minutes = parseInt(parts[1]);
+                        }
+                    }
+
+                    let isLate = false;
+                    if (shift === 'Day') { if (hours > 8 || (hours === 8 && minutes > 30)) isLate = true; } 
+                    else if (shift === 'Night') { if (hours > 20 || (hours === 20 && minutes > 30)) isLate = true; }
+
+                    if (isLate) stat.lateCount++;
+                }
+            });
+
+            if (Object.keys(icStats).length === 0) {
+                container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
+                if (headerInfo) headerInfo.innerText = '';
+                return;
             }
 
-            // লেট এন্ট্রি চেক
-            let isLate = false;
-            if (shift === 'Day') {
-                if (hours > 8 || (hours === 8 && minutes > 30)) isLate = true;
-            } else if (shift === 'Night') {
-                if (hours > 20 || (hours === 20 && minutes > 30)) isLate = true;
+            const noLateICs = Object.values(icStats).filter(s => s.lateCount === 0 && s.entries >= 3);
+
+            const allICs = Object.values(icStats).map(s => {
+                const lateRate = s.entries > 0 ? (s.lateCount / s.entries) : 0;
+                return { ...s, lateRate };
+            }).sort((a, b) => {
+                if (a.lateCount !== b.lateCount) return a.lateCount - b.lateCount;
+                return b.entries - a.entries;
+            });
+
+            if (headerInfo) {
+                headerInfo.innerText = `Total Performers: ${noLateICs.length} | Total ICs: ${allICs.length}`;
             }
 
-            if (isLate) stat.lateCount++;
+            // ৫. টেবিল তৈরি
+            let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse; font-size:11px;">
+                <thead>
+                    <tr>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Rank</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">IC Name</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Department</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Entries</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late Count</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late %</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Performance Score</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Grade</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Penalty Amount</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Status</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Badge</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            const medalsSmall = ['🥇', '🥈', '🥉'];
+            allICs.forEach((ic, idx) => {
+                const hasNoLate = ic.lateCount === 0 && ic.entries >= 3;
+                const lateRatePct = (ic.lateRate * 100).toFixed(1);
+                const lateRateNum = parseFloat(lateRatePct);
+                const penaltyAmount = ic.lateCount * 10;
+
+                const perfScore = Math.max(0, 100 - (lateRateNum * 2)).toFixed(0);
+                let perfColor = '#1b5e20';
+                if (perfScore < 50) perfColor = '#c62828';
+                else if (perfScore < 75) perfColor = '#e67e22';
+
+                let grade = '';
+                if (lateRateNum === 0) grade = 'A+';
+                else if (lateRateNum <= 5) grade = 'A';
+                else if (lateRateNum <= 15) grade = 'B';
+                else if (lateRateNum <= 30) grade = 'C';
+                else grade = 'D';
+
+                let status = '';
+                let statusColor = '#1b5e20';
+                if (ic.lateCount === 0) { status = '🟢 Active'; }
+                else if (ic.lateCount <= 2) { status = '🟡 Warning'; statusColor = '#e67e22'; }
+                else { status = '🔴 Critical'; statusColor = '#c62828'; }
+
+                let remarks = '';
+                if (ic.lateCount === 0 && ic.entries >= 3) remarks = '✅ Excellent';
+                else if (ic.lateCount === 0) remarks = '✅ Good';
+                else if (ic.lateCount <= 2) remarks = '⚠️ Need Improvement';
+                else remarks = '❌ Poor Performance';
+
+                let rowBg = '#ffffff';
+                let badge = '';
+                if (idx === 0) { rowBg = '#fff8e1'; badge = '🥇 Gold'; }
+                else if (idx === 1) { rowBg = '#f5f5f5'; badge = '🥈 Silver'; }
+                else if (idx === 2) { rowBg = '#fbe9e7'; badge = '🥉 Bronze'; }
+                else if (hasNoLate) { rowBg = '#e8f5e9'; badge = '⭐ No Late'; }
+                else if (ic.lateCount === 0) { rowBg = '#f1f8e9'; badge = '✅ Clean'; }
+                else { badge = '⚠️ ' + ic.lateCount + ' Late'; }
+
+                const rankDisplay = idx < 3 ? medalsSmall[idx] + ' ' + (idx + 1) : idx + 1;
+
+                tableHtml += `<tr style="background:${rowBg};">
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${rankDisplay}</td>
+                    <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-weight:700; color:#1a3a5c;">${ic.icName}</td>
+                    <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px;">${ic.dept}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:#2980b9;">${ic.entries}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${ic.lateCount > 0 ? '#c62828' : '#1b5e20'};">${ic.lateCount}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${lateRateNum > 0 ? '#e67e22' : '#1b5e20'};">${lateRatePct}%</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${perfColor};">${perfScore}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${grade}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${penaltyAmount > 0 ? '#c62828' : '#1b5e20'};">৳${penaltyAmount}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${statusColor};">${status}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700;">${badge}</td>
+                    <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px; font-weight:600;">${remarks}</td>
+                </tr>`;
+            });
+
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
         }
-    });
 
-    if (Object.keys(icStats).length === 0) {
-        container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
-        if (headerInfo) headerInfo.innerText = '';
-        return;
-    }
-
-    const noLateICs = Object.values(icStats).filter(s => s.lateCount === 0 && s.entries >= 3);
-
-    const allICs = Object.values(icStats).map(s => {
-        const lateRate = s.entries > 0 ? (s.lateCount / s.entries) : 0;
-        return { ...s, lateRate };
-    }).sort((a, b) => {
-        if (a.lateCount !== b.lateCount) return a.lateCount - b.lateCount;
-        return b.entries - a.entries;
-    });
-
-    if (headerInfo) {
-        headerInfo.innerText = `Total Performers: ${noLateICs.length} | Total ICs: ${allICs.length}`;
-    }
-
-    // ============================================================
-    // 🆕 টেবিল তৈরি — ১২ কলাম
-    // ============================================================
-    let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse; font-size:11px;">
-        <thead>
-            <tr>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Rank</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">IC Name</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Department</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Entries</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late Count</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late %</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Performance Score</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Grade</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Penalty Amount</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Status</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Badge</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Remarks</th>
-            </tr>
-        </thead>
-        <tbody>`;
-
-    const medalsSmall = ['🥇', '🥈', '🥉'];
-    allICs.forEach((ic, idx) => {
-        const hasNoLate = ic.lateCount === 0 && ic.entries >= 3;
-        const lateRatePct = (ic.lateRate * 100).toFixed(1);
-        const lateRateNum = parseFloat(lateRatePct);
-        const penaltyAmount = ic.lateCount * 10;
-
-        // Performance Score
-        const perfScore = Math.max(0, 100 - (lateRateNum * 2)).toFixed(0);
-        let perfColor = '#1b5e20';
-        if (perfScore < 50) perfColor = '#c62828';
-        else if (perfScore < 75) perfColor = '#e67e22';
-
-        // Grade
-        let grade = '';
-        if (lateRateNum === 0) grade = 'A+';
-        else if (lateRateNum <= 5) grade = 'A';
-        else if (lateRateNum <= 15) grade = 'B';
-        else if (lateRateNum <= 30) grade = 'C';
-        else grade = 'D';
-
-        // Status
-        let status = '';
-        let statusColor = '#1b5e20';
-        if (ic.lateCount === 0) { status = '🟢 Active'; }
-        else if (ic.lateCount <= 2) { status = '🟡 Warning'; statusColor = '#e67e22'; }
-        else { status = '🔴 Critical'; statusColor = '#c62828'; }
-
-        // Remarks
-        let remarks = '';
-        if (ic.lateCount === 0 && ic.entries >= 3) remarks = '✅ Excellent';
-        else if (ic.lateCount === 0) remarks = '✅ Good';
-        else if (ic.lateCount <= 2) remarks = '⚠️ Need Improvement';
-        else remarks = '❌ Poor Performance';
-
-        // Badge
-        let rowBg = '#ffffff';
-        let badge = '';
-        if (idx === 0) { rowBg = '#fff8e1'; badge = '🥇 Gold'; }
-        else if (idx === 1) { rowBg = '#f5f5f5'; badge = '🥈 Silver'; }
-        else if (idx === 2) { rowBg = '#fbe9e7'; badge = '🥉 Bronze'; }
-        else if (hasNoLate) { rowBg = '#e8f5e9'; badge = '⭐ No Late'; }
-        else if (ic.lateCount === 0) { rowBg = '#f1f8e9'; badge = '✅ Clean'; }
-        else { badge = '⚠️ ' + ic.lateCount + ' Late'; }
-
-        const rankDisplay = idx < 3 ? medalsSmall[idx] + ' ' + (idx + 1) : idx + 1;
-
-        tableHtml += `<tr style="background:${rowBg};">
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${rankDisplay}</td>
-            <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-weight:700; color:#1a3a5c;">${ic.icName}</td>
-            <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px;">${ic.dept}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:#2980b9;">${ic.entries}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${ic.lateCount > 0 ? '#c62828' : '#1b5e20'};">${ic.lateCount}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${lateRateNum > 0 ? '#e67e22' : '#1b5e20'};">${lateRatePct}%</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${perfColor};">${perfScore}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${grade}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${penaltyAmount > 0 ? '#c62828' : '#1b5e20'};">৳${penaltyAmount}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${statusColor};">${status}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700;">${badge}</td>
-            <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px; font-weight:600;">${remarks}</td>
-        </tr>`;
-    });
-
-    tableHtml += `</tbody></table>`;
-    container.innerHTML = tableHtml;
-}
         function downloadWallOfFameImage() {
             const container = document.getElementById('wallOfFameContainer');
             if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
