@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR360 ড্যাশবোর্ড</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- 🔥 Firebase SDK যুক্ত করা হলো -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        body { font-family: 'Hind Siliguri', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .modal-scrollable { max-height: calc(100vh - 10rem); overflow-y: auto; }
+        .table-scrollable { max-height: 280px; overflow-y: auto; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+    <!-- সাইডবার -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col hidden md:flex z-20">
+        <div class="h-16 flex items-center px-6 border-b border-slate-100">
+            <div class="flex items-center space-x-2 text-emerald-600 font-bold text-xl">
+                <i class="fa-solid fa-users-viewfinder"></i>
+                <span>PRAN-REL <span class="text-red-500">HR360</span></span>
+            </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto py-4">
+            <p class="px-6 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">পোর্টাল</p>
+            <nav class="space-y-1">
+                <a href="javascript:void(0)" onclick="showView('home')" id="menu-home" class="flex items-center px-6 py-2.5 bg-emerald-50 text-emerald-700 border-r-4 border-emerald-600 font-medium transition">
+                    <i class="fa-solid fa-house w-6"></i> হোম
+                </a>
+                
+                <a href="javascript:void(0)" onclick="showView('members')" id="menu-members" class="flex items-center px-6 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-r-4 border-transparent font-medium transition">
+                    <i class="fa-solid fa-address-book w-6"></i> সদস্য তালিকা
+                </a>
+                
+                <div class="relative group">
+                    <button class="w-full flex items-center justify-between px-6 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition">
+                        <div class="flex items-center">
+                            <i class="fa-regular fa-file-lines w-6"></i> রিপোর্ট
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
+                    </button>
+                    <div class="hidden group-hover:block bg-slate-50 py-1 border-l-2 border-slate-200 ml-6">
+                        <a href="#" class="block px-4 py-2 text-sm text-slate-600 hover:text-emerald-600 hover:bg-white transition">মোট ব্যালেন্স</a>
+                        <a href="javascript:void(0)" onclick="openDepositModal()" class="block px-4 py-2 text-sm text-emerald-600 bg-white transition font-medium"><i class="fa-solid fa-money-bill-wave mr-2"></i>টাকা জমার এন্ট্রি</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-slate-600 hover:text-emerald-600 hover:bg-white transition">জমার রিপোর্ট</a>
+                        <a href="javascript:void(0)" onclick="openUploadModal()" class="block px-4 py-2 text-sm text-slate-600 hover:text-emerald-600 hover:bg-white transition font-medium"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>সদস্য লিস্ট আপলোড</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- মূল কন্টেন্ট এরিয়া -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        <!-- টপ নেভবার -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
+            <div class="flex items-center space-x-4">
+                <button class="text-slate-500 hover:text-slate-700 md:hidden">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <div class="relative hidden sm:block">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" onkeyup="searchMembers()" placeholder="সদস্য খুঁজুন..." class="pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-64">
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4 sm:space-x-6">
+                <button class="text-slate-400 hover:text-slate-600"><i class="fa-regular fa-moon text-lg"></i></button>
+                <div class="flex items-center space-x-3 border-l border-slate-200 pl-4 sm:pl-6 cursor-pointer">
+                    <img class="w-9 h-9 rounded-full object-cover border border-slate-200" src="https://i.ibb.co/PGfFbRf3/image.jpg" referrerpolicy="no-referrer" onerror="this.src='https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100'" alt="User">
+                    <div class="hidden sm:block">
+                        <p class="text-xs text-slate-500 leading-tight">৬৪৬৮৬</p>
+                        <p class="text-sm font-semibold text-slate-800 leading-tight">মোঃ আরিফুজ্জামান</p>
+                    </div>
+                    <i class="fa-solid fa-gear text-slate-400 ml-2"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- মেইন স্ক্রলেবল এরিয়া -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            
+            <!-- ================= হোম ভিউ ================= -->
+            <div id="view-home">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-slate-800">হোম</h1>
+                    <div class="text-sm text-slate-500">
+                        হোম <i class="fa-solid fa-chevron-right text-xs mx-1"></i> <span class="text-emerald-500 font-medium">হোম</span>
+                    </div>
+                </div>
+
+                <!-- সদস্যদের প্রোফাইল -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                        <i class="fa-solid fa-users text-indigo-500 mr-2"></i> সদস্যদের প্রোফাইল (বিস্তারিত দেখতে ছবিতে ক্লিক করুন)
+                    </h2>
+                    <div id="homeMemberGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                        <div id="homeNoData" class="col-span-full py-4 text-center text-slate-500">
+                            এখনো কোনো সদস্য আপলোড করা হয়নি।
+                        </div>
+                    </div>
+                </div>
+
+                <!-- চার্ট এরিয়া -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- সর্বমোট টাকার হিসাব -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center">
+                                <i class="fa-solid fa-money-bill-trend-up text-emerald-500 mr-2"></i> সর্বমোট টাকার হিসাব
+                            </h2>
+                            <div class="flex space-x-2">
+                                <span class="px-2 py-1 bg-teal-50 text-teal-600 text-xs font-semibold rounded border border-teal-100">মোট সদস্য: <span id="totalMembersText">০</span> জন</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row items-center justify-between">
+                            <div class="relative w-48 h-48 mb-4 md:mb-0">
+                                <canvas id="moneyOverviewChart"></canvas>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span class="text-sm text-slate-500">মোট টাকা</span>
+                                    <span id="totalMoneyDisplay" class="text-xl font-bold text-emerald-500">৳ ০</span>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 w-full md:ml-6 space-y-3 text-sm">
+                                <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+                                    <div class="flex items-center text-slate-700"><span class="w-3 h-3 rounded-sm bg-emerald-500 mr-2"></span> মোট সদস্য</div>
+                                    <div class="text-slate-800 font-bold"><span id="totalMembersText2">০</span> জন</div>
+                                </div>
+                                <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+                                    <div class="flex items-center text-slate-700"><span class="w-3 h-3 rounded-sm bg-blue-500 mr-2"></span> জমা দিয়েছে</div>
+                                    <div class="text-slate-800 font-bold"><span id="depositedMembersCount">০</span> জন</div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center text-slate-700"><span class="w-3 h-3 rounded-sm bg-red-500 mr-2"></span> বাকি আছে</div>
+                                    <div class="text-slate-800 font-bold"><span id="pendingMembersCount">০</span> জন</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- সাম্প্রতিক জমার তথ্য -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center">
+                                <i class="fa-solid fa-wallet text-blue-500 mr-2"></i> সাম্প্রতিক জমার তথ্য
+                            </h2>
+                            <span id="recentTotalBadge" class="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded border border-blue-100">মোট ৳ ০</span>
+                        </div>
+                        
+                        <div class="table-scrollable border border-slate-200 rounded-lg flex-1">
+                            <table class="w-full text-sm text-left relative">
+                                <thead class="text-xs text-slate-500 bg-slate-50 sticky top-0 shadow-sm">
+                                    <tr>
+                                        <th class="px-4 py-3">সদস্যের নাম</th>
+                                        <th class="px-4 py-3">মাস</th>
+                                        <th class="px-4 py-3 text-right">পরিমাণ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentDepositTableBody" class="divide-y divide-slate-100">
+                                    <tr>
+                                        <td colspan="3" class="px-4 py-6 text-center text-slate-400">
+                                            <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>
+                                            এখনো কোনো জমার তথ্য নেই
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= সদস্য তালিকা ভিউ ================= -->
+            <div id="view-members" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-slate-800">সদস্য তালিকা</h1>
+                    <div class="text-sm text-slate-500">
+                        হোম <i class="fa-solid fa-chevron-right text-xs mx-1"></i> <span class="text-emerald-500 font-medium">সদস্য তালিকা</span>
+                    </div>
+                </div>
+
+                <div id="noDataMessage" class="bg-white p-10 rounded-xl shadow-sm border border-slate-200 text-center flex flex-col items-center">
+                    <i class="fa-solid fa-users-slash text-6xl text-slate-300 mb-4"></i>
+                    <h2 class="text-xl font-bold text-slate-700 mb-2">কোনো সদস্য পাওয়া যায়নি!</h2>
+                    <p class="text-slate-500 mb-4">রিপোর্ট মেনু থেকে "সদস্য লিস্ট আপলোড" করে এক্সেল ফাইল আপলোড করুন।</p>
+                    <button onclick="openUploadModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                        <i class="fa-solid fa-upload mr-2"></i> ফাইল আপলোড করুন
+                    </button>
+                </div>
+
+                <div id="memberGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 hidden">
+                    <!-- কার্ডগুলো এখানে জেনারেট হবে -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-users text-indigo-600 mr-2"></i> সদস্য মাস্টার লিস্ট আপলোড</h2>
+                <button onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <p class="text-sm text-slate-600 mb-3">আপনার Excel বা CSV ফাইলে অবশ্যই নিচের ৪টি কলাম থাকতে হবে:</p>
+                
+                <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-5 grid grid-cols-2 gap-2 text-sm font-semibold text-indigo-700">
+                    <div><i class="fa-solid fa-check-circle mr-1 text-indigo-500"></i> ১. Name</div>
+                    <div><i class="fa-solid fa-check-circle mr-1 text-indigo-500"></i> ২. Father Name</div>
+                    <div><i class="fa-solid fa-check-circle mr-1 text-indigo-500"></i> ৩. Present Country</div>
+                    <div><i class="fa-solid fa-check-circle mr-1 text-indigo-500"></i> ৪. Mobile Number</div>
+                </div>
+                
+                <label id="dropZone" class="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center hover:bg-slate-50 transition cursor-pointer group">
+                    <i id="uploadIcon" class="fa-solid fa-file-excel text-4xl text-emerald-500 mb-3 group-hover:scale-110 transition-transform"></i>
+                    <h3 id="fileNameDisplay" class="text-sm font-semibold text-slate-700">ফাইল ড্র্যাগ করুন অথবা ক্লিক করুন</h3>
+                    <p class="text-xs text-slate-500 mt-1">শুধুমাত্র Excel বা CSV ফরম্যাট (.xlsx, .csv)</p>
+                    <input type="file" id="excelFileInput" class="hidden" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onchange="handleFileSelect(event)">
+                </label>
+            </div>
+            
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-3">
+                <button onclick="closeUploadModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition">বাতিল করুন</button>
+                <button id="uploadBtn" onclick="processExcelData()" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-upload mr-1"></i> আপলোড করুন
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deposit Modal -->
+    <div id="depositModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-emerald-50">
+                <h2 class="text-lg font-bold text-emerald-800"><i class="fa-solid fa-money-bill-wave mr-2"></i> টাকা জমার এন্ট্রি ফর্ম</h2>
+                <button onclick="closeDepositModal()" class="text-emerald-600 hover:text-emerald-800">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">সদস্য নির্বাচন করুন (Name)</label>
+                    <select id="depositNameSelect" onchange="autoFillMemberInfo()" class="w-full border border-slate-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                        <option value="">-- নাম সিলেক্ট করুন --</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">পিতার নাম (Father)</label>
+                        <input type="text" id="depositFather" readonly class="w-full bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-sm text-slate-600 outline-none cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">বর্তমান দেশ (Country)</label>
+                        <input type="text" id="depositCountry" readonly class="w-full bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-sm text-slate-600 outline-none cursor-not-allowed">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">মোবাইল নাম্বার (Mobile)</label>
+                    <input type="text" id="depositMobile" readonly class="w-full bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-sm text-slate-600 outline-none cursor-not-allowed">
+                </div>
+
+                <hr class="border-slate-100 my-2">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">মাস (Month)</label>
+                        <select id="depositMonth" class="w-full border border-slate-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                            <option value="জানুয়ারি">জানুয়ারি</option>
+                            <option value="ফেব্রুয়ারি">ফেব্রুয়ারি</option>
+                            <option value="মার্চ">মার্চ</option>
+                            <option value="এপ্রিল">এপ্রিল</option>
+                            <option value="মে">মে</option>
+                            <option value="জুন">জুন</option>
+                            <option value="জুলাই">জুলাই</option>
+                            <option value="আগস্ট">আগস্ট</option>
+                            <option value="সেপ্টেম্বর">সেপ্টেম্বর</option>
+                            <option value="অক্টোবর">অক্টোবর</option>
+                            <option value="নভেম্বর">নভেম্বর</option>
+                            <option value="ডিসেম্বর">ডিসেম্বর</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">জমার পরিমাণ (৳)</label>
+                        <input type="number" id="depositAmount" placeholder="টাকার পরিমাণ লিখুন" class="w-full border border-slate-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-3">
+                <button onclick="closeDepositModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition">বাতিল করুন</button>
+                <button onclick="saveDeposit()" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition shadow-sm">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> সেভ করুন
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Member Details Modal -->
+    <div id="memberDetailsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden transform scale-95 opacity-0 transition-all duration-300" id="modalContent">
+            
+            <div class="bg-emerald-600 px-6 py-4 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-white"><i class="fa-solid fa-user-circle mr-2"></i> সদস্যের তথ্য ও জমার হিসাব</h2>
+                <button onclick="closeMemberModal()" class="text-emerald-100 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 modal-scrollable">
+                <div class="flex justify-center mb-6">
+                    <img id="modalMemberImage" src="" alt="Profile" referrerpolicy="no-referrer" class="w-24 h-24 rounded-full object-cover border-4 border-emerald-100 shadow-sm bg-slate-200">
+                </div>
+
+                <div class="border border-slate-200 rounded-lg overflow-hidden mb-6">
+                    <table class="w-full text-sm text-left">
+                        <tbody class="divide-y divide-slate-200">
+                            <tr class="bg-slate-50">
+                                <th class="px-4 py-3 font-semibold text-slate-700 w-1/3">নাম (Name)</th>
+                                <td id="modalName" class="px-4 py-3 text-slate-900 font-medium"></td>
+                            </tr>
+                            <tr>
+                                <th class="px-4 py-3 font-semibold text-slate-700 bg-slate-50">পিতার নাম (Father)</th>
+                                <td id="modalFather" class="px-4 py-3 text-slate-900"></td>
+                            </tr>
+                            <tr class="bg-slate-50">
+                                <th class="px-4 py-3 font-semibold text-slate-700">বর্তমান দেশ (Country)</th>
+                                <td id="modalCountry" class="px-4 py-3 text-slate-900"></td>
+                            </tr>
+                            <tr>
+                                <th class="px-4 py-3 font-semibold text-slate-700 bg-slate-50">মোবাইল (Mobile)</th>
+                                <td id="modalMobile" class="px-4 py-3 text-slate-900 font-mono"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="text-md font-bold text-slate-800 mb-2 flex items-center">
+                    <i class="fa-solid fa-list-check text-emerald-500 mr-2"></i> জমার ইতিহাস (Deposit History)
+                </h3>
+                <div class="border border-slate-200 rounded-lg overflow-hidden">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-emerald-50 text-emerald-800">
+                            <tr>
+                                <th class="px-3 py-2 border-b border-emerald-100">মাস (Month)</th>
+                                <th class="px-3 py-2 border-b border-emerald-100">তারিখ ও সময় (Date)</th>
+                                <th class="px-3 py-2 border-b border-emerald-100 text-right">পরিমাণ (৳)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalDepositHistoryBody" class="divide-y divide-slate-100">
+                            <!-- JavaScript দিয়ে ডেটা বসানো হবে -->
+                        </tbody>
+                        <tfoot class="bg-slate-50 font-bold border-t-2 border-slate-200">
+                            <tr>
+                                <td colspan="2" class="px-4 py-3 text-slate-800">সর্বমোট জমা (Total)</td>
+                                <td id="modalTotalDepositAmount" class="px-4 py-3 text-emerald-600 text-right text-base">৳ ০</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="closeMemberModal()" class="px-5 py-2 text-sm font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition">বন্ধ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // 🔥 Firebase ইনিশিয়ালাইজেশন (আপনার স্ক্রিনশট থেকে নেওয়া)
+        // =========================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAm4Sv7gV4-nCGBsK5nXxNXRi1x5gU",
+            authDomain: "bank-acc-c4f0a.firebaseapp.com",
+            databaseURL: "https://bank-acc-c4f0a-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bank-acc-c4f0a",
+            storageBucket: "bank-acc-c4f0a.firebasestorage.app",
+            messagingSenderId: "282540121999",
+            appId: "1:282540121999:web:1a65d68cd06dafe21c5fa",
+            measurementId: "G-JX15V5BLVP"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database(); // রিয়েলটাইম ডেটাবেস রেফারেন্স
+
+        // --- গ্লোবাল ভেরিয়েবল ---
+        let membersData = []; 
+        let depositsData = []; 
+        let selectedFile = null;
+        let totalDepositedMoney = 0; 
+
+        const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300&h=300&fit=crop";
+
+        // 🚀 নিখুঁত কীওয়ার্ড ম্যাচিং সিস্টেম
+        function getMemberImage(name) {
+            let cleanName = name.replace(/[\s:ঃ]/g, '');
+
+            if (cleanName.includes('সোহেল')) {
+                return 'https://i.postimg.cc/CxYjMPwQ/ma-sa-ha-la-ma-ya.jpg';
+            } else if (cleanName.includes('আব্দুস')) {
+                return 'https://i.postimg.cc/QMCKVvvd/ma-aba-da-sa-sa-la-ma.jpg';
+            } else if (cleanName.includes('রানা') || cleanName.includes('জুয়েল') || cleanName.includes('জুয়েল')) {
+                return 'https://i.postimg.cc/k4mXQ8zw/ma-ja-ya-la-ra-na.jpg';
+            } else if (cleanName.includes('জাহিদুল')) {
+                return 'https://i.postimg.cc/C5b2jnym/ma-ja-ha-da-la-isala-ma.jpg';
+            } else if (cleanName.includes('জাহিদ')) {
+                return 'https://i.postimg.cc/50YT2knr/ma-ja-ha-da-ma-ya.jpg';
+            } else if (cleanName.includes('সালাম')) {
+                return 'https://i.postimg.cc/FsQ8hpck/ma-sa-la-ma-ma-ya.jpg';
+            } else if (cleanName.includes('কামরুল') || cleanName.includes('কামরুজ্জামান')) {
+                return 'https://i.ibb.co/wrBNWV1d/image.jpg';
+            } else if (cleanName.includes('জাব্বারুল')) {
+                return 'https://i.ibb.co/hx8GcGDb/image.jpg';
+            } else if (cleanName.includes('আসাদ')) {
+                return 'https://i.ibb.co/bMg66jgc/image.jpg';
+            } else if (cleanName.includes('আরিফ')) {
+                return 'https://i.ibb.co/PGfFbRf3/image.jpg';
+            }
+            
+            return DEFAULT_IMAGE;
+        }
+
+        // --- চার্ট সেটআপ ---
+        const ctxMoneyOverview = document.getElementById('moneyOverviewChart').getContext('2d');
+        const moneyChart = new Chart(ctxMoneyOverview, {
+            type: 'doughnut',
+            data: {
+                labels: ['জমা দিয়েছে', 'বাকি আছে'],
+                datasets: [{
+                    data: [0, 0], 
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderWidth: 0,
+                    cutout: '80%'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        // =========================================================================
+        // 🔥 Firebase থেকে রিয়েল-টাইম ডেটা লোড করা (পেজ রিফ্রেশ হলেও ডেটা থাকবে)
+        // =========================================================================
+        function loadDataFromFirebase() {
+            // ১. সদস্যদের ডেটা লোড করা
+            db.ref('members').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    membersData = data;
+                    document.getElementById('totalMembersText').innerText = membersData.length;
+                    document.getElementById('totalMembersText2').innerText = membersData.length;
+                    
+                    // মেম্বার লিস্ট ড্রপডাউন আপডেট
+                    const select = document.getElementById('depositNameSelect');
+                    select.innerHTML = '<option value="">-- নাম সিলেক্ট করুন --</option>';
+                    membersData.forEach((member, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = member.name;
+                        select.appendChild(option);
+                    });
+
+                    renderHomeMembers();
+                    renderMembers();
+                    updateDashboardStats();
+                } else {
+                    // ডেটাবেস খালি থাকলে
+                    document.getElementById('homeNoData').classList.remove('hidden');
+                }
+            });
+
+            // ২. জমার ডেটা লোড করা
+            db.ref('deposits').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    // Firebase অবজেক্টকে অ্যারেতে রূপান্তর
+                    depositsData = Object.values(data);
+                    totalDepositedMoney = depositsData.reduce((sum, dep) => sum + Number(dep.amount), 0);
+                    
+                    updateRecentDepositsTable();
+                    updateDashboardStats();
+                } else {
+                    depositsData = [];
+                    totalDepositedMoney = 0;
+                    updateRecentDepositsTable();
+                    updateDashboardStats();
+                }
+            });
+        }
+
+        // পেজ লোড হওয়া মাত্রই ডেটা কল করা
+        window.onload = function() {
+            loadDataFromFirebase();
+        };
+
+        // ==========================================
+        // --- ড্যাশবোর্ড পরিসংখ্যান আপডেট করার ফাংশন ---
+        // ==========================================
+        function updateDashboardStats() {
+            const totalMembers = membersData.length;
+            
+            document.getElementById('totalMoneyDisplay').innerText = `৳ ${totalDepositedMoney.toLocaleString('bn-BD')}`;
+            document.getElementById('totalMembersText').innerText = totalMembers;
+            document.getElementById('totalMembersText2').innerText = totalMembers;
+
+            const uniqueDepositors = new Set(depositsData.map(dep => dep.memberIndex));
+            const depositedCount = uniqueDepositors.size;
+            const pendingCount = totalMembers > 0 ? totalMembers - depositedCount : 0;
+
+            document.getElementById('depositedMembersCount').innerText = depositedCount;
+            document.getElementById('pendingMembersCount').innerText = pendingCount;
+
+            moneyChart.data.datasets[0].data = [depositedCount, pendingCount];
+            moneyChart.update();
+        }
+
+        // --- ভিউ সুইচিং লজিক ---
+        function showView(viewName) {
+            const homeView = document.getElementById('view-home');
+            const membersView = document.getElementById('view-members');
+            const menuHome = document.getElementById('menu-home');
+            const menuMembers = document.getElementById('menu-members');
+
+            menuHome.className = "flex items-center px-6 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-r-4 border-transparent font-medium transition";
+            menuMembers.className = "flex items-center px-6 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-r-4 border-transparent font-medium transition";
+
+            if (viewName === 'home') {
+                homeView.classList.remove('hidden');
+                membersView.classList.add('hidden');
+                menuHome.className = "flex items-center px-6 py-2.5 bg-emerald-50 text-emerald-700 border-r-4 border-emerald-600 font-medium transition";
+            } else if (viewName === 'members') {
+                homeView.classList.add('hidden');
+                membersView.classList.remove('hidden');
+                menuMembers.className = "flex items-center px-6 py-2.5 bg-emerald-50 text-emerald-700 border-r-4 border-emerald-600 font-medium transition";
+            }
+        }
+
+        // --- মোডাল ওপেন/ক্লোজ (সদস্য আপলোড) ---
+        function openUploadModal() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+            document.getElementById('uploadModal').classList.add('flex');
+            document.getElementById('excelFileInput').value = '';
+            document.getElementById('fileNameDisplay').innerText = 'ফাইল ড্র্যাগ করুন অথবা ক্লিক করুন';
+            document.getElementById('fileNameDisplay').classList.remove('text-indigo-600');
+            selectedFile = null;
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('flex');
+            document.getElementById('uploadModal').classList.add('hidden');
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const fileNameDisplay = document.getElementById('fileNameDisplay');
+                fileNameDisplay.innerText = `সিলেক্ট করা হয়েছে: ${file.name}`;
+                fileNameDisplay.classList.add('text-indigo-600');
+            }
+        }
+
+        // --- এক্সেল ডেটা প্রসেস এবং Firebase-এ সেভ ---
+        function processExcelData() {
+            if (!selectedFile) {
+                alert("অনুগ্রহ করে প্রথমে একটি এক্সেল ফাইল সিলেক্ট করুন!");
+                return;
+            }
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                
+                if (jsonData.length > 0) {
+                    const newMembersData = jsonData.map(row => {
+                        const name = (row['Name'] || 'N/A').trim(); 
+                        return {
+                            name: name,
+                            father: row['Father Name'] || 'N/A',
+                            country: row['Present Country'] || 'N/A',
+                            mobile: row['Mobile Number'] || 'N/A',
+                            image: getMemberImage(name)
+                        };
+                    });
+
+                    // 🔥 Firebase-এ সদস্যদের সেভ করা এবং আগের জমার ডেটা মুছে ফেলা (রিসেট)
+                    db.ref('members').set(newMembersData).then(() => {
+                        return db.ref('deposits').remove();
+                    }).then(() => {
+                        alert(`✅ সফলভাবে Firebase-এ আপলোড হয়েছে!\nমোট সদস্য: ${newMembersData.length} জন।`);
+                        closeUploadModal();
+                        // window.onload লিসেনার অটোমেটিক ডেটা রিলোড করবে
+                    }).catch((error) => {
+                        alert("❌ ডেটা সেভ করতে সমস্যা হয়েছে: " + error.message);
+                    });
+                    
+                } else {
+                    alert(`❌ ফাইলে কোনো ডেটা পাওয়া যায়নি!`);
+                }
+            };
+            
+            reader.readAsArrayBuffer(selectedFile);
+        }
+
+        // ==========================================
+        // --- টাকা জমার এন্ট্রি (Deposit) লজিক ---
+        // ==========================================
+        
+        function openDepositModal() {
+            if (membersData.length === 0) {
+                alert("⚠️ অনুগ্রহ করে প্রথমে 'সদস্য লিস্ট আপলোড' করে সদস্যদের নাম যুক্ত করুন!");
+                return;
+            }
+
+            document.getElementById('depositFather').value = '';
+            document.getElementById('depositCountry').value = '';
+            document.getElementById('depositMobile').value = '';
+            document.getElementById('depositAmount').value = '';
+
+            document.getElementById('depositModal').classList.remove('hidden');
+            document.getElementById('depositModal').classList.add('flex');
+        }
+
+        function closeDepositModal() {
+            document.getElementById('depositModal').classList.remove('flex');
+            document.getElementById('depositModal').classList.add('hidden');
+        }
+
+        function autoFillMemberInfo() {
+            const selectedIndex = document.getElementById('depositNameSelect').value;
+            
+            if (selectedIndex !== "") {
+                const member = membersData[selectedIndex];
+                document.getElementById('depositFather').value = member.father;
+                document.getElementById('depositCountry').value = member.country;
+                document.getElementById('depositMobile').value = member.mobile;
+            } else {
+                document.getElementById('depositFather').value = '';
+                document.getElementById('depositCountry').value = '';
+                document.getElementById('depositMobile').value = '';
+            }
+        }
+
+        function saveDeposit() {
+            const selectedIndex = document.getElementById('depositNameSelect').value;
+            const month = document.getElementById('depositMonth').value;
+            const amount = parseFloat(document.getElementById('depositAmount').value);
+
+            if (selectedIndex === "") {
+                alert("❌ অনুগ্রহ করে একজন সদস্য সিলেক্ট করুন!");
+                return;
+            }
+            if (isNaN(amount) || amount <= 0) {
+                alert("❌ অনুগ্রহ করে সঠিক টাকার পরিমাণ লিখুন!");
+                return;
+            }
+
+            const member = membersData[selectedIndex];
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('bn-BD'); 
+            const timeStr = now.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' }); 
+            const dateTimeStr = `${dateStr}, ${timeStr}`;
+
+            const newDeposit = {
+                memberIndex: selectedIndex,
+                name: member.name,
+                month: month,
+                amount: amount,
+                date: dateTimeStr 
+            };
+
+            // 🔥 Firebase-এ জমার ডেটা পুশ করা
+            db.ref('deposits').push(newDeposit).then(() => {
+                alert(`✅ সফলভাবে জমা হয়েছে!\n\nনাম: ${member.name}\nমাস: ${month}\nটাকার পরিমাণ: ৳ ${amount}`);
+                closeDepositModal();
+                // window.onload লিসেনার অটোমেটিক ডেটা রিলোড করবে
+            }).catch((error) => {
+                alert("❌ জমার ডেটা সেভ করতে সমস্যা হয়েছে: " + error.message);
+            });
+        }
+
+        // ==========================================
+        // --- সাম্প্রতিক জমার টেবিল আপডেট করা ---
+        // ==========================================
+        function updateRecentDepositsTable() {
+            const tableBody = document.getElementById('recentDepositTableBody');
+            const badge = document.getElementById('recentTotalBadge');
+            
+            badge.innerText = `মোট ৳ ${totalDepositedMoney.toLocaleString('bn-BD')}`;
+
+            if (depositsData.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="px-4 py-6 text-center text-slate-400">
+                            <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>
+                            এখনো কোনো জমার তথ্য নেই
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tableBody.innerHTML = '';
+            
+            const reversedDeposits = [...depositsData].reverse();
+
+            reversedDeposits.forEach(dep => {
+                tableBody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-4 py-2 text-slate-700 font-medium">${dep.name}</td>
+                        <td class="px-4 py-2 text-slate-500">${dep.month}</td>
+                        <td class="px-4 py-2 text-emerald-600 font-bold text-right">৳ ${Number(dep.amount).toLocaleString('bn-BD')}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // ==========================================
+        // --- হোম পেজের ছবি রেন্ডার করা ---
+        // ==========================================
+        function renderHomeMembers() {
+            const homeGrid = document.getElementById('homeMemberGrid');
+            const noDataMsg = document.getElementById('homeNoData');
+            
+            homeGrid.innerHTML = ''; 
+
+            if (membersData.length === 0) {
+                homeGrid.appendChild(noDataMsg);
+                noDataMsg.classList.remove('hidden');
+                return;
+            }
+
+            membersData.forEach((member, index) => {
+                const div = document.createElement('div');
+                div.className = "flex flex-col items-center cursor-pointer group member-card-home";
+                div.setAttribute('data-name', member.name.toLowerCase());
+                div.onclick = () => openMemberModal(index);
+                
+                div.innerHTML = `
+                    <div class="relative">
+                        <img src="${member.image}" referrerpolicy="no-referrer" 
+                             onerror="this.src='${DEFAULT_IMAGE}'" 
+                             alt="${member.name}" 
+                             class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-slate-100 shadow-sm group-hover:border-emerald-400 transition-all duration-300 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                            <i class="fa-solid fa-eye text-white text-xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-700 mt-3 text-center line-clamp-1 group-hover:text-emerald-600 transition">${member.name}</p>
+                `;
+                homeGrid.appendChild(div);
+            });
+        }
+
+        // --- সদস্য তালিকা পেজের কার্ড রেন্ডার করা ---
+        function renderMembers() {
+            const grid = document.getElementById('memberGrid');
+            const noDataMsg = document.getElementById('noDataMessage');
+            
+            grid.innerHTML = ''; 
+
+            if (membersData.length === 0) {
+                grid.classList.add('hidden');
+                noDataMsg.classList.remove('hidden');
+                return;
+            }
+
+            grid.classList.remove('hidden');
+            noDataMsg.classList.add('hidden');
+
+            membersData.forEach((member, index) => {
+                const cardHTML = `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col items-center hover:shadow-lg transition duration-300 member-card" data-name="${member.name.toLowerCase()}">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4 text-center line-clamp-2">${member.name}</h3>
+                        
+                        <div class="relative group cursor-pointer" onclick="openMemberModal(${index})">
+                            <img src="${member.image}" referrerpolicy="no-referrer" 
+                                 onerror="this.src='${DEFAULT_IMAGE}'" 
+                                 alt="${member.name}" 
+                                 class="w-32 h-32 rounded-full object-cover border-4 border-slate-50 shadow-md group-hover:border-emerald-400 transition duration-300">
+                            <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                                <i class="fa-solid fa-eye text-white text-2xl"></i>
+                            </div>
+                        </div>
+                        
+                        <p class="text-sm text-slate-500 mt-4 text-center">বিস্তারিত দেখতে<br>ছবিতে ক্লিক করুন</p>
+                    </div>
+                `;
+                grid.innerHTML += cardHTML;
+            });
+        }
+
+        // --- ডিটেইলস মোডাল ওপেন করা ---
+        function openMemberModal(index) {
+            const member = membersData[index];
+            if (!member) return;
+
+            document.getElementById('modalMemberImage').src = member.image;
+            document.getElementById('modalMemberImage').onerror = function() {
+                this.src = DEFAULT_IMAGE;
+            };
+            document.getElementById('modalName').innerText = member.name;
+            document.getElementById('modalFather').innerText = member.father;
+            document.getElementById('modalCountry').innerText = member.country;
+            document.getElementById('modalMobile').innerText = member.mobile;
+
+            const memberDeposits = depositsData.filter(dep => dep.memberIndex == index);
+            const historyBody = document.getElementById('modalDepositHistoryBody');
+            const totalAmountDisplay = document.getElementById('modalTotalDepositAmount');
+            
+            historyBody.innerHTML = '';
+            let memberTotal = 0;
+
+            if (memberDeposits.length > 0) {
+                memberDeposits.forEach(dep => {
+                    memberTotal += Number(dep.amount);
+                    historyBody.innerHTML += `
+                        <tr>
+                            <td class="px-3 py-2 text-slate-700 font-medium">${dep.month}</td>
+                            <td class="px-3 py-2 text-xs text-slate-500">${dep.date}</td>
+                            <td class="px-3 py-2 text-slate-900 font-medium text-right">৳ ${Number(dep.amount).toLocaleString('bn-BD')}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                historyBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="px-4 py-4 text-center text-slate-400">কোনো জমার তথ্য পাওয়া যায়নি</td>
+                    </tr>
+                `;
+            }
+
+            totalAmountDisplay.innerText = `৳ ${memberTotal.toLocaleString('bn-BD')}`;
+
+            const modal = document.getElementById('memberDetailsModal');
+            const content = document.getElementById('modalContent');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeMemberModal() {
+            const modal = document.getElementById('memberDetailsModal');
+            const content = document.getElementById('modalContent');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        document.getElementById('memberDetailsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeMemberModal();
+        });
+
+        // --- সার্চ ফাংশন ---
+        function searchMembers() {
+            const searchValue = document.getElementById('searchInput').value.toLowerCase();
+            
+            const memberCards = document.querySelectorAll('.member-card');
+            memberCards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                card.style.display = name.includes(searchValue) ? 'flex' : 'none';
+            });
+
+            const homeCards = document.querySelectorAll('.member-card-home');
+            homeCards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                card.style.display = name.includes(searchValue) ? 'flex' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
