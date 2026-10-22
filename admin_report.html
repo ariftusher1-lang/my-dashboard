@@ -2067,49 +2067,60 @@
             }
 
             const sizeTotals = {};
-            MC_SIZE_COLUMNS.forEach(s => sizeTotals[s] = 0);
+            MC_SIZE_COLUMNS.forEach(s => sizeTotals[s] = { qty: 0, depts: new Set() });
 
             (data || []).forEach(row => {
+                const deptName = getVal(row, ['Department', 'department']);
                 const noDemandStr = getVal(row, NO_DEMAND_SIZE_KEYS) || '';
-                if (!noDemandStr) return;
+                if (!noDemandStr || !deptName) return;
 
                 const parts = String(noDemandStr).split(',').map(s => s.trim()).filter(s => s);
                 parts.forEach(part => {
                     const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
                     if (match) {
                         let size = match[1].trim();
-                        if (size === 'IMB') size = 'IBM'; // Old data mapping
+                        if (size === 'IMB') size = 'IBM'; // পুরনো ডেটা ম্যাপিং
                         const qty = parseInt(match[2]) || 0;
                         if (sizeTotals[size] !== undefined) {
-                            sizeTotals[size] += qty;
+                            if (qty > 0) {
+                                sizeTotals[size].qty += qty;
+                                sizeTotals[size].depts.add(deptName);
+                            }
                         }
                     }
                 });
             });
 
-            // টেবিলের সাইজ ছোট করার জন্য max-width: 500px এবং margin: 0 auto দেওয়া হয়েছে
-            let html = `<table class="saifuddin-table" style="border-collapse: collapse; width: 100%; max-width: 500px; margin: 0 auto; font-size: 14px;">
+            // টেবিল তৈরি (ছবির মতো সিম্পল স্টাইল)
+            let html = `<table style="border-collapse: collapse; width: 100%; max-width: 800px; margin: 0 auto; font-size: 14px; border: 2px solid #000; background: #fff;">
                 <thead>
                     <tr>
-                        <th style="background: #3f51b5; color: white; border: 1px solid #666; padding: 12px; font-weight: 700; text-align: left; width: 50%;">MC Size</th>
-                        <th style="background: #3f51b5; color: white; border: 1px solid #666; padding: 12px; font-weight: 700; text-align: center; width: 50%;">No Demand QTY</th>
+                        <th style="background: #fff; color: #000; border: 1px solid #000; padding: 8px; font-weight: 700; text-align: center; width: 20%;">MC Size</th>
+                        <th style="background: #fff; color: #000; border: 1px solid #000; padding: 8px; font-weight: 700; text-align: center; width: 20%;">No Demand QTY</th>
+                        <th style="background: #fff; color: #000; border: 1px solid #000; padding: 8px; font-weight: 700; text-align: center; width: 60%;">Details Department Name</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
             let grandTotal = 0;
             MC_SIZE_COLUMNS.forEach(size => {
-                const qty = sizeTotals[size];
+                const info = sizeTotals[size];
+                const qty = info.qty;
+                const deptsStr = Array.from(info.depts).sort().join(', ');
                 grandTotal += qty;
+
                 html += `<tr>
-                    <td style="border: 1px solid #999; padding: 10px; font-weight: 700; text-align: left; background: #f8f9fa;">IMM-T-${size}</td>
-                    <td style="border: 1px solid #999; padding: 10px; font-weight: 700; text-align: center; color: ${qty > 0 ? '#d32f2f' : '#333'};">${qty > 0 ? qty : ''}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: left; color: #000;">IMM-T-${size}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: ${qty > 0 ? 'bold' : 'normal'}; color: ${qty > 0 ? '#d32f2f' : '#000'};">${qty > 0 ? qty : ''}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: left; color: #000; font-size: 13px;">${deptsStr}</td>
                 </tr>`;
             });
 
-            html += `<tr class="total-row" style="background: #e8eaf6;">
-                <td style="border: 2px solid #333; padding: 12px; font-weight: 800; text-align: right; color: #1a237e;">📌 Total</td>
-                <td style="border: 2px solid #333; padding: 12px; font-weight: 800; text-align: center; color: #b71c1c;">${grandTotal}</td>
+            // চাইলে টোটাল রো দেওয়া যেতে পারে, তবে ছবিতে নেই। তবুও রাখলাম যাতে সামারি বোঝা যায়।
+            html += `<tr style="background: #f8f9fa;">
+                <td style="border: 1px solid #000; padding: 10px; text-align: right; font-weight: bold; color: #000;">📌 Total</td>
+                <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold; color: #000;">${grandTotal}</td>
+                <td style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;"></td>
             </tr>`;
 
             html += `</tbody></table>`;
@@ -2127,7 +2138,7 @@
             const clone = container.cloneNode(true);
             clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
             const wrapper = document.createElement('div');
-            wrapper.style.cssText = `width: 600px; padding: 30px; background: white; border: 4px solid #3f51b5; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            wrapper.style.cssText = `width: 800px; padding: 30px; background: white; border: 4px solid #3f51b5; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
             
             const title = document.createElement('h3');
             title.style.cssText = `color: #3f51b5; text-align: center; margin-bottom: 10px; font-size: 20px; font-weight: 800;`;
@@ -2163,16 +2174,17 @@
             const data = window._overallNoDemandData;
             if (!data) { alert('ডেটা নেই!'); return; }
             
-            const aoa = [['MC Size', 'No Demand QTY']];
+            const aoa = [['MC Size', 'No Demand QTY', 'Details Department Name']];
             MC_SIZE_COLUMNS.forEach(size => {
-                const qty = data.sizeTotals[size];
-                aoa.push([`IMM-T-${size}`, qty > 0 ? qty : '']);
+                const info = data.sizeTotals[size];
+                const deptsStr = Array.from(info.depts).sort().join(', ');
+                aoa.push([`IMM-T-${size}`, info.qty > 0 ? info.qty : '', deptsStr]);
             });
-            aoa.push(['📌 Total', data.grandTotal]);
+            aoa.push(['📌 Total', data.grandTotal, '']);
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(aoa);
-            ws['!cols'] = [{ wch: 20 }, { wch: 15 }];
+            ws['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 50 }];
 
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let C = range.s.c; C <= range.e.c; C++) {
