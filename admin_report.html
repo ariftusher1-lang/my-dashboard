@@ -517,6 +517,7 @@
         .section-title.sec-raw { background: linear-gradient(135deg, #37474f, #546e7a); }
         .section-title.sec-late { background: linear-gradient(135deg, #f39c12, #e67e22); }
         .section-title.sec-fame { background: linear-gradient(135deg, #d4af37, #f39c12); color: #fff; }
+        .section-title.sec-overall-nodemand { background: linear-gradient(135deg, #3f51b5, #303f9f); color: #fff; }
 
         .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
         .btn-excel { background: #1e7e34; color: white; border: none; padding: 6px 14px; border-radius: 5px; font-weight: 700; cursor: pointer; font-size: 11px; }
@@ -830,6 +831,12 @@
                             <div class="qa-icon" style="background: #fff8e1;">🏆</div>
                             <div class="qa-title">Wall of Fame<br>Best Performers</div>
                         </div>
+
+                        <!-- 🆕 Over All No Demand Card -->
+                        <div class="qa-card qa-link" style="border-top-color: #3f51b5;" onclick="showAdminSection('overallNoDemand')">
+                            <div class="qa-icon" style="background: #e8eaf6;">📉</div>
+                            <div class="qa-title">RIP DPL Over All<br>No Demand</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -985,7 +992,7 @@
                         </div>
                     </div>
 
-                    <!-- 🆕 Section 7: Wall of Fame (শুধু টেবিল, Top 3 কার্ড ছাড়া) -->
+                    <!-- Section 7: Wall of Fame -->
                     <div class="admin-section" id="section-wallOfFame">
                         <div class="section-title sec-fame">
                             <span><span class="sec-icon">🏆</span>Wall of Fame — Best Performers</span>
@@ -994,7 +1001,7 @@
                             </div>
                         </div>
                         
-                        <!-- 🆕 Month Filter -->
+                        <!-- Month Filter -->
                         <div style="background:#fff8e1; padding:12px 18px; border-radius:10px; margin-bottom:15px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; border-left:5px solid #d4af37;">
                             <label style="font-weight:800; color:#8b6914; font-size:14px; display:flex; align-items:center; gap:6px;">
                                 📅 Month Filter:
@@ -1006,13 +1013,33 @@
                             <span id="wallOfFameMonthInfo" style="font-size:12px; color:#8b6914; font-weight:700; margin-left:auto;"></span>
                         </div>
                         
-                        <!-- Wall of Fame Table (শুধু টেবিল) -->
+                        <!-- Wall of Fame Table -->
                         <div class="summary-table-wrap" style="border-left-color: #d4af37;">
                             <div class="summary-header-text" style="color:#d4af37;">
                                 <span id="wallOfFameTableTitle">🏅 Full Wall of Fame (Last 30 Days)</span>
                                 <span id="wallOfFameHeaderInfo" style="font-size:12px; color:#555; font-weight:600;"></span>
                             </div>
                             <div id="wallOfFameContainer" class="table-wrap" style="box-shadow:none; padding:0;">
+                                <div class="no-data">লোড হচ্ছে...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🆕 Section 8: RIP DPL Over All No Demand -->
+                    <div class="admin-section" id="section-overallNoDemand">
+                        <div class="section-title sec-overall-nodemand">
+                            <span><span class="sec-icon">📉</span>RIP DPL Over All No Demand</span>
+                            <div class="btn-group">
+                                <button class="btn-image" onclick="downloadOverallNoDemandImage()">📷 ইমেজ</button>
+                                <button class="btn-excel" onclick="downloadOverallNoDemandExcel()">⬇️ Excel</button>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-table-wrap" style="border-left-color: #3f51b5;">
+                            <div class="summary-header-text" style="color:#3f51b5;">
+                                <span>📊 Over All No Demand Details</span>
+                            </div>
+                            <div id="overallNoDemandContainer" class="table-wrap" style="box-shadow:none; padding:0;">
                                 <div class="no-data">লোড হচ্ছে...</div>
                             </div>
                         </div>
@@ -1216,6 +1243,8 @@
             }
             if (sectionKey === 'wallOfFame') {
                 renderWallOfFame();
+            } else if (sectionKey === 'overallNoDemand') {
+                renderOverallNoDemand(filteredData);
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1576,6 +1605,7 @@
             renderMissing(data);
             renderLateEntryTable(data);
             renderWallOfFame();
+            renderOverallNoDemand(data); // New Function Call
             renderRawData(data);
         }
 
@@ -2016,6 +2046,148 @@
 
             XLSX.utils.book_append_sheet(wb, ws, "No Demand Size Wise");
             XLSX.writeFile(wb, `NoDemand_Size_Wise_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        // ============================================================
+        // New Function: renderOverallNoDemand
+        // ============================================================
+        function renderOverallNoDemand(data) {
+            const container = document.getElementById('overallNoDemandContainer');
+            if (!container) return;
+
+            const sizeTotals = {};
+            MC_SIZE_COLUMNS.forEach(s => sizeTotals[s] = 0);
+
+            (data || []).forEach(row => {
+                const noDemandStr = getVal(row, NO_DEMAND_SIZE_KEYS) || '';
+                if (!noDemandStr) return;
+
+                const parts = String(noDemandStr).split(',').map(s => s.trim()).filter(s => s);
+                parts.forEach(part => {
+                    const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
+                    if (match) {
+                        const size = match[1].trim();
+                        const qty = parseInt(match[2]) || 0;
+                        if (sizeTotals[size] !== undefined) {
+                            sizeTotals[size] += qty;
+                        }
+                    }
+                });
+            });
+
+            let html = `<table class="saifuddin-table" style="border-collapse: collapse; width: 100%; font-size: 14px;">
+                <thead>
+                    <tr>
+                        <th style="background: #3f51b5; color: white; border: 1px solid #666; padding: 12px; font-weight: 700; text-align: left;">MC Size</th>
+                        <th style="background: #3f51b5; color: white; border: 1px solid #666; padding: 12px; font-weight: 700; text-align: center;">No Demand QTY</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            let grandTotal = 0;
+            MC_SIZE_COLUMNS.forEach(size => {
+                const qty = sizeTotals[size];
+                grandTotal += qty;
+                html += `<tr>
+                    <td style="border: 1px solid #999; padding: 10px; font-weight: 700; text-align: left; background: #f8f9fa;">IMM-T-${size}</td>
+                    <td style="border: 1px solid #999; padding: 10px; font-weight: 700; text-align: center; color: ${qty > 0 ? '#d32f2f' : '#333'};">${qty > 0 ? qty : ''}</td>
+                </tr>`;
+            });
+
+            html += `<tr class="total-row" style="background: #e8eaf6;">
+                <td style="border: 2px solid #333; padding: 12px; font-weight: 800; text-align: right; color: #1a237e;">📌 Total</td>
+                <td style="border: 2px solid #333; padding: 12px; font-weight: 800; text-align: center; color: #b71c1c;">${grandTotal}</td>
+            </tr>`;
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+            window._overallNoDemandData = { sizeTotals, grandTotal };
+        }
+
+        // --- Download Functions for Overall No Demand ---
+        function downloadOverallNoDemandImage() {
+            const container = document.getElementById('overallNoDemandContainer');
+            if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
+            const btn = document.querySelector('button[onclick="downloadOverallNoDemandImage()"]');
+            if (btn) { btn.innerText = '⏳...'; btn.disabled = true; }
+
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `width: 800px; padding: 30px; background: white; border: 4px solid #3f51b5; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            const title = document.createElement('h2');
+            title.style.cssText = `color: #3f51b5; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #3f51b5; padding-bottom: 12px; font-size: 24px; font-weight: 800;`;
+            title.innerText = '📉 RIP DPL Over All No Demand';
+            wrapper.appendChild(title);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `Overall_NoDemand_${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(wrapper);
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+                    alert('❌ ইমেজ তৈরি ব্যর্থ!');
+                    if (btn) { btn.innerText = '📷 ইমেজ'; btn.disabled = false; }
+                });
+        }
+
+        function downloadOverallNoDemandExcel() {
+            const data = window._overallNoDemandData;
+            if (!data) { alert('ডেটা নেই!'); return; }
+            
+            const aoa = [['MC Size', 'No Demand QTY']];
+            MC_SIZE_COLUMNS.forEach(size => {
+                const qty = data.sizeTotals[size];
+                aoa.push([`IMM-T-${size}`, qty > 0 ? qty : '']);
+            });
+            aoa.push(['📌 Total', data.grandTotal]);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            ws['!cols'] = [{ wch: 20 }, { wch: 15 }];
+
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const ref = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (!ws[ref]) ws[ref] = { v: '' };
+                if (!ws[ref].s) ws[ref].s = {};
+                ws[ref].s.fill = { fgColor: { rgb: '3F51B5' } };
+                ws[ref].s.font = { color: { rgb: 'FFFFFF' }, bold: true, sz: 12 };
+                ws[ref].s.alignment = { horizontal: 'center', vertical: 'center' };
+                ws[ref].s.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+            }
+            
+            for(let R = 1; R < range.e.r; R++) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[ref]) ws[ref] = { v: '' };
+                    if (!ws[ref].s) ws[ref].s = {};
+                    ws[ref].s.font = { bold: true, sz: 11 };
+                    ws[ref].s.alignment = { horizontal: C === 0 ? 'left' : 'center', vertical: 'center' };
+                    ws[ref].s.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+                }
+            }
+
+            const lastR = range.e.r;
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const ref = XLSX.utils.encode_cell({ r: lastR, c: C });
+                if (!ws[ref]) ws[ref] = { v: '' };
+                if (!ws[ref].s) ws[ref].s = {};
+                ws[ref].s.fill = { fgColor: { rgb: 'E8EAF6' } };
+                ws[ref].s.font = { color: { rgb: '000000' }, bold: true, sz: 12 };
+                ws[ref].s.alignment = { horizontal: C === 0 ? 'right' : 'center', vertical: 'center' };
+                ws[ref].s.border = { top: { style: 'medium' }, bottom: { style: 'medium' }, left: { style: 'medium' }, right: { style: 'medium' } };
+            }
+
+            XLSX.utils.book_append_sheet(wb, ws, "Overall No Demand");
+            XLSX.writeFile(wb, `Overall_NoDemand_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function renderQATable(data) {
@@ -2706,290 +2878,271 @@
             XLSX.writeFile(wb, `Late_Entry_List_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
-  function renderWallOfFame() {
-    const container = document.getElementById('wallOfFameContainer');
-    const headerInfo = document.getElementById('wallOfFameHeaderInfo');
-    const monthInfo = document.getElementById('wallOfFameMonthInfo');
-    const tableTitle = document.getElementById('wallOfFameTableTitle');
-    const monthFilter = document.getElementById('wallOfFameMonthFilter');
-    if (!container) return;
+        function renderWallOfFame() {
+            const container = document.getElementById('wallOfFameContainer');
+            const headerInfo = document.getElementById('wallOfFameHeaderInfo');
+            const monthInfo = document.getElementById('wallOfFameMonthInfo');
+            const tableTitle = document.getElementById('wallOfFameTableTitle');
+            const monthFilter = document.getElementById('wallOfFameMonthFilter');
+            if (!container) return;
 
-    const data = allData;
-    if (!data || data.length === 0) {
-        container.innerHTML = `<div class="no-data">⚠️ কোনো ডেটা নেই।</div>`;
-        if (headerInfo) headerInfo.innerText = '';
-        if (monthInfo) monthInfo.innerText = '';
-        return;
-    }
-
-    // Populate Month Filter Dropdown (Dynamic)
-    if (monthFilter && !_wallOfFameMonthOptionsLoaded) {
-        const monthSet = new Set();
-        data.forEach(row => {
-            const rowDateStr = getVal(row, ['Date', 'entryDate']);
-            if (rowDateStr) {
-                const d = new Date(rowDateStr);
-                if (!isNaN(d.getTime())) {
-                    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-                    monthSet.add(key);
-                }
+            // ১. সম্পূর্ণ ডেটা নেওয়া (allData)
+            const data = allData;
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="no-data">⚠️ কোনো ডেটা নেই।</div>`;
+                if (headerInfo) headerInfo.innerText = '';
+                if (monthInfo) monthInfo.innerText = '';
+                return;
             }
-        });
-        const sortedMonths = Array.from(monthSet).sort().reverse();
 
-        while (monthFilter.options.length > 2) {
-            monthFilter.remove(2);
-        }
-
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        sortedMonths.forEach(mKey => {
-            const [year, month] = mKey.split('-');
-            const monthName = monthNames[parseInt(month) - 1];
-            const opt = document.createElement('option');
-            opt.value = mKey;
-            opt.textContent = `${monthName} ${year}`;
-            monthFilter.appendChild(opt);
-        });
-        _wallOfFameMonthOptionsLoaded = true;
-    }
-
-    const selectedFilter = monthFilter ? monthFilter.value : 'last30';
-    let filteredWallData = data;
-
-    if (selectedFilter === 'last30') {
-        const today = new Date();
-        const cutoff = new Date();
-        cutoff.setDate(today.getDate() - 30);
-        cutoff.setHours(0, 0, 0, 0);
-        filteredWallData = data.filter(row => {
-            const rowDateStr = getVal(row, ['Date', 'entryDate']);
-            if (!rowDateStr) return false;
-            const rowDate = new Date(rowDateStr);
-            return !isNaN(rowDate.getTime()) && rowDate >= cutoff;
-        });
-        if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (Last 30 Days)';
-        if (monthInfo) monthInfo.innerText = `Filter: Last 30 Days`;
-    } else if (selectedFilter === 'all') {
-        filteredWallData = data;
-        if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (All Months)';
-        if (monthInfo) monthInfo.innerText = `Filter: All Data`;
-    } else {
-        // ✅ Month Filter Fix (স্ট্রিং থেকে সরাসরি বছর ও মাস বের করা)
-        filteredWallData = data.filter(row => {
-            const rowDateStr = getVal(row, ['Date', 'entryDate']);
-            if (!rowDateStr) return false;
-            // ডেট ফরম্যাট নরমালাইজ করা
-            let normalizedDate = String(rowDateStr).replace(/\//g, '-'); 
-            const parts = normalizedDate.split('-');
-            if (parts.length === 3) {
-                // যদি ফরম্যাট MM-DD-YYYY হয়
-                let year, month;
-                if (parts[0].length === 4) {
-                    year = parts[0];
-                    month = String(parts[1]).padStart(2, '0');
-                } else {
-                    year = parts[2];
-                    month = String(parts[0]).padStart(2, '0');
-                }
-                const key = year + '-' + month;
-                return key === selectedFilter;
-            }
-            return false;
-        });
-        
-        const [year, month] = selectedFilter.split('-');
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        const monthName = monthNames[parseInt(month) - 1];
-        if (tableTitle) tableTitle.innerText = `🏅 Full Wall of Fame (${monthName} ${year})`;
-        if (monthInfo) monthInfo.innerText = `Filter: ${monthName} ${year}`;
-    }
-
-    // ============================================================
-    // IC Stats Collect করা (✅ টাইমজোন ইস্যু ফিক্সড)
-    // ============================================================
-    const icStats = {};
-    filteredWallData.forEach(row => {
-        const icName = getVal(row, ['IC Name', 'icName']) || 'Unknown';
-        const dept = getVal(row, ['Department', 'department']) || '';
-        const shift = getVal(row, ['Shift', 'shift']) || '';
-        const timestampStr = getVal(row, ['Timestamp', 'timestamp']);
-
-        if (!icName || icName === 'Unknown') return;
-
-        const key = icName + '||' + dept;
-        if (!icStats[key]) {
-            icStats[key] = {
-                icName: icName,
-                dept: dept,
-                entries: 0,
-                lateCount: 0
-            };
-        }
-
-        const stat = icStats[key];
-        stat.entries++;
-
-        // ✅ সরাসরি টাইম স্ট্রিং থেকে ঘণ্টা-মিনিট বের করা (যাতে ব্রাউজারের টাইমজোন সমস্যা না করে)
-        if (timestampStr) {
-            let hours = 0, minutes = 0;
-            let timeParsed = false;
-            
-            const str = String(timestampStr);
-            
-            // ফরম্যাট ১: "10/1/2026 8:01:01" বা "10/1/2026, 8:01:01"
-            const match12hr = str.match(/\s(\d{1,2}):(\d{2}):\d{2}\s*(AM|PM)?/i);
-            if (match12hr) {
-                hours = parseInt(match12hr[1]);
-                minutes = parseInt(match12hr[2]);
-                if (match12hr[3] && match12hr[3].toUpperCase() === 'PM' && hours < 12) hours += 12;
-                if (match12hr[3] && match12hr[3].toUpperCase() === 'AM' && hours === 12) hours = 0;
-                timeParsed = true;
-            } else {
-                // ফরম্যাট ২: "2026-10-01T08:01:01.000Z" (ISO String)
-                const match24hr = str.match(/T(\d{2}):(\d{2}):\d{2}/);
-                if (match24hr) {
-                    hours = parseInt(match24hr[1]);
-                    minutes = parseInt(match24hr[2]);
-                    // Z টাইমজোন হলে বাংলাদেশের (+6) সাথে এডজাস্ট করা
-                    if (str.includes('Z') && !str.includes('+06')) {
-                        hours = (hours + 6) % 24;
+            // ২. Month Filter Dropdown (Dynamic) তৈরি করা
+            if (monthFilter && !_wallOfFameMonthOptionsLoaded) {
+                const monthSet = new Set();
+                data.forEach(row => {
+                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
+                    if (rowDateStr) {
+                        const d = new Date(rowDateStr);
+                        if (!isNaN(d.getTime())) {
+                            const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                            monthSet.add(key);
+                        }
                     }
-                    timeParsed = true;
+                });
+                const sortedMonths = Array.from(monthSet).sort().reverse();
+
+                while (monthFilter.options.length > 2) {
+                    monthFilter.remove(2);
                 }
+
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                sortedMonths.forEach(mKey => {
+                    const [year, month] = mKey.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    const opt = document.createElement('option');
+                    opt.value = mKey;
+                    opt.textContent = `${monthName} ${year}`;
+                    monthFilter.appendChild(opt);
+                });
+                _wallOfFameMonthOptionsLoaded = true;
             }
 
-            // যদি সরাসরি স্ট্রিং পার্স না হয়, তবে Date Object দিয়ে
-            if (!timeParsed) {
-                const entryTime = new Date(timestampStr);
-                if (!isNaN(entryTime.getTime())) {
-                    // Asia/Dhaka টাইমজোনে কনভার্ট করে ঘণ্টা বের করা
-                    const dhakaTimeStr = entryTime.toLocaleString('en-US', { timeZone: 'Asia/Dhaka', hour: 'numeric', minute: 'numeric', hour12: false });
-                    const parts = dhakaTimeStr.split(':');
-                    hours = parseInt(parts[0]);
-                    minutes = parseInt(parts[1]);
+            const selectedFilter = monthFilter ? monthFilter.value : 'last30';
+            let filteredWallData = data;
+
+            // ৩. ফিল্টার লজিক
+            if (selectedFilter === 'last30') {
+                const today = new Date();
+                // টাইমজোন ইস্যু এড়াতে শুধু তারিখ নেওয়া হচ্ছে (UTC)
+                const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+                const cutoffUTC = todayUTC - (30 * 24 * 60 * 60 * 1000);
+                
+                filteredWallData = data.filter(row => {
+                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
+                    if (!rowDateStr) return false;
+                    
+                    let parts = String(rowDateStr).replace(/\//g, '-').split('-');
+                    let year, month, day;
+                    if (parts.length === 3) {
+                        if (parts[0].length === 4) { year = parseInt(parts[0]); month = parseInt(parts[1]) - 1; day = parseInt(parts[2]); }
+                        else { year = parseInt(parts[2]); month = parseInt(parts[0]) - 1; day = parseInt(parts[1]); }
+                        
+                        const rowUTC = Date.UTC(year, month, day);
+                        return rowUTC >= cutoffUTC && rowUTC <= todayUTC;
+                    }
+                    return false;
+                });
+                if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (Last 30 Days)';
+                if (monthInfo) monthInfo.innerText = `Filter: Last 30 Days`;
+            } else if (selectedFilter === 'all') {
+                filteredWallData = data;
+                if (tableTitle) tableTitle.innerText = '🏅 Full Wall of Fame (All Months)';
+                if (monthInfo) monthInfo.innerText = `Filter: All Data`;
+            } else {
+                // নির্দিষ্ট মাস (যেমন October 2026)
+                filteredWallData = data.filter(row => {
+                    const rowDateStr = getVal(row, ['Date', 'entryDate']);
+                    if (!rowDateStr) return false;
+                    
+                    let parts = String(rowDateStr).replace(/\//g, '-').split('-');
+                    if (parts.length === 3) {
+                        let year, month;
+                        if (parts[0].length === 4) { year = parts[0]; month = String(parts[1]).padStart(2, '0'); }
+                        else { year = parts[2]; month = String(parts[0]).padStart(2, '0'); }
+                        
+                        const key = year + '-' + month;
+                        return key === selectedFilter;
+                    }
+                    return false;
+                });
+                
+                const [year, month] = selectedFilter.split('-');
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                const monthName = monthNames[parseInt(month) - 1];
+                if (tableTitle) tableTitle.innerText = `🏅 Full Wall of Fame (${monthName} ${year})`;
+                if (monthInfo) monthInfo.innerText = `Filter: ${monthName} ${year}`;
+            }
+
+            // ৪. IC Stats কালেক্ট করা
+            const icStats = {};
+            filteredWallData.forEach(row => {
+                const icName = getVal(row, ['IC Name', 'icName']) || 'Unknown';
+                const dept = getVal(row, ['Department', 'department']) || '';
+                const shift = getVal(row, ['Shift', 'shift']) || '';
+                const timestampStr = getVal(row, ['Timestamp', 'timestamp']);
+
+                if (!icName || icName === 'Unknown') return;
+
+                const key = icName + '||' + dept;
+                if (!icStats[key]) {
+                    icStats[key] = { icName: icName, dept: dept, entries: 0, lateCount: 0 };
                 }
+
+                const stat = icStats[key];
+                stat.entries++;
+
+                // লেট এন্ট্রি চেক
+                if (timestampStr) {
+                    let hours = 0, minutes = 0;
+                    let timeParsed = false;
+                    
+                    const str = String(timestampStr);
+                    const match12hr = str.match(/\s(\d{1,2}):(\d{2}):\d{2}\s*(AM|PM)?/i);
+                    if (match12hr) {
+                        hours = parseInt(match12hr[1]);
+                        minutes = parseInt(match12hr[2]);
+                        if (match12hr[3] && match12hr[3].toUpperCase() === 'PM' && hours < 12) hours += 12;
+                        if (match12hr[3] && match12hr[3].toUpperCase() === 'AM' && hours === 12) hours = 0;
+                        timeParsed = true;
+                    } else {
+                        const match24hr = str.match(/T(\d{2}):(\d{2}):\d{2}/);
+                        if (match24hr) {
+                            hours = parseInt(match24hr[1]);
+                            minutes = parseInt(match24hr[2]);
+                            if (str.includes('Z') && !str.includes('+06')) hours = (hours + 6) % 24;
+                            timeParsed = true;
+                        }
+                    }
+
+                    if (!timeParsed) {
+                        const entryTime = new Date(timestampStr);
+                        if (!isNaN(entryTime.getTime())) {
+                            const dhakaTimeStr = entryTime.toLocaleString('en-US', { timeZone: 'Asia/Dhaka', hour: 'numeric', minute: 'numeric', hour12: false });
+                            const parts = dhakaTimeStr.split(':');
+                            hours = parseInt(parts[0]);
+                            minutes = parseInt(parts[1]);
+                        }
+                    }
+
+                    let isLate = false;
+                    if (shift === 'Day') { if (hours > 8 || (hours === 8 && minutes > 30)) isLate = true; } 
+                    else if (shift === 'Night') { if (hours > 20 || (hours === 20 && minutes > 30)) isLate = true; }
+
+                    if (isLate) stat.lateCount++;
+                }
+            });
+
+            if (Object.keys(icStats).length === 0) {
+                container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
+                if (headerInfo) headerInfo.innerText = '';
+                return;
             }
 
-            // লেট এন্ট্রি চেক
-            let isLate = false;
-            if (shift === 'Day') {
-                if (hours > 8 || (hours === 8 && minutes > 30)) isLate = true;
-            } else if (shift === 'Night') {
-                if (hours > 20 || (hours === 20 && minutes > 30)) isLate = true;
+            const noLateICs = Object.values(icStats).filter(s => s.lateCount === 0 && s.entries >= 3);
+
+            const allICs = Object.values(icStats).map(s => {
+                const lateRate = s.entries > 0 ? (s.lateCount / s.entries) : 0;
+                return { ...s, lateRate };
+            }).sort((a, b) => {
+                if (a.lateCount !== b.lateCount) return a.lateCount - b.lateCount;
+                return b.entries - a.entries;
+            });
+
+            if (headerInfo) {
+                headerInfo.innerText = `Total Performers: ${noLateICs.length} | Total ICs: ${allICs.length}`;
             }
 
-            if (isLate) stat.lateCount++;
+            // ৫. টেবিল তৈরি
+            let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse; font-size:11px;">
+                <thead>
+                    <tr>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Rank</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">IC Name</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Department</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Entries</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late Count</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late %</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Performance Score</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Grade</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Penalty Amount</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Status</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Badge</th>
+                        <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            const medalsSmall = ['🥇', '🥈', '🥉'];
+            allICs.forEach((ic, idx) => {
+                const hasNoLate = ic.lateCount === 0 && ic.entries >= 3;
+                const lateRatePct = (ic.lateRate * 100).toFixed(1);
+                const lateRateNum = parseFloat(lateRatePct);
+                const penaltyAmount = ic.lateCount * 10;
+
+                const perfScore = Math.max(0, 100 - (lateRateNum * 2)).toFixed(0);
+                let perfColor = '#1b5e20';
+                if (perfScore < 50) perfColor = '#c62828';
+                else if (perfScore < 75) perfColor = '#e67e22';
+
+                let grade = '';
+                if (lateRateNum === 0) grade = 'A+';
+                else if (lateRateNum <= 5) grade = 'A';
+                else if (lateRateNum <= 15) grade = 'B';
+                else if (lateRateNum <= 30) grade = 'C';
+                else grade = 'D';
+
+                let status = '';
+                let statusColor = '#1b5e20';
+                if (ic.lateCount === 0) { status = '🟢 Active'; }
+                else if (ic.lateCount <= 2) { status = '🟡 Warning'; statusColor = '#e67e22'; }
+                else { status = '🔴 Critical'; statusColor = '#c62828'; }
+
+                let remarks = '';
+                if (ic.lateCount === 0 && ic.entries >= 3) remarks = '✅ Excellent';
+                else if (ic.lateCount === 0) remarks = '✅ Good';
+                else if (ic.lateCount <= 2) remarks = '⚠️ Need Improvement';
+                else remarks = '❌ Poor Performance';
+
+                let rowBg = '#ffffff';
+                let badge = '';
+                if (idx === 0) { rowBg = '#fff8e1'; badge = '🥇 Gold'; }
+                else if (idx === 1) { rowBg = '#f5f5f5'; badge = '🥈 Silver'; }
+                else if (idx === 2) { rowBg = '#fbe9e7'; badge = '🥉 Bronze'; }
+                else if (hasNoLate) { rowBg = '#e8f5e9'; badge = '⭐ No Late'; }
+                else if (ic.lateCount === 0) { rowBg = '#f1f8e9'; badge = '✅ Clean'; }
+                else { badge = '⚠️ ' + ic.lateCount + ' Late'; }
+
+                const rankDisplay = idx < 3 ? medalsSmall[idx] + ' ' + (idx + 1) : idx + 1;
+
+                tableHtml += `<tr style="background:${rowBg};">
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${rankDisplay}</td>
+                    <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-weight:700; color:#1a3a5c;">${ic.icName}</td>
+                    <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px;">${ic.dept}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:#2980b9;">${ic.entries}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${ic.lateCount > 0 ? '#c62828' : '#1b5e20'};">${ic.lateCount}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${lateRateNum > 0 ? '#e67e22' : '#1b5e20'};">${lateRatePct}%</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${perfColor};">${perfScore}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${grade}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${penaltyAmount > 0 ? '#c62828' : '#1b5e20'};">৳${penaltyAmount}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${statusColor};">${status}</td>
+                    <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700;">${badge}</td>
+                    <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px; font-weight:600;">${remarks}</td>
+                </tr>`;
+            });
+
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
         }
-    });
 
-    if (Object.keys(icStats).length === 0) {
-        container.innerHTML = `<div class="no-data">⚠️ এই ফিল্টারে কোনো ডেটা নেই।</div>`;
-        if (headerInfo) headerInfo.innerText = '';
-        return;
-    }
-
-    const noLateICs = Object.values(icStats).filter(s => s.lateCount === 0 && s.entries >= 3);
-
-    const allICs = Object.values(icStats).map(s => {
-        const lateRate = s.entries > 0 ? (s.lateCount / s.entries) : 0;
-        return { ...s, lateRate };
-    }).sort((a, b) => {
-        if (a.lateCount !== b.lateCount) return a.lateCount - b.lateCount;
-        return b.entries - a.entries;
-    });
-
-    if (headerInfo) {
-        headerInfo.innerText = `Total Performers: ${noLateICs.length} | Total ICs: ${allICs.length}`;
-    }
-
-    // ============================================================
-    // 🆕 টেবিল তৈরি — ১২ কলাম
-    // ============================================================
-    let tableHtml = `<table class="saifuddin-table" style="border-collapse:collapse; font-size:11px;">
-        <thead>
-            <tr>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Rank</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">IC Name</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Department</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Entries</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late Count</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Late %</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Performance Score</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Grade</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Penalty Amount</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Status</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Badge</th>
-                <th style="background:#d4af37; color:#000; border:1px solid #666; padding:5px;">Remarks</th>
-            </tr>
-        </thead>
-        <tbody>`;
-
-    const medalsSmall = ['🥇', '🥈', '🥉'];
-    allICs.forEach((ic, idx) => {
-        const hasNoLate = ic.lateCount === 0 && ic.entries >= 3;
-        const lateRatePct = (ic.lateRate * 100).toFixed(1);
-        const lateRateNum = parseFloat(lateRatePct);
-        const penaltyAmount = ic.lateCount * 10;
-
-        // Performance Score
-        const perfScore = Math.max(0, 100 - (lateRateNum * 2)).toFixed(0);
-        let perfColor = '#1b5e20';
-        if (perfScore < 50) perfColor = '#c62828';
-        else if (perfScore < 75) perfColor = '#e67e22';
-
-        // Grade
-        let grade = '';
-        if (lateRateNum === 0) grade = 'A+';
-        else if (lateRateNum <= 5) grade = 'A';
-        else if (lateRateNum <= 15) grade = 'B';
-        else if (lateRateNum <= 30) grade = 'C';
-        else grade = 'D';
-
-        // Status
-        let status = '';
-        let statusColor = '#1b5e20';
-        if (ic.lateCount === 0) { status = '🟢 Active'; }
-        else if (ic.lateCount <= 2) { status = '🟡 Warning'; statusColor = '#e67e22'; }
-        else { status = '🔴 Critical'; statusColor = '#c62828'; }
-
-        // Remarks
-        let remarks = '';
-        if (ic.lateCount === 0 && ic.entries >= 3) remarks = '✅ Excellent';
-        else if (ic.lateCount === 0) remarks = '✅ Good';
-        else if (ic.lateCount <= 2) remarks = '⚠️ Need Improvement';
-        else remarks = '❌ Poor Performance';
-
-        // Badge
-        let rowBg = '#ffffff';
-        let badge = '';
-        if (idx === 0) { rowBg = '#fff8e1'; badge = '🥇 Gold'; }
-        else if (idx === 1) { rowBg = '#f5f5f5'; badge = '🥈 Silver'; }
-        else if (idx === 2) { rowBg = '#fbe9e7'; badge = '🥉 Bronze'; }
-        else if (hasNoLate) { rowBg = '#e8f5e9'; badge = '⭐ No Late'; }
-        else if (ic.lateCount === 0) { rowBg = '#f1f8e9'; badge = '✅ Clean'; }
-        else { badge = '⚠️ ' + ic.lateCount + ' Late'; }
-
-        const rankDisplay = idx < 3 ? medalsSmall[idx] + ' ' + (idx + 1) : idx + 1;
-
-        tableHtml += `<tr style="background:${rowBg};">
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${rankDisplay}</td>
-            <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-weight:700; color:#1a3a5c;">${ic.icName}</td>
-            <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px;">${ic.dept}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:#2980b9;">${ic.entries}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${ic.lateCount > 0 ? '#c62828' : '#1b5e20'};">${ic.lateCount}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${lateRateNum > 0 ? '#e67e22' : '#1b5e20'};">${lateRatePct}%</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${perfColor};">${perfScore}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800;">${grade}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:800; color:${penaltyAmount > 0 ? '#c62828' : '#1b5e20'};">৳${penaltyAmount}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700; color:${statusColor};">${status}</td>
-            <td style="border:1px solid #999; text-align:center; padding:4px; font-weight:700;">${badge}</td>
-            <td style="border:1px solid #999; text-align:left; padding:4px 8px; font-size:11px; font-weight:600;">${remarks}</td>
-        </tr>`;
-    });
-
-    tableHtml += `</tbody></table>`;
-    container.innerHTML = tableHtml;
-}
         function downloadWallOfFameImage() {
             const container = document.getElementById('wallOfFameContainer');
             if (!container || container.innerText.includes('লোড হচ্ছে')) { alert('⚠️ ডেটা নেই!'); return; }
@@ -3125,7 +3278,7 @@ Below is Current Date (Default Date\t${displayDate} & Shift Default Summery Repo
         }
 
         function showError(msg) {
-            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','qaTableContainer','missingContainer','lateEntryTableContainer','wallOfFameContainer','rawDataTable'];
+            const ids = ['saifuddinTableContainer','noDemandSizeTableContainer','qaTableContainer','missingContainer','lateEntryTableContainer','wallOfFameContainer', 'overallNoDemandContainer','rawDataTable'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<div class="no-data">${msg}</div>`;
