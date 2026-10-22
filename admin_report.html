@@ -1036,10 +1036,11 @@
                         </div>
                         
                         <div class="summary-table-wrap" style="border-left-color: #3f51b5;">
-                            <div class="summary-header-text" style="color:#3f51b5;">
-                                <span>📊 Over All No Demand Details</span>
+                            <div class="summary-header-text" style="color:#3f51b5; display: flex; flex-direction: column; align-items: flex-start; gap: 5px;">
+                                <span style="font-size: 16px; font-weight: 800;">📊 Over All No Demand Details</span>
+                                <span id="overallNoDemandHeaderText" style="font-size: 13px; color: #555; font-weight: 600; white-space: pre-wrap; line-height: 1.5;">Dear Sir, Please See the Current Date & Shift RIP DPL Over All No Demand List MC Wise & Number of MC which is under of No Demand</span>
                             </div>
-                            <div id="overallNoDemandContainer" class="table-wrap" style="box-shadow:none; padding:0;">
+                            <div id="overallNoDemandContainer" class="table-wrap" style="box-shadow:none; padding:0; overflow-x: hidden;">
                                 <div class="no-data">লোড হচ্ছে...</div>
                             </div>
                         </div>
@@ -1341,7 +1342,7 @@
             'Silicon Project'
         ];
 
-        const MC_SIZE_COLUMNS = ['90', '120', '160', '250', '270', '280', '330', '370', '380', '470', '530', '800', 'IMB', 'BM'];
+        const MC_SIZE_COLUMNS = ['90', '120', '160', '250', '270', '280', '330', '370', '380', '470', '530', '800', 'IBM', 'BM'];
 
         const DEPT_MAP = {
             'RIP> DPL> Plastic-3': ['RIP> DPL> Plastic-3', 'Plastic Prod-3.1'],
@@ -1820,7 +1821,7 @@
             const SIZE_COLORS = {
                 '90': '#bbdefb', '120': '#f8bbd0', '160': '#c8e6c9', '250': '#ffe0b2',
                 '270': '#e1bee7', '280': '#b2ebf2', '330': '#fff9c4', '380': '#ffcdd2',
-                '470': '#d1c4e9', '530': '#b2dfdb', '800': '#f0f4c3', 'IMB': '#ffccbc', 'BM': '#d7ccc8'
+                '470': '#d1c4e9', '530': '#b2dfdb', '800': '#f0f4c3', 'IBM': '#ffccbc', 'BM': '#d7ccc8'
             };
 
             let html = `<table class="saifuddin-table" style="border-collapse:collapse;">
@@ -2055,6 +2056,16 @@
             const container = document.getElementById('overallNoDemandContainer');
             if (!container) return;
 
+            // হেডার টেক্সট আপডেট করা
+            const headerTxt = document.getElementById('overallNoDemandHeaderText');
+            if (headerTxt) {
+                const dateVal = document.getElementById('filterDate').value;
+                const shiftVal = document.getElementById('filterShift').value;
+                const d = dateVal ? formatDate(dateVal) : 'All Dates';
+                const s = shiftVal !== 'All' ? shiftVal : 'All Shifts';
+                headerTxt.innerText = `Dear Sir,\nPlease See the Current Date & Shift (${d} | ${s}) RIP DPL Over All No Demand List MC Wise & Number of MC which is under of No Demand`;
+            }
+
             const sizeTotals = {};
             MC_SIZE_COLUMNS.forEach(s => sizeTotals[s] = 0);
 
@@ -2066,7 +2077,8 @@
                 parts.forEach(part => {
                     const match = part.match(/^(.+?)\s*-\s*(\d+)$/);
                     if (match) {
-                        const size = match[1].trim();
+                        let size = match[1].trim();
+                        if (size === 'IMB') size = 'IBM'; // Old data mapping
                         const qty = parseInt(match[2]) || 0;
                         if (sizeTotals[size] !== undefined) {
                             sizeTotals[size] += qty;
@@ -2075,11 +2087,12 @@
                 });
             });
 
-            let html = `<table class="saifuddin-table" style="border-collapse: collapse; width: 100%; font-size: 14px;">
+            // টেবিলের সাইজ ছোট করার জন্য max-width: 500px এবং margin: 0 auto দেওয়া হয়েছে
+            let html = `<table class="saifuddin-table" style="border-collapse: collapse; width: 100%; max-width: 500px; margin: 0 auto; font-size: 14px;">
                 <thead>
                     <tr>
-                        <th style="background: #3f51b5; color: white; border: 1px solid #666; padding: 12px; font-weight: 700; text-align: left;">MC Size</th>
-                        <th style="background: #3f51b5; color: white; border: 1px solid #666; padding: 12px; font-weight: 700; text-align: center;">No Demand QTY</th>
+                        <th style="background: #3f51b5; color: white; border: 1px solid #666; padding: 12px; font-weight: 700; text-align: left; width: 50%;">MC Size</th>
+                        <th style="background: #3f51b5; color: white; border: 1px solid #666; padding: 12px; font-weight: 700; text-align: center; width: 50%;">No Demand QTY</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -2114,13 +2127,21 @@
             const clone = container.cloneNode(true);
             clone.querySelectorAll('td, th').forEach(el => { el.style.whiteSpace = 'nowrap'; });
             const wrapper = document.createElement('div');
-            wrapper.style.cssText = `width: 800px; padding: 30px; background: white; border: 4px solid #3f51b5; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
-            const title = document.createElement('h2');
-            title.style.cssText = `color: #3f51b5; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #3f51b5; padding-bottom: 12px; font-size: 24px; font-weight: 800;`;
+            wrapper.style.cssText = `width: 600px; padding: 30px; background: white; border: 4px solid #3f51b5; border-radius: 16px; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0 auto;`;
+            
+            const title = document.createElement('h3');
+            title.style.cssText = `color: #3f51b5; text-align: center; margin-bottom: 10px; font-size: 20px; font-weight: 800;`;
             title.innerText = '📉 RIP DPL Over All No Demand';
+            
+            const subTitle = document.createElement('p');
+            subTitle.style.cssText = `text-align: center; color: #555; font-size: 13px; margin-bottom: 20px; border-bottom: 2px solid #3f51b5; padding-bottom: 12px; white-space: pre-wrap;`;
+            subTitle.innerText = document.getElementById('overallNoDemandHeaderText').innerText;
+
             wrapper.appendChild(title);
+            wrapper.appendChild(subTitle);
             wrapper.appendChild(clone);
             document.body.appendChild(wrapper);
+            
             html2canvas(wrapper, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true })
                 .then(canvas => {
                     const link = document.createElement('a');
