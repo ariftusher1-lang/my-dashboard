@@ -217,7 +217,7 @@
     <div class="card" id="dateRangeReportContainer">
         <h2>
             <span class="toggle-wrapper">
-                <span id="dateRangeHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (০১/০৭/২০২৬ থেকে আজ পর্যন্ত)</span>
+                <span id="dateRangeHeading">📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (চলতি মাসের ১ম তারিখ থেকে গতকাল পর্যন্ত)</span>
                 <button class="toggle-btn" onclick="toggleSection('dateRangeContent')" id="dateRangeToggle">🙈 লুকান</button>
             </span>
             <span class="btn-group-small">
@@ -453,11 +453,26 @@
             renderTodaySummary(todayEntries);
         }
 
-        const startDateStr = '2026-07-01';
-        const endDateStr = tStr;
+        // ===== ডাইনামিক ডেট রেঞ্জ (চলতি মাসের ১ম তারিখ থেকে গতকাল পর্যন্ত) =====
+        const todayForRange = new Date();
+        const yesterdayForRange = new Date(todayForRange);
+        yesterdayForRange.setDate(yesterdayForRange.getDate() - 1);
+        const startOfMonth = new Date(todayForRange.getFullYear(), todayForRange.getMonth(), 1);
+
+        const formatYMD = (dateObj) => {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        const startDateStr = formatYMD(startOfMonth);
+        const endDateStr = formatYMD(yesterdayForRange);
+        
         const rangeEntries = allEntries.filter(e => e.entryDate >= startDateStr && e.entryDate <= endDateStr);
         const startDisplay = formatDateDisplay(startDateStr);
         const endDisplay = formatDateDisplay(endDateStr);
+        
         document.getElementById('dateRangeHeading').innerHTML = `📋 ডিপার্টমেন্ট ওয়াইজ ডেইলি সামারি (${startDisplay} থেকে ${endDisplay} পর্যন্ত)`;
         if (rangeEntries.length === 0) {
             document.getElementById('dateRangeSummaryContainer').innerHTML = `<div class="empty-msg">এই রেঞ্জে কোনো এন্ট্রি নেই</div>`;
@@ -465,6 +480,7 @@
         } else {
             renderDateRangeSummary(rangeEntries);
         }
+        // ======================================================================
 
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
@@ -567,15 +583,17 @@
             if (!deptInfo) return;
             if (deptInfo.type === 'MC') {
                 online.hr += e.dayHr; online.target += e.target; online.output += e.output; online.count += 1;
-                online.perHr += e.perHr; online.util += e.utilPct || 0;
             } else {
                 offline.hr += e.dayHr; offline.target += e.target; offline.output += e.output; offline.count += 1;
-                offline.perHr += e.perHr; offline.util += e.utilPct || 0;
             }
         });
 
-        if (online.count > 0) { online.perHr = online.perHr / online.count; online.util = online.util / online.count; }
-        if (offline.count > 0) { offline.perHr = offline.perHr / offline.count; offline.util = offline.util / offline.count; }
+        // সঠিক ফর্মুলা
+        online.perHr = online.hr > 0 ? (online.output / online.hr) : 0;
+        online.util = online.target > 0 ? (online.output / online.target) * 100 : 0;
+
+        offline.perHr = offline.hr > 0 ? (offline.output / offline.hr) : 0;
+        offline.util = offline.target > 0 ? (offline.output / offline.target) * 100 : 0;
 
         const overall = {
             hr: online.hr + offline.hr,
@@ -584,10 +602,9 @@
             count: online.count + offline.count,
             perHr: 0, util: 0
         };
-        if (overall.count > 0) {
-            overall.perHr = (online.perHr * online.count + offline.perHr * offline.count) / overall.count;
-            overall.util = (online.util * online.count + offline.util * offline.count) / overall.count;
-        }
+        
+        overall.perHr = overall.hr > 0 ? (overall.output / overall.hr) : 0;
+        overall.util = overall.target > 0 ? (overall.output / overall.target) * 100 : 0;
 
         window._shortData = { online, offline, overall };
 
@@ -788,21 +805,26 @@
                 const s = summary[e.dept];
                 if (e.shift === 'Day') {
                     s.dayHr += e.dayHr; s.dayTarget += e.target; s.dayOutput += e.output;
-                    s.dayPerHr += e.perHr; s.dayUtil += e.utilPct || 0; s.dayCount += 1;
+                    s.dayCount += 1;
                 } else {
                     s.nightHr += e.dayHr; s.nightTarget += e.target; s.nightOutput += e.output;
-                    s.nightPerHr += e.perHr; s.nightUtil += e.utilPct || 0; s.nightCount += 1;
+                    s.nightCount += 1;
                 }
                 s.totalHr += e.dayHr; s.totalTarget += e.target; s.totalOutput += e.output;
-                s.totalPerHr += e.perHr; s.totalUtil += e.utilPct || 0; s.totalCount += 1;
+                s.totalCount += 1;
             }
         });
 
         for (const key in summary) {
             const s = summary[key];
-            if (s.dayCount > 0) { s.dayPerHr = s.dayPerHr / s.dayCount; s.dayUtil = s.dayUtil / s.dayCount; }
-            if (s.nightCount > 0) { s.nightPerHr = s.nightPerHr / s.nightCount; s.nightUtil = s.nightUtil / s.nightCount; }
-            if (s.totalCount > 0) { s.totalPerHr = s.totalPerHr / s.totalCount; s.totalUtil = s.totalUtil / s.totalCount; }
+            // সঠিক ম্যাথমেটিক্যাল ফর্মুলা
+            s.dayPerHr = s.dayHr > 0 ? (s.dayOutput / s.dayHr) : 0;
+            s.nightPerHr = s.nightHr > 0 ? (s.nightOutput / s.nightHr) : 0;
+            s.totalPerHr = s.totalHr > 0 ? (s.totalOutput / s.totalHr) : 0;
+
+            s.dayUtil = s.dayTarget > 0 ? (s.dayOutput / s.dayTarget) * 100 : 0;
+            s.nightUtil = s.nightTarget > 0 ? (s.nightOutput / s.nightTarget) * 100 : 0;
+            s.totalUtil = s.totalTarget > 0 ? (s.totalOutput / s.totalTarget) * 100 : 0;
         }
 
         let onlineTot = { totalHr:0, totalTarget:0, totalOutput:0, totalPerHr:0, totalUtil:0, totalCount:0, dayHr:0, dayTarget:0, dayOutput:0, dayPerHr:0, dayUtil:0, dayCount:0, nightHr:0, nightTarget:0, nightOutput:0, nightPerHr:0, nightUtil:0, nightCount:0 };
@@ -811,48 +833,50 @@
         for (const [dept, s] of Object.entries(summary)) {
             if (s.type === 'MC') {
                 onlineTot.totalHr += s.totalHr; onlineTot.totalTarget += s.totalTarget; onlineTot.totalOutput += s.totalOutput; onlineTot.totalCount += s.totalCount;
-                onlineTot.totalPerHr += s.totalPerHr * s.totalCount; onlineTot.totalUtil += s.totalUtil * s.totalCount;
                 onlineTot.dayHr += s.dayHr; onlineTot.dayTarget += s.dayTarget; onlineTot.dayOutput += s.dayOutput; onlineTot.dayCount += s.dayCount;
-                onlineTot.dayPerHr += s.dayPerHr * s.dayCount; onlineTot.dayUtil += s.dayUtil * s.dayCount;
                 onlineTot.nightHr += s.nightHr; onlineTot.nightTarget += s.nightTarget; onlineTot.nightOutput += s.nightOutput; onlineTot.nightCount += s.nightCount;
-                onlineTot.nightPerHr += s.nightPerHr * s.nightCount; onlineTot.nightUtil += s.nightUtil * s.nightCount;
             } else if (s.type === 'Packaging') {
                 offlineTot.totalHr += s.totalHr; offlineTot.totalTarget += s.totalTarget; offlineTot.totalOutput += s.totalOutput; offlineTot.totalCount += s.totalCount;
-                offlineTot.totalPerHr += s.totalPerHr * s.totalCount; offlineTot.totalUtil += s.totalUtil * s.totalCount;
                 offlineTot.dayHr += s.dayHr; offlineTot.dayTarget += s.dayTarget; offlineTot.dayOutput += s.dayOutput; offlineTot.dayCount += s.dayCount;
-                offlineTot.dayPerHr += s.dayPerHr * s.dayCount; offlineTot.dayUtil += s.dayUtil * s.dayCount;
                 offlineTot.nightHr += s.nightHr; offlineTot.nightTarget += s.nightTarget; offlineTot.nightOutput += s.nightOutput; offlineTot.nightCount += s.nightCount;
-                offlineTot.nightPerHr += s.nightPerHr * s.nightCount; offlineTot.nightUtil += s.nightUtil * s.nightCount;
             }
         }
 
-        if (onlineTot.totalCount > 0) { onlineTot.totalPerHr = onlineTot.totalPerHr / onlineTot.totalCount; onlineTot.totalUtil = onlineTot.totalUtil / onlineTot.totalCount; }
-        if (onlineTot.dayCount > 0) { onlineTot.dayPerHr = onlineTot.dayPerHr / onlineTot.dayCount; onlineTot.dayUtil = onlineTot.dayUtil / onlineTot.dayCount; }
-        if (onlineTot.nightCount > 0) { onlineTot.nightPerHr = onlineTot.nightPerHr / onlineTot.nightCount; onlineTot.nightUtil = onlineTot.nightUtil / onlineTot.nightCount; }
-        if (offlineTot.totalCount > 0) { offlineTot.totalPerHr = offlineTot.totalPerHr / offlineTot.totalCount; offlineTot.totalUtil = offlineTot.totalUtil / offlineTot.totalCount; }
-        if (offlineTot.dayCount > 0) { offlineTot.dayPerHr = offlineTot.dayPerHr / offlineTot.dayCount; offlineTot.dayUtil = offlineTot.dayUtil / offlineTot.dayCount; }
-        if (offlineTot.nightCount > 0) { offlineTot.nightPerHr = offlineTot.nightPerHr / offlineTot.nightCount; offlineTot.nightUtil = offlineTot.nightUtil / offlineTot.nightCount; }
+        // অনলাইন সামারি
+        onlineTot.totalPerHr = onlineTot.totalHr > 0 ? (onlineTot.totalOutput / onlineTot.totalHr) : 0;
+        onlineTot.totalUtil = onlineTot.totalTarget > 0 ? (onlineTot.totalOutput / onlineTot.totalTarget) * 100 : 0;
+        onlineTot.dayPerHr = onlineTot.dayHr > 0 ? (onlineTot.dayOutput / onlineTot.dayHr) : 0;
+        onlineTot.dayUtil = onlineTot.dayTarget > 0 ? (onlineTot.dayOutput / onlineTot.dayTarget) * 100 : 0;
+        onlineTot.nightPerHr = onlineTot.nightHr > 0 ? (onlineTot.nightOutput / onlineTot.nightHr) : 0;
+        onlineTot.nightUtil = onlineTot.nightTarget > 0 ? (onlineTot.nightOutput / onlineTot.nightTarget) * 100 : 0;
+
+        // অফলাইন সামারি
+        offlineTot.totalPerHr = offlineTot.totalHr > 0 ? (offlineTot.totalOutput / offlineTot.totalHr) : 0;
+        offlineTot.totalUtil = offlineTot.totalTarget > 0 ? (offlineTot.totalOutput / offlineTot.totalTarget) * 100 : 0;
+        offlineTot.dayPerHr = offlineTot.dayHr > 0 ? (offlineTot.dayOutput / offlineTot.dayHr) : 0;
+        offlineTot.dayUtil = offlineTot.dayTarget > 0 ? (offlineTot.dayOutput / offlineTot.dayTarget) * 100 : 0;
+        offlineTot.nightPerHr = offlineTot.nightHr > 0 ? (offlineTot.nightOutput / offlineTot.nightHr) : 0;
+        offlineTot.nightUtil = offlineTot.nightTarget > 0 ? (offlineTot.nightOutput / offlineTot.nightTarget) * 100 : 0;
 
         const grandTot = {
             totalHr: onlineTot.totalHr + offlineTot.totalHr,
             totalTarget: onlineTot.totalTarget + offlineTot.totalTarget,
             totalOutput: onlineTot.totalOutput + offlineTot.totalOutput,
-            totalCount: onlineTot.totalCount + offlineTot.totalCount,
-            totalPerHr: 0, totalUtil: 0,
             dayHr: onlineTot.dayHr + offlineTot.dayHr,
             dayTarget: onlineTot.dayTarget + offlineTot.dayTarget,
             dayOutput: onlineTot.dayOutput + offlineTot.dayOutput,
-            dayCount: onlineTot.dayCount + offlineTot.dayCount,
-            dayPerHr: 0, dayUtil: 0,
             nightHr: onlineTot.nightHr + offlineTot.nightHr,
             nightTarget: onlineTot.nightTarget + offlineTot.nightTarget,
-            nightOutput: onlineTot.nightOutput + offlineTot.nightOutput,
-            nightCount: onlineTot.nightCount + offlineTot.nightCount,
-            nightPerHr: 0, nightUtil: 0
+            nightOutput: onlineTot.nightOutput + offlineTot.nightOutput
         };
-        if (grandTot.totalCount > 0) { grandTot.totalPerHr = (onlineTot.totalPerHr * onlineTot.totalCount + offlineTot.totalPerHr * offlineTot.totalCount) / grandTot.totalCount; grandTot.totalUtil = (onlineTot.totalUtil * onlineTot.totalCount + offlineTot.totalUtil * offlineTot.totalCount) / grandTot.totalCount; }
-        if (grandTot.dayCount > 0) { grandTot.dayPerHr = (onlineTot.dayPerHr * onlineTot.dayCount + offlineTot.dayPerHr * offlineTot.dayCount) / grandTot.dayCount; grandTot.dayUtil = (onlineTot.dayUtil * onlineTot.dayCount + offlineTot.dayUtil * offlineTot.dayCount) / grandTot.dayCount; }
-        if (grandTot.nightCount > 0) { grandTot.nightPerHr = (onlineTot.nightPerHr * onlineTot.nightCount + offlineTot.nightPerHr * offlineTot.nightCount) / grandTot.nightCount; grandTot.nightUtil = (onlineTot.nightUtil * onlineTot.nightCount + offlineTot.nightUtil * offlineTot.nightCount) / grandTot.nightCount; }
+        
+        // গ্র্যান্ড টোটাল
+        grandTot.totalPerHr = grandTot.totalHr > 0 ? (grandTot.totalOutput / grandTot.totalHr) : 0;
+        grandTot.totalUtil = grandTot.totalTarget > 0 ? (grandTot.totalOutput / grandTot.totalTarget) * 100 : 0;
+        grandTot.dayPerHr = grandTot.dayHr > 0 ? (grandTot.dayOutput / grandTot.dayHr) : 0;
+        grandTot.dayUtil = grandTot.dayTarget > 0 ? (grandTot.dayOutput / grandTot.dayTarget) * 100 : 0;
+        grandTot.nightPerHr = grandTot.nightHr > 0 ? (grandTot.nightOutput / grandTot.nightHr) : 0;
+        grandTot.nightUtil = grandTot.nightTarget > 0 ? (grandTot.nightOutput / grandTot.nightTarget) * 100 : 0;
 
         const sortedDepts = Object.entries(summary).filter(([dept, data]) => data.totalCount > 0).sort((a, b) => b[1].totalUtil - a[1].totalUtil);
         const rankMap = {};
